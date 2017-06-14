@@ -1,0 +1,120 @@
+
+import xlwt
+
+
+def xls_jlist(filename, jlist, pressure, temperature):
+    num_jcpds = 0
+    workbook = xlwt.Workbook()
+    for jcpds in jlist:
+        sheet = workbook.add_sheet(jcpds.name)
+        num_jcpds += 1
+        sheet.write(0, 0, jcpds.file)
+        sheet.write(1, 0, jcpds.name)
+        sheet.write(2, 0, jcpds.version)
+        sheet.write(3, 0, jcpds.comments)
+        sheet.write(4, 0, jcpds.symmetry)
+        sheet.write(6, 0, 'Values in the original file')
+        sheet.write(9, 0, 'K0 (GPa)')
+        sheet.write(9, 1, jcpds.k0_org)
+        sheet.write(10, 0, 'K0p')
+        sheet.write(10, 1, jcpds.k0p_org)
+        sheet.write(11, 0, 'Thermal Expansion')
+        sheet.write(11, 1, jcpds.thermal_expansion_org)
+        sheet.write(12, 0, 'V0 (A^3)')
+        sheet.write(12, 1, jcpds.v0_org)
+        sheet.write(14, 0, 'a0')
+        sheet.write(14, 1, jcpds.a0)
+        sheet.write(15, 0, 'b0')
+        sheet.write(15, 1, jcpds.b0)
+        sheet.write(16, 0, 'c0')
+        sheet.write(16, 1, jcpds.c0)
+        sheet.write(17, 0, 'alpha0')
+        sheet.write(17, 1, jcpds.alpha0)
+        sheet.write(18, 0, 'beta0')
+        sheet.write(18, 1, jcpds.beta0)
+        sheet.write(19, 0, 'gamma0')
+        sheet.write(19, 1, jcpds.gamma0)
+        sheet.write(6, 3, 'Values after tweak')
+        sheet.write(7, 3, 'Pressure')
+        sheet.write(7, 4, pressure)
+        sheet.write(8, 3, 'Temperature')
+        sheet.write(8, 4, temperature)
+        sheet.write(9, 3, 'K0 (GPa)')
+        sheet.write(9, 4, jcpds.k0)
+        sheet.write(10, 3, 'K0p')
+        sheet.write(10, 4, jcpds.k0p)
+        sheet.write(11, 3, 'Thermal expansion')
+        sheet.write(11, 4, jcpds.thermal_expansion)
+        sheet.write(12, 3, 'V0 (A^3)')
+        sheet.write(12, 4, jcpds.v0)
+        sheet.write(13, 3, 'V (A^3)')
+        sheet.write(13, 4, float(jcpds.v))
+        sheet.write(14, 3, 'a')
+        sheet.write(14, 4, float(jcpds.a))
+        sheet.write(15, 3, 'b')
+        sheet.write(15, 4, float(jcpds.b))
+        sheet.write(16, 3, 'c')
+        sheet.write(16, 4, float(jcpds.c))
+        sheet.write(17, 3, 'alpha')
+        sheet.write(17, 4, float(jcpds.alpha))
+        sheet.write(18, 3, 'beta')
+        sheet.write(18, 4, float(jcpds.beta))
+        sheet.write(19, 3, 'gamma')
+        sheet.write(19, 4, float(jcpds.gamma))
+        sheet.write(21, 0, 'Peaks at high PT')
+        sheet.write(22, 0, 'd-spacing (A)')
+        sheet.write(22, 1, 'Intensity (%)')
+        sheet.write(22, 2, 'h')
+        sheet.write(22, 3, 'k')
+        sheet.write(22, 4, 'l')
+        i = 0
+        for dl in jcpds.DiffLines:
+            sheet.write(23 + i, 0, float(dl.dsp))
+            sheet.write(23 + i, 1, float(dl.intensity))
+            sheet.write(23 + i, 2, int(dl.h))
+            sheet.write(23 + i, 3, int(dl.k))
+            sheet.write(23 + i, 4, int(dl.l))
+            i += 1
+    workbook.save(filename)
+
+
+def xls_ucfitlist(filename, ucfitlist):
+    """
+    dump ucfitlist to an excel files
+    """
+    workbook = xlwt.Workbook()
+    num_jcpds = 0
+    for j in ucfitlist:
+        sheet = workbook.add_sheet(j.name)
+        num_jcpds += 1
+        sheet.write(1, 0, j.name)
+        sheet.write(2, 0, j.symmetry)
+        sheet.write(3, 0, 'V (A^3)')
+        sheet.write(3, 1, float(j.v))
+        sheet.write(4, 0, 'a')
+        sheet.write(4, 1, float(j.a))
+        sheet.write(5, 0, 'b')
+        sheet.write(5, 1, float(j.b))
+        sheet.write(6, 0, 'c')
+        sheet.write(6, 1, float(j.c))
+        sheet.write(7, 0, 'alpha')
+        sheet.write(7, 1, float(j.alpha))
+        sheet.write(8, 0, 'beta')
+        sheet.write(8, 1, float(j.beta))
+        sheet.write(9, 0, 'gamma')
+        sheet.write(9, 1, float(j.gamma))
+        sheet.write(11, 0, 'Peaks')
+        sheet.write(12, 0, 'd-spacing (A)')
+        sheet.write(12, 1, 'Intensity (%)')
+        sheet.write(12, 2, 'h')
+        sheet.write(12, 3, 'k')
+        sheet.write(12, 4, 'l')
+        i = 0
+        for dl in j.DiffLines:
+            sheet.write(13 + i, 0, float(dl.dsp))
+            sheet.write(13 + i, 1, float(dl.intensity))
+            sheet.write(13 + i, 2, int(dl.h))
+            sheet.write(13 + i, 3, int(dl.k))
+            sheet.write(13 + i, 4, int(dl.l))
+            i += 1
+    workbook.save(filename)

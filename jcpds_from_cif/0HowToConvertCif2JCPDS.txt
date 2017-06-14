@@ -1,0 +1,2 @@
+python cif2jcpds.py -h to get help
+python cif2jcpds.py -i <inputfile> -o <outputfile>
