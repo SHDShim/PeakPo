@@ -281,7 +281,8 @@ class JCPDS(object):
                 self.v = self.v0
             else:
                 # print(pressure_st, self.v0, self.k0, self.k0p)
-                self.v = bm3_v(pressure_st, self.v0, self.k0, self.k0p)
+                self.v = bm3_v(pressure_st, self.v0, self.k0, self.k0p,
+                               min_strain=0.3)
 
     def cal_dsp(self, pressure=0., temperature=300., b_a=None, c_a=None):
         """

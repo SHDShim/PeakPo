@@ -319,7 +319,7 @@
               </size>
              </property>
              <property name="focusPolicy">
-              <enum>Qt::ClickFocus</enum>
+              <enum>Qt::WheelFocus</enum>
              </property>
              <property name="layoutDirection">
               <enum>Qt::LeftToRight</enum>
@@ -667,7 +667,7 @@
               </font>
              </property>
              <property name="focusPolicy">
-              <enum>Qt::ClickFocus</enum>
+              <enum>Qt::WheelFocus</enum>
              </property>
              <property name="styleSheet">
               <string notr="true">font: 75 24pt &quot;Helvetica&quot;;</string>
@@ -786,7 +786,7 @@
               </font>
              </property>
              <property name="focusPolicy">
-              <enum>Qt::ClickFocus</enum>
+              <enum>Qt::WheelFocus</enum>
              </property>
              <property name="layoutDirection">
               <enum>Qt::LeftToRight</enum>

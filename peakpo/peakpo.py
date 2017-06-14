@@ -8,6 +8,7 @@ from mainwidget import DesignerMainWindow
 app = QtWidgets.QApplication(sys.argv)
 dmw = DesignerMainWindow()
 app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+# app.setStyleSheet('fusion')
 dmw.show()
 # start the Qt main loop execution, exiting from this script
 # with the same return code of Qt application
