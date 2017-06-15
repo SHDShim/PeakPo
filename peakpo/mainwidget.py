@@ -19,7 +19,7 @@ import pickle
 import time
 import zipfile
 # local modules
-from qtd import Ui_MplMainWindow
+from qtd import Ui_MainWindow
 from utils import undo_button_press
 from utils import samefilename, make_filename, get_sorted_filelist, \
     find_from_filelist, dialog_savefile, xls_ucfitlist, xls_jlist, writechi
@@ -31,7 +31,7 @@ from ds_jcpds import JCPDSplt, Session, UnitCell, convert_tth
 from ds_powdiff import PatternPeakPo, get_DataSection
 
 
-class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
+class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     """
     Main window
     """
@@ -54,125 +54,123 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         self.objColor = 'white'
         self.readSettings()
         # disable unsupported buttons
-        self.mplpushButton_ApplyMask.setEnabled(False)
-        self.mplpushButton_MakeBasePtn.setEnabled(False)
-        self.mplpushButton_BackToOriginal.setEnabled(False)
-        self.mplpushButton_Reintegrate1D.setEnabled(False)
-        self.mplpushButton_OuputCHI.setEnabled(False)
+        self.pushButton_ApplyMask.setEnabled(False)
+        self.pushButton_MakeBasePtn.setEnabled(False)
+        self.pushButton_BackToOriginal.setEnabled(False)
+        self.pushButton_Reintegrate1D.setEnabled(False)
+        self.pushButton_OuputCHI.setEnabled(False)
         # connecting events
         self.mpl.canvas.mpl_connect('button_press_event', self.read_plot)
         self.mpl.canvas.mpl_connect('key_press_event', self.on_key_press)
         # Tab: Main
-        self.mplpushButton_NewBasePtn.clicked.connect(self.select_file)
-        self.mplpushButton_PrevBasePtn.clicked.connect(
+        self.pushButton_NewBasePtn.clicked.connect(self.select_file)
+        self.pushButton_PrevBasePtn.clicked.connect(
             lambda: self.goto_nextfile('previous'))
-        self.mplpushButton_NextBasePtn.clicked.connect(
+        self.pushButton_NextBasePtn.clicked.connect(
             lambda: self.goto_nextfile('next'))
-        self.mplpushButton_LastBasePtn.clicked.connect(
+        self.pushButton_LastBasePtn.clicked.connect(
             lambda: self.goto_nextfile('last'))
-        self.mplpushButton_FirstBasePtn.clicked.connect(
+        self.pushButton_FirstBasePtn.clicked.connect(
             lambda: self.goto_nextfile('first'))
-        self.mplradioButton_P01.clicked.connect(self.set_pstep)
-        self.mplradioButton_P1.clicked.connect(self.set_pstep)
-        self.mplradioButton_P10.clicked.connect(self.set_pstep)
-        self.mplradioButton_P100.clicked.connect(self.set_pstep)
-        self.mplradioButton_T1.clicked.connect(self.set_tstep)
-        self.mplradioButton_T10.clicked.connect(self.set_tstep)
-        self.mplradioButton_T100.clicked.connect(self.set_tstep)
-        self.mplradioButton_T1000.clicked.connect(self.set_tstep)
-        self.mplpushButton_RoomT.clicked.connect(
-            lambda: self.set_temperature(300))
-        self.mplpushButton_1000K.clicked.connect(
+        self.radioButton_P01.clicked.connect(self.set_pstep)
+        self.radioButton_P1.clicked.connect(self.set_pstep)
+        self.radioButton_P10.clicked.connect(self.set_pstep)
+        self.radioButton_P100.clicked.connect(self.set_pstep)
+        self.radioButton_T1.clicked.connect(self.set_tstep)
+        self.radioButton_T10.clicked.connect(self.set_tstep)
+        self.radioButton_T100.clicked.connect(self.set_tstep)
+        self.radioButton_T1000.clicked.connect(self.set_tstep)
+        self.pushButton_RoomT.clicked.connect(lambda: self.set_temperature(300))
+        self.pushButton_1000K.clicked.connect(
             lambda: self.set_temperature(1000))
-        self.mplpushButton_1500K.clicked.connect(
+        self.pushButton_1500K.clicked.connect(
             lambda: self.set_temperature(1500))
-        self.mplpushButton_2000K.clicked.connect(
+        self.pushButton_2000K.clicked.connect(
             lambda: self.set_temperature(2000))
-        self.mplpushButton_2500K.clicked.connect(
+        self.pushButton_2500K.clicked.connect(
             lambda: self.set_temperature(2500))
-        self.mplpushButton_3000K.clicked.connect(
+        self.pushButton_3000K.clicked.connect(
             lambda: self.set_temperature(3000))
-        self.mplpushButton_3500K.clicked.connect(
+        self.pushButton_3500K.clicked.connect(
             lambda: self.set_temperature(3500))
-        self.mplpushButton_4000K.clicked.connect(
+        self.pushButton_4000K.clicked.connect(
             lambda: self.set_temperature(4000))
-        self.mplpushButton_4500K.clicked.connect(
+        self.pushButton_4500K.clicked.connect(
             lambda: self.set_temperature(4500))
-        self.mplpushButton_5000K.clicked.connect(
+        self.pushButton_5000K.clicked.connect(
             lambda: self.set_temperature(5000))
-        self.mpldoubleSpinBox_Pressure.valueChanged.connect(
+        self.doubleSpinBox_Pressure.valueChanged.connect(self.apply_PTtoGraph)
+        self.doubleSpinBox_Pressure.setKeyboardTracking(False)
+        self.doubleSpinBox_Pressure.setStyle(SpinBoxFixStyle())
+        self.doubleSpinBox_Temperature.valueChanged.connect(
             self.apply_PTtoGraph)
-        self.mpldoubleSpinBox_Pressure.setKeyboardTracking(False)
-        self.mpldoubleSpinBox_Pressure.setStyle(SpinBoxFixStyle())
-        self.mpldoubleSpinBox_Temperature.valueChanged.connect(
-            self.apply_PTtoGraph)
-        self.mpldoubleSpinBox_Temperature.setKeyboardTracking(False)
-        self.mpldoubleSpinBox_Temperature.setStyle(SpinBoxFixStyle())
-        self.mplpushButton_SaveSession.clicked.connect(self.save_session)
-        self.mplpushButton_LoadSession.clicked.connect(self.load_session)
-        self.mplpushButton_ZipSession.clicked.connect(self.zip_session)
-        self.mplcheckBox_IntNorm.clicked.connect(self.norm_int)
+        self.doubleSpinBox_Temperature.setKeyboardTracking(False)
+        self.doubleSpinBox_Temperature.setStyle(SpinBoxFixStyle())
+        self.pushButton_SaveSession.clicked.connect(self.save_session)
+        self.pushButton_LoadSession.clicked.connect(self.load_session)
+        self.pushButton_ZipSession.clicked.connect(self.zip_session)
+        self.checkBox_IntNorm.clicked.connect(self.norm_int)
         # Tab: waterfall
-        self.mplpushButton_AddPatterns.clicked.connect(self.add_patterns)
-        self.mpldoubleSpinBox_WaterfallGaps.valueChanged.connect(
+        self.pushButton_AddPatterns.clicked.connect(self.add_patterns)
+        self.doubleSpinBox_WaterfallGaps.valueChanged.connect(
             self.apply_changestograph)
-        self.mpldoubleSpinBox_WaterfallGaps.setKeyboardTracking(False)
-        self.mpldoubleSpinBox_WaterfallGaps.setStyle(SpinBoxFixStyle())
-        self.mplpushButton_CleanPatterns.clicked.connect(self.erase_waterfall)
-        self.mplpushButton_RemovePatterns.clicked.connect(
+        self.doubleSpinBox_WaterfallGaps.setKeyboardTracking(False)
+        self.doubleSpinBox_WaterfallGaps.setStyle(SpinBoxFixStyle())
+        self.pushButton_CleanPatterns.clicked.connect(self.erase_waterfall)
+        self.pushButton_RemovePatterns.clicked.connect(
             self.remove_waterfall)
-        self.mplpushButton_UpPattern.clicked.connect(self.up_waterfall)
-        self.mplpushButton_DownPattern.clicked.connect(self.down_waterfall)
-        self.mplpushButton_ApplyWaterfallChange.clicked.connect(
+        self.pushButton_UpPattern.clicked.connect(self.up_waterfall)
+        self.pushButton_DownPattern.clicked.connect(self.down_waterfall)
+        self.pushButton_ApplyWaterfallChange.clicked.connect(
             self.apply_changestograph)
         # Tab: process
-        self.mplspinBox_BGParam0.setKeyboardTracking(False)
-        self.mplspinBox_BGParam1.setKeyboardTracking(False)
-        self.mplspinBox_BGParam2.setKeyboardTracking(False)
-        self.mplspinBox_BGParam0.setStyle(SpinBoxFixStyle())
-        self.mplspinBox_BGParam1.setStyle(SpinBoxFixStyle())
-        self.mplspinBox_BGParam2.setStyle(SpinBoxFixStyle())
-        self.mpldoubleSpinBox_Background_ROI_max.setKeyboardTracking(False)
-        self.mpldoubleSpinBox_Background_ROI_min.setKeyboardTracking(False)
-        self.mpldoubleSpinBox_Background_ROI_max.setStyle(SpinBoxFixStyle())
-        self.mpldoubleSpinBox_Background_ROI_min.setStyle(SpinBoxFixStyle())
-        self.mplpushButton_UpdatePlots_tab2.clicked.connect(self.update_bgsub)
+        self.spinBox_BGParam0.setKeyboardTracking(False)
+        self.spinBox_BGParam1.setKeyboardTracking(False)
+        self.spinBox_BGParam2.setKeyboardTracking(False)
+        self.spinBox_BGParam0.setStyle(SpinBoxFixStyle())
+        self.spinBox_BGParam1.setStyle(SpinBoxFixStyle())
+        self.spinBox_BGParam2.setStyle(SpinBoxFixStyle())
+        self.doubleSpinBox_Background_ROI_max.setKeyboardTracking(False)
+        self.doubleSpinBox_Background_ROI_min.setKeyboardTracking(False)
+        self.doubleSpinBox_Background_ROI_max.setStyle(SpinBoxFixStyle())
+        self.doubleSpinBox_Background_ROI_min.setStyle(SpinBoxFixStyle())
+        self.pushButton_UpdatePlots_tab2.clicked.connect(self.update_bgsub)
         # Tab: JCPDS List
-        self.mplpushButton_NewJlist.clicked.connect(self.make_jlist)
-        self.mplpushButton_RemoveJCPDS.clicked.connect(self.remove_a_jcpds)
-        self.mplpushButton_AddToJlist.clicked.connect(
+        self.pushButton_NewJlist.clicked.connect(self.make_jlist)
+        self.pushButton_RemoveJCPDS.clicked.connect(self.remove_a_jcpds)
+        self.pushButton_AddToJlist.clicked.connect(
             lambda: self.make_jlist(append=True))
-        self.mplpushButton_SaveJlist.clicked.connect(self.save_session)
-        self.mplpushButton_LoadJlist.clicked.connect(self.load_jlist)
-        self.mplpushButton_ViewJCPDS.clicked.connect(self.view_jcpds)
-        self.mplcheckBox_Intensity.clicked.connect(self.apply_changestograph)
-        self.mpldoubleSpinBox_SetWavelength.valueChanged.connect(
+        self.pushButton_SaveJlist.clicked.connect(self.save_session)
+        self.pushButton_LoadJlist.clicked.connect(self.load_jlist)
+        self.pushButton_ViewJCPDS.clicked.connect(self.view_jcpds)
+        self.checkBox_Intensity.clicked.connect(self.apply_changestograph)
+        self.doubleSpinBox_SetWavelength.valueChanged.connect(
             self.apply_wavelength)
-        self.mpldoubleSpinBox_SetWavelength.setKeyboardTracking(False)
-        self.mpldoubleSpinBox_SetWavelength.setStyle(SpinBoxFixStyle())
-        self.mplpushButton_CheckAllJCPDS.clicked.connect(self.check_allJCPDS)
-        self.mplpushButton_UncheckAllJCPDS.clicked.connect(
+        self.doubleSpinBox_SetWavelength.setKeyboardTracking(False)
+        self.doubleSpinBox_SetWavelength.setStyle(SpinBoxFixStyle())
+        self.pushButton_CheckAllJCPDS.clicked.connect(self.check_allJCPDS)
+        self.pushButton_UncheckAllJCPDS.clicked.connect(
             self.uncheck_allJCPDS)
-        self.mplpushButton_MoveUp.clicked.connect(self.moveup_JCPDS)
-        self.mplpushButton_MoveDown.clicked.connect(self.movedown_JCPDS)
-        self.mplpushButton_ExportXLS.clicked.connect(self.save_XLS)
-        self.mplpushButton_SaveCHI.clicked.connect(self.save_bgsubchi)
-        self.mplpushButton_ExportToUCFit.clicked.connect(self.export_toUCFit)
+        self.pushButton_MoveUp.clicked.connect(self.moveup_JCPDS)
+        self.pushButton_MoveDown.clicked.connect(self.movedown_JCPDS)
+        self.pushButton_ExportXLS.clicked.connect(self.save_XLS)
+        self.pushButton_SaveCHI.clicked.connect(self.save_bgsubchi)
+        self.pushButton_ExportToUCFit.clicked.connect(self.export_toUCFit)
         # Tab: Cake
-        self.mplpushButton_AddRemoveCake.clicked.connect(self.addremove_Cake)
-        self.mplpushButton_GetPONI.clicked.connect(self.get_PONI)
-        self.mplspinBox_VMin.setValue(100)
-        self.mplspinBox_VMax.setValue(7000)
-        self.mplpushButton_ApplyCakeView.clicked.connect(
+        self.pushButton_AddRemoveCake.clicked.connect(self.addremove_Cake)
+        self.pushButton_GetPONI.clicked.connect(self.get_PONI)
+        self.spinBox_VMin.setValue(100)
+        self.spinBox_VMax.setValue(7000)
+        self.pushButton_ApplyCakeView.clicked.connect(
             self.apply_changestograph)
-        self.mplspinBox_CakeAxisSize.setValue(50)
+        self.spinBox_CakeAxisSize.setValue(50)
         # Tab: UCFit List
-        self.mplpushButton_RemoveUClist.clicked.connect(self.remove_ucfit)
-        self.mplpushButton_ExportXLS_2.clicked.connect(self.export_toXLS)
+        self.pushButton_RemoveUClist.clicked.connect(self.remove_ucfit)
+        self.pushButton_ExportXLS_2.clicked.connect(self.export_toXLS)
         # file menu items
-        self.mplactionClose.triggered.connect(self.closeEvent)
-        self.mplactionCiting_PeakPo.triggered.connect(self.about)
-        self.mplactionShortcut_keys.triggered.connect(self.shortcutkeys)
+        self.actionClose.triggered.connect(self.closeEvent)
+        self.actionCiting_PeakPo.triggered.connect(self.about)
+        self.actionShortcut_keys.triggered.connect(self.shortcutkeys)
         # navigation toolbar modification
         self.ntb_WholePtn = QtWidgets.QPushButton()
         self.ntb_WholePtn.setText("ZoomOut")
@@ -218,24 +216,24 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         Cake function
         Add/remove cake to the graph
         """
-        if not self.mplpushButton_AddRemoveCake.isChecked():
-            self.mplpushButton_AddRemoveCake.setText('Add Cake')
+        if not self.pushButton_AddRemoveCake.isChecked():
+            self.pushButton_AddRemoveCake.setText('Add Cake')
             self.update_graph()
             return
         else:
-            self.mplpushButton_AddRemoveCake.setText('Remove Cake')
+            self.pushButton_AddRemoveCake.setText('Remove Cake')
         if self.poni_filename is None:
             QtWidgets.QMessageBox.warning(
                 self, 'Warning', 'Choose PONI file first.')
             undo_button_press(
-                self.mplpushButton_AddRemoveCake,
+                self.pushButton_AddRemoveCake,
                 released_text='Add Cake', pressed_text='Remove Cake')
             return
         if self.Pattern is None:
             QtWidgets.QMessageBox.warning(
                 self, 'Warning', 'Choose CHI file first.')
             undo_button_press(
-                self.mplpushButton_AddRemoveCake,
+                self.pushButton_AddRemoveCake,
                 released_text='Add Cake', pressed_text='Remove Cake')
             return
         filen_tif = make_filename(self.Pattern.fname, 'tif')
@@ -244,7 +242,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
                 self, 'Warning',
                 'Cannot find %s.' % filen_tif)
             undo_button_press(
-                self.mplpushButton_AddRemoveCake,
+                self.pushButton_AddRemoveCake,
                 released_text='Add Cake', pressed_text='Remove Cake')
             return
         if (self.DiffImg is not None) and \
@@ -262,7 +260,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         """
         self.DiffImg = DiffImg()
         self.DiffImg.load(filen_tif)
-        self.mpllabel_DiffractionImageFilename.setText(
+        self.label_DiffractionImageFilename.setText(
             'Diffraction Image: ' + filen_tif)
 
     def _update_cake(self):
@@ -290,7 +288,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             # I am unsure poni_path would be needed to be self
             self.poni_path = poni_path
             self.poni_filename = str(file)
-            self.mpllabel_PONI.setText('PONI: ' + self.poni_filename)
+            self.label_PONI.setText('PONI: ' + self.poni_filename)
             if self.DiffImg is not None:
                 self._update_cake()
             self.update_graph()
@@ -338,7 +336,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         if reply == QtWidgets.QMessageBox.No:
             return
         idx_checked = []
-        for item in self.mpltableWidget_UnitCell.selectedIndexes():
+        for item in self.tableWidget_UnitCell.selectedIndexes():
             if item.column() != 1:
                 return
             else:
@@ -347,7 +345,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             idx_checked.reverse()
             for idx in idx_checked:
                 self.ucfitlist.remove(self.ucfitlist[idx])
-                self.mpltableWidget_UnitCell.removeRow(idx)
+                self.tableWidget_UnitCell.removeRow(idx)
             self.update_graph()
         else:
             QtWidgets.QMessageBox.warning(
@@ -361,7 +359,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         if self.jlist == []:
             return
         idx_checked = []
-        for item in self.mpltableWidget_JCPDS.selectedIndexes():
+        for item in self.tableWidget_JCPDS.selectedIndexes():
             if item.column() != 1:
                 QtWidgets.QMessageBox.warning(
                     self, "Warning", "Highlight the name of JCPDS to export")
@@ -402,11 +400,11 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         """
         n_columns = 11
         n_rows = self.ucfitlist.__len__()  # count for number of jcpds
-        self.mpltableWidget_UnitCell.setColumnCount(n_columns)
-        self.mpltableWidget_UnitCell.setRowCount(n_rows)
-        self.mpltableWidget_UnitCell.horizontalHeader().setVisible(True)
-        self.mpltableWidget_UnitCell.verticalHeader().setVisible(True)
-        self.mpltableWidget_UnitCell.setHorizontalHeaderLabels(
+        self.tableWidget_UnitCell.setColumnCount(n_columns)
+        self.tableWidget_UnitCell.setRowCount(n_rows)
+        self.tableWidget_UnitCell.horizontalHeader().setVisible(True)
+        self.tableWidget_UnitCell.verticalHeader().setVisible(True)
+        self.tableWidget_UnitCell.setHorizontalHeaderLabels(
             ['', 'Name', 'Color', 'Color Change', 'Volume', 'a', 'b', 'c',
              'alpha', 'beta', 'gamma'])
         for row in range(n_rows):
@@ -418,49 +416,49 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
                 item0.setCheckState(QtCore.Qt.Checked)
             else:
                 item0.setCheckState(QtCore.Qt.Unchecked)
-            self.mpltableWidget_UnitCell.setItem(row, 0, item0)
+            self.tableWidget_UnitCell.setItem(row, 0, item0)
             # column 1 - name
             item1 = QtWidgets.QTableWidgetItem(self.ucfitlist[row].name)
-            self.mpltableWidget_UnitCell.setItem(row, 1, item1)
+            self.tableWidget_UnitCell.setItem(row, 1, item1)
             # column 2 - color
             item2 = QtWidgets.QTableWidgetItem('    ')
-            self.mpltableWidget_UnitCell.setItem(row, 2, item2)
+            self.tableWidget_UnitCell.setItem(row, 2, item2)
             # column 3 - color setup
-            self.mpltableWidget_UnitCell_pushButton_color = \
+            self.tableWidget_UnitCell_pushButton_color = \
                 QtWidgets.QPushButton('change')
-            self.mpltableWidget_UnitCell.item(row, 2).setBackground(
+            self.tableWidget_UnitCell.item(row, 2).setBackground(
                 QtGui.QColor(self.ucfitlist[row].color))
-            self.mpltableWidget_UnitCell_pushButton_color.clicked.connect(
+            self.tableWidget_UnitCell_pushButton_color.clicked.connect(
                 self._ucfitlist_handle_ColorButtonClicked)
-            self.mpltableWidget_UnitCell.setCellWidget(
-                row, 3, self.mpltableWidget_UnitCell_pushButton_color)
+            self.tableWidget_UnitCell.setCellWidget(
+                row, 3, self.tableWidget_UnitCell_pushButton_color)
             # column 4 - V output
             self.ucfitlist[row].cal_dsp()
             Item4 = QtWidgets.QTableWidgetItem(
                 "{:.3f}".format(float(self.ucfitlist[row].v)))
             Item4.setFlags(QtCore.Qt.ItemIsSelectable |
                            QtCore.Qt.ItemIsEnabled)
-            self.mpltableWidget_UnitCell.setItem(row, 4, Item4)
+            self.tableWidget_UnitCell.setItem(row, 4, Item4)
             # column 5 - a
-            self.mpltableWidget_UnitCell_doubleSpinBox_a = \
+            self.tableWidget_UnitCell_doubleSpinBox_a = \
                 QtWidgets.QDoubleSpinBox()
-            self.mpltableWidget_UnitCell_doubleSpinBox_a.setAlignment(
+            self.tableWidget_UnitCell_doubleSpinBox_a.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
-            self.mpltableWidget_UnitCell_doubleSpinBox_a.setMaximum(50.0)
-            self.mpltableWidget_UnitCell_doubleSpinBox_a.setSingleStep(0.001)
-            self.mpltableWidget_UnitCell_doubleSpinBox_a.setDecimals(4)
-            self.mpltableWidget_UnitCell_doubleSpinBox_a.setProperty(
+            self.tableWidget_UnitCell_doubleSpinBox_a.setMaximum(50.0)
+            self.tableWidget_UnitCell_doubleSpinBox_a.setSingleStep(0.001)
+            self.tableWidget_UnitCell_doubleSpinBox_a.setDecimals(4)
+            self.tableWidget_UnitCell_doubleSpinBox_a.setProperty(
                 "value", float(self.ucfitlist[row].a))
-            self.mpltableWidget_UnitCell_doubleSpinBox_a.valueChanged.connect(
+            self.tableWidget_UnitCell_doubleSpinBox_a.valueChanged.connect(
                 self._ucfitlist_handle_doubleSpinBoxChanged)
-            self.mpltableWidget_UnitCell_doubleSpinBox_a.setStyle(
+            self.tableWidget_UnitCell_doubleSpinBox_a.setStyle(
                 SpinBoxFixStyle())
-            self.mpltableWidget_UnitCell.setCellWidget(
-                row, 5, self.mpltableWidget_UnitCell_doubleSpinBox_a)
-            self.mpltableWidget_UnitCell_doubleSpinBox_a.setKeyboardTracking(
+            self.tableWidget_UnitCell.setCellWidget(
+                row, 5, self.tableWidget_UnitCell_doubleSpinBox_a)
+            self.tableWidget_UnitCell_doubleSpinBox_a.setKeyboardTracking(
                 False)
-            self.mpltableWidget_UnitCell_doubleSpinBox_a.setFocusPolicy(
+            self.tableWidget_UnitCell_doubleSpinBox_a.setFocusPolicy(
                 QtCore.Qt.ClickFocus)
             # column 6 - b output
             if (self.ucfitlist[row].symmetry == 'cubic') or\
@@ -468,84 +466,84 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
                     (self.ucfitlist[row].symmetry == 'hexagonal'):
                 item6 = QtWidgets.QTableWidgetItem('')
                 item6.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.mpltableWidget_UnitCell.setItem(row, 6, item6)
+                self.tableWidget_UnitCell.setItem(row, 6, item6)
             else:
-                self.mpltableWidget_UnitCell_doubleSpinBox_b = \
+                self.tableWidget_UnitCell_doubleSpinBox_b = \
                     QtWidgets.QDoubleSpinBox()
-                self.mpltableWidget_UnitCell_doubleSpinBox_b.setAlignment(
+                self.tableWidget_UnitCell_doubleSpinBox_b.setAlignment(
                     QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                     QtCore.Qt.AlignVCenter)
-                self.mpltableWidget_UnitCell_doubleSpinBox_b.setMaximum(50.0)
-                self.mpltableWidget_UnitCell_doubleSpinBox_b.setSingleStep(
+                self.tableWidget_UnitCell_doubleSpinBox_b.setMaximum(50.0)
+                self.tableWidget_UnitCell_doubleSpinBox_b.setSingleStep(
                     0.001)
-                self.mpltableWidget_UnitCell_doubleSpinBox_b.setDecimals(4)
-                self.mpltableWidget_UnitCell_doubleSpinBox_b.setProperty(
+                self.tableWidget_UnitCell_doubleSpinBox_b.setDecimals(4)
+                self.tableWidget_UnitCell_doubleSpinBox_b.setProperty(
                     "value", float(self.ucfitlist[row].b))
-                self.mpltableWidget_UnitCell_doubleSpinBox_b.valueChanged.\
+                self.tableWidget_UnitCell_doubleSpinBox_b.valueChanged.\
                     connect(
                         self._ucfitlist_handle_doubleSpinBoxChanged)
-                self.mpltableWidget_UnitCell_doubleSpinBox_b.setStyle(
+                self.tableWidget_UnitCell_doubleSpinBox_b.setStyle(
                     SpinBoxFixStyle())
-                self.mpltableWidget_UnitCell.setCellWidget(
-                    row, 6, self.mpltableWidget_UnitCell_doubleSpinBox_b)
-                self.mpltableWidget_UnitCell_doubleSpinBox_b.\
+                self.tableWidget_UnitCell.setCellWidget(
+                    row, 6, self.tableWidget_UnitCell_doubleSpinBox_b)
+                self.tableWidget_UnitCell_doubleSpinBox_b.\
                     setKeyboardTracking(False)
-                self.mpltableWidget_UnitCell_doubleSpinBox_b.setFocusPolicy(
+                self.tableWidget_UnitCell_doubleSpinBox_b.setFocusPolicy(
                     QtCore.Qt.ClickFocus)
             # column 7 - c output
             if (self.ucfitlist[row].symmetry == 'cubic'):
                 item7 = QtWidgets.QTableWidgetItem('')
                 item7.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.mpltableWidget_UnitCell.setItem(row, 7, item7)
+                self.tableWidget_UnitCell.setItem(row, 7, item7)
             else:
-                self.mpltableWidget_UnitCell_doubleSpinBox_c = \
+                self.tableWidget_UnitCell_doubleSpinBox_c = \
                     QtWidgets.QDoubleSpinBox()
-                self.mpltableWidget_UnitCell_doubleSpinBox_c.setAlignment(
+                self.tableWidget_UnitCell_doubleSpinBox_c.setAlignment(
                     QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                     QtCore.Qt.AlignVCenter)
-                self.mpltableWidget_UnitCell_doubleSpinBox_c.setMaximum(50.0)
-                self.mpltableWidget_UnitCell_doubleSpinBox_c.setSingleStep(
+                self.tableWidget_UnitCell_doubleSpinBox_c.setMaximum(50.0)
+                self.tableWidget_UnitCell_doubleSpinBox_c.setSingleStep(
                     0.001)
-                self.mpltableWidget_UnitCell_doubleSpinBox_c.setDecimals(4)
-                self.mpltableWidget_UnitCell_doubleSpinBox_c.setProperty(
+                self.tableWidget_UnitCell_doubleSpinBox_c.setDecimals(4)
+                self.tableWidget_UnitCell_doubleSpinBox_c.setProperty(
                     "value", float(self.ucfitlist[row].c))
-                self.mpltableWidget_UnitCell_doubleSpinBox_c.valueChanged.\
+                self.tableWidget_UnitCell_doubleSpinBox_c.valueChanged.\
                     connect(self._ucfitlist_handle_doubleSpinBoxChanged)
-                self.mpltableWidget_UnitCell_doubleSpinBox_c.setStyle(
+                self.tableWidget_UnitCell_doubleSpinBox_c.setStyle(
                     SpinBoxFixStyle())
-                self.mpltableWidget_UnitCell.setCellWidget(
-                    row, 7, self.mpltableWidget_UnitCell_doubleSpinBox_c)
-                self.mpltableWidget_UnitCell_doubleSpinBox_c.\
+                self.tableWidget_UnitCell.setCellWidget(
+                    row, 7, self.tableWidget_UnitCell_doubleSpinBox_c)
+                self.tableWidget_UnitCell_doubleSpinBox_c.\
                     setKeyboardTracking(False)
-                self.mpltableWidget_UnitCell_doubleSpinBox_c.setFocusPolicy(
+                self.tableWidget_UnitCell_doubleSpinBox_c.setFocusPolicy(
                     QtCore.Qt.ClickFocus)
             # column 8 - alpha output
             if not (self.ucfitlist[row].symmetry == 'triclinic'):
                 item8 = QtWidgets.QTableWidgetItem('90.')
                 item8.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.mpltableWidget_UnitCell.setItem(row, 8, item8)
+                self.tableWidget_UnitCell.setItem(row, 8, item8)
             else:
-                self.mpltableWidget_UnitCell_doubleSpinBox_alpha = \
+                self.tableWidget_UnitCell_doubleSpinBox_alpha = \
                     QtWidgets.QDoubleSpinBox()
-                self.mpltableWidget_UnitCell_doubleSpinBox_alpha.setAlignment(
+                self.tableWidget_UnitCell_doubleSpinBox_alpha.setAlignment(
                     QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                     QtCore.Qt.AlignVCenter)
-                self.mpltableWidget_UnitCell_doubleSpinBox_alpha.setMaximum(
+                self.tableWidget_UnitCell_doubleSpinBox_alpha.setMaximum(
                     179.0)
-                self.mpltableWidget_UnitCell_doubleSpinBox_alpha.setSingleStep(
+                self.tableWidget_UnitCell_doubleSpinBox_alpha.setSingleStep(
                     0.1)
-                self.mpltableWidget_UnitCell_doubleSpinBox_alpha.setDecimals(1)
-                self.mpltableWidget_UnitCell_doubleSpinBox_alpha.setProperty(
+                self.tableWidget_UnitCell_doubleSpinBox_alpha.setDecimals(1)
+                self.tableWidget_UnitCell_doubleSpinBox_alpha.setProperty(
                     "value", float(self.ucfitlist[row].alpha))
-                self.mpltableWidget_UnitCell_doubleSpinBox_alpha.valueChanged.\
+                self.tableWidget_UnitCell_doubleSpinBox_alpha.valueChanged.\
                     connect(self._ucfitlist_handle_doubleSpinBoxChanged)
-                self.mpltableWidget_UnitCell_doubleSpinBox_alpha.setStyle(
+                self.tableWidget_UnitCell_doubleSpinBox_alpha.setStyle(
                     SpinBoxFixStyle())
-                self.mpltableWidget_UnitCell.setCellWidget(
-                    row, 8, self.mpltableWidget_UnitCell_doubleSpinBox_alpha)
-                self.mpltableWidget_UnitCell_doubleSpinBox_alpha.\
+                self.tableWidget_UnitCell.setCellWidget(
+                    row, 8, self.tableWidget_UnitCell_doubleSpinBox_alpha)
+                self.tableWidget_UnitCell_doubleSpinBox_alpha.\
                     setKeyboardTracking(False)
-                self.mpltableWidget_UnitCell_doubleSpinBox_alpha.setFocusPolicy(
+                self.tableWidget_UnitCell_doubleSpinBox_alpha.setFocusPolicy(
                     QtCore.Qt.ClickFocus)
             # column 9 - beta output
             if (self.ucfitlist[row].symmetry == 'cubic') or \
@@ -554,29 +552,29 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
                     (self.ucfitlist[row].symmetry == 'orthorhombic'):
                 item9 = QtWidgets.QTableWidgetItem('90.')
                 item9.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.mpltableWidget_UnitCell.setItem(row, 9, item9)
+                self.tableWidget_UnitCell.setItem(row, 9, item9)
             else:
-                self.mpltableWidget_UnitCell_doubleSpinBox_beta = \
+                self.tableWidget_UnitCell_doubleSpinBox_beta = \
                     QtWidgets.QDoubleSpinBox()
-                self.mpltableWidget_UnitCell_doubleSpinBox_beta.setAlignment(
+                self.tableWidget_UnitCell_doubleSpinBox_beta.setAlignment(
                     QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                     QtCore.Qt.AlignVCenter)
-                self.mpltableWidget_UnitCell_doubleSpinBox_beta.setMaximum(
+                self.tableWidget_UnitCell_doubleSpinBox_beta.setMaximum(
                     179.0)
-                self.mpltableWidget_UnitCell_doubleSpinBox_beta.setSingleStep(
+                self.tableWidget_UnitCell_doubleSpinBox_beta.setSingleStep(
                     0.1)
-                self.mpltableWidget_UnitCell_doubleSpinBox_beta.setDecimals(1)
-                self.mpltableWidget_UnitCell_doubleSpinBox_beta.setProperty(
+                self.tableWidget_UnitCell_doubleSpinBox_beta.setDecimals(1)
+                self.tableWidget_UnitCell_doubleSpinBox_beta.setProperty(
                     "value", float(self.ucfitlist[row].beta))
-                self.mpltableWidget_UnitCell_doubleSpinBox_beta.valueChanged.\
+                self.tableWidget_UnitCell_doubleSpinBox_beta.valueChanged.\
                     connect(self._ucfitlist_handle_doubleSpinBoxChanged)
-                self.mpltableWidget_UnitCell_doubleSpinBox_beta.setStyle(
+                self.tableWidget_UnitCell_doubleSpinBox_beta.setStyle(
                     SpinBoxFixStyle())
-                self.mpltableWidget_UnitCell.setCellWidget(
-                    row, 9, self.mpltableWidget_UnitCell_doubleSpinBox_beta)
-                self.mpltableWidget_UnitCell_doubleSpinBox_beta.\
+                self.tableWidget_UnitCell.setCellWidget(
+                    row, 9, self.tableWidget_UnitCell_doubleSpinBox_beta)
+                self.tableWidget_UnitCell_doubleSpinBox_beta.\
                     setKeyboardTracking(False)
-                self.mpltableWidget_UnitCell_doubleSpinBox_beta.setFocusPolicy(
+                self.tableWidget_UnitCell_doubleSpinBox_beta.setFocusPolicy(
                     QtCore.Qt.ClickFocus)
             # column 10 - gamma output
             if not (self.ucfitlist[row].symmetry == 'triclinic'):
@@ -585,39 +583,39 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
                 else:
                     item10 = QtWidgets.QTableWidgetItem('90.')
                 item10.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.mpltableWidget_UnitCell.setItem(row, 10, item10)
+                self.tableWidget_UnitCell.setItem(row, 10, item10)
             else:
-                self.mpltableWidget_UnitCell_doubleSpinBox_gamma = \
+                self.tableWidget_UnitCell_doubleSpinBox_gamma = \
                     QtWidgets.QDoubleSpinBox()
-                self.mpltableWidget_UnitCell_doubleSpinBox_gamma.setAlignment(
+                self.tableWidget_UnitCell_doubleSpinBox_gamma.setAlignment(
                     QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                     QtCore.Qt.AlignVCenter)
-                self.mpltableWidget_UnitCell_doubleSpinBox_gamma.setMaximum(
+                self.tableWidget_UnitCell_doubleSpinBox_gamma.setMaximum(
                     179.0)
-                self.mpltableWidget_UnitCell_doubleSpinBox_gamma.setSingleStep(
+                self.tableWidget_UnitCell_doubleSpinBox_gamma.setSingleStep(
                     0.1)
-                self.mpltableWidget_UnitCell_doubleSpinBox_gamma.setDecimals(1)
-                self.mpltableWidget_UnitCell_doubleSpinBox_gamma.setProperty(
+                self.tableWidget_UnitCell_doubleSpinBox_gamma.setDecimals(1)
+                self.tableWidget_UnitCell_doubleSpinBox_gamma.setProperty(
                     "value", float(self.ucfitlist[row].gamma))
-                self.mpltableWidget_UnitCell_doubleSpinBox_gamma.\
+                self.tableWidget_UnitCell_doubleSpinBox_gamma.\
                     valueChanged.connect(
                         self._ucfitlist_handle_doubleSpinBoxChanged)
-                self.mpltableWidget_UnitCell_doubleSpinBox_gamma.setStyle(
+                self.tableWidget_UnitCell_doubleSpinBox_gamma.setStyle(
                     SpinBoxFixStyle())
-                self.mpltableWidget_UnitCell.setCellWidget(
-                    row, 10, self.mpltableWidget_UnitCell_doubleSpinBox_gamma)
-                self.mpltableWidget_UnitCell_doubleSpinBox_gamma.\
+                self.tableWidget_UnitCell.setCellWidget(
+                    row, 10, self.tableWidget_UnitCell_doubleSpinBox_gamma)
+                self.tableWidget_UnitCell_doubleSpinBox_gamma.\
                     setKeyboardTracking(False)
-                self.mpltableWidget_UnitCell_doubleSpinBox_gamma.setFocusPolicy(
+                self.tableWidget_UnitCell_doubleSpinBox_gamma.setFocusPolicy(
                     QtCore.Qt.ClickFocus)
-        self.mpltableWidget_UnitCell.resizeColumnsToContents()
-#        self.mpltableWidget_UnitCell.resizeRowsToContents()
-        self.mpltableWidget_UnitCell.itemClicked.connect(
+        self.tableWidget_UnitCell.resizeColumnsToContents()
+#        self.tableWidget_UnitCell.resizeRowsToContents()
+        self.tableWidget_UnitCell.itemClicked.connect(
             self._ucfitlist_handle_ItemClicked)
 
     def _ucfitlist_handle_doubleSpinBoxChanged(self, value):
         box = self.sender()
-        index = self.mpltableWidget_UnitCell.indexAt(box.pos())
+        index = self.tableWidget_UnitCell.indexAt(box.pos())
         if index.isValid():
             idx = index.row()
             if index.column() == 5:
@@ -645,13 +643,13 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
 
     def _ucfitlist_handle_ColorButtonClicked(self):
         button = self.sender()
-        index = self.mpltableWidget_UnitCell.indexAt(button.pos())
+        index = self.tableWidget_UnitCell.indexAt(button.pos())
         if index.isValid():
             idx = index.row()
             if index.column() == 3:
                 color = QtWidgets.QColorDialog.getColor()
                 if color.isValid():
-                    self.mpltableWidget_UnitCell.item(idx, 2).\
+                    self.tableWidget_UnitCell.item(idx, 2).\
                         setBackground(color)
                     self.ucfitlist[idx].color = str(color.name())
                     self.update_graph()
@@ -784,12 +782,12 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         filen_xls = dialog_savefile(self, filen_xls_t)
         if str(filen_xls) == '':
             return
-        xls_jlist(filen_xls, self.jlist, self.mpldoubleSpinBox_Pressure.value(),
-                  self.mpldoubleSpinBox_Temperature.value())
+        xls_jlist(filen_xls, self.jlist, self.doubleSpinBox_Pressure.value(),
+                  self.doubleSpinBox_Temperature.value())
 
     def _find_a_JCPDS(self):
         idx_checked = []
-        for item in self.mpltableWidget_JCPDS.selectedIndexes():
+        for item in self.tableWidget_JCPDS.selectedIndexes():
             if item.column() != 1:
                 return None
             else:
@@ -798,7 +796,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
 
     def _find_a_wf(self):
         idx_checked = []
-        for item in self.mpltableWidget_wfPatterns.selectedIndexes():
+        for item in self.tableWidget_wfPatterns.selectedIndexes():
             if item.column() != 1:
                 return None
             else:
@@ -814,10 +812,10 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             return
         i = idx_selected
         self.jlist[i - 1], self.jlist[i] = self.jlist[i], self.jlist[i - 1]
-        self.mpltableWidget_JCPDS.setItemSelected(
-            self.mpltableWidget_JCPDS.item(i - 1, 1), True)
-        self.mpltableWidget_JCPDS.setItemSelected(
-            self.mpltableWidget_JCPDS.item(i, 1), False)
+        self.tableWidget_JCPDS.setItemSelected(
+            self.tableWidget_JCPDS.item(i - 1, 1), True)
+        self.tableWidget_JCPDS.setItemSelected(
+            self.tableWidget_JCPDS.item(i, 1), False)
         self._list_jcpds()
 
     def movedown_JCPDS(self):
@@ -829,10 +827,10 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             return
         i = idx_selected
         self.jlist[i + 1], self.jlist[i] = self.jlist[i], self.jlist[i + 1]
-        self.mpltableWidget_JCPDS.setItemSelected(
-            self.mpltableWidget_JCPDS.item(i + 1, 1), True)
-        self.mpltableWidget_JCPDS.setItemSelected(
-            self.mpltableWidget_JCPDS.item(i, 1), False)
+        self.tableWidget_JCPDS.setItemSelected(
+            self.tableWidget_JCPDS.item(i + 1, 1), True)
+        self.tableWidget_JCPDS.setItemSelected(
+            self.tableWidget_JCPDS.item(i, 1), False)
         self._list_jcpds()
 
     def check_allJCPDS(self):
@@ -860,9 +858,9 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             return
         success = self._load_session(fn, False)
         if success:
-            self.mpllabel_Jlist.setText(
+            self.label_Jlist.setText(
                 'JCPDS list from: ' + os.path.basename(str(fn)))
-            self.mpllabel_SessionFileName.setText(
+            self.label_SessionFileName.setText(
                 'Session information from: ' + os.path.basename(str(fn)))
             self.update_graph2whole()
             self.update_inputs()
@@ -875,9 +873,9 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             return
         success = self._load_session(fn, False)
         if success:
-            self.mpllabel_Jlist.setText(
+            self.label_Jlist.setText(
                 'JCPDS list from: ' + os.path.basename(str(fn)))
-            self.mpllabel_SessionFileName.setText(
+            self.label_SessionFileName.setText(
                 'Session information from: ' + os.path.basename(str(fn)))
             self.update_inputs()
 
@@ -969,17 +967,17 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
                     return False
             self.Pattern = session.pattern
             self.waterfallpatterns = session.waterfallpatterns
-            self.mpldoubleSpinBox_SetWavelength.setValue(session.wavelength)
-            self.mpldoubleSpinBox_Pressure.setValue(session.pressure)
-            self.mpldoubleSpinBox_Temperature.setValue(session.temperature)
+            self.doubleSpinBox_SetWavelength.setValue(session.wavelength)
+            self.doubleSpinBox_Pressure.setValue(session.pressure)
+            self.doubleSpinBox_Temperature.setValue(session.temperature)
             self.jlist = session.jlist
-            self.mpldoubleSpinBox_Background_ROI_min.setValue(
+            self.doubleSpinBox_Background_ROI_min.setValue(
                 session.bg_roi[0])
-            self.mpldoubleSpinBox_Background_ROI_max.setValue(
+            self.doubleSpinBox_Background_ROI_max.setValue(
                 session.bg_roi[1])
-            self.mplspinBox_BGParam0.setValue(session.bg_params[0])
-            self.mplspinBox_BGParam1.setValue(session.bg_params[1])
-            self.mplspinBox_BGParam2.setValue(session.bg_params[2])
+            self.spinBox_BGParam0.setValue(session.bg_params[0])
+            self.spinBox_BGParam1.setValue(session.bg_params[1])
+            self.spinBox_BGParam2.setValue(session.bg_params[2])
             self.jcpds_path = session.jcpds_path
             self.chi_path = session.chi_path
         return True
@@ -988,15 +986,15 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         session = Session()
         session.pattern = self.Pattern
         session.waterfallpatterns = self.waterfallpatterns
-        session.wavelength = self.mpldoubleSpinBox_SetWavelength.value()
-        session.pressure = self.mpldoubleSpinBox_Pressure.value()
-        session.temperature = self.mpldoubleSpinBox_Temperature.value()
+        session.wavelength = self.doubleSpinBox_SetWavelength.value()
+        session.pressure = self.doubleSpinBox_Pressure.value()
+        session.temperature = self.doubleSpinBox_Temperature.value()
         session.jlist = self.jlist
-        session.bg_roi = [self.mpldoubleSpinBox_Background_ROI_min.value(),
-                          self.mpldoubleSpinBox_Background_ROI_max.value()]
-        session.bg_params = [self.mplspinBox_BGParam0.value(),
-                             self.mplspinBox_BGParam1.value(),
-                             self.mplspinBox_BGParam2.value()]
+        session.bg_roi = [self.doubleSpinBox_Background_ROI_min.value(),
+                          self.doubleSpinBox_Background_ROI_max.value()]
+        session.bg_params = [self.spinBox_BGParam0.value(),
+                             self.spinBox_BGParam1.value(),
+                             self.spinBox_BGParam2.value()]
         session.jcpds_path = self.jcpds_path
         session.chi_path = self.chi_path
         f = open(fsession, 'wb')
@@ -1004,12 +1002,12 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         f.close()
 
     def update_inputs(self):
-        # self.mpldoubleSpinBox_Pressure.setValue(self.pressure)
-        # self.mpldoubleSpinBox_Temperature.setValue(self.temperature)
+        # self.doubleSpinBox_Pressure.setValue(self.pressure)
+        # self.doubleSpinBox_Temperature.setValue(self.temperature)
         self.reset_bgsub()
         self._list_wfpatterns()
         self._list_jcpds()
-        # self.mpldoubleSpinBox_SetWavelength.setValue(self.wavelength)
+        # self.doubleSpinBox_SetWavelength.setValue(self.wavelength)
 
     def zip_session(self):
         if self.Pattern is None:
@@ -1041,8 +1039,8 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             fsession_name = '%s.forzip.ppss' % filen
             fsession = os.path.join(path, fsession_name)
             self._dump_session(str(fsession))
-            self.mpllabel_Jlist.setText('JCPDS list from: ' +
-                                        os.path.basename(str(fsession)))
+            self.label_Jlist.setText('JCPDS list from: ' +
+                                     os.path.basename(str(fsession)))
             zf = zipfile.ZipFile(str(fzip), 'w', zipfile.ZIP_DEFLATED)
             zf.write(fsession, arcname=fsession_name)
             if self.Pattern is not None:
@@ -1062,7 +1060,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         new_filename = dialog_savefile(self, fsession)
         if new_filename != '':
             self._dump_session(new_filename)
-            self.mpllabel_SessionFileName.setText(
+            self.label_SessionFileName.setText(
                 'Session file (including jlist): ' +
                 os.path.basename(new_filename))
 
@@ -1083,7 +1081,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
                 return
         if str(fsession) != '':
             self._dump_session(str(fsession))
-            self.mpllabel_SessionFileName.setText(
+            self.label_SessionFileName.setText(
                 'Session file (including jlist): ' +
                 os.path.basename(fsession))
 
@@ -1147,13 +1145,13 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             filename = str(f)
             pattern = PatternPeakPo()
             pattern.read_file(filename)
-            pattern.wavelength = self.mpldoubleSpinBox_SetWavelength.value()
+            pattern.wavelength = self.doubleSpinBox_SetWavelength.value()
             pattern.display = False
-            bg_roi = [self.mpldoubleSpinBox_Background_ROI_min.value(),
-                      self.mpldoubleSpinBox_Background_ROI_max.value()]
-            bg_params = [self.mplspinBox_BGParam0.value(),
-                         self.mplspinBox_BGParam1.value(),
-                         self.mplspinBox_BGParam2.value()]
+            bg_roi = [self.doubleSpinBox_Background_ROI_min.value(),
+                      self.doubleSpinBox_Background_ROI_max.value()]
+            bg_params = [self.spinBox_BGParam0.value(),
+                         self.spinBox_BGParam1.value(),
+                         self.spinBox_BGParam2.value()]
             pattern.get_chbg(bg_roi, bg_params, yshift=0)
             new_patterns.append(pattern)
         self.waterfallpatterns += new_patterns
@@ -1169,10 +1167,10 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         """show a list of jcpds in the list window of tab 3"""
         n_columns = 5
         n_rows = self.waterfallpatterns.__len__()  # count for number of jcpds
-        self.mpltableWidget_wfPatterns.setColumnCount(n_columns)
-        self.mpltableWidget_wfPatterns.setRowCount(n_rows)
-        self.mpltableWidget_wfPatterns.horizontalHeader().setVisible(True)
-        self.mpltableWidget_wfPatterns.setHorizontalHeaderLabels(
+        self.tableWidget_wfPatterns.setColumnCount(n_columns)
+        self.tableWidget_wfPatterns.setRowCount(n_rows)
+        self.tableWidget_wfPatterns.horizontalHeader().setVisible(True)
+        self.tableWidget_wfPatterns.setHorizontalHeaderLabels(
             ['', 'Name',
              'Color', 'Color change', 'Wavelength'])
         for row in range(n_rows):
@@ -1184,54 +1182,54 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
                 item0.setCheckState(QtCore.Qt.Checked)
             else:
                 item0.setCheckState(QtCore.Qt.Unchecked)
-            self.mpltableWidget_wfPatterns.setItem(row, 0, item0)
+            self.tableWidget_wfPatterns.setItem(row, 0, item0)
             # column 1 - name
             item1 = QtWidgets.QTableWidgetItem(
                 os.path.basename(self.waterfallpatterns[row].fname))
-            self.mpltableWidget_wfPatterns.setItem(row, 1, item1)
+            self.tableWidget_wfPatterns.setItem(row, 1, item1)
             # column 2 - color
             item2 = QtWidgets.QTableWidgetItem('    ')
-            self.mpltableWidget_wfPatterns.setItem(row, 2, item2)
+            self.tableWidget_wfPatterns.setItem(row, 2, item2)
             # column 3 - color setup
-            self.mpltableWidget_wfPatterns_pushButton_color = \
+            self.tableWidget_wfPatterns_pushButton_color = \
                 QtWidgets.QPushButton('change')
-            self.mpltableWidget_wfPatterns.item(row, 2).setBackground(
+            self.tableWidget_wfPatterns.item(row, 2).setBackground(
                 QtGui.QColor(self.waterfallpatterns[row].color))
-            self.mpltableWidget_wfPatterns_pushButton_color.clicked.connect(
+            self.tableWidget_wfPatterns_pushButton_color.clicked.connect(
                 self._wfPatterns_handle_ColorButtonClicked)
-            self.mpltableWidget_wfPatterns.setCellWidget(
+            self.tableWidget_wfPatterns.setCellWidget(
                 row, 3,
-                self.mpltableWidget_wfPatterns_pushButton_color)
+                self.tableWidget_wfPatterns_pushButton_color)
             # column 4 - wavelength
-            self.mpltableWidget_wfPatterns_doubleSpinBox_wavelength = \
+            self.tableWidget_wfPatterns_doubleSpinBox_wavelength = \
                 QtWidgets.QDoubleSpinBox()
-            self.mpltableWidget_wfPatterns_doubleSpinBox_wavelength.\
+            self.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
                 setAlignment(
                     QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                     QtCore.Qt.AlignVCenter)
-            self.mpltableWidget_wfPatterns_doubleSpinBox_wavelength.\
+            self.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
                 setMaximum(2.0)
-            self.mpltableWidget_wfPatterns_doubleSpinBox_wavelength.\
+            self.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
                 setSingleStep(0.0001)
-            self.mpltableWidget_wfPatterns_doubleSpinBox_wavelength.\
+            self.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
                 setDecimals(4)
-            self.mpltableWidget_wfPatterns_doubleSpinBox_wavelength.\
+            self.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
                 setProperty("value", self.waterfallpatterns[row].wavelength)
-            self.mpltableWidget_wfPatterns_doubleSpinBox_wavelength.\
+            self.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
                 valueChanged.connect(
                     self._wfPatterns_handle_doubleSpinBoxChanged)
-            self.mpltableWidget_wfPatterns_doubleSpinBox_wavelength.\
+            self.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
                 setStyle(SpinBoxFixStyle())
-            self.mpltableWidget_wfPatterns.setCellWidget(
+            self.tableWidget_wfPatterns.setCellWidget(
                 row, 4,
-                self.mpltableWidget_wfPatterns_doubleSpinBox_wavelength)
-            self.mpltableWidget_wfPatterns_doubleSpinBox_wavelength.\
+                self.tableWidget_wfPatterns_doubleSpinBox_wavelength)
+            self.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
                 setKeyboardTracking(False)
-            self.mpltableWidget_wfPatterns_doubleSpinBox_wavelength.\
+            self.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
                 setFocusPolicy(QtCore.Qt.ClickFocus)
-        self.mpltableWidget_wfPatterns.resizeColumnsToContents()
-#        self.mpltableWidget_wfPatterns.resizeRowsToContents()
-        self.mpltableWidget_wfPatterns.itemClicked.connect(
+        self.tableWidget_wfPatterns.resizeColumnsToContents()
+#        self.tableWidget_wfPatterns.resizeRowsToContents()
+        self.tableWidget_wfPatterns.itemClicked.connect(
             self._wfPatterns_handle_ItemClicked)
         i = 0
         for pattern in self.waterfallpatterns:
@@ -1242,7 +1240,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
 
     def _wfPatterns_handle_doubleSpinBoxChanged(self, value):
         box = self.sender()
-        index = self.mpltableWidget_wfPatterns.indexAt(box.pos())
+        index = self.tableWidget_wfPatterns.indexAt(box.pos())
         if index.isValid():
             idx = index.row()
             self.waterfallpatterns[idx].wavelength = value
@@ -1253,13 +1251,13 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
 
     def _wfPatterns_handle_ColorButtonClicked(self):
         button = self.sender()
-        index = self.mpltableWidget_wfPatterns.indexAt(button.pos())
+        index = self.tableWidget_wfPatterns.indexAt(button.pos())
         if index.isValid():
             idx = index.row()
             if index.column() == 3:
                 color = QtWidgets.QColorDialog.getColor()
                 if color.isValid():
-                    self.mpltableWidget_wfPatterns.item(idx, 2).\
+                    self.tableWidget_wfPatterns.item(idx, 2).\
                         setBackground(color)
                     self.waterfallpatterns[idx].color = str(color.name())
                     i = 0
@@ -1288,8 +1286,8 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         if fn_jlist == '':
             return
         self._load_session(fn_jlist, True)
-        self.mpllabel_Jlist.setText('Jlist in: ' +
-                                    os.path.basename(str(fn_jlist)))
+        self.label_Jlist.setText('Jlist in: ' +
+                                 os.path.basename(str(fn_jlist)))
         self._list_jcpds()
         self.update_graph()
 
@@ -1301,9 +1299,9 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             QtWidgets.QMessageBox.Yes)
         if reply == QtWidgets.QMessageBox.No:
             return
-        # print self.mpltableWidget_JCPDS.selectedIndexes().__len__()
+        # print self.tableWidget_JCPDS.selectedIndexes().__len__()
         idx_checked = []
-        for item in self.mpltableWidget_JCPDS.selectedIndexes():
+        for item in self.tableWidget_JCPDS.selectedIndexes():
             if item.column() != 1:
                 return
             else:
@@ -1313,7 +1311,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             idx_checked.reverse()
             for idx in idx_checked:
                 self.jlist.remove(self.jlist[idx])
-                self.mpltableWidget_JCPDS.removeRow(idx)
+                self.tableWidget_JCPDS.removeRow(idx)
 #        self._list_jcpds()
             self.update_graph()
         else:
@@ -1325,7 +1323,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         if self.jlist == []:
             return
         idx_checked = []
-        for item in self.mpltableWidget_JCPDS.selectedIndexes():
+        for item in self.tableWidget_JCPDS.selectedIndexes():
             if item.column() != 1:
                 QtWidgets.QMessageBox.warning(
                     self, "Warning",
@@ -1338,19 +1336,19 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
                 self, "Warning", "Only one JCPDS card can be shown at a time.")
         else:
             textoutput = self.jlist[idx_checked[0]].make_TextOutput(
-                self.mpldoubleSpinBox_Pressure.value(),
-                self.mpldoubleSpinBox_Temperature.value())
-            self.mplplainTextEdit_ViewJCPDS.setPlainText(textoutput)
+                self.doubleSpinBox_Pressure.value(),
+                self.doubleSpinBox_Temperature.value())
+            self.plainTextEdit_ViewJCPDS.setPlainText(textoutput)
 
     def _list_jcpds(self):
         """show jcpds cards in the QTableWidget"""
         n_columns = 11
         n_rows = self.jlist.__len__()  # count for number of jcpds
-        self.mpltableWidget_JCPDS.setColumnCount(n_columns)
-        self.mpltableWidget_JCPDS.setRowCount(n_rows)
-        self.mpltableWidget_JCPDS.horizontalHeader().setVisible(True)
-        self.mpltableWidget_JCPDS.verticalHeader().setVisible(True)
-        self.mpltableWidget_JCPDS.setHorizontalHeaderLabels(
+        self.tableWidget_JCPDS.setColumnCount(n_columns)
+        self.tableWidget_JCPDS.setRowCount(n_rows)
+        self.tableWidget_JCPDS.horizontalHeader().setVisible(True)
+        self.tableWidget_JCPDS.verticalHeader().setVisible(True)
+        self.tableWidget_JCPDS.setHorizontalHeaderLabels(
             ['', 'Name',
              'Color', 'Color Change', 'V0 Tweak', 'K0 Tweak', 'K0p Tweak',
              'alpha0 Tweak', 'b/a Tweak', 'c/a Tweak', 'Int Tweak'])
@@ -1363,192 +1361,192 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
                 item0.setCheckState(QtCore.Qt.Checked)
             else:
                 item0.setCheckState(QtCore.Qt.Unchecked)
-            self.mpltableWidget_JCPDS.setItem(row, 0, item0)
+            self.tableWidget_JCPDS.setItem(row, 0, item0)
             # column 1 - name
             item1 = QtWidgets.QTableWidgetItem(self.jlist[row].name)
-            self.mpltableWidget_JCPDS.setItem(row, 1, item1)
+            self.tableWidget_JCPDS.setItem(row, 1, item1)
             # column 2 - color
             item2 = QtWidgets.QTableWidgetItem('    ')
-            self.mpltableWidget_JCPDS.setItem(row, 2, item2)
+            self.tableWidget_JCPDS.setItem(row, 2, item2)
             # column 3 - color setup
-            self.mpltableWidget_JCPDS_pushButton_color = \
+            self.tableWidget_JCPDS_pushButton_color = \
                 QtWidgets.QPushButton('change')
-            self.mpltableWidget_JCPDS.item(row, 2).setBackground(
+            self.tableWidget_JCPDS.item(row, 2).setBackground(
                 QtGui.QColor(self.jlist[row].color))
-            self.mpltableWidget_JCPDS_pushButton_color.clicked.connect(
+            self.tableWidget_JCPDS_pushButton_color.clicked.connect(
                 self._jcpds_handle_ColorButtonClicked)
-            self.mpltableWidget_JCPDS.setCellWidget(
-                row, 3, self.mpltableWidget_JCPDS_pushButton_color)
+            self.tableWidget_JCPDS.setCellWidget(
+                row, 3, self.tableWidget_JCPDS_pushButton_color)
             # column 4 - V0 tweak
-            self.mpltableWidget_JCPDS_doubleSpinBox_V0twk = \
+            self.tableWidget_JCPDS_doubleSpinBox_V0twk = \
                 QtWidgets.QDoubleSpinBox()
-            self.mpltableWidget_JCPDS_doubleSpinBox_V0twk.setAlignment(
+            self.tableWidget_JCPDS_doubleSpinBox_V0twk.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
-            self.mpltableWidget_JCPDS_doubleSpinBox_V0twk.setMaximum(2.0)
-            self.mpltableWidget_JCPDS_doubleSpinBox_V0twk.setSingleStep(0.001)
-            self.mpltableWidget_JCPDS_doubleSpinBox_V0twk.setDecimals(3)
-            self.mpltableWidget_JCPDS_doubleSpinBox_V0twk.setProperty(
+            self.tableWidget_JCPDS_doubleSpinBox_V0twk.setMaximum(2.0)
+            self.tableWidget_JCPDS_doubleSpinBox_V0twk.setSingleStep(0.001)
+            self.tableWidget_JCPDS_doubleSpinBox_V0twk.setDecimals(3)
+            self.tableWidget_JCPDS_doubleSpinBox_V0twk.setProperty(
                 "value", self.jlist[row].twk_v0)
-            self.mpltableWidget_JCPDS_doubleSpinBox_V0twk.valueChanged.connect(
+            self.tableWidget_JCPDS_doubleSpinBox_V0twk.valueChanged.connect(
                 self._jcpds_handle_doubleSpinBoxChanged)
-            self.mpltableWidget_JCPDS_doubleSpinBox_V0twk.setStyle(
+            self.tableWidget_JCPDS_doubleSpinBox_V0twk.setStyle(
                 SpinBoxFixStyle())
-            self.mpltableWidget_JCPDS.setCellWidget(
-                row, 4, self.mpltableWidget_JCPDS_doubleSpinBox_V0twk)
-            # self.mpltableWidget_JCPDS_doubleSpinBox_V0twk.setFocusPolicy(
+            self.tableWidget_JCPDS.setCellWidget(
+                row, 4, self.tableWidget_JCPDS_doubleSpinBox_V0twk)
+            # self.tableWidget_JCPDS_doubleSpinBox_V0twk.setFocusPolicy(
             #    QtCore.Qt.ClickFocus)
             # column 5 - K0 tweak
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0twk = \
+            self.tableWidget_JCPDS_doubleSpinBox_K0twk = \
                 QtWidgets.QDoubleSpinBox()
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0twk.setAlignment(
+            self.tableWidget_JCPDS_doubleSpinBox_K0twk.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0twk.setMaximum(2.0)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0twk.setSingleStep(0.01)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0twk.setDecimals(2)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0twk.setProperty(
+            self.tableWidget_JCPDS_doubleSpinBox_K0twk.setMaximum(2.0)
+            self.tableWidget_JCPDS_doubleSpinBox_K0twk.setSingleStep(0.01)
+            self.tableWidget_JCPDS_doubleSpinBox_K0twk.setDecimals(2)
+            self.tableWidget_JCPDS_doubleSpinBox_K0twk.setProperty(
                 "value", self.jlist[row].twk_k0)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0twk.valueChanged.connect(
+            self.tableWidget_JCPDS_doubleSpinBox_K0twk.valueChanged.connect(
                 self._jcpds_handle_doubleSpinBoxChanged)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0twk.setStyle(
+            self.tableWidget_JCPDS_doubleSpinBox_K0twk.setStyle(
                 SpinBoxFixStyle())
-            self.mpltableWidget_JCPDS.setCellWidget(
-                row, 5, self.mpltableWidget_JCPDS_doubleSpinBox_K0twk)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0twk.setFocusPolicy(
+            self.tableWidget_JCPDS.setCellWidget(
+                row, 5, self.tableWidget_JCPDS_doubleSpinBox_K0twk)
+            self.tableWidget_JCPDS_doubleSpinBox_K0twk.setFocusPolicy(
                 QtCore.Qt.ClickFocus)
             # column 6 - K0p tweak
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0ptwk = \
+            self.tableWidget_JCPDS_doubleSpinBox_K0ptwk = \
                 QtWidgets.QDoubleSpinBox()
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0ptwk.setAlignment(
+            self.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0ptwk.setMaximum(2.0)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0ptwk.setSingleStep(0.01)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0ptwk.setDecimals(2)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0ptwk.setProperty(
+            self.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setMaximum(2.0)
+            self.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setSingleStep(0.01)
+            self.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setDecimals(2)
+            self.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setProperty(
                 "value", self.jlist[row].twk_k0p)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0ptwk.valueChanged.\
+            self.tableWidget_JCPDS_doubleSpinBox_K0ptwk.valueChanged.\
                 connect(self._jcpds_handle_doubleSpinBoxChanged)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0ptwk.setStyle(
+            self.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setStyle(
                 SpinBoxFixStyle())
-            self.mpltableWidget_JCPDS.setCellWidget(
-                row, 6, self.mpltableWidget_JCPDS_doubleSpinBox_K0ptwk)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0ptwk.setFocusPolicy(
+            self.tableWidget_JCPDS.setCellWidget(
+                row, 6, self.tableWidget_JCPDS_doubleSpinBox_K0ptwk)
+            self.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setFocusPolicy(
                 QtCore.Qt.ClickFocus)
             # column 7 - alpha0 tweak
-            self.mpltableWidget_JCPDS_doubleSpinBox_alpha0twk = \
+            self.tableWidget_JCPDS_doubleSpinBox_alpha0twk = \
                 QtWidgets.QDoubleSpinBox()
-            self.mpltableWidget_JCPDS_doubleSpinBox_alpha0twk.setAlignment(
+            self.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
-            self.mpltableWidget_JCPDS_doubleSpinBox_alpha0twk.setMaximum(2.0)
-            self.mpltableWidget_JCPDS_doubleSpinBox_alpha0twk.setSingleStep(
+            self.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setMaximum(2.0)
+            self.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setSingleStep(
                 0.01)
-            self.mpltableWidget_JCPDS_doubleSpinBox_alpha0twk.setDecimals(2)
-            self.mpltableWidget_JCPDS_doubleSpinBox_alpha0twk.setProperty(
+            self.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setDecimals(2)
+            self.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setProperty(
                 "value", self.jlist[row].twk_thermal_expansion)
-            self.mpltableWidget_JCPDS_doubleSpinBox_alpha0twk.valueChanged.\
+            self.tableWidget_JCPDS_doubleSpinBox_alpha0twk.valueChanged.\
                 connect(self._jcpds_handle_doubleSpinBoxChanged)
-            self.mpltableWidget_JCPDS_doubleSpinBox_alpha0twk.setStyle(
+            self.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setStyle(
                 SpinBoxFixStyle())
-            self.mpltableWidget_JCPDS_doubleSpinBox_alpha0twk.setFocusPolicy(
+            self.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setFocusPolicy(
                 QtCore.Qt.ClickFocus)
-            self.mpltableWidget_JCPDS.setCellWidget(
-                row, 7, self.mpltableWidget_JCPDS_doubleSpinBox_alpha0twk)
+            self.tableWidget_JCPDS.setCellWidget(
+                row, 7, self.tableWidget_JCPDS_doubleSpinBox_alpha0twk)
             # column 8 - b/a tweak
             if (self.jlist[row].symmetry == 'cubic') or \
                     (self.jlist[row].symmetry == 'tetragonal') or \
                     (self.jlist[row].symmetry == 'hexagonal'):
                 item8 = QtWidgets.QTableWidgetItem('')
                 item8.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.mpltableWidget_JCPDS.setItem(row, 8, item8)
+                self.tableWidget_JCPDS.setItem(row, 8, item8)
             else:
-                self.mpltableWidget_JCPDS_doubleSpinBox_b_atwk = \
+                self.tableWidget_JCPDS_doubleSpinBox_b_atwk = \
                     QtWidgets.QDoubleSpinBox()
-                self.mpltableWidget_JCPDS_doubleSpinBox_b_atwk.setAlignment(
+                self.tableWidget_JCPDS_doubleSpinBox_b_atwk.setAlignment(
                     QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                     QtCore.Qt.AlignVCenter)
-                self.mpltableWidget_JCPDS_doubleSpinBox_b_atwk.setMaximum(2.0)
-                self.mpltableWidget_JCPDS_doubleSpinBox_b_atwk.setSingleStep(
+                self.tableWidget_JCPDS_doubleSpinBox_b_atwk.setMaximum(2.0)
+                self.tableWidget_JCPDS_doubleSpinBox_b_atwk.setSingleStep(
                     0.001)
-                self.mpltableWidget_JCPDS_doubleSpinBox_b_atwk.setDecimals(3)
-                self.mpltableWidget_JCPDS_doubleSpinBox_b_atwk.setProperty(
+                self.tableWidget_JCPDS_doubleSpinBox_b_atwk.setDecimals(3)
+                self.tableWidget_JCPDS_doubleSpinBox_b_atwk.setProperty(
                     "value", self.jlist[row].twk_b_a)
-                self.mpltableWidget_JCPDS_doubleSpinBox_b_atwk.valueChanged.\
+                self.tableWidget_JCPDS_doubleSpinBox_b_atwk.valueChanged.\
                     connect(self._jcpds_handle_doubleSpinBoxChanged)
-                self.mpltableWidget_JCPDS_doubleSpinBox_b_atwk.setStyle(
+                self.tableWidget_JCPDS_doubleSpinBox_b_atwk.setStyle(
                     SpinBoxFixStyle())
-                self.mpltableWidget_JCPDS.setCellWidget(
-                    row, 8, self.mpltableWidget_JCPDS_doubleSpinBox_b_atwk)
-                self.mpltableWidget_JCPDS_doubleSpinBox_b_atwk.\
+                self.tableWidget_JCPDS.setCellWidget(
+                    row, 8, self.tableWidget_JCPDS_doubleSpinBox_b_atwk)
+                self.tableWidget_JCPDS_doubleSpinBox_b_atwk.\
                     setKeyboardTracking(False)
-                self.mpltableWidget_JCPDS_doubleSpinBox_b_atwk.setFocusPolicy(
+                self.tableWidget_JCPDS_doubleSpinBox_b_atwk.setFocusPolicy(
                     QtCore.Qt.ClickFocus)
             # column 9 - c/a tweak
             if (self.jlist[row].symmetry == 'cubic'):
                 item9 = QtWidgets.QTableWidgetItem('')
                 item9.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.mpltableWidget_JCPDS.setItem(row, 9, item9)
+                self.tableWidget_JCPDS.setItem(row, 9, item9)
             else:
-                self.mpltableWidget_JCPDS_doubleSpinBox_c_atwk = \
+                self.tableWidget_JCPDS_doubleSpinBox_c_atwk = \
                     QtWidgets.QDoubleSpinBox()
-                self.mpltableWidget_JCPDS_doubleSpinBox_c_atwk.setAlignment(
+                self.tableWidget_JCPDS_doubleSpinBox_c_atwk.setAlignment(
                     QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                     QtCore.Qt.AlignVCenter)
-                self.mpltableWidget_JCPDS_doubleSpinBox_c_atwk.setMaximum(2.0)
-                self.mpltableWidget_JCPDS_doubleSpinBox_c_atwk.setSingleStep(
+                self.tableWidget_JCPDS_doubleSpinBox_c_atwk.setMaximum(2.0)
+                self.tableWidget_JCPDS_doubleSpinBox_c_atwk.setSingleStep(
                     0.001)
-                self.mpltableWidget_JCPDS_doubleSpinBox_c_atwk.setDecimals(3)
-                self.mpltableWidget_JCPDS_doubleSpinBox_c_atwk.setProperty(
+                self.tableWidget_JCPDS_doubleSpinBox_c_atwk.setDecimals(3)
+                self.tableWidget_JCPDS_doubleSpinBox_c_atwk.setProperty(
                     "value", self.jlist[row].twk_c_a)
-                self.mpltableWidget_JCPDS_doubleSpinBox_c_atwk.valueChanged.\
+                self.tableWidget_JCPDS_doubleSpinBox_c_atwk.valueChanged.\
                     connect(self._jcpds_handle_doubleSpinBoxChanged)
-                self.mpltableWidget_JCPDS_doubleSpinBox_c_atwk.setStyle(
+                self.tableWidget_JCPDS_doubleSpinBox_c_atwk.setStyle(
                     SpinBoxFixStyle())
-                self.mpltableWidget_JCPDS.setCellWidget(
-                    row, 9, self.mpltableWidget_JCPDS_doubleSpinBox_c_atwk)
-                self.mpltableWidget_JCPDS_doubleSpinBox_c_atwk.\
+                self.tableWidget_JCPDS.setCellWidget(
+                    row, 9, self.tableWidget_JCPDS_doubleSpinBox_c_atwk)
+                self.tableWidget_JCPDS_doubleSpinBox_c_atwk.\
                     setKeyboardTracking(False)
-                self.mpltableWidget_JCPDS_doubleSpinBox_c_atwk.setFocusPolicy(
+                self.tableWidget_JCPDS_doubleSpinBox_c_atwk.setFocusPolicy(
                     QtCore.Qt.ClickFocus)
             # column 10 - int tweak
-            self.mpltableWidget_JCPDS_doubleSpinBox_inttwk = \
+            self.tableWidget_JCPDS_doubleSpinBox_inttwk = \
                 QtWidgets.QDoubleSpinBox()
-            self.mpltableWidget_JCPDS_doubleSpinBox_inttwk.setAlignment(
+            self.tableWidget_JCPDS_doubleSpinBox_inttwk.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
-            self.mpltableWidget_JCPDS_doubleSpinBox_inttwk.setMaximum(1.0)
-            self.mpltableWidget_JCPDS_doubleSpinBox_inttwk.setSingleStep(0.05)
-            self.mpltableWidget_JCPDS_doubleSpinBox_inttwk.setDecimals(2)
-            self.mpltableWidget_JCPDS_doubleSpinBox_inttwk.setProperty(
+            self.tableWidget_JCPDS_doubleSpinBox_inttwk.setMaximum(1.0)
+            self.tableWidget_JCPDS_doubleSpinBox_inttwk.setSingleStep(0.05)
+            self.tableWidget_JCPDS_doubleSpinBox_inttwk.setDecimals(2)
+            self.tableWidget_JCPDS_doubleSpinBox_inttwk.setProperty(
                 "value", self.jlist[row].twk_int)
-            self.mpltableWidget_JCPDS_doubleSpinBox_inttwk.valueChanged.\
+            self.tableWidget_JCPDS_doubleSpinBox_inttwk.valueChanged.\
                 connect(self._jcpds_handle_doubleSpinBoxChanged)
-            self.mpltableWidget_JCPDS_doubleSpinBox_inttwk.setStyle(
+            self.tableWidget_JCPDS_doubleSpinBox_inttwk.setStyle(
                 SpinBoxFixStyle())
-            self.mpltableWidget_JCPDS.setCellWidget(
-                row, 10, self.mpltableWidget_JCPDS_doubleSpinBox_inttwk)
-            self.mpltableWidget_JCPDS_doubleSpinBox_inttwk.setFocusPolicy(
+            self.tableWidget_JCPDS.setCellWidget(
+                row, 10, self.tableWidget_JCPDS_doubleSpinBox_inttwk)
+            self.tableWidget_JCPDS_doubleSpinBox_inttwk.setFocusPolicy(
                 QtCore.Qt.ClickFocus)
-            self.mpltableWidget_JCPDS_doubleSpinBox_alpha0twk.\
+            self.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
                 setKeyboardTracking(False)
-            self.mpltableWidget_JCPDS_doubleSpinBox_inttwk.\
+            self.tableWidget_JCPDS_doubleSpinBox_inttwk.\
                 setKeyboardTracking(False)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0ptwk.\
+            self.tableWidget_JCPDS_doubleSpinBox_K0ptwk.\
                 setKeyboardTracking(False)
-            self.mpltableWidget_JCPDS_doubleSpinBox_K0twk.\
+            self.tableWidget_JCPDS_doubleSpinBox_K0twk.\
                 setKeyboardTracking(False)
-            self.mpltableWidget_JCPDS_doubleSpinBox_V0twk.\
+            self.tableWidget_JCPDS_doubleSpinBox_V0twk.\
                 setKeyboardTracking(False)
-        self.mpltableWidget_JCPDS.resizeColumnsToContents()
-#        self.mpltableWidget_JCPDS.resizeRowsToContents()
-        self.mpltableWidget_JCPDS.itemClicked.connect(
+        self.tableWidget_JCPDS.resizeColumnsToContents()
+#        self.tableWidget_JCPDS.resizeRowsToContents()
+        self.tableWidget_JCPDS.itemClicked.connect(
             self._jcpds_handle_ItemClicked)
 
     def _jcpds_handle_doubleSpinBoxChanged(self, value):
         box = self.sender()
-        index = self.mpltableWidget_JCPDS.indexAt(box.pos())
+        index = self.tableWidget_JCPDS.indexAt(box.pos())
         if index.isValid():
             idx = index.row()
             if index.column() == 4:
@@ -1570,13 +1568,13 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
 
     def _jcpds_handle_ColorButtonClicked(self):
         button = self.sender()
-        index = self.mpltableWidget_JCPDS.indexAt(button.pos())
+        index = self.tableWidget_JCPDS.indexAt(button.pos())
         if index.isValid():
             idx = index.row()
             if index.column() == 3:
                 color = QtWidgets.QColorDialog.getColor()
                 if color.isValid():
-                    self.mpltableWidget_JCPDS.item(idx, 2).setBackground(color)
+                    self.tableWidget_JCPDS.item(idx, 2).setBackground(color)
                     self.jlist[idx].color = str(color.name())
                     self.update_graph()
 
@@ -1647,7 +1645,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             return
         x_click = float(event.xdata)
         y_click = float(event.ydata)
-        x_click_dsp = self.mpldoubleSpinBox_SetWavelength.value() / 2. / \
+        x_click_dsp = self.doubleSpinBox_SetWavelength.value() / 2. / \
             np.sin(np.radians(x_click / 2.))
         clicked_position = \
             "Clicked position: {0: 10.4f}, {1: 7.1f}, \n dsp = {2: 10.4f} A".\
@@ -1686,7 +1684,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             for j in self.jlist:
                 if j.display:
                     i, d, t = j.find_DiffLine(
-                        x, self.mpldoubleSpinBox_SetWavelength.value())
+                        x, self.doubleSpinBox_SetWavelength.value())
                     idx_j.append(i)
                     diff_j.append(d)
                     tth_j.append(t)
@@ -1709,7 +1707,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             for u in self.ucfitlist:
                 if u.display:
                     i, d, t = u.find_DiffLine(
-                        x, self.mpldoubleSpinBox_SetWavelength.value())
+                        x, self.doubleSpinBox_SetWavelength.value())
                     idx_u.append(i)
                     diff_u.append(d)
                     tth_u.append(t)
@@ -1765,7 +1763,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
 
     def erase_waterfall(self):
         self.waterfallpatterns = []
-        self.mpltableWidget_wfPatterns.clearContents()
+        self.tableWidget_wfPatterns.clearContents()
         self.update_graph()
 
     def remove_waterfall(self):
@@ -1776,9 +1774,9 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             QtWidgets.QMessageBox.Yes)
         if reply == QtWidgets.QMessageBox.No:
             return
-        # print self.mpltableWidget_JCPDS.selectedIndexes().__len__()
+        # print self.tableWidget_JCPDS.selectedIndexes().__len__()
         idx_checked = []
-        for item in self.mpltableWidget_wfPatterns.selectedIndexes():
+        for item in self.tableWidget_wfPatterns.selectedIndexes():
             if item.column() != 1:
                 return
             else:
@@ -1788,7 +1786,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             idx_checked.reverse()
             for idx in idx_checked:
                 self.waterfallpatterns.remove(self.waterfallpatterns[idx])
-                self.mpltableWidget_wfPatterns.removeRow(idx)
+                self.tableWidget_wfPatterns.removeRow(idx)
 #        self._list_jcpds()
             self.update_graph()
         else:
@@ -1805,10 +1803,10 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         i = idx_selected
         self.waterfallpatterns[i - 1], self.waterfallpatterns[i] = \
             self.waterfallpatterns[i], self.waterfallpatterns[i - 1]
-        self.mpltableWidget_wfPatterns.setItemSelected(
-            self.mpltableWidget_wfPatterns.item(i - 1, 1), True)
-        self.mpltableWidget_wfPatterns.setItemSelected(
-            self.mpltableWidget_wfPatterns.item(i, 1), False)
+        self.tableWidget_wfPatterns.setItemSelected(
+            self.tableWidget_wfPatterns.item(i - 1, 1), True)
+        self.tableWidget_wfPatterns.setItemSelected(
+            self.tableWidget_wfPatterns.item(i, 1), False)
         self._list_wfpatterns()
 
     def down_waterfall(self):
@@ -1821,10 +1819,10 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         i = idx_selected
         self.waterfallpatterns[i + 1], self.waterfallpatterns[i] = \
             self.waterfallpatterns[i], self.waterfallpatterns[i + 1]
-        self.mpltableWidget_wfPatterns.setItemSelected(
-            self.mpltableWidget_wfPatterns.item(i + 1, 1), True)
-        self.mpltableWidget_wfPatterns.setItemSelected(
-            self.mpltableWidget_wfPatterns.item(i, 1), False)
+        self.tableWidget_wfPatterns.setItemSelected(
+            self.tableWidget_wfPatterns.item(i + 1, 1), True)
+        self.tableWidget_wfPatterns.setItemSelected(
+            self.tableWidget_wfPatterns.item(i, 1), False)
         self._list_wfpatterns()
 
     def apply_changestograph(self, value):
@@ -1832,7 +1830,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
 
     def apply_wavelength(self):
         # self.wavelength = value
-        self.Pattern.wavelength = self.mpldoubleSpinBox_SetWavelength.value()
+        self.Pattern.wavelength = self.doubleSpinBox_SetWavelength.value()
         self.update_graph()
 
     def update_bgsub(self):
@@ -1843,11 +1841,11 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
                 "Choose a base pattern first from the File menu.")
             return
         """receive new bg parameters and update the graph"""
-        bg_params = [self.mplspinBox_BGParam0.value(),
-                     self.mplspinBox_BGParam1.value(),
-                     self.mplspinBox_BGParam2.value()]
-        bg_roi = [self.mpldoubleSpinBox_Background_ROI_min.value(),
-                  self.mpldoubleSpinBox_Background_ROI_max.value()]
+        bg_params = [self.spinBox_BGParam0.value(),
+                     self.spinBox_BGParam1.value(),
+                     self.spinBox_BGParam2.value()]
+        bg_roi = [self.doubleSpinBox_Background_ROI_min.value(),
+                  self.doubleSpinBox_Background_ROI_max.value()]
         self.Pattern.subtract_bg(bg_roi, bg_params, yshift=0)
         if self.waterfallpatterns != []:
             for pattern in self.waterfallpatterns:
@@ -1856,11 +1854,11 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
 
     def reset_bgsub(self):
         '''this is to read from session file and put to the table'''
-        bg_params = [self.mplspinBox_BGParam0.value(),
-                     self.mplspinBox_BGParam1.value(),
-                     self.mplspinBox_BGParam2.value()]
-        bg_roi = [self.mpldoubleSpinBox_Background_ROI_min.value(),
-                  self.mpldoubleSpinBox_Background_ROI_max.value()]
+        bg_params = [self.spinBox_BGParam0.value(),
+                     self.spinBox_BGParam1.value(),
+                     self.spinBox_BGParam2.value()]
+        bg_roi = [self.doubleSpinBox_Background_ROI_min.value(),
+                  self.doubleSpinBox_Background_ROI_max.value()]
         self.Pattern.subtract_bg(bg_roi, bg_params, yshift=0)
         if self.waterfallpatterns != []:
             for pattern in self.waterfallpatterns:
@@ -1877,63 +1875,62 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
 
     def apply_PTtoGraph(self):
         if self.jlist != []:
-            print('update through apply_PTtoGraph')
             self.update_graph()
 
     def set_temperature(self, temperature=None):
-        self.mpldoubleSpinBox_Temperature.setValue(temperature)
+        self.doubleSpinBox_Temperature.setValue(temperature)
 #        if self.jlist != []:
 #            self.update_graph()
 
     def set_pstep(self, value):
-        if self.mplradioButton_P01.isChecked():
+        if self.radioButton_P01.isChecked():
             value = 0.1
-        elif self.mplradioButton_P10.isChecked():
+        elif self.radioButton_P10.isChecked():
             value = 10.
-        elif self.mplradioButton_P100.isChecked():
+        elif self.radioButton_P100.isChecked():
             value = 100.
         else:
             value = 1.
-        self.mpldoubleSpinBox_Pressure.setSingleStep(value)
+        self.doubleSpinBox_Pressure.setSingleStep(value)
 
     def set_tstep(self, value):
-        if self.mplradioButton_T1.isChecked():
+        if self.radioButton_T1.isChecked():
             value = 1.
-        elif self.mplradioButton_T10.isChecked():
+        elif self.radioButton_T10.isChecked():
             value = 10.
-        elif self.mplradioButton_T1000.isChecked():
+        elif self.radioButton_T1000.isChecked():
             value = 1000.
         else:
             value = 100.
-        self.mpldoubleSpinBox_Temperature.setSingleStep(value)
+        self.doubleSpinBox_Temperature.setSingleStep(value)
 
     ###########################################################################
     # base pattern control
     def _read_a_newpattern(self, new_filename):
         self.Pattern = PatternPeakPo()
         self.Pattern.read_file(new_filename)
-        self.Pattern.wavelength = self.mpldoubleSpinBox_SetWavelength.value()
+        self.Pattern.wavelength = self.doubleSpinBox_SetWavelength.value()
         self.Pattern.display = True
-        self.mpllabel_DiffractionPatternFileName.setText('Base Pattern: ' +
-                                                         self.Pattern.fname)
+        self.label_DiffractionPatternFileName.setText('Base Pattern: ' +
+                                                      self.Pattern.fname)
         x_raw, y_raw = self.Pattern.get_raw()
         if (x_raw.min() >=
-            self.mpldoubleSpinBox_Background_ROI_min.value()) or\
+            self.doubleSpinBox_Background_ROI_min.value()) or\
                 (x_raw.max() <=
-                    self.mpldoubleSpinBox_Background_ROI_min.value()):
-            self.mpldoubleSpinBox_Background_ROI_min.setValue(x_raw.min())
+                    self.doubleSpinBox_Background_ROI_min.value()):
+            self.doubleSpinBox_Background_ROI_min.setValue(x_raw.min())
         if (x_raw.max() <=
-            self.mpldoubleSpinBox_Background_ROI_max.value()) or\
+            self.doubleSpinBox_Background_ROI_max.value()) or\
                 (x_raw.min() >=
-                    self.mpldoubleSpinBox_Background_ROI_max.value()):
-            self.mpldoubleSpinBox_Background_ROI_max.setValue(x_raw.max())
+                    self.doubleSpinBox_Background_ROI_max.value()):
+            self.doubleSpinBox_Background_ROI_max.setValue(x_raw.max())
         self.Pattern.subtract_bg(
-            [self.mpldoubleSpinBox_Background_ROI_min.value(),
-                self.mpldoubleSpinBox_Background_ROI_max.value()],
-            [self.mplspinBox_BGParam0.value(),
-                self.mplspinBox_BGParam1.value(),
-                self.mplspinBox_BGParam2.value()], yshift=0)
-        if self.mplpushButton_AddRemoveCake.isChecked() and \
+            [self.doubleSpinBox_Background_ROI_min.value(),
+                self.doubleSpinBox_Background_ROI_max.value()],
+            [self.spinBox_BGParam0.value(),
+                self.spinBox_BGParam1.value(),
+                self.spinBox_BGParam2.value()], yshift=0)
+        if self.pushButton_AddRemoveCake.isChecked() and \
                 self.poni_filename is not None:
             self.addremove_Cake()
             # self._load_new_image()
@@ -1969,12 +1966,12 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             return
         filelist = get_sorted_filelist(
             self.chi_path,
-            sorted_by_name=self.mplradioButton_SortbyNme.isChecked())
+            sorted_by_name=self.radioButton_SortbyNme.isChecked())
         idx = find_from_filelist(filelist, self.Pattern.fname)
         if idx == -1:
             QtWidgets.QMessageBox.warning(
                 self, "Warning", "Cannot find current file")
-        if self.mplradioButton_FileStep1.isChecked():
+        if self.radioButton_FileStep1.isChecked():
             step = 1
         else:
             step = 10
@@ -2009,8 +2006,8 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             limits = lims
         if (self.Pattern is None) and (self.jlist == []):
             return
-        if self.mplpushButton_AddRemoveCake.isChecked():
-            self.mpl.canvas.resize_axes(self.mplspinBox_CakeAxisSize.value())
+        if self.pushButton_AddRemoveCake.isChecked():
+            self.mpl.canvas.resize_axes(self.spinBox_CakeAxisSize.value())
         else:
             self.mpl.canvas.resize_axes(1)
             self.mpl.canvas.ax_bottom.tick_params(
@@ -2045,12 +2042,12 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             minortick_interval = 1
         xlabel = 'Two Theta (Degrees), ' + \
             "{0: 5.1f} GPa, {1: 4.0f} K, {2: 6.4f} A".\
-            format(self.mpldoubleSpinBox_Pressure.value(),
-                   self.mpldoubleSpinBox_Temperature.value(),
-                   self.mpldoubleSpinBox_SetWavelength.value())
+            format(self.doubleSpinBox_Pressure.value(),
+                   self.doubleSpinBox_Temperature.value(),
+                   self.doubleSpinBox_SetWavelength.value())
         self.mpl.canvas.ax.set_xlabel(xlabel)
         # cake only
-        if self.mplpushButton_AddRemoveCake.isChecked():
+        if self.pushButton_AddRemoveCake.isChecked():
             self._plot_cake()
             self.mpl.canvas.ax_bottom.set_ylabel("Azimuthal angle (degrees)")
         self.mpl.canvas.ax.set_ylabel('Intensity (arbitrary unit)')
@@ -2062,8 +2059,8 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         # Note that the line below takes most time.
         # slow plotting is just because I use matplotlib.
         self.mpl.canvas.draw()
-        print("Total plot takes: {0:.4f} s at {1: .2f}".format(
-            time.time() - t_start, time.time()))
+        print("Plot takes: {0:.4f} s at {1: .2f}".format(time.time() -
+                                                         t_start, time.time()))
         self.unsetCursor()
 
     def _plot_ucfit(self):
@@ -2080,17 +2077,17 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
             if j.display:
                 j.cal_dsp()
                 tth, inten = j.get_tthVSint(
-                    self.mpldoubleSpinBox_SetWavelength.value())
+                    self.doubleSpinBox_SetWavelength.value())
                 bar_min = np.ones(tth.shape) * bottom
                 intensity = inten
                 bar_min = np.ones(tth.shape) * bottom
-                self.mpltableWidget_UnitCell.removeCellWidget(i, 4)
+                self.tableWidget_UnitCell.removeCellWidget(i, 4)
                 Item4 = QtWidgets.QTableWidgetItem(
                     "{:.3f}".format(float(j.v)))
                 Item4.setFlags(QtCore.Qt.ItemIsSelectable |
                                QtCore.Qt.ItemIsEnabled)
-                self.mpltableWidget_UnitCell.setItem(i, 4, Item4)
-                if self.mplcheckBox_Intensity.isChecked():
+                self.tableWidget_UnitCell.setItem(i, 4, Item4)
+                if self.checkBox_Intensity.isChecked():
                     self.mpl.canvas.ax.vlines(tth, bar_min, intensity *
                                               bar_scale, colors=j.color)
                 else:
@@ -2102,7 +2099,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
 
     def _plot_cake(self):
         # t_start = time.time()
-        clim = (self.mplspinBox_VMin.value(), self.mplspinBox_VMax.value())
+        clim = (self.spinBox_VMin.value(), self.spinBox_VMax.value())
         self.mpl.canvas.ax_bottom.imshow(
             self.intensity_cake, origin="lower",
             extent=[self.tth_cake.min(), self.tth_cake.max(),
@@ -2126,13 +2123,13 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
         bar_scale = 1. / 100. * ymax
         for j in self.jlist:
             if j.display:
-                j.cal_dsp(self.mpldoubleSpinBox_Pressure.value(),
-                          self.mpldoubleSpinBox_Temperature.value())
+                j.cal_dsp(self.doubleSpinBox_Pressure.value(),
+                          self.doubleSpinBox_Temperature.value())
                 tth, inten = j.get_tthVSint(
-                    self.mpldoubleSpinBox_SetWavelength.value())
+                    self.doubleSpinBox_SetWavelength.value())
                 intensity = inten * j.twk_int
                 bar_min = np.ones(tth.shape) * bottom
-                if self.mplcheckBox_Intensity.isChecked():
+                if self.checkBox_Intensity.isChecked():
                     self.mpl.canvas.ax.vlines(
                         tth, bar_min, intensity * bar_scale,
                         colors=j.color, label=j.name + (", %.3f A^3" % j.v))
@@ -2140,7 +2137,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
                     self.mpl.canvas.ax.vlines(
                         tth, bar_min, 100. * bar_scale,
                         colors=j.color, label=j.name + (", %.3f A^3" % j.v))
-                if self.mplpushButton_AddRemoveCake.isChecked():
+                if self.pushButton_AddRemoveCake.isChecked():
                     for tth_i in tth:
                         self.mpl.canvas.ax_bottom.axvline(
                             x=tth_i, color=j.color, lw=0.5)
@@ -2172,30 +2169,30 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MplMainWindow):
                                         transform=self.mpl.canvas.ax.transAxes,
                                         color=pattern.color)
                 if self.ntb_Bgsub.isChecked():
-                    ygap = self.mpldoubleSpinBox_WaterfallGaps.value() * \
+                    ygap = self.doubleSpinBox_WaterfallGaps.value() * \
                         self.Pattern.y_bgsub.max() * float(j)
-                    if self.mplcheckBox_BasePtnBackground.isChecked() and \
+                    if self.checkBox_BasePtnBackground.isChecked() and \
                             np.array_equal(pattern.x_raw, self.Pattern.x_raw):
                         y_bgsub = pattern.y_bgsub + pattern.y_bg - \
                             self.Pattern.y_bg
                     else:
                         y_bgsub = pattern.y_bgsub
-                    if self.mplcheckBox_IntNorm.isChecked():
+                    if self.checkBox_IntNorm.isChecked():
                         y = y_bgsub / y_bgsub.max() * \
                             self.Pattern.y_bgsub.max()
                     else:
                         y = y_bgsub
                     x_t = pattern.x_bgsub
                 else:
-                    ygap = self.mpldoubleSpinBox_WaterfallGaps.value() * \
+                    ygap = self.doubleSpinBox_WaterfallGaps.value() * \
                         self.Pattern.y_raw.max() * float(j)
-                    if self.mplcheckBox_IntNorm.isChecked():
+                    if self.checkBox_IntNorm.isChecked():
                         y = pattern.y_raw / pattern.y_raw.max() *\
                             self.Pattern.y_raw.max()
                     else:
                         y = pattern.y_raw
                     x_t = pattern.x_raw
-                if self.mplcheckBox_SetToBasePtnLambda.isChecked():
+                if self.checkBox_SetToBasePtnLambda.isChecked():
                     x = convert_tth(x_t, pattern.wavelength,
                                     self.Pattern.wavelength)
                 else:

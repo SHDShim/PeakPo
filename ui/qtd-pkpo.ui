@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MplMainWindow</class>
- <widget class="QMainWindow" name="MplMainWindow">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -25,7 +25,7 @@
   <property name="styleSheet">
    <string notr="true">font: 13pt &quot;Helvetica&quot;;</string>
   </property>
-  <widget class="QWidget" name="mplcentralwidget">
+  <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="MplWidget" name="mpl">
@@ -41,7 +41,7 @@
      </widget>
     </item>
     <item>
-     <widget class="QTabWidget" name="mpltabWidget">
+     <widget class="QTabWidget" name="tabWidget">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
         <horstretch>0</horstretch>
@@ -93,41 +93,41 @@
       <property name="movable">
        <bool>false</bool>
       </property>
-      <widget class="QWidget" name="mpltab_Files">
+      <widget class="QWidget" name="tab_Files">
        <attribute name="title">
         <string>Files</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_14">
         <item>
-         <widget class="QLabel" name="mpllabel_SessionFileName">
+         <widget class="QLabel" name="label_SessionFileName">
           <property name="text">
            <string>Session filename</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="mpllabel_DiffractionPatternFileName">
+         <widget class="QLabel" name="label_DiffractionPatternFileName">
           <property name="text">
            <string>Diffraction pattern filename</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="mpllabel_DiffractionImageFilename">
+         <widget class="QLabel" name="label_DiffractionImageFilename">
           <property name="text">
            <string>Diffraction image filename</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="mpllabel_PONI">
+         <widget class="QLabel" name="label_PONI">
           <property name="text">
            <string>PONI filename</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="mpllabel_Jlist">
+         <widget class="QLabel" name="label_Jlist">
           <property name="text">
            <string>Jlist location</string>
           </property>
@@ -148,7 +148,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="mpltab_Main">
+      <widget class="QWidget" name="tab_Main">
        <attribute name="title">
         <string>Main</string>
        </attribute>
@@ -169,7 +169,7 @@
             <number>12</number>
            </property>
            <item>
-            <widget class="QPushButton" name="mplpushButton_LoadSession">
+            <widget class="QPushButton" name="pushButton_LoadSession">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -191,7 +191,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_SaveSession">
+            <widget class="QPushButton" name="pushButton_SaveSession">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -213,7 +213,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_ZipSession">
+            <widget class="QPushButton" name="pushButton_ZipSession">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -259,7 +259,7 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_3">
            <item>
-            <widget class="QPushButton" name="mplpushButton_NewBasePtn">
+            <widget class="QPushButton" name="pushButton_NewBasePtn">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -305,7 +305,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QDoubleSpinBox" name="mpldoubleSpinBox_SetWavelength">
+            <widget class="QDoubleSpinBox" name="doubleSpinBox_SetWavelength">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -363,7 +363,7 @@
             <number>12</number>
            </property>
            <item>
-            <widget class="QPushButton" name="mplpushButton_FirstBasePtn">
+            <widget class="QPushButton" name="pushButton_FirstBasePtn">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -388,7 +388,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_PrevBasePtn">
+            <widget class="QPushButton" name="pushButton_PrevBasePtn">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -413,7 +413,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_NextBasePtn">
+            <widget class="QPushButton" name="pushButton_NextBasePtn">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -438,7 +438,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_LastBasePtn">
+            <widget class="QPushButton" name="pushButton_LastBasePtn">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -508,7 +508,7 @@
                <number>12</number>
               </property>
               <item>
-               <widget class="QRadioButton" name="mplradioButton_FileStep1">
+               <widget class="QRadioButton" name="radioButton_FileStep1">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
                   <horstretch>0</horstretch>
@@ -524,7 +524,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QRadioButton" name="mplradioButton_FileStep10">
+               <widget class="QRadioButton" name="radioButton_FileStep10">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
                   <horstretch>0</horstretch>
@@ -567,7 +567,7 @@
                <number>12</number>
               </property>
               <item>
-               <widget class="QRadioButton" name="mplradioButton_SortbyNme">
+               <widget class="QRadioButton" name="radioButton_SortbyNme">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                   <horstretch>0</horstretch>
@@ -589,7 +589,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QRadioButton" name="mplradioButton_SortbyTime">
+               <widget class="QRadioButton" name="radioButton_SortbyTime">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                   <horstretch>0</horstretch>
@@ -632,7 +632,7 @@
             <number>12</number>
            </property>
            <item>
-            <widget class="QDoubleSpinBox" name="mpldoubleSpinBox_Pressure">
+            <widget class="QDoubleSpinBox" name="doubleSpinBox_Pressure">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -705,28 +705,28 @@
                <number>-1</number>
               </property>
               <item row="1" column="0">
-               <widget class="QRadioButton" name="mplradioButton_P10">
+               <widget class="QRadioButton" name="radioButton_P10">
                 <property name="text">
                  <string>10</string>
                 </property>
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QRadioButton" name="mplradioButton_P100">
+               <widget class="QRadioButton" name="radioButton_P100">
                 <property name="text">
                  <string>100</string>
                 </property>
                </widget>
               </item>
               <item row="0" column="0">
-               <widget class="QRadioButton" name="mplradioButton_P01">
+               <widget class="QRadioButton" name="radioButton_P01">
                 <property name="text">
                  <string>0.1</string>
                 </property>
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QRadioButton" name="mplradioButton_P1">
+               <widget class="QRadioButton" name="radioButton_P1">
                 <property name="text">
                  <string>1</string>
                 </property>
@@ -757,7 +757,7 @@
             <number>12</number>
            </property>
            <item>
-            <widget class="QDoubleSpinBox" name="mpldoubleSpinBox_Temperature">
+            <widget class="QDoubleSpinBox" name="doubleSpinBox_Temperature">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -830,7 +830,7 @@
                <number>3</number>
               </property>
               <item row="1" column="0">
-               <widget class="QRadioButton" name="mplradioButton_T100">
+               <widget class="QRadioButton" name="radioButton_T100">
                 <property name="text">
                  <string>100</string>
                 </property>
@@ -840,21 +840,21 @@
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QRadioButton" name="mplradioButton_T10">
+               <widget class="QRadioButton" name="radioButton_T10">
                 <property name="text">
                  <string>10</string>
                 </property>
                </widget>
               </item>
               <item row="0" column="0">
-               <widget class="QRadioButton" name="mplradioButton_T1">
+               <widget class="QRadioButton" name="radioButton_T1">
                 <property name="text">
                  <string>1</string>
                 </property>
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QRadioButton" name="mplradioButton_T1000">
+               <widget class="QRadioButton" name="radioButton_T1000">
                 <property name="text">
                  <string>1000</string>
                 </property>
@@ -882,7 +882,7 @@
             <number>12</number>
            </property>
            <item row="6" column="0">
-            <widget class="QPushButton" name="mplpushButton_2000K">
+            <widget class="QPushButton" name="pushButton_2000K">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -916,7 +916,7 @@
             </widget>
            </item>
            <item row="2" column="1">
-            <widget class="QPushButton" name="mplpushButton_3000K">
+            <widget class="QPushButton" name="pushButton_3000K">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -944,7 +944,7 @@
             </widget>
            </item>
            <item row="2" column="0">
-            <widget class="QPushButton" name="mplpushButton_1000K">
+            <widget class="QPushButton" name="pushButton_1000K">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -972,7 +972,7 @@
             </widget>
            </item>
            <item row="4" column="0">
-            <widget class="QPushButton" name="mplpushButton_1500K">
+            <widget class="QPushButton" name="pushButton_1500K">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1000,7 +1000,7 @@
             </widget>
            </item>
            <item row="0" column="0">
-            <widget class="QPushButton" name="mplpushButton_RoomT">
+            <widget class="QPushButton" name="pushButton_RoomT">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1028,7 +1028,7 @@
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QPushButton" name="mplpushButton_2500K">
+            <widget class="QPushButton" name="pushButton_2500K">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1056,28 +1056,28 @@
             </widget>
            </item>
            <item row="4" column="1">
-            <widget class="QPushButton" name="mplpushButton_3500K">
+            <widget class="QPushButton" name="pushButton_3500K">
              <property name="text">
               <string>3500 K</string>
              </property>
             </widget>
            </item>
            <item row="6" column="1">
-            <widget class="QPushButton" name="mplpushButton_4000K">
+            <widget class="QPushButton" name="pushButton_4000K">
              <property name="text">
               <string>4000 K</string>
              </property>
             </widget>
            </item>
            <item row="0" column="2">
-            <widget class="QPushButton" name="mplpushButton_4500K">
+            <widget class="QPushButton" name="pushButton_4500K">
              <property name="text">
               <string>4500 K</string>
              </property>
             </widget>
            </item>
            <item row="2" column="2">
-            <widget class="QPushButton" name="mplpushButton_5000K">
+            <widget class="QPushButton" name="pushButton_5000K">
              <property name="text">
               <string>5000 K</string>
              </property>
@@ -1088,7 +1088,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="mpltab_Waterfall">
+      <widget class="QWidget" name="tab_Waterfall">
        <attribute name="title">
         <string>Waterfall</string>
        </attribute>
@@ -1103,7 +1103,7 @@
             <number>12</number>
            </property>
            <item>
-            <widget class="QCheckBox" name="mplcheckBox_SetToBasePtnLambda">
+            <widget class="QCheckBox" name="checkBox_SetToBasePtnLambda">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1119,7 +1119,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="mplcheckBox_BasePtnBackground">
+            <widget class="QCheckBox" name="checkBox_BasePtnBackground">
              <property name="text">
               <string>Use base ptn background</string>
              </property>
@@ -1129,14 +1129,14 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="mplcheckBox_IntNorm">
+            <widget class="QCheckBox" name="checkBox_IntNorm">
              <property name="text">
               <string>Intensity nomalization</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_ApplyWaterfallChange">
+            <widget class="QPushButton" name="pushButton_ApplyWaterfallChange">
              <property name="text">
               <string>Apply</string>
              </property>
@@ -1158,7 +1158,7 @@
             <number>6</number>
            </property>
            <item>
-            <widget class="QDoubleSpinBox" name="mpldoubleSpinBox_WaterfallGaps">
+            <widget class="QDoubleSpinBox" name="doubleSpinBox_WaterfallGaps">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -1214,7 +1214,7 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_15">
            <item>
-            <widget class="QPushButton" name="mplpushButton_AddPatterns">
+            <widget class="QPushButton" name="pushButton_AddPatterns">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1236,7 +1236,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_RemovePatterns">
+            <widget class="QPushButton" name="pushButton_RemovePatterns">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1249,7 +1249,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_CleanPatterns">
+            <widget class="QPushButton" name="pushButton_CleanPatterns">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1280,7 +1280,7 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_16">
            <item>
-            <widget class="QPushButton" name="mplpushButton_UpPattern">
+            <widget class="QPushButton" name="pushButton_UpPattern">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1293,7 +1293,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_DownPattern">
+            <widget class="QPushButton" name="pushButton_DownPattern">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1306,7 +1306,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_MakeBasePtn">
+            <widget class="QPushButton" name="pushButton_MakeBasePtn">
              <property name="text">
               <string>Make Base Ptn</string>
              </property>
@@ -1316,7 +1316,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QTableWidget" name="mpltableWidget_wfPatterns">
+         <widget class="QTableWidget" name="tableWidget_wfPatterns">
           <property name="sizePolicy">
            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Maximum">
             <horstretch>0</horstretch>
@@ -1348,7 +1348,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="mpltabCake">
+      <widget class="QWidget" name="tabCake">
        <attribute name="title">
         <string>Cake</string>
        </attribute>
@@ -1360,7 +1360,7 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_10">
            <item>
-            <widget class="QPushButton" name="mplpushButton_AddRemoveCake">
+            <widget class="QPushButton" name="pushButton_AddRemoveCake">
              <property name="text">
               <string>Add Cake</string>
              </property>
@@ -1370,7 +1370,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_GetPONI">
+            <widget class="QPushButton" name="pushButton_GetPONI">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1417,7 +1417,7 @@
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QSpinBox" name="mplspinBox_VMax">
+               <widget class="QSpinBox" name="spinBox_VMax">
                 <property name="focusPolicy">
                  <enum>Qt::ClickFocus</enum>
                 </property>
@@ -1436,7 +1436,7 @@
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QSpinBox" name="mplspinBox_VMin">
+               <widget class="QSpinBox" name="spinBox_VMin">
                 <property name="focusPolicy">
                  <enum>Qt::ClickFocus</enum>
                 </property>
@@ -1463,7 +1463,7 @@
                </widget>
               </item>
               <item row="2" column="1">
-               <widget class="QSpinBox" name="mplspinBox_CakeAxisSize">
+               <widget class="QSpinBox" name="spinBox_CakeAxisSize">
                 <property name="focusPolicy">
                  <enum>Qt::ClickFocus</enum>
                 </property>
@@ -1479,7 +1479,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_ApplyCakeView">
+            <widget class="QPushButton" name="pushButton_ApplyCakeView">
              <property name="text">
               <string>Apply</string>
              </property>
@@ -1518,7 +1518,7 @@
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QSpinBox" name="mplspinBox_MaskMin">
+               <widget class="QSpinBox" name="spinBox_MaskMin">
                 <property name="focusPolicy">
                  <enum>Qt::ClickFocus</enum>
                 </property>
@@ -1531,7 +1531,7 @@
                </widget>
               </item>
               <item row="2" column="1">
-               <widget class="QSpinBox" name="mplspinBox_MaskMax">
+               <widget class="QSpinBox" name="spinBox_MaskMax">
                 <property name="focusPolicy">
                  <enum>Qt::ClickFocus</enum>
                 </property>
@@ -1547,7 +1547,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_ApplyMask">
+            <widget class="QPushButton" name="pushButton_ApplyMask">
              <property name="text">
               <string>Apply</string>
              </property>
@@ -1566,21 +1566,21 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_13">
            <item>
-            <widget class="QPushButton" name="mplpushButton_BackToOriginal">
+            <widget class="QPushButton" name="pushButton_BackToOriginal">
              <property name="text">
               <string>Back to original</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_Reintegrate1D">
+            <widget class="QPushButton" name="pushButton_Reintegrate1D">
              <property name="text">
               <string>Reintegrate 1D</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_OuputCHI">
+            <widget class="QPushButton" name="pushButton_OuputCHI">
              <property name="text">
               <string>Output CHI</string>
              </property>
@@ -1604,7 +1604,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="mpltabJCPDSList">
+      <widget class="QWidget" name="tabJCPDSList">
        <attribute name="title">
         <string>JCPDS</string>
        </attribute>
@@ -1625,7 +1625,7 @@
             <number>12</number>
            </property>
            <item>
-            <widget class="QPushButton" name="mplpushButton_NewJlist">
+            <widget class="QPushButton" name="pushButton_NewJlist">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1647,7 +1647,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_LoadJlist">
+            <widget class="QPushButton" name="pushButton_LoadJlist">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1669,7 +1669,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_SaveJlist">
+            <widget class="QPushButton" name="pushButton_SaveJlist">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1691,7 +1691,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_ExportXLS">
+            <widget class="QPushButton" name="pushButton_ExportXLS">
              <property name="text">
               <string>Export</string>
              </property>
@@ -1701,7 +1701,7 @@
          </widget>
         </item>
         <item row="1" column="3" colspan="2">
-         <widget class="QTableWidget" name="mpltableWidget_JCPDS">
+         <widget class="QTableWidget" name="tableWidget_JCPDS">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
             <horstretch>1</horstretch>
@@ -1753,7 +1753,7 @@
             <number>12</number>
            </property>
            <item>
-            <widget class="QPushButton" name="mplpushButton_CheckAllJCPDS">
+            <widget class="QPushButton" name="pushButton_CheckAllJCPDS">
              <property name="font">
               <font>
                <family>Helvetica</family>
@@ -1769,7 +1769,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_UncheckAllJCPDS">
+            <widget class="QPushButton" name="pushButton_UncheckAllJCPDS">
              <property name="font">
               <font>
                <family>Helvetica</family>
@@ -1785,7 +1785,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="mplcheckBox_Intensity">
+            <widget class="QCheckBox" name="checkBox_Intensity">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
                <horstretch>0</horstretch>
@@ -1801,7 +1801,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QSpinBox" name="mplspinBox_LowestJCPDSInt">
+            <widget class="QSpinBox" name="spinBox_LowestJCPDSInt">
              <property name="focusPolicy">
               <enum>Qt::ClickFocus</enum>
              </property>
@@ -1832,7 +1832,7 @@
             <number>12</number>
            </property>
            <item>
-            <widget class="QPushButton" name="mplpushButton_AddToJlist">
+            <widget class="QPushButton" name="pushButton_AddToJlist">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1860,7 +1860,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_RemoveJCPDS">
+            <widget class="QPushButton" name="pushButton_RemoveJCPDS">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1894,7 +1894,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_MoveUp">
+            <widget class="QPushButton" name="pushButton_MoveUp">
              <property name="maximumSize">
               <size>
                <width>80</width>
@@ -1916,7 +1916,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_MoveDown">
+            <widget class="QPushButton" name="pushButton_MoveDown">
              <property name="maximumSize">
               <size>
                <width>80</width>
@@ -1938,7 +1938,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_ExportToUCFit">
+            <widget class="QPushButton" name="pushButton_ExportToUCFit">
              <property name="maximumSize">
               <size>
                <width>80</width>
@@ -1955,7 +1955,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="mpltabUnitCellFit">
+      <widget class="QWidget" name="tabUnitCellFit">
        <attribute name="title">
         <string>UnitCellFit</string>
        </attribute>
@@ -1976,7 +1976,7 @@
             <number>12</number>
            </property>
            <item>
-            <widget class="QPushButton" name="mplpushButton_RemoveUClist">
+            <widget class="QPushButton" name="pushButton_RemoveUClist">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -2010,7 +2010,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_ExportXLS_2">
+            <widget class="QPushButton" name="pushButton_ExportXLS_2">
              <property name="maximumSize">
               <size>
                <width>100</width>
@@ -2026,7 +2026,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QTableWidget" name="mpltableWidget_UnitCell">
+         <widget class="QTableWidget" name="tableWidget_UnitCell">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
             <horstretch>1</horstretch>
@@ -2064,13 +2064,13 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="mpltabOutput">
+      <widget class="QWidget" name="tabOutput">
        <attribute name="title">
         <string>Output</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_2">
         <item row="0" column="2" rowspan="3">
-         <widget class="QPlainTextEdit" name="mplplainTextEdit_ViewJCPDS">
+         <widget class="QPlainTextEdit" name="plainTextEdit_ViewJCPDS">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -2101,7 +2101,7 @@
             <number>12</number>
            </property>
            <item>
-            <widget class="QPushButton" name="mplpushButton_ViewJCPDS">
+            <widget class="QPushButton" name="pushButton_ViewJCPDS">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -2123,21 +2123,21 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_SaveCHI">
+            <widget class="QPushButton" name="pushButton_SaveCHI">
              <property name="text">
               <string>Save BgSub.CHI</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_SaveXY">
+            <widget class="QPushButton" name="pushButton_SaveXY">
              <property name="text">
               <string>Save .XY</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="mplpushButton_SaveJCPDS">
+            <widget class="QPushButton" name="pushButton_SaveJCPDS">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -2163,7 +2163,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="mpltabDiffPattern">
+      <widget class="QWidget" name="tabDiffPattern">
        <attribute name="title">
         <string>Processing</string>
        </attribute>
@@ -2204,12 +2204,12 @@
               <string>N Points (20):</string>
              </property>
              <property name="buddy">
-              <cstring>mplspinBox_BGParam0</cstring>
+              <cstring>spinBox_BGParam0</cstring>
              </property>
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QSpinBox" name="mplspinBox_BGParam0">
+            <widget class="QSpinBox" name="spinBox_BGParam0">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -2254,12 +2254,12 @@
               <string>N Order (10):</string>
              </property>
              <property name="buddy">
-              <cstring>mplspinBox_BGParam2</cstring>
+              <cstring>spinBox_BGParam2</cstring>
              </property>
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QSpinBox" name="mplspinBox_BGParam1">
+            <widget class="QSpinBox" name="spinBox_BGParam1">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -2304,12 +2304,12 @@
               <string>N Iteration (20):</string>
              </property>
              <property name="buddy">
-              <cstring>mplspinBox_BGParam1</cstring>
+              <cstring>spinBox_BGParam1</cstring>
              </property>
             </widget>
            </item>
            <item row="2" column="1">
-            <widget class="QSpinBox" name="mplspinBox_BGParam2">
+            <widget class="QSpinBox" name="spinBox_BGParam2">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -2362,7 +2362,7 @@
             </widget>
            </item>
            <item row="0" column="3">
-            <widget class="QDoubleSpinBox" name="mpldoubleSpinBox_Background_ROI_min">
+            <widget class="QDoubleSpinBox" name="doubleSpinBox_Background_ROI_min">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -2406,7 +2406,7 @@
             </widget>
            </item>
            <item row="1" column="3">
-            <widget class="QDoubleSpinBox" name="mpldoubleSpinBox_Background_ROI_max">
+            <widget class="QDoubleSpinBox" name="doubleSpinBox_Background_ROI_max">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -2459,7 +2459,7 @@
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QDoubleSpinBox" name="mpldoubleSpinBox_ShiftY">
+            <widget class="QDoubleSpinBox" name="doubleSpinBox_ShiftY">
              <property name="focusPolicy">
               <enum>Qt::ClickFocus</enum>
              </property>
@@ -2475,7 +2475,7 @@
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QDoubleSpinBox" name="mpldoubleSpinBox_ShiftX">
+            <widget class="QDoubleSpinBox" name="doubleSpinBox_ShiftX">
              <property name="focusPolicy">
               <enum>Qt::ClickFocus</enum>
              </property>
@@ -2511,7 +2511,7 @@
          </widget>
         </item>
         <item row="0" column="0">
-         <widget class="QPushButton" name="mplpushButton_UpdatePlots_tab2">
+         <widget class="QPushButton" name="pushButton_UpdatePlots_tab2">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -2599,7 +2599,7 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="mplmenubar">
+  <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -2617,7 +2617,7 @@
      <bold>false</bold>
     </font>
    </property>
-   <widget class="QMenu" name="mplmenuFile">
+   <widget class="QMenu" name="menuFile">
     <property name="font">
      <font>
       <family>Helvetica</family>
@@ -2630,9 +2630,9 @@
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="mplactionClose"/>
+    <addaction name="actionClose"/>
    </widget>
-   <widget class="QMenu" name="mplmenuHelp">
+   <widget class="QMenu" name="menuHelp">
     <property name="font">
      <font>
       <family>Helvetica</family>
@@ -2645,11 +2645,11 @@
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="mplactionCiting_PeakPo"/>
-    <addaction name="mplactionShortcut_keys"/>
+    <addaction name="actionCiting_PeakPo"/>
+    <addaction name="actionShortcut_keys"/>
    </widget>
-   <addaction name="mplmenuFile"/>
-   <addaction name="mplmenuHelp"/>
+   <addaction name="menuFile"/>
+   <addaction name="menuHelp"/>
   </widget>
   <action name="mplactionOpen">
    <property name="text">
@@ -2661,7 +2661,7 @@
     </font>
    </property>
   </action>
-  <action name="mplactionClose">
+  <action name="actionClose">
    <property name="text">
     <string>Close</string>
    </property>
@@ -2741,7 +2741,7 @@
     <string>Show a JCPDS file</string>
    </property>
   </action>
-  <action name="mplactionCiting_PeakPo">
+  <action name="actionCiting_PeakPo">
    <property name="text">
     <string>Citing PeakPo</string>
    </property>
@@ -2751,7 +2751,7 @@
     </font>
    </property>
   </action>
-  <action name="mplactionShortcut_keys">
+  <action name="actionShortcut_keys">
    <property name="text">
     <string>Shortcut keys</string>
    </property>
