@@ -319,7 +319,7 @@
               </size>
              </property>
              <property name="focusPolicy">
-              <enum>Qt::WheelFocus</enum>
+              <enum>Qt::StrongFocus</enum>
              </property>
              <property name="layoutDirection">
               <enum>Qt::LeftToRight</enum>
@@ -667,7 +667,7 @@
               </font>
              </property>
              <property name="focusPolicy">
-              <enum>Qt::WheelFocus</enum>
+              <enum>Qt::StrongFocus</enum>
              </property>
              <property name="styleSheet">
               <string notr="true">font: 75 24pt &quot;Helvetica&quot;;</string>
@@ -786,7 +786,7 @@
               </font>
              </property>
              <property name="focusPolicy">
-              <enum>Qt::WheelFocus</enum>
+              <enum>Qt::StrongFocus</enum>
              </property>
              <property name="layoutDirection">
               <enum>Qt::LeftToRight</enum>
@@ -1172,7 +1172,7 @@
               </size>
              </property>
              <property name="focusPolicy">
-              <enum>Qt::ClickFocus</enum>
+              <enum>Qt::StrongFocus</enum>
              </property>
              <property name="frame">
               <bool>true</bool>
@@ -1419,7 +1419,7 @@
               <item row="1" column="1">
                <widget class="QSpinBox" name="spinBox_VMax">
                 <property name="focusPolicy">
-                 <enum>Qt::ClickFocus</enum>
+                 <enum>Qt::StrongFocus</enum>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1438,7 +1438,7 @@
               <item row="0" column="1">
                <widget class="QSpinBox" name="spinBox_VMin">
                 <property name="focusPolicy">
-                 <enum>Qt::ClickFocus</enum>
+                 <enum>Qt::StrongFocus</enum>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1465,7 +1465,7 @@
               <item row="2" column="1">
                <widget class="QSpinBox" name="spinBox_CakeAxisSize">
                 <property name="focusPolicy">
-                 <enum>Qt::ClickFocus</enum>
+                 <enum>Qt::StrongFocus</enum>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1520,7 +1520,7 @@
               <item row="0" column="1">
                <widget class="QSpinBox" name="spinBox_MaskMin">
                 <property name="focusPolicy">
-                 <enum>Qt::ClickFocus</enum>
+                 <enum>Qt::StrongFocus</enum>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1533,7 +1533,7 @@
               <item row="2" column="1">
                <widget class="QSpinBox" name="spinBox_MaskMax">
                 <property name="focusPolicy">
-                 <enum>Qt::ClickFocus</enum>
+                 <enum>Qt::StrongFocus</enum>
                 </property>
                 <property name="maximum">
                  <number>10000000</number>
@@ -1803,7 +1803,7 @@
            <item>
             <widget class="QSpinBox" name="spinBox_LowestJCPDSInt">
              <property name="focusPolicy">
-              <enum>Qt::ClickFocus</enum>
+              <enum>Qt::StrongFocus</enum>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -2223,7 +2223,7 @@
               </size>
              </property>
              <property name="focusPolicy">
-              <enum>Qt::ClickFocus</enum>
+              <enum>Qt::StrongFocus</enum>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -2273,7 +2273,7 @@
               </size>
              </property>
              <property name="focusPolicy">
-              <enum>Qt::ClickFocus</enum>
+              <enum>Qt::StrongFocus</enum>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -2323,7 +2323,7 @@
               </size>
              </property>
              <property name="focusPolicy">
-              <enum>Qt::ClickFocus</enum>
+              <enum>Qt::StrongFocus</enum>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -2370,7 +2370,7 @@
               </sizepolicy>
              </property>
              <property name="focusPolicy">
-              <enum>Qt::ClickFocus</enum>
+              <enum>Qt::StrongFocus</enum>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -2414,7 +2414,7 @@
               </sizepolicy>
              </property>
              <property name="focusPolicy">
-              <enum>Qt::ClickFocus</enum>
+              <enum>Qt::StrongFocus</enum>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -2461,7 +2461,7 @@
            <item row="1" column="1">
             <widget class="QDoubleSpinBox" name="doubleSpinBox_ShiftY">
              <property name="focusPolicy">
-              <enum>Qt::ClickFocus</enum>
+              <enum>Qt::StrongFocus</enum>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -2477,7 +2477,7 @@
            <item row="0" column="1">
             <widget class="QDoubleSpinBox" name="doubleSpinBox_ShiftX">
              <property name="focusPolicy">
-              <enum>Qt::ClickFocus</enum>
+              <enum>Qt::StrongFocus</enum>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>

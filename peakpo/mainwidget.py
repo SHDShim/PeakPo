@@ -459,7 +459,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWidget_UnitCell_doubleSpinBox_a.setKeyboardTracking(
                 False)
             self.tableWidget_UnitCell_doubleSpinBox_a.setFocusPolicy(
-                QtCore.Qt.ClickFocus)
+                QtCore.Qt.StrongFocus)
             # column 6 - b output
             if (self.ucfitlist[row].symmetry == 'cubic') or\
                     (self.ucfitlist[row].symmetry == 'tetragonal') or\
@@ -489,7 +489,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.tableWidget_UnitCell_doubleSpinBox_b.\
                     setKeyboardTracking(False)
                 self.tableWidget_UnitCell_doubleSpinBox_b.setFocusPolicy(
-                    QtCore.Qt.ClickFocus)
+                    QtCore.Qt.StrongFocus)
             # column 7 - c output
             if (self.ucfitlist[row].symmetry == 'cubic'):
                 item7 = QtWidgets.QTableWidgetItem('')
@@ -516,7 +516,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.tableWidget_UnitCell_doubleSpinBox_c.\
                     setKeyboardTracking(False)
                 self.tableWidget_UnitCell_doubleSpinBox_c.setFocusPolicy(
-                    QtCore.Qt.ClickFocus)
+                    QtCore.Qt.StrongFocus)
             # column 8 - alpha output
             if not (self.ucfitlist[row].symmetry == 'triclinic'):
                 item8 = QtWidgets.QTableWidgetItem('90.')
@@ -544,7 +544,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.tableWidget_UnitCell_doubleSpinBox_alpha.\
                     setKeyboardTracking(False)
                 self.tableWidget_UnitCell_doubleSpinBox_alpha.setFocusPolicy(
-                    QtCore.Qt.ClickFocus)
+                    QtCore.Qt.StrongFocus)
             # column 9 - beta output
             if (self.ucfitlist[row].symmetry == 'cubic') or \
                     (self.ucfitlist[row].symmetry == 'tetragonal') or\
@@ -575,7 +575,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.tableWidget_UnitCell_doubleSpinBox_beta.\
                     setKeyboardTracking(False)
                 self.tableWidget_UnitCell_doubleSpinBox_beta.setFocusPolicy(
-                    QtCore.Qt.ClickFocus)
+                    QtCore.Qt.StrongFocus)
             # column 10 - gamma output
             if not (self.ucfitlist[row].symmetry == 'triclinic'):
                 if self.ucfitlist[row].symmetry == 'hexagonal':
@@ -607,7 +607,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.tableWidget_UnitCell_doubleSpinBox_gamma.\
                     setKeyboardTracking(False)
                 self.tableWidget_UnitCell_doubleSpinBox_gamma.setFocusPolicy(
-                    QtCore.Qt.ClickFocus)
+                    QtCore.Qt.StrongFocus)
         self.tableWidget_UnitCell.resizeColumnsToContents()
 #        self.tableWidget_UnitCell.resizeRowsToContents()
         self.tableWidget_UnitCell.itemClicked.connect(
@@ -1226,7 +1226,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
                 setKeyboardTracking(False)
             self.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
-                setFocusPolicy(QtCore.Qt.ClickFocus)
+                setFocusPolicy(QtCore.Qt.StrongFocus)
         self.tableWidget_wfPatterns.resizeColumnsToContents()
 #        self.tableWidget_wfPatterns.resizeRowsToContents()
         self.tableWidget_wfPatterns.itemClicked.connect(
@@ -1394,8 +1394,8 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 SpinBoxFixStyle())
             self.tableWidget_JCPDS.setCellWidget(
                 row, 4, self.tableWidget_JCPDS_doubleSpinBox_V0twk)
-            # self.tableWidget_JCPDS_doubleSpinBox_V0twk.setFocusPolicy(
-            #    QtCore.Qt.ClickFocus)
+            self.tableWidget_JCPDS_doubleSpinBox_V0twk.setFocusPolicy(
+                QtCore.Qt.StrongFocus)
             # column 5 - K0 tweak
             self.tableWidget_JCPDS_doubleSpinBox_K0twk = \
                 QtWidgets.QDoubleSpinBox()
@@ -1414,7 +1414,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWidget_JCPDS.setCellWidget(
                 row, 5, self.tableWidget_JCPDS_doubleSpinBox_K0twk)
             self.tableWidget_JCPDS_doubleSpinBox_K0twk.setFocusPolicy(
-                QtCore.Qt.ClickFocus)
+                QtCore.Qt.StrongFocus)
             # column 6 - K0p tweak
             self.tableWidget_JCPDS_doubleSpinBox_K0ptwk = \
                 QtWidgets.QDoubleSpinBox()
@@ -1433,7 +1433,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWidget_JCPDS.setCellWidget(
                 row, 6, self.tableWidget_JCPDS_doubleSpinBox_K0ptwk)
             self.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setFocusPolicy(
-                QtCore.Qt.ClickFocus)
+                QtCore.Qt.StrongFocus)
             # column 7 - alpha0 tweak
             self.tableWidget_JCPDS_doubleSpinBox_alpha0twk = \
                 QtWidgets.QDoubleSpinBox()
@@ -1451,7 +1451,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setStyle(
                 SpinBoxFixStyle())
             self.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setFocusPolicy(
-                QtCore.Qt.ClickFocus)
+                QtCore.Qt.StrongFocus)
             self.tableWidget_JCPDS.setCellWidget(
                 row, 7, self.tableWidget_JCPDS_doubleSpinBox_alpha0twk)
             # column 8 - b/a tweak
@@ -1482,7 +1482,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.tableWidget_JCPDS_doubleSpinBox_b_atwk.\
                     setKeyboardTracking(False)
                 self.tableWidget_JCPDS_doubleSpinBox_b_atwk.setFocusPolicy(
-                    QtCore.Qt.ClickFocus)
+                    QtCore.Qt.StrongFocus)
             # column 9 - c/a tweak
             if (self.jlist[row].symmetry == 'cubic'):
                 item9 = QtWidgets.QTableWidgetItem('')
@@ -1509,7 +1509,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.tableWidget_JCPDS_doubleSpinBox_c_atwk.\
                     setKeyboardTracking(False)
                 self.tableWidget_JCPDS_doubleSpinBox_c_atwk.setFocusPolicy(
-                    QtCore.Qt.ClickFocus)
+                    QtCore.Qt.StrongFocus)
             # column 10 - int tweak
             self.tableWidget_JCPDS_doubleSpinBox_inttwk = \
                 QtWidgets.QDoubleSpinBox()
@@ -1528,7 +1528,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWidget_JCPDS.setCellWidget(
                 row, 10, self.tableWidget_JCPDS_doubleSpinBox_inttwk)
             self.tableWidget_JCPDS_doubleSpinBox_inttwk.setFocusPolicy(
-                QtCore.Qt.ClickFocus)
+                QtCore.Qt.StrongFocus)
             self.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
                 setKeyboardTracking(False)
             self.tableWidget_JCPDS_doubleSpinBox_inttwk.\
