@@ -23,10 +23,38 @@ environment works for peakpo from::
 
   $ conda env create -f py35pkpo.yml
 
-The following packages are required: `matplotlib > 2.0`, `pyqt5`, `pytheos`,
-`pyfai`, `pymatgen`, `periodictable`, `uncertainties`, `pyopencl`.
+This should install all the necessary packages if the process ends without
+an error.
 
+However, if the method above does not work, particuarly for windows,
+you need to create an envinronment first::
 
+  $ conda create --name py35pkpo python=3.5
+
+Then switch to that environment.  For windows::
+
+  $ activate py35pkpo
+
+For Linux and Mac::
+
+  $ source activate py35pkpo
+
+Install the following packages: `matplotlib > 2.0`, `pyqt5`, `pytheos`,
+`pymatgen`, `periodictable`, `uncertainties`, `pyfai`,  and `lmfit`.
+
+First, for basic science packages::
+
+  $ conda install anaconda
+
+For pytheos::
+
+  $ conda install -c shdshim pytheos
+
+For pymatgen::
+
+  $ conda install -c matsci pymatgen
+
+Others are available from `conda-forge`.
 
 
 Run this application
@@ -81,6 +109,11 @@ Version 7 adapted a dark theme from::
 
   https://github.com/ColinDuquesnoy/QDarkStyleSheet
 
+
+Unresolved issue
+----------------
+
+- Even if I install `pyopencl`, `pyfai` still complains that it cannot be found.
 
 Future
 ------

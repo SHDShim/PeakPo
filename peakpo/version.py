@@ -4,4 +4,4 @@ peakpo version
 Todo: better system should be implemented, such as pbr.
 """
 
-__version__ = "7.11"
+__version__ = "7.21"

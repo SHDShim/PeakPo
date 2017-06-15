@@ -28,12 +28,12 @@ class SpinBoxFixStyle(QtWidgets.QProxyStyle):
 
     def styleHint(self, hint, option=None, widget=None, returnData=None):
         if hint == QtWidgets.QStyle.SH_SpinBox_KeyPressAutoRepeatRate:
-            return 10**10
+            return 5**10
         elif hint == QtWidgets.QStyle.SH_SpinBox_ClickAutoRepeatRate:
-            return 10**10
+            return 5**10
         elif hint == QtWidgets.QStyle.SH_SpinBox_ClickAutoRepeatThreshold:
             # You can use only this condition to avoid the auto-repeat,
             # but better safe than sorry ;-)
-            return 10**10
+            return 5**10
         else:
             return super().styleHint(hint, option, widget, returnData)

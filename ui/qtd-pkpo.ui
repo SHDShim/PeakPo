@@ -13,7 +13,7 @@
   <property name="font">
    <font>
     <family>Helvetica</family>
-    <pointsize>13</pointsize>
+    <pointsize>12</pointsize>
     <weight>50</weight>
     <italic>false</italic>
     <bold>false</bold>
@@ -23,7 +23,7 @@
    <string>PeakPo</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">font: 13pt &quot;Helvetica&quot;;</string>
+   <string notr="true">font: 12pt &quot;Helvetica&quot;;</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -32,7 +32,7 @@
       <property name="font">
        <font>
         <family>Helvetica</family>
-        <pointsize>13</pointsize>
+        <pointsize>12</pointsize>
         <weight>50</weight>
         <italic>false</italic>
         <bold>false</bold>
@@ -179,7 +179,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -201,7 +201,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -287,7 +287,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -365,7 +365,7 @@
            <item>
             <widget class="QPushButton" name="pushButton_FirstBasePtn">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -390,7 +390,7 @@
            <item>
             <widget class="QPushButton" name="pushButton_PrevBasePtn">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -415,7 +415,7 @@
            <item>
             <widget class="QPushButton" name="pushButton_NextBasePtn">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -440,7 +440,7 @@
            <item>
             <widget class="QPushButton" name="pushButton_LastBasePtn">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -904,7 +904,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -932,7 +932,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -960,7 +960,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -988,7 +988,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -1016,7 +1016,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -1044,7 +1044,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -1224,7 +1224,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -1259,7 +1259,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -1338,7 +1338,7 @@
           <property name="font">
            <font>
             <family>Helvetica</family>
-            <pointsize>13</pointsize>
+            <pointsize>12</pointsize>
             <weight>50</weight>
             <italic>false</italic>
             <bold>false</bold>
@@ -1396,16 +1396,25 @@
           <property name="title">
            <string>View</string>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_18">
+          <layout class="QHBoxLayout" name="horizontalLayout_8">
+           <property name="topMargin">
+            <number>6</number>
+           </property>
            <property name="rightMargin">
             <number>12</number>
+           </property>
+           <property name="bottomMargin">
+            <number>6</number>
            </property>
            <item>
             <widget class="QGroupBox" name="groupBox_29">
              <property name="title">
               <string/>
              </property>
-             <layout class="QGridLayout" name="gridLayout_13">
+             <layout class="QGridLayout" name="gridLayout_13" columnstretch="0,0">
+              <property name="verticalSpacing">
+               <number>1</number>
+              </property>
               <property name="margin">
                <number>2</number>
               </property>
@@ -1480,6 +1489,12 @@
            </item>
            <item>
             <widget class="QPushButton" name="pushButton_ApplyCakeView">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="text">
               <string>Apply</string>
              </property>
@@ -1493,7 +1508,7 @@
           <property name="title">
            <string>Mask out</string>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_19">
+          <layout class="QHBoxLayout" name="horizontalLayout_9">
            <item>
             <widget class="QGroupBox" name="groupBox_30">
              <property name="title">
@@ -1635,7 +1650,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -1657,7 +1672,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -1679,7 +1694,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -1711,7 +1726,7 @@
           <property name="font">
            <font>
             <family>Helvetica</family>
-            <pointsize>13</pointsize>
+            <pointsize>12</pointsize>
             <weight>50</weight>
             <italic>false</italic>
             <bold>false</bold>
@@ -1757,7 +1772,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -1773,7 +1788,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -1848,7 +1863,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -1882,7 +1897,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -1904,7 +1919,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -1926,7 +1941,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -1998,7 +2013,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -2036,7 +2051,7 @@
           <property name="font">
            <font>
             <family>Helvetica</family>
-            <pointsize>13</pointsize>
+            <pointsize>12</pointsize>
             <weight>50</weight>
             <italic>false</italic>
             <bold>false</bold>
@@ -2111,7 +2126,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -2147,7 +2162,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -2194,7 +2209,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -2244,7 +2259,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -2294,7 +2309,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -2350,7 +2365,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -2394,7 +2409,7 @@
              <property name="font">
               <font>
                <family>Helvetica</family>
-               <pointsize>13</pointsize>
+               <pointsize>12</pointsize>
                <weight>50</weight>
                <italic>false</italic>
                <bold>false</bold>
@@ -2521,7 +2536,7 @@
           <property name="font">
            <font>
             <family>Helvetica</family>
-            <pointsize>13</pointsize>
+            <pointsize>12</pointsize>
             <weight>50</weight>
             <italic>false</italic>
             <bold>false</bold>
@@ -2611,7 +2626,7 @@
    <property name="font">
     <font>
      <family>Helvetica</family>
-     <pointsize>13</pointsize>
+     <pointsize>12</pointsize>
      <weight>50</weight>
      <italic>false</italic>
      <bold>false</bold>
@@ -2621,7 +2636,7 @@
     <property name="font">
      <font>
       <family>Helvetica</family>
-      <pointsize>13</pointsize>
+      <pointsize>12</pointsize>
       <weight>50</weight>
       <italic>false</italic>
       <bold>false</bold>
@@ -2636,7 +2651,7 @@
     <property name="font">
      <font>
       <family>Helvetica</family>
-      <pointsize>13</pointsize>
+      <pointsize>12</pointsize>
       <weight>50</weight>
       <italic>false</italic>
       <bold>false</bold>
