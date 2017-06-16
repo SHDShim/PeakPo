@@ -47,6 +47,8 @@ Manually install required packages
 However, if the method above does not work, particularly for Windows,
 you need to manually install necessary python modules.
 
+
+
 1. Create a conda environment for peakpo::
 
     $ conda create --name py35pkpo python=3.5
@@ -57,7 +59,7 @@ you need to manually install necessary python modules.
     $ activate py35pkpo
 
 
-For Linux and Mac::
+    For Linux and Mac::
 
     $ source activate py35pkpo
 
