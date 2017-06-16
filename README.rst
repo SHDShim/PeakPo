@@ -30,69 +30,82 @@ in the ``~/python/peakpo-v7`` folder.
 1. Open a terminal, and in the ``peakpo-v7`` folder, create an environment by
 running::
 
-  $ conda env create -f py35pkpo.yml
+$ conda env create -f py35pkpo.yml
+
 
 For window users, try ``py35pkpo-win.yml`` in the folder instead.
 
 2. If you do not see any error messages, you are done and go to the
-__Run peakpo__ section below.
+**Run peakpo** section below.
 
 However, if the method above does not work, particularly for Windows,
 you need to manually install necessary python modules.
 
 1. Create a conda environment for peakpo::
 
-  $ conda create --name py35pkpo python=3.5
+    $ conda create --name py35pkpo python=3.5
+
 
 2. Switch to the environment.  For windows::
 
-  $ activate py35pkpo
+    $ activate py35pkpo
+
 
 For Linux and Mac::
 
-  $ source activate py35pkpo
+    $ source activate py35pkpo
+
 
 3. Install the anaconda meta-package.  This includes ``matplotlib`` > 2.0,
-and ``pyqt5`` ::
+and ``pyqt5``::
 
-  $ conda install anaconda
+    $ conda install anaconda
+
 
 4. Install ``pytheos``::
 
-  $ conda install -c shdshim pytheos
+    $ conda install -c shdshim pytheos
+
 
 5. Install ```pymatgen``::
 
-  $ conda install -c matsci pymatgen
+    $ conda install -c matsci pymatgen
+
 
 6. Install ``pyfai``::
 
-  $ conda install -c cprescher pyfai
+    $ conda install -c cprescher pyfai
+
 
 7. Install ``qdarkstyle``::
 
-  $ pip install qdarkstyle
+    $ pip install qdarkstyle
+
 
 8. Install some packages from ``conda-forge``, such as ``periodictable``,
 ``uncertainties``, and ``lmfit``.  For example::
 
   $ conda install -c conda-forge lmfit
 
+
 Run peakpo
 ----------
 
 1. Activate ``py35pkpo``::
 
-  $ source activate py35pkpo
+    $ source activate py35pkpo
+
 
 or in windows::
 
   $ activate py35pkpo
 
+
 2. In the terminal app, navigate to the folder where you unzip the package.
 In the example here, go into the ``peakpo-v7/peakpo`` folder and run::
 
   $ python -m peakpo
+
 
 In a very rare case, you might have to do ``sudo``::
 
@@ -115,6 +128,7 @@ to execute the ``peakpo.command`` file.  Open a terminal and go to
 
   $ chmod +ux peakpo.command
 
+
 Now try step 3 again.  It should work.
 
 3b. The ``peakpo.command`` file assumes you have peakpo in
@@ -133,8 +147,9 @@ Version 7 adapted a dark theme from::
 Unresolved issue
 ----------------
 
-- Even if I install ``pyopencl``, ``pyfai`` still complains that it cannot be
+Even if I install ``pyopencl``, ``pyfai`` still complains that it cannot be
 found.
+
 
 Future
 ------
