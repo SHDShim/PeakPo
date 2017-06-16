@@ -38,6 +38,12 @@ For window users, try ``py35pkpo-win.yml`` in the folder instead.
 2. If you do not see any error messages, you are done and go to the
 **Run peakpo** section below.
 
+
+
+
+Manually install required packages
+----------------------------------
+
 However, if the method above does not work, particularly for Windows,
 you need to manually install necessary python modules.
 
@@ -88,6 +94,7 @@ and ``pyqt5``::
     $ conda install -c conda-forge lmfit
 
 
+
 Run peakpo
 ----------
 
@@ -96,7 +103,7 @@ Run peakpo
     $ source activate py35pkpo
 
 
-or in windows::
+    or in windows::
 
     $ activate py35pkpo
 
@@ -107,9 +114,10 @@ In the example here, go into the ``peakpo-v7/peakpo`` folder and run::
     $ python -m peakpo
 
 
-In a very rare case, you might have to do ``sudo``::
+    In a very rare case, you might have to do ``sudo``::
 
     $ sudo python -m peakpo
+
 
 
 Run this application in different ways (for Mac users)
@@ -122,7 +130,7 @@ the file in your applications folder.
 
 3. Double click the file and you will see ``peakpo`` running.
 
-3a. If step 3 does not work, it is likely because you do not have permission
+If step 3 does not work, it is likely because you do not have permission
 to execute the ``peakpo.command`` file.  Open a terminal and go to
 ``applications`` folder and run the command below::
 
@@ -131,7 +139,7 @@ to execute the ``peakpo.command`` file.  Open a terminal and go to
 
 Now try step 3 again.  It should work.
 
-3b. The ``peakpo.command`` file assumes you have peakpo in
+The ``peakpo.command`` file assumes you have peakpo in
 ``~/python/peakpo-v7/peakpo``.  If not, you should either locate peakpo in the
 same path or you should modify the second line of the script.
 
@@ -152,4 +160,4 @@ found.
 Future
 ------
 
-- More information needs to be added when this project is finally published.
+More information needs to be added when this project is finally published.
