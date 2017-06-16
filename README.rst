@@ -59,13 +59,12 @@ you need to manually install necessary python modules.
     $ activate py35pkpo
 
 
-    For Linux and Mac::
+For Linux and Mac::
 
     $ source activate py35pkpo
 
 
-3. Install the anaconda meta-package.  This includes ``matplotlib`` > 2.0,
-and ``pyqt5``::
+3. Install the anaconda meta-package.  This includes ``matplotlib`` > 2.0, and ``pyqt5``::
 
     $ conda install anaconda
 
@@ -100,6 +99,7 @@ and ``pyqt5``::
 Run peakpo
 ----------
 
+
 1. Activate ``py35pkpo``::
 
     $ source activate py35pkpo
@@ -124,6 +124,7 @@ In the example here, go into the ``peakpo-v7/peakpo`` folder and run::
 
 Run this application in different ways (for Mac users)
 ------------------------------------------------------
+
 
 1. Complete the installation instruction above.
 
