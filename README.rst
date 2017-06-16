@@ -39,8 +39,9 @@ For Linux and Mac::
 
   $ source activate py35pkpo
 
-Install the following packages: `matplotlib > 2.0`, `pyqt5`, `pytheos`,`pyfai`,
-`pymatgen`, `periodictable`, `uncertainties`,  and `lmfit`.
+Install the following packages: `matplotlib > 2.0` and `pyqt5` in anaconda,
+`periodictable`, `uncertainties`,  and `lmfit` in conda-forge, and others
+(`pytheos`,`pyfai`, `pymatgen`, and `qdarkstyle`).
 
 First, for basic science packages::
 
@@ -57,6 +58,10 @@ For pymatgen::
 For pyfai::
 
   $ conda install -c cprescher pyfai
+
+For qdarkstyle::
+
+  $ pip install qdarkstyle
 
 Others are available from `conda-forge`.
 
@@ -122,4 +127,4 @@ Unresolved issue
 Future
 ------
 
-More information needs to be added when this project is finally published.
+- More information needs to be added when this project is finally published.
