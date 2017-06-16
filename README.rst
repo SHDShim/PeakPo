@@ -74,7 +74,7 @@ However, if the method above does not work, particularly for windows, you need t
     $ conda install -c shdshim pytheos
 
 
-5. Install ```pymatgen``::
+5. Install ``pymatgen``::
 
     $ conda install -c matsci pymatgen
 
