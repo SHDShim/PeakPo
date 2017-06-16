@@ -1,37 +1,50 @@
 PeakPo
 ======
 
-A `Python` application for X-ray diffraction analysis for samples at high
+A `python` application for X-ray diffraction analysis for samples at high
 pressure and high temperature.
+
 
 Install this application
 ------------------------
 
-You may download zipped file and unzip with folder structure maintained.
-First make a folder to save `peakpo`, for example, peakpo-v7.  Then save
-the zip file under the folder and unzip it.  You may see a few folders and
-one of them is `peakpo`.
+1. Download zipped file from the github site
+(https://github.com/SHDShim/peakpo-v7).
+
+2. Under the `~/python` folder (you may do differently here but for This
+example, we assume that peakpo is installed in `~/python`), unzip with
+the original folder structure unchanged. For window users,
+`c:\Users\YourUserName\python\peakpo-v7`
+
+3. Rename the folder to `peakpo-v7`.  Under the `peakpo-v7` folder, you should
+be able to see a few folders and one of them is `peakpo`.
+
 
 
 Install required packages
 -------------------------
 
-I provide a conda environment in a file: `py35pkpo.yml`.
+I provide a `conda` environment file: `py35pkpo.yml`.  This can be found
+in the `~/python/peakpo-v7` folder for example.
 
-Under the `PeakPo-v7` folder, run the following command to create an
-environment works for peakpo from::
+1. Open a terminal, and in the `peakpo-v7` folder, create an environment works
+for peakpo by running::
 
   $ conda env create -f py35pkpo.yml
 
-This should install all the necessary packages if the process ends without
-an error.
+For window users, try `py35pkpo-win.yml` in the folder instead.
 
-However, if the method above does not work, particuarly for windows,
-you need to create an envinronment first::
+2. If you do not see any error message, you are done and go to the
+"Run peakpo" section below.
+
+However, if the method above does not work, particularly for Windows,
+you need to manually install necessary python modules.
+
+1. Create a `conda` environment for `peakpo`::
 
   $ conda create --name py35pkpo python=3.5
 
-Then switch to that environment.  For windows::
+2. Switch to the environment.  For windows::
 
   $ activate py35pkpo
 
@@ -39,37 +52,36 @@ For Linux and Mac::
 
   $ source activate py35pkpo
 
-Install the following packages: `matplotlib > 2.0` and `pyqt5` in anaconda,
-`periodictable`, `uncertainties`,  and `lmfit` in conda-forge, and others
-(`pytheos`,`pyfai`, `pymatgen`, and `qdarkstyle`).
-
-First, for basic science packages::
+3. Install the anaconda meta-package.  This includes `matplotlib` > 2.0,
+and `pyqt5` ::
 
   $ conda install anaconda
 
-For pytheos::
+4. Install `pytheos`::
 
   $ conda install -c shdshim pytheos
 
-For pymatgen::
+5. Install `pymatgen`::
 
   $ conda install -c matsci pymatgen
 
-For pyfai::
+6. Install `pyfai`::
 
   $ conda install -c cprescher pyfai
 
-For qdarkstyle::
+7. Install `qdarkstyle`::
 
   $ pip install qdarkstyle
 
-Others are available from `conda-forge`.
+8. Install some packages from `conda-forge`, such as `periodictable`,
+`uncertainties`, and `lmfit`.  For example::
 
+  $ conda install -c conda-forge lmfit
 
-Run this application
---------------------
+Run peakpo
+----------
 
-Activate `py35pkpo`::
+1. Activate `py35pkpo`::
 
   $ source activate py35pkpo
 
@@ -77,9 +89,8 @@ or in windows::
 
   $ activate py35pkpo
 
-Go to the folder where you unzip the package.  In the terminal app, you
-navigate to the folder where you unzip the package.  Go into the `peakpo`
-folder and run the following::
+2. In the terminal app, navigate to the folder where you unzip the package.
+In the example here, go into the `peakpo-v7/peakpo` folder and run::
 
   $ python -m peakpo
 
@@ -88,15 +99,15 @@ In a very rare case, you might have to do `sudo`::
   $ sudo python -m peakpo
 
 
-Run this application (for Mac users)
-------------------------------------
+Run this application in different ways (for Mac users)
+------------------------------------------------------
 
-1. Install anaconda and make an environment following the instruction in the
-`Install required packages` section above.
+1. Complete the installation instruction above.
 
-2. Copy and paste `peakpo.command` file in your applications folder.
+2. Find `peakpo.command` file in the `peakpo-v7` folder, and copy and paste
+the file in your applications folder.
 
-3. Double click the file and you will see `peakpo` opening.
+3. Double click the file and you will see `peakpo` running.
 
 3a. If step 3 does not work, it is likely because you do not have permission
 to execute the `.command` file.  Open a terminal and go to applications folder
