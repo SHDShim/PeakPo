@@ -1,6 +1,9 @@
 PeakPo
 ======
 
+.. image:: https://zenodo.org/badge/94345216.svg
+   :target: https://zenodo.org/badge/latestdoi/94345216
+
 A python application for X-ray diffraction analysis for samples at high
 pressure and high temperature.
 
