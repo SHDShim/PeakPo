@@ -813,10 +813,16 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         i = idx_selected
         self.jlist[i - 1], self.jlist[i] = self.jlist[i], self.jlist[i - 1]
+        self.tableWidget_JCPDS.setCurrentItem(
+            self.tableWidget_JCPDS.item(i - 1, 1))
+        # self.tableWidget_JCPDS.setCurrentItem(
+        #    self.tableWidget_JCPDS.item(i, 1), False)
+        """
         self.tableWidget_JCPDS.setItemSelected(
             self.tableWidget_JCPDS.item(i - 1, 1), True)
         self.tableWidget_JCPDS.setItemSelected(
             self.tableWidget_JCPDS.item(i, 1), False)
+        """
         self._list_jcpds()
 
     def movedown_JCPDS(self):
@@ -828,10 +834,14 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         i = idx_selected
         self.jlist[i + 1], self.jlist[i] = self.jlist[i], self.jlist[i + 1]
+        self.tableWidget_JCPDS.setCurrentItem(
+            self.tableWidget_JCPDS.item(i + 1, 1))
+        """
         self.tableWidget_JCPDS.setItemSelected(
             self.tableWidget_JCPDS.item(i + 1, 1), True)
         self.tableWidget_JCPDS.setItemSelected(
             self.tableWidget_JCPDS.item(i, 1), False)
+        """
         self._list_jcpds()
 
     def check_allJCPDS(self):
@@ -1789,12 +1799,16 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                           "Highlight the item to move first.")
             return
         i = idx_selected
-        self.waterfallpatterns[i -
-                               1], self.waterfallpatterns[i] = self.waterfallpatterns[i], self.waterfallpatterns[i - 1]
+        self.waterfallpatterns[i - 1], self.waterfallpatterns[i] = \
+            self.waterfallpatterns[i], self.waterfallpatterns[i - 1]
+        self.tableWidget_wfPatterns.setCurrentItem(
+            self.tableWidget_wfPatterns.item(i - 1, 1))
+        """
         self.tableWidget_wfPatterns.setItemSelected(
             self.tableWidget_wfPatterns.item(i - 1, 1), True)
         self.tableWidget_wfPatterns.setItemSelected(
             self.tableWidget_wfPatterns.item(i, 1), False)
+        """
         self._list_wfpatterns()
 
     def down_waterfall(self):
@@ -1805,12 +1819,16 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                           "Highlight the item to move first.")
             return
         i = idx_selected
-        self.waterfallpatterns[i +
-                               1], self.waterfallpatterns[i] = self.waterfallpatterns[i], self.waterfallpatterns[i + 1]
+        self.waterfallpatterns[i + 1], self.waterfallpatterns[i] = \
+            self.waterfallpatterns[i], self.waterfallpatterns[i + 1]
+        self.tableWidget_wfPatterns.setCurrentItem(
+            self.tableWidget_wfPatterns.item(i + 1, 1))
+        """
         self.tableWidget_wfPatterns.setItemSelected(
             self.tableWidget_wfPatterns.item(i + 1, 1), True)
         self.tableWidget_wfPatterns.setItemSelected(
             self.tableWidget_wfPatterns.item(i, 1), False)
+        """
         self._list_wfpatterns()
 
     def apply_changestograph(self, value):
@@ -1979,7 +1997,8 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if os.path.exists(new_filename):
             self._read_a_newpattern(new_filename)
             self.Pattern.color = self.objColor
-            self._update_session()
+            # Turn off the option below during synchrotron.  Not helping much.
+            # self._update_session()
             self.update_graph()
         else:
             QtWidgets.QMessageBox.warning(self, "Warning",
