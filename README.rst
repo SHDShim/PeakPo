@@ -162,3 +162,10 @@ Future
 ------
 
 More information needs to be added when this project is finally published.
+
+
+How to cite
+-----------
+
+S.-H. Shim. (2017) PeakPo - A python software for X-ray diffraction analysis at
+high pressure and high temperature. Zenodo. http://doi.org/10.5281/zenodo.810200
