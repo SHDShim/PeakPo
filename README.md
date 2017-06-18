@@ -22,13 +22,13 @@ I provide a conda environment file: `py35pkpo.yml`.  This can be found in the `~
 
 1. Open a terminal, and in the `peakpo-v7` folder, create an environment.
 
-  For Mac and Linux:
+    For Mac and Linux:
 
     ```
     $ conda env create -f py35pkpo.yml
     ```
 
-  For window users:
+    For window users:
 
     ```
     $ conda env create -f py35pkpo-win.yml
@@ -138,9 +138,9 @@ However, if the method above does not work, particularly for windows, you need t
 
 If step 3 does not work, it is likely because you do not have permission to execute the `peakpo.command` file.  Open a terminal and go to `applications` folder and run the command below:
 
-    ```
-    $ chmod +ux peakpo.command
-    ```
+```
+$ chmod +ux peakpo.command
+```
 
 Now try step 3 again.  It should work.
 
