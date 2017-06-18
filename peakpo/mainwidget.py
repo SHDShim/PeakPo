@@ -263,7 +263,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.DiffImg = DiffImg()
         self.DiffImg.load(filen_tif)
         self.label_DiffractionImageFilename.setText(
-            'Diffraction Image: ' + filen_tif)
+            '2D Image: ' + filen_tif)
 
     def apply_mask(self):
         self._update_cake()
@@ -870,9 +870,9 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         success = self._load_session(fn, False)
         if success:
             self.label_Jlist.setText(
-                'JCPDS list from: ' + os.path.basename(str(fn)))
+                'Jlist: ' + os.path.basename(str(fn)))
             self.label_SessionFileName.setText(
-                'Session information from: ' + os.path.basename(str(fn)))
+                'Session: ' + os.path.basename(str(fn)))
             self.update_graph2whole()
             self.update_inputs()
 
@@ -1917,7 +1917,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.Pattern.read_file(new_filename)
         self.Pattern.wavelength = self.doubleSpinBox_SetWavelength.value()
         self.Pattern.display = True
-        self.label_DiffractionPatternFileName.setText('Base Pattern: ' +
+        self.label_DiffractionPatternFileName.setText('1D Pattern: ' +
                                                       self.Pattern.fname)
         x_raw, y_raw = self.Pattern.get_raw()
         if (x_raw.min() >=
