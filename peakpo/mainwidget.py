@@ -22,7 +22,8 @@ import zipfile
 from qtd import Ui_MainWindow
 from utils import undo_button_press
 from utils import samefilename, make_filename, get_sorted_filelist, \
-    find_from_filelist, dialog_savefile, xls_ucfitlist, xls_jlist, writechi
+    find_from_filelist, dialog_savefile, xls_ucfitlist, xls_jlist, writechi, \
+    extract_filename
 from utils import SpinBoxFixStyle
 from ds_cake import DiffImg
 # do not change the module structure for ds_jcpds and ds_powdiff for
@@ -343,12 +344,9 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             QtWidgets.QMessageBox.Yes)
         if reply == QtWidgets.QMessageBox.No:
             return
-        idx_checked = []
-        for item in self.tableWidget_UnitCell.selectedIndexes():
-            if item.column() != 1:
-                return
-            else:
-                idx_checked.append(item.row())
+        idx_checked = [s.row()
+                       for s in self.tableWidget_UnitCell.selectionModel().
+                       selectedRows()]
         if idx_checked != []:
             idx_checked.reverse()
             for idx in idx_checked:
@@ -366,15 +364,13 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         if self.jlist == []:
             return
-        idx_checked = []
-        for item in self.tableWidget_JCPDS.selectedIndexes():
-            if item.column() != 1:
-                QtWidgets.QMessageBox.warning(
-                    self, "Warning", "Highlight the name of JCPDS to export")
-                return
-            else:
-                self.jlist[item.row()].display = False
-                idx_checked.append(item.row())
+        idx_checked = [s.row() for s in self.tableWidget_JCPDS.selectionModel().
+                       selectedRows()]
+
+        if idx_checked == []:
+            QtWidgets.QMessageBox.warning(
+                self, "Warning", "Highlight the name of JCPDS to export")
+            return
         i = 0
         for j in range(idx_checked.__len__()):
             if self.jlist[idx_checked[j]].symmetry != 'manual':
@@ -406,15 +402,17 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         UCFit function
         Show ucfit in the QTableWidget
         """
-        n_columns = 11
+        n_columns = 10
         n_rows = self.ucfitlist.__len__()  # count for number of jcpds
         self.tableWidget_UnitCell.setColumnCount(n_columns)
         self.tableWidget_UnitCell.setRowCount(n_rows)
         self.tableWidget_UnitCell.horizontalHeader().setVisible(True)
         self.tableWidget_UnitCell.verticalHeader().setVisible(True)
         self.tableWidget_UnitCell.setHorizontalHeaderLabels(
-            ['', 'Name', 'Color', 'Color Change', 'Volume', 'a', 'b', 'c',
+            ['', 'Color', 'Color Change', 'Volume', 'a', 'b', 'c',
              'alpha', 'beta', 'gamma'])
+        self.tableWidget_UnitCell.setVerticalHeaderLabels(
+            [s.name for s in self.ucfitlist])
         for row in range(n_rows):
             # column 0 - checkbox
             item0 = QtWidgets.QTableWidgetItem()
@@ -425,29 +423,28 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 item0.setCheckState(QtCore.Qt.Unchecked)
             self.tableWidget_UnitCell.setItem(row, 0, item0)
-            # column 1 - name
-            item1 = QtWidgets.QTableWidgetItem(self.ucfitlist[row].name)
-            self.tableWidget_UnitCell.setItem(row, 1, item1)
-            # column 2 - color
+            # column 1 - color
             item2 = QtWidgets.QTableWidgetItem('    ')
-            self.tableWidget_UnitCell.setItem(row, 2, item2)
-            # column 3 - color setup
-            self.tableWidget_UnitCell_pushButton_color = QtWidgets.QPushButton('change')
-            self.tableWidget_UnitCell.item(row, 2).setBackground(
+            self.tableWidget_UnitCell.setItem(row, 1, item2)
+            # column 2 - color setup
+            self.tableWidget_UnitCell_pushButton_color = \
+                QtWidgets.QPushButton('change')
+            self.tableWidget_UnitCell.item(row, 1).setBackground(
                 QtGui.QColor(self.ucfitlist[row].color))
             self.tableWidget_UnitCell_pushButton_color.clicked.connect(
                 self._ucfitlist_handle_ColorButtonClicked)
             self.tableWidget_UnitCell.setCellWidget(
-                row, 3, self.tableWidget_UnitCell_pushButton_color)
-            # column 4 - V output
+                row, 2, self.tableWidget_UnitCell_pushButton_color)
+            # column 3 - V output
             self.ucfitlist[row].cal_dsp()
             Item4 = QtWidgets.QTableWidgetItem(
                 "{:.3f}".format(float(self.ucfitlist[row].v)))
             Item4.setFlags(QtCore.Qt.ItemIsSelectable |
                            QtCore.Qt.ItemIsEnabled)
-            self.tableWidget_UnitCell.setItem(row, 4, Item4)
-            # column 5 - a
-            self.tableWidget_UnitCell_doubleSpinBox_a = QtWidgets.QDoubleSpinBox()
+            self.tableWidget_UnitCell.setItem(row, 3, Item4)
+            # column 4 - a
+            self.tableWidget_UnitCell_doubleSpinBox_a = \
+                QtWidgets.QDoubleSpinBox()
             self.tableWidget_UnitCell_doubleSpinBox_a.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
@@ -461,18 +458,18 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWidget_UnitCell_doubleSpinBox_a.setStyle(
                 SpinBoxFixStyle())
             self.tableWidget_UnitCell.setCellWidget(
-                row, 5, self.tableWidget_UnitCell_doubleSpinBox_a)
+                row, 4, self.tableWidget_UnitCell_doubleSpinBox_a)
             self.tableWidget_UnitCell_doubleSpinBox_a.setKeyboardTracking(
                 False)
             self.tableWidget_UnitCell_doubleSpinBox_a.setFocusPolicy(
                 QtCore.Qt.StrongFocus)
-            # column 6 - b output
+            # column 5 - b output
             if (self.ucfitlist[row].symmetry == 'cubic') or\
                     (self.ucfitlist[row].symmetry == 'tetragonal') or\
                     (self.ucfitlist[row].symmetry == 'hexagonal'):
                 item6 = QtWidgets.QTableWidgetItem('')
                 item6.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.tableWidget_UnitCell.setItem(row, 6, item6)
+                self.tableWidget_UnitCell.setItem(row, 5, item6)
             else:
                 self.tableWidget_UnitCell_doubleSpinBox_b = QtWidgets.QDoubleSpinBox()
                 self.tableWidget_UnitCell_doubleSpinBox_b.setAlignment(
@@ -490,16 +487,16 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.tableWidget_UnitCell_doubleSpinBox_b.setStyle(
                     SpinBoxFixStyle())
                 self.tableWidget_UnitCell.setCellWidget(
-                    row, 6, self.tableWidget_UnitCell_doubleSpinBox_b)
+                    row, 5, self.tableWidget_UnitCell_doubleSpinBox_b)
                 self.tableWidget_UnitCell_doubleSpinBox_b.\
                     setKeyboardTracking(False)
                 self.tableWidget_UnitCell_doubleSpinBox_b.setFocusPolicy(
                     QtCore.Qt.StrongFocus)
-            # column 7 - c output
+            # column 6 - c output
             if (self.ucfitlist[row].symmetry == 'cubic'):
                 item7 = QtWidgets.QTableWidgetItem('')
                 item7.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.tableWidget_UnitCell.setItem(row, 7, item7)
+                self.tableWidget_UnitCell.setItem(row, 6, item7)
             else:
                 self.tableWidget_UnitCell_doubleSpinBox_c = QtWidgets.QDoubleSpinBox()
                 self.tableWidget_UnitCell_doubleSpinBox_c.setAlignment(
@@ -516,16 +513,16 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.tableWidget_UnitCell_doubleSpinBox_c.setStyle(
                     SpinBoxFixStyle())
                 self.tableWidget_UnitCell.setCellWidget(
-                    row, 7, self.tableWidget_UnitCell_doubleSpinBox_c)
+                    row, 6, self.tableWidget_UnitCell_doubleSpinBox_c)
                 self.tableWidget_UnitCell_doubleSpinBox_c.\
                     setKeyboardTracking(False)
                 self.tableWidget_UnitCell_doubleSpinBox_c.setFocusPolicy(
                     QtCore.Qt.StrongFocus)
-            # column 8 - alpha output
+            # column 7 - alpha output
             if not (self.ucfitlist[row].symmetry == 'triclinic'):
                 item8 = QtWidgets.QTableWidgetItem('90.')
                 item8.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.tableWidget_UnitCell.setItem(row, 8, item8)
+                self.tableWidget_UnitCell.setItem(row, 7, item8)
             else:
                 self.tableWidget_UnitCell_doubleSpinBox_alpha = QtWidgets.QDoubleSpinBox()
                 self.tableWidget_UnitCell_doubleSpinBox_alpha.setAlignment(
@@ -543,19 +540,19 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.tableWidget_UnitCell_doubleSpinBox_alpha.setStyle(
                     SpinBoxFixStyle())
                 self.tableWidget_UnitCell.setCellWidget(
-                    row, 8, self.tableWidget_UnitCell_doubleSpinBox_alpha)
+                    row, 7, self.tableWidget_UnitCell_doubleSpinBox_alpha)
                 self.tableWidget_UnitCell_doubleSpinBox_alpha.\
                     setKeyboardTracking(False)
                 self.tableWidget_UnitCell_doubleSpinBox_alpha.setFocusPolicy(
                     QtCore.Qt.StrongFocus)
-            # column 9 - beta output
+            # column 8 - beta output
             if (self.ucfitlist[row].symmetry == 'cubic') or \
                     (self.ucfitlist[row].symmetry == 'tetragonal') or\
                     (self.ucfitlist[row].symmetry == 'hexagonal') or\
                     (self.ucfitlist[row].symmetry == 'orthorhombic'):
                 item9 = QtWidgets.QTableWidgetItem('90.')
                 item9.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.tableWidget_UnitCell.setItem(row, 9, item9)
+                self.tableWidget_UnitCell.setItem(row, 8, item9)
             else:
                 self.tableWidget_UnitCell_doubleSpinBox_beta = QtWidgets.QDoubleSpinBox()
                 self.tableWidget_UnitCell_doubleSpinBox_beta.setAlignment(
@@ -573,19 +570,19 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.tableWidget_UnitCell_doubleSpinBox_beta.setStyle(
                     SpinBoxFixStyle())
                 self.tableWidget_UnitCell.setCellWidget(
-                    row, 9, self.tableWidget_UnitCell_doubleSpinBox_beta)
+                    row, 8, self.tableWidget_UnitCell_doubleSpinBox_beta)
                 self.tableWidget_UnitCell_doubleSpinBox_beta.\
                     setKeyboardTracking(False)
                 self.tableWidget_UnitCell_doubleSpinBox_beta.setFocusPolicy(
                     QtCore.Qt.StrongFocus)
-            # column 10 - gamma output
+            # column 9 - gamma output
             if not (self.ucfitlist[row].symmetry == 'triclinic'):
                 if self.ucfitlist[row].symmetry == 'hexagonal':
                     item10 = QtWidgets.QTableWidgetItem('120.')
                 else:
                     item10 = QtWidgets.QTableWidgetItem('90.')
                 item10.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.tableWidget_UnitCell.setItem(row, 10, item10)
+                self.tableWidget_UnitCell.setItem(row, 9, item10)
             else:
                 self.tableWidget_UnitCell_doubleSpinBox_gamma = QtWidgets.QDoubleSpinBox()
                 self.tableWidget_UnitCell_doubleSpinBox_gamma.setAlignment(
@@ -604,7 +601,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.tableWidget_UnitCell_doubleSpinBox_gamma.setStyle(
                     SpinBoxFixStyle())
                 self.tableWidget_UnitCell.setCellWidget(
-                    row, 10, self.tableWidget_UnitCell_doubleSpinBox_gamma)
+                    row, 9, self.tableWidget_UnitCell_doubleSpinBox_gamma)
                 self.tableWidget_UnitCell_doubleSpinBox_gamma.\
                     setKeyboardTracking(False)
                 self.tableWidget_UnitCell_doubleSpinBox_gamma.setFocusPolicy(
@@ -619,7 +616,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         index = self.tableWidget_UnitCell.indexAt(box.pos())
         if index.isValid():
             idx = index.row()
-            if index.column() == 5:
+            if index.column() == 4:
                 self.ucfitlist[idx].a = value
                 if self.ucfitlist[idx].symmetry == 'cubic':
                     self.ucfitlist[idx].b = value
@@ -629,15 +626,15 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     self.ucfitlist[idx].b = value
                 else:
                     pass
-            elif index.column() == 6:
+            elif index.column() == 5:
                 self.ucfitlist[idx].b = value
-            elif index.column() == 7:
+            elif index.column() == 6:
                 self.ucfitlist[idx].c = value
-            elif index.column() == 8:
+            elif index.column() == 7:
                 self.ucfitlist[idx].alpha = value
-            elif index.column() == 9:
+            elif index.column() == 8:
                 self.ucfitlist[idx].beta = value
-            elif index.column() == 10:
+            elif index.column() == 9:
                 self.ucfitlist[idx].gamma = value
             if self.ucfitlist[idx].display:
                 self.update_graph()
@@ -647,7 +644,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         index = self.tableWidget_UnitCell.indexAt(button.pos())
         if index.isValid():
             idx = index.row()
-            if index.column() == 3:
+            if index.column() == 2:
                 color = QtWidgets.QColorDialog.getColor()
                 if color.isValid():
                     self.tableWidget_UnitCell.item(idx, 2).\
@@ -787,22 +784,21 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                   self.doubleSpinBox_Temperature.value())
 
     def _find_a_JCPDS(self):
-        idx_checked = []
-        for item in self.tableWidget_JCPDS.selectedIndexes():
-            if item.column() != 1:
-                return None
-            else:
-                idx_checked.append(item.row())
-        return idx_checked[0]
+        idx_checked = self.tableWidget_JCPDS.selectionModel().selectedRows()
+        if idx_checked == []:
+            print('no row selected')
+            return None
+        else:
+            return idx_checked[0].row()
 
     def _find_a_wf(self):
-        idx_checked = []
-        for item in self.tableWidget_wfPatterns.selectedIndexes():
-            if item.column() != 1:
-                return None
-            else:
-                idx_checked.append(item.row())
-        return idx_checked[0]
+        idx_checked = [
+            s.row() for s in self.tableWidget_wfPatterns.selectionModel().
+            selectedRows()]
+        if idx_checked == []:
+            return None
+        else:
+            return idx_checked[0]
 
     def moveup_JCPDS(self):
         # get selected cell number
@@ -813,8 +809,11 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         i = idx_selected
         self.jlist[i - 1], self.jlist[i] = self.jlist[i], self.jlist[i - 1]
+        self.tableWidget_JCPDS.selectRow(i - 1)
+        """
         self.tableWidget_JCPDS.setCurrentItem(
             self.tableWidget_JCPDS.item(i - 1, 1))
+        """
         # self.tableWidget_JCPDS.setCurrentItem(
         #    self.tableWidget_JCPDS.item(i, 1), False)
         """
@@ -834,8 +833,11 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         i = idx_selected
         self.jlist[i + 1], self.jlist[i] = self.jlist[i], self.jlist[i + 1]
+        self.tableWidget_JCPDS.selectRow(i + 1)
+        """
         self.tableWidget_JCPDS.setCurrentItem(
             self.tableWidget_JCPDS.item(i + 1, 1))
+        """
         """
         self.tableWidget_JCPDS.setItemSelected(
             self.tableWidget_JCPDS.item(i + 1, 1), True)
@@ -1174,14 +1176,15 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _list_wfpatterns(self):
         """show a list of jcpds in the list window of tab 3"""
-        n_columns = 5
+        n_columns = 4
         n_rows = self.waterfallpatterns.__len__()  # count for number of jcpds
         self.tableWidget_wfPatterns.setColumnCount(n_columns)
         self.tableWidget_wfPatterns.setRowCount(n_rows)
         self.tableWidget_wfPatterns.horizontalHeader().setVisible(True)
         self.tableWidget_wfPatterns.setHorizontalHeaderLabels(
-            ['', 'Name',
-             'Color', 'Color change', 'Wavelength'])
+            ['', 'Color', 'Color change', 'Wavelength'])
+        self.tableWidget_wfPatterns.setVerticalHeaderLabels(
+            [extract_filename(wfp.fname) for wfp in self.waterfallpatterns])
         for row in range(n_rows):
             # column 0 - checkbox
             item0 = QtWidgets.QTableWidgetItem()
@@ -1192,24 +1195,22 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 item0.setCheckState(QtCore.Qt.Unchecked)
             self.tableWidget_wfPatterns.setItem(row, 0, item0)
-            # column 1 - name
-            item1 = QtWidgets.QTableWidgetItem(
-                os.path.basename(self.waterfallpatterns[row].fname))
-            self.tableWidget_wfPatterns.setItem(row, 1, item1)
-            # column 2 - color
+            # column 1 - color
             item2 = QtWidgets.QTableWidgetItem('    ')
-            self.tableWidget_wfPatterns.setItem(row, 2, item2)
+            self.tableWidget_wfPatterns.setItem(row, 1, item2)
             # column 3 - color setup
-            self.tableWidget_wfPatterns_pushButton_color = QtWidgets.QPushButton('change')
-            self.tableWidget_wfPatterns.item(row, 2).setBackground(
+            self.tableWidget_wfPatterns_pushButton_color =\
+                QtWidgets.QPushButton('change')
+            self.tableWidget_wfPatterns.item(row, 1).setBackground(
                 QtGui.QColor(self.waterfallpatterns[row].color))
             self.tableWidget_wfPatterns_pushButton_color.clicked.connect(
                 self._wfPatterns_handle_ColorButtonClicked)
             self.tableWidget_wfPatterns.setCellWidget(
-                row, 3,
+                row, 2,
                 self.tableWidget_wfPatterns_pushButton_color)
-            # column 4 - wavelength
-            self.tableWidget_wfPatterns_doubleSpinBox_wavelength = QtWidgets.QDoubleSpinBox()
+            # column 3 - wavelength
+            self.tableWidget_wfPatterns_doubleSpinBox_wavelength = \
+                QtWidgets.QDoubleSpinBox()
             self.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
                 setAlignment(
                     QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
@@ -1228,7 +1229,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
                 setStyle(SpinBoxFixStyle())
             self.tableWidget_wfPatterns.setCellWidget(
-                row, 4,
+                row, 3,
                 self.tableWidget_wfPatterns_doubleSpinBox_wavelength)
             self.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
                 setKeyboardTracking(False)
@@ -1261,7 +1262,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         index = self.tableWidget_wfPatterns.indexAt(button.pos())
         if index.isValid():
             idx = index.row()
-            if index.column() == 3:
+            if index.column() == 2:
                 color = QtWidgets.QColorDialog.getColor()
                 if color.isValid():
                     self.tableWidget_wfPatterns.item(idx, 2).\
@@ -1307,12 +1308,8 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if reply == QtWidgets.QMessageBox.No:
             return
         # print self.tableWidget_JCPDS.selectedIndexes().__len__()
-        idx_checked = []
-        for item in self.tableWidget_JCPDS.selectedIndexes():
-            if item.column() != 1:
-                return
-            else:
-                idx_checked.append(item.row())
+        idx_checked = [s.row() for s in
+                       self.tableWidget_JCPDS.selectionModel().selectedRows()]
         # remove checked ones
         if idx_checked != []:
             idx_checked.reverse()
@@ -1329,15 +1326,14 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def view_jcpds(self):
         if self.jlist == []:
             return
-        idx_checked = []
-        for item in self.tableWidget_JCPDS.selectedIndexes():
-            if item.column() != 1:
-                QtWidgets.QMessageBox.warning(
-                    self, "Warning",
-                    "Highlight the name of JCPDS to view")
-                return
-            else:
-                idx_checked.append(item.row())
+        idx_checked = [s.row() for s in
+                       self.tableWidget_JCPDS.selectionModel().selectedRows()]
+
+        if idx_checked == []:
+            QtWidgets.QMessageBox.warning(
+                self, "Warning",
+                "Highlight the name of JCPDS to view")
+            return
         if idx_checked.__len__() != 1:
             QtWidgets.QMessageBox.warning(
                 self, "Warning", "Only one JCPDS card can be shown at a time.")
@@ -1349,16 +1345,17 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _list_jcpds(self):
         """show jcpds cards in the QTableWidget"""
-        n_columns = 11
+        n_columns = 10
         n_rows = self.jlist.__len__()  # count for number of jcpds
         self.tableWidget_JCPDS.setColumnCount(n_columns)
         self.tableWidget_JCPDS.setRowCount(n_rows)
         self.tableWidget_JCPDS.horizontalHeader().setVisible(True)
         self.tableWidget_JCPDS.verticalHeader().setVisible(True)
         self.tableWidget_JCPDS.setHorizontalHeaderLabels(
-            ['', 'Name',
-             'Color', 'Color Change', 'V0 Tweak', 'K0 Tweak', 'K0p Tweak',
+            ['', 'Color', 'Color Change', 'V0 Tweak', 'K0 Tweak', 'K0p Tweak',
              'alpha0 Tweak', 'b/a Tweak', 'c/a Tweak', 'Int Tweak'])
+        self.tableWidget_JCPDS.setVerticalHeaderLabels(
+            [j.name for j in self.jlist])
         for row in range(n_rows):
             # column 0 - checkbox
             item0 = QtWidgets.QTableWidgetItem()
@@ -1369,22 +1366,21 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 item0.setCheckState(QtCore.Qt.Unchecked)
             self.tableWidget_JCPDS.setItem(row, 0, item0)
-            # column 1 - name
-            item1 = QtWidgets.QTableWidgetItem(self.jlist[row].name)
-            self.tableWidget_JCPDS.setItem(row, 1, item1)
-            # column 2 - color
+            # column 1 - color
             item2 = QtWidgets.QTableWidgetItem('    ')
-            self.tableWidget_JCPDS.setItem(row, 2, item2)
-            # column 3 - color setup
-            self.tableWidget_JCPDS_pushButton_color = QtWidgets.QPushButton('change')
-            self.tableWidget_JCPDS.item(row, 2).setBackground(
+            self.tableWidget_JCPDS.setItem(row, 1, item2)
+            # column 2 - color setup
+            self.tableWidget_JCPDS_pushButton_color = \
+                QtWidgets.QPushButton('change')
+            self.tableWidget_JCPDS.item(row, 1).setBackground(
                 QtGui.QColor(self.jlist[row].color))
             self.tableWidget_JCPDS_pushButton_color.clicked.connect(
                 self._jcpds_handle_ColorButtonClicked)
             self.tableWidget_JCPDS.setCellWidget(
-                row, 3, self.tableWidget_JCPDS_pushButton_color)
-            # column 4 - V0 tweak
-            self.tableWidget_JCPDS_doubleSpinBox_V0twk = QtWidgets.QDoubleSpinBox()
+                row, 2, self.tableWidget_JCPDS_pushButton_color)
+            # column 3 - V0 tweak
+            self.tableWidget_JCPDS_doubleSpinBox_V0twk = \
+                QtWidgets.QDoubleSpinBox()
             self.tableWidget_JCPDS_doubleSpinBox_V0twk.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
@@ -1398,11 +1394,12 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWidget_JCPDS_doubleSpinBox_V0twk.setStyle(
                 SpinBoxFixStyle())
             self.tableWidget_JCPDS.setCellWidget(
-                row, 4, self.tableWidget_JCPDS_doubleSpinBox_V0twk)
+                row, 3, self.tableWidget_JCPDS_doubleSpinBox_V0twk)
             self.tableWidget_JCPDS_doubleSpinBox_V0twk.setFocusPolicy(
                 QtCore.Qt.StrongFocus)
-            # column 5 - K0 tweak
-            self.tableWidget_JCPDS_doubleSpinBox_K0twk = QtWidgets.QDoubleSpinBox()
+            # column 4 - K0 tweak
+            self.tableWidget_JCPDS_doubleSpinBox_K0twk = \
+                QtWidgets.QDoubleSpinBox()
             self.tableWidget_JCPDS_doubleSpinBox_K0twk.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
@@ -1416,11 +1413,12 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWidget_JCPDS_doubleSpinBox_K0twk.setStyle(
                 SpinBoxFixStyle())
             self.tableWidget_JCPDS.setCellWidget(
-                row, 5, self.tableWidget_JCPDS_doubleSpinBox_K0twk)
+                row, 4, self.tableWidget_JCPDS_doubleSpinBox_K0twk)
             self.tableWidget_JCPDS_doubleSpinBox_K0twk.setFocusPolicy(
                 QtCore.Qt.StrongFocus)
-            # column 6 - K0p tweak
-            self.tableWidget_JCPDS_doubleSpinBox_K0ptwk = QtWidgets.QDoubleSpinBox()
+            # column 5 - K0p tweak
+            self.tableWidget_JCPDS_doubleSpinBox_K0ptwk = \
+                QtWidgets.QDoubleSpinBox()
             self.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
@@ -1434,11 +1432,12 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setStyle(
                 SpinBoxFixStyle())
             self.tableWidget_JCPDS.setCellWidget(
-                row, 6, self.tableWidget_JCPDS_doubleSpinBox_K0ptwk)
+                row, 5, self.tableWidget_JCPDS_doubleSpinBox_K0ptwk)
             self.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setFocusPolicy(
                 QtCore.Qt.StrongFocus)
-            # column 7 - alpha0 tweak
-            self.tableWidget_JCPDS_doubleSpinBox_alpha0twk = QtWidgets.QDoubleSpinBox()
+            # column 6 - alpha0 tweak
+            self.tableWidget_JCPDS_doubleSpinBox_alpha0twk = \
+                QtWidgets.QDoubleSpinBox()
             self.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
@@ -1455,8 +1454,8 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setFocusPolicy(
                 QtCore.Qt.StrongFocus)
             self.tableWidget_JCPDS.setCellWidget(
-                row, 7, self.tableWidget_JCPDS_doubleSpinBox_alpha0twk)
-            # column 8 - b/a tweak
+                row, 6, self.tableWidget_JCPDS_doubleSpinBox_alpha0twk)
+            # column 7 - b/a tweak
             if (self.jlist[row].symmetry == 'cubic') or \
                     (self.jlist[row].symmetry == 'tetragonal') or \
                     (self.jlist[row].symmetry == 'hexagonal'):
@@ -1464,7 +1463,8 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 item8.setFlags(QtCore.Qt.ItemIsEnabled)
                 self.tableWidget_JCPDS.setItem(row, 8, item8)
             else:
-                self.tableWidget_JCPDS_doubleSpinBox_b_atwk = QtWidgets.QDoubleSpinBox()
+                self.tableWidget_JCPDS_doubleSpinBox_b_atwk = \
+                    QtWidgets.QDoubleSpinBox()
                 self.tableWidget_JCPDS_doubleSpinBox_b_atwk.setAlignment(
                     QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                     QtCore.Qt.AlignVCenter)
@@ -1479,18 +1479,19 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.tableWidget_JCPDS_doubleSpinBox_b_atwk.setStyle(
                     SpinBoxFixStyle())
                 self.tableWidget_JCPDS.setCellWidget(
-                    row, 8, self.tableWidget_JCPDS_doubleSpinBox_b_atwk)
+                    row, 7, self.tableWidget_JCPDS_doubleSpinBox_b_atwk)
                 self.tableWidget_JCPDS_doubleSpinBox_b_atwk.\
                     setKeyboardTracking(False)
                 self.tableWidget_JCPDS_doubleSpinBox_b_atwk.setFocusPolicy(
                     QtCore.Qt.StrongFocus)
-            # column 9 - c/a tweak
+            # column 8 - c/a tweak
             if (self.jlist[row].symmetry == 'cubic'):
                 item9 = QtWidgets.QTableWidgetItem('')
                 item9.setFlags(QtCore.Qt.ItemIsEnabled)
                 self.tableWidget_JCPDS.setItem(row, 9, item9)
             else:
-                self.tableWidget_JCPDS_doubleSpinBox_c_atwk = QtWidgets.QDoubleSpinBox()
+                self.tableWidget_JCPDS_doubleSpinBox_c_atwk = \
+                    QtWidgets.QDoubleSpinBox()
                 self.tableWidget_JCPDS_doubleSpinBox_c_atwk.setAlignment(
                     QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                     QtCore.Qt.AlignVCenter)
@@ -1505,13 +1506,14 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.tableWidget_JCPDS_doubleSpinBox_c_atwk.setStyle(
                     SpinBoxFixStyle())
                 self.tableWidget_JCPDS.setCellWidget(
-                    row, 9, self.tableWidget_JCPDS_doubleSpinBox_c_atwk)
+                    row, 8, self.tableWidget_JCPDS_doubleSpinBox_c_atwk)
                 self.tableWidget_JCPDS_doubleSpinBox_c_atwk.\
                     setKeyboardTracking(False)
                 self.tableWidget_JCPDS_doubleSpinBox_c_atwk.setFocusPolicy(
                     QtCore.Qt.StrongFocus)
-            # column 10 - int tweak
-            self.tableWidget_JCPDS_doubleSpinBox_inttwk = QtWidgets.QDoubleSpinBox()
+            # column 9 - int tweak
+            self.tableWidget_JCPDS_doubleSpinBox_inttwk = \
+                QtWidgets.QDoubleSpinBox()
             self.tableWidget_JCPDS_doubleSpinBox_inttwk.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
@@ -1525,7 +1527,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWidget_JCPDS_doubleSpinBox_inttwk.setStyle(
                 SpinBoxFixStyle())
             self.tableWidget_JCPDS.setCellWidget(
-                row, 10, self.tableWidget_JCPDS_doubleSpinBox_inttwk)
+                row, 9, self.tableWidget_JCPDS_doubleSpinBox_inttwk)
             self.tableWidget_JCPDS_doubleSpinBox_inttwk.setFocusPolicy(
                 QtCore.Qt.StrongFocus)
             self.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
@@ -1548,19 +1550,19 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         index = self.tableWidget_JCPDS.indexAt(box.pos())
         if index.isValid():
             idx = index.row()
-            if index.column() == 4:
+            if index.column() == 3:
                 self.jlist[idx].twk_v0 = value
-            elif index.column() == 5:
+            elif index.column() == 4:
                 self.jlist[idx].twk_k0 = value
-            elif index.column() == 6:
+            elif index.column() == 5:
                 self.jlist[idx].twk_k0p = value
-            elif index.column() == 7:
+            elif index.column() == 6:
                 self.jlist[idx].twk_thermal_expansion = value
-            elif index.column() == 8:
+            elif index.column() == 7:
                 self.jlist[idx].twk_b_a = value
-            elif index.column() == 9:
+            elif index.column() == 8:
                 self.jlist[idx].twk_c_a = value
-            elif index.column() == 10:
+            elif index.column() == 9:
                 self.jlist[idx].twk_int = value
             if self.jlist[idx].display:
                 self.update_graph()
@@ -1570,10 +1572,10 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         index = self.tableWidget_JCPDS.indexAt(button.pos())
         if index.isValid():
             idx = index.row()
-            if index.column() == 3:
+            if index.column() == 2:
                 color = QtWidgets.QColorDialog.getColor()
                 if color.isValid():
-                    self.tableWidget_JCPDS.item(idx, 2).setBackground(color)
+                    self.tableWidget_JCPDS.item(idx, 1).setBackground(color)
                     self.jlist[idx].color = str(color.name())
                     self.update_graph()
 
@@ -1646,7 +1648,8 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         y_click = float(event.ydata)
         x_click_dsp = self.doubleSpinBox_SetWavelength.value() / 2. / \
             np.sin(np.radians(x_click / 2.))
-        clicked_position = "Clicked position: {0: 10.4f}, {1: 7.1f}, \n dsp = {2: 10.4f} A".\
+        clicked_position = \
+            "Clicked position: {0: 10.4f}, {1: 7.1f}, \n dsp = {2: 10.4f} A".\
             format(x_click, y_click, x_click_dsp)
         if (self.jlist == []) and (self.ucfitlist == []):
             QtWidgets.QMessageBox.warning(self, "Information",
@@ -1773,23 +1776,20 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if reply == QtWidgets.QMessageBox.No:
             return
         # print self.tableWidget_JCPDS.selectedIndexes().__len__()
-        idx_checked = []
-        for item in self.tableWidget_wfPatterns.selectedIndexes():
-            if item.column() != 1:
-                return
-            else:
-                idx_checked.append(item.row())
-        # remove checked ones
-        if idx_checked != []:
+        idx_checked = [
+            s.row() for s in self.tableWidget_wfPatterns.selectionModel().
+            selectedRows()]
+        if idx_checked == []:
+            QtWidgets.QMessageBox.warning(
+                self, 'Warning', 'In order to remove, highlight the names.')
+            return
+        else:
             idx_checked.reverse()
             for idx in idx_checked:
                 self.waterfallpatterns.remove(self.waterfallpatterns[idx])
                 self.tableWidget_wfPatterns.removeRow(idx)
 #        self._list_jcpds()
             self.update_graph()
-        else:
-            QtWidgets.QMessageBox.warning(
-                self, 'Warning', 'In order to remove, highlight the names.')
 
     def up_waterfall(self):
         # get selected cell number
@@ -1801,8 +1801,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         i = idx_selected
         self.waterfallpatterns[i - 1], self.waterfallpatterns[i] = \
             self.waterfallpatterns[i], self.waterfallpatterns[i - 1]
-        self.tableWidget_wfPatterns.setCurrentItem(
-            self.tableWidget_wfPatterns.item(i - 1, 1))
+        self.tableWidget_wfPatterns.selectRow(i - 1)
         """
         self.tableWidget_wfPatterns.setItemSelected(
             self.tableWidget_wfPatterns.item(i - 1, 1), True)
@@ -1821,8 +1820,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         i = idx_selected
         self.waterfallpatterns[i + 1], self.waterfallpatterns[i] = \
             self.waterfallpatterns[i], self.waterfallpatterns[i + 1]
-        self.tableWidget_wfPatterns.setCurrentItem(
-            self.tableWidget_wfPatterns.item(i + 1, 1))
+        self.tableWidget_wfPatterns.selectRow(i + 1)
         """
         self.tableWidget_wfPatterns.setItemSelected(
             self.tableWidget_wfPatterns.item(i + 1, 1), True)
@@ -2088,12 +2086,12 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 bar_min = np.ones(tth.shape) * bottom
                 intensity = inten
                 bar_min = np.ones(tth.shape) * bottom
-                self.tableWidget_UnitCell.removeCellWidget(i, 4)
+                self.tableWidget_UnitCell.removeCellWidget(i, 3)
                 Item4 = QtWidgets.QTableWidgetItem(
                     "{:.3f}".format(float(j.v)))
                 Item4.setFlags(QtCore.Qt.ItemIsSelectable |
                                QtCore.Qt.ItemIsEnabled)
-                self.tableWidget_UnitCell.setItem(i, 4, Item4)
+                self.tableWidget_UnitCell.setItem(i, 3, Item4)
                 if self.checkBox_Intensity.isChecked():
                     self.mpl.canvas.ax.vlines(tth, bar_min, intensity *
                                               bar_scale, colors=j.color)
