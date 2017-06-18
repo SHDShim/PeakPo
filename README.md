@@ -165,4 +165,4 @@ Even if I install `pyopencl`, `pyfai` still complains that it cannot be found.  
 
 ## How to cite
 
-S.-H. Shim. (2017) PeakPo - A python software for X-ray diffraction analysis at high pressure and high temperature. Zenodo. http://doi.org/10.5281/zenodo.810199
+S.-H. Shim (2017) PeakPo - A python software for X-ray diffraction analysis at high pressure and high temperature. Zenodo. http://doi.org/10.5281/zenodo.810199

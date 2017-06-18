@@ -17,6 +17,7 @@ from matplotlib.ticker import MultipleLocator
 from matplotlib.backend_bases import key_press_handler
 import pickle
 import time
+import datetime
 import zipfile
 # local modules
 from qtd import Ui_MainWindow
@@ -31,6 +32,7 @@ from ds_cake import DiffImg
 from ds_jcpds import JCPDSplt, Session, UnitCell, convert_tth
 from ds_powdiff import PatternPeakPo, get_DataSection
 exec(open('./version.py').read())
+exec(open('./citation.py').read())
 
 
 class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -45,6 +47,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         version = "7.2.1"  # consider reading version number from a single file
         self.setWindowTitle("PeakPo ver. " + str(__version__))
         self.about()
+        self.shortcutkeys()
         # get objects
         self.Pattern = None
         self.waterfallpatterns = []
@@ -263,7 +266,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         self.DiffImg = DiffImg()
         self.DiffImg.load(filen_tif)
-        self.label_DiffractionImageFilename.setText(
+        self.textEdit_DiffractionImageFilename.setText(
             '2D Image: ' + filen_tif)
 
     def apply_mask(self):
@@ -297,7 +300,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             # I am unsure poni_path would be needed to be self
             self.poni_path = poni_path
             self.poni_filename = str(file)
-            self.label_PONI.setText('PONI: ' + self.poni_filename)
+            self.textEdit_PONI.setText('PONI: ' + self.poni_filename)
             if self.DiffImg is not None:
                 self._update_cake()
             self.update_graph()
@@ -732,8 +735,9 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             key_press_handler(event, self.mpl.canvas, self.mpl.ntb)
 
     def shortcutkeys(self):
-        QtWidgets.QMessageBox.about(
-            self, 'Shortcut Keys',
+        self.textEdit_shortcuts.setText(
+            '** Shortcut Keys ** <br><br>' +
+            'To activate shortcut keys, make sure no mpl buttons are in press. <br>'
             'Save session: s<br>' +
             'Rescale vertical: v<br>' +
             'Whole spectrum: w<br>' +
@@ -871,10 +875,10 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         success = self._load_session(fn, False)
         if success:
-            self.label_Jlist.setText(
-                'Jlist: ' + os.path.basename(str(fn)))
-            self.label_SessionFileName.setText(
-                'Session: ' + os.path.basename(str(fn)))
+            self.textEdit_Jlist.setText('Jlist: ' + str(fn))
+            self.textEdit_SessionFileName.setText('Session: ' + str(fn))
+            self.textEdit_DiffractionPatternFileName.setText(
+                '1D pattern: ' + str(self.Pattern.fname))
             self.update_graph2whole()
             self.update_inputs()
 
@@ -886,10 +890,10 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         success = self._load_session(fn, False)
         if success:
-            self.label_Jlist.setText(
-                'JCPDS list from: ' + os.path.basename(str(fn)))
-            self.label_SessionFileName.setText(
-                'Session information from: ' + os.path.basename(str(fn)))
+            self.textEdit_Jlist.setText('Jlist: ' + str(fn))
+            self.textEdit_DiffractionPatternFileName.setText(
+                '1D pattern: ' + str(self.Pattern.fname))
+            self.textEdit_SessionFileName.setText('Session: ' + str(fn))
             self.update_inputs()
 
     def _load_session(self, fsession, jlistonly=False):
@@ -1052,8 +1056,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             fsession_name = '%s.forzip.ppss' % filen
             fsession = os.path.join(path, fsession_name)
             self._dump_session(str(fsession))
-            self.label_Jlist.setText('JCPDS list from: ' +
-                                     os.path.basename(str(fsession)))
+            self.textEdit_Jlist.setText('Jlist : ' + str(fsession))
             zf = zipfile.ZipFile(str(fzip), 'w', zipfile.ZIP_DEFLATED)
             zf.write(fsession, arcname=fsession_name)
             if self.Pattern is not None:
@@ -1073,9 +1076,8 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         new_filename = dialog_savefile(self, fsession)
         if new_filename != '':
             self._dump_session(new_filename)
-            self.label_SessionFileName.setText(
-                'Session file (including jlist): ' +
-                os.path.basename(new_filename))
+            self.textEdit_SessionFileName.setText('Session: ' +
+                                                  str(new_filename))
 
     def save_session_fast(self):
         if self.Pattern is None:
@@ -1094,9 +1096,8 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 return
         if str(fsession) != '':
             self._dump_session(str(fsession))
-            self.label_SessionFileName.setText(
-                'Session file (including jlist): ' +
-                os.path.basename(fsession))
+            self.textEdit_SessionFileName.setText(
+                'Session: ' + str(fsession))
 
     def set_NightDayView(self):
         self._set_NightDayView()
@@ -1126,16 +1127,16 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.objColor = 'white'
 
     def about(self):
-        QtWidgets.QMessageBox.about(
-            self, 'About',
-            '<font size="10">PeakPo</font><br><br>' +
-            '<font size="4">A Visual Diffraction Analysis Tool </font><br><br>' +
-            '<font size="4"> by S.-H. Dan Shim, SHDShim@gmail.com</font><br>' +
-            'Arizona State University<br>' +
-            'https://sites.google.com/site/shdshim/ <br><br>' +
+        self.textEdit_about.setText(
+            'PeakPo<br><br>' +
+            'A Visual Diffraction Analysis Tool<br><br>' +
+            'by S.-H. Dan Shim, SHDShim@gmail.com<br>' +
+            'Arizona State University<br><br>' +
+            'where to find updates: https://github.com/SHDShim/peakpo-v7 <br><br>' +
+            'how to cite: ' + str(__citation__) + '<br><br>'
             'WARNING. Use at your own risk. ' +
             'This is a free software and no support is provided.<br>' +
-            'You may report bugs or send comments to Dan Shim.')
+            'You may report bugs or send comments to SHDShim@gmail.com.')
 
     def add_patterns(self):
         """ get files for waterfall plot """
@@ -1199,8 +1200,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             item2 = QtWidgets.QTableWidgetItem('    ')
             self.tableWidget_wfPatterns.setItem(row, 1, item2)
             # column 3 - color setup
-            self.tableWidget_wfPatterns_pushButton_color =\
-                QtWidgets.QPushButton('change')
+            self.tableWidget_wfPatterns_pushButton_color = QtWidgets.QPushButton('change')
             self.tableWidget_wfPatterns.item(row, 1).setBackground(
                 QtGui.QColor(self.waterfallpatterns[row].color))
             self.tableWidget_wfPatterns_pushButton_color.clicked.connect(
@@ -1294,8 +1294,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if fn_jlist == '':
             return
         self._load_session(fn_jlist, True)
-        self.label_Jlist.setText('Jlist in: ' +
-                                 os.path.basename(str(fn_jlist)))
+        self.textEdit_Jlist.setText('Jlist: ' + str(fn_jlist))
         self._list_jcpds()
         self.update_graph()
 
@@ -1915,8 +1914,8 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.Pattern.read_file(new_filename)
         self.Pattern.wavelength = self.doubleSpinBox_SetWavelength.value()
         self.Pattern.display = True
-        self.label_DiffractionPatternFileName.setText('1D Pattern: ' +
-                                                      self.Pattern.fname)
+        self.textEdit_DiffractionPatternFileName.setText('1D Pattern: ' +
+                                                         self.Pattern.fname)
         x_raw, y_raw = self.Pattern.get_raw()
         if (x_raw.min() >=
             self.doubleSpinBox_Background_ROI_min.value()) or\
@@ -1971,7 +1970,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         filelist = get_sorted_filelist(
             self.chi_path,
             sorted_by_name=self.radioButton_SortbyNme.isChecked())
-        idx = find_from_filelist(filelist, self.Pattern.fname)
+        idx = find_from_filelist(filelist, os.path.split(self.Pattern.fname)[1])
         if idx == -1:
             QtWidgets.QMessageBox.warning(
                 self, "Warning", "Cannot find current file")
@@ -1985,12 +1984,28 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             idx_new = idx - step
         elif move == 'last':
             idx_new = filelist.__len__() - 1
+            if idx == idx_new:
+                QtWidgets.QMessageBox.warning(
+                    self, "Warning", "It is already the last file.")
+                return
         elif move == 'first':
             idx_new = 0
+            if idx == idx_new:
+                QtWidgets.QMessageBox.warning(
+                    self, "Warning", "It is already the first file.")
+                return
         if idx_new > filelist.__len__() - 1:
             idx_new = filelist.__len__() - 1
+            if idx == idx_new:
+                QtWidgets.QMessageBox.warning(
+                    self, "Warning", "It is already the last file.")
+                return
         if idx_new < 0:
             idx_new = 0
+            if idx == idx_new:
+                QtWidgets.QMessageBox.warning(
+                    self, "Warning", "It is already the first file.")
+                return
         new_filename = filelist[idx_new]
         if os.path.exists(new_filename):
             self._read_a_newpattern(new_filename)
@@ -2064,8 +2079,8 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Note that the line below takes most time.
         # slow plotting is just because I use matplotlib.
         self.mpl.canvas.draw()
-        print("Plot takes: {0:.4f} s at {1: .2f}".format(time.time() -
-                                                         t_start, time.time()))
+        print("Plot takes: {0:.4f} s at".format(time.time() - t_start),
+              str(datetime.datetime.now()))
         self.unsetCursor()
 
     def _plot_ucfit(self):

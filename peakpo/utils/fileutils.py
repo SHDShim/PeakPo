@@ -17,7 +17,7 @@ def writechi(filen, x, y, preheader=None):
 def find_from_filelist(flist, filen):
     i = 0
     for s in flist:
-        if s == filen:
+        if s.find(filen) != -1:
             return i
         i += 1
     return -1
