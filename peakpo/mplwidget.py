@@ -15,6 +15,7 @@ from matplotlib.backends.backend_qt5agg \
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 import matplotlib.ticker as mtick
+import matplotlib.pyplot as plt
 
 
 class MplCanvas(FigureCanvas):
@@ -61,15 +62,28 @@ class MplCanvas(FigureCanvas):
 
     def set_toNight(self, NightView=True):
         if NightView:
+            plt.style.use('dark_background')
             self.bgColor = 'black'
             self.objColor = 'white'
         else:
+            plt.style.use('default')
             self.bgColor = 'white'
             self.objColor = 'black'
 #        self.fig.clf()
 #        self.ax_pattern.cla()
 #        Cursor(self.ax, useblit=True, color=self.objColor, linewidth=2 )
+        self.fig.set_facecolor(self.bgColor)
+        self.ax_cake.tick_params(which='both', axis='x',
+                                 colors=self.objColor, direction='in',
+                                 labelbottom=False, labeltop=False)
+        self.ax_cake.tick_params(axis='both', which='both', length=0)
+        self.ax_pattern.tick_params(which='both', axis='x', direction='in')
+        self.ax_pattern.tick_params(axis='y', direction='in')
+        self.ax_pattern.tick_params(axis='x', which='major', length=6)
+        self.ax_pattern.tick_params(axis='y', which='both', length=0)
+        self.ax_pattern.xaxis.set_label_position('bottom')
 
+        """
         self.ax_cake.set_facecolor(self.bgColor)
         self.ax_cake.spines['bottom'].set_color(self.objColor)
         self.ax_cake.spines['left'].set_color(self.objColor)
@@ -102,6 +116,7 @@ class MplCanvas(FigureCanvas):
         self.ax_pattern.tick_params(axis='y', which='both', length=0)
         # self.ax_pattern.tick_params(axis='y', colors=self.objColor)
         self.ax_pattern.xaxis.set_label_position('bottom')
+        """
 
 
 class MplWidget(QtWidgets.QWidget):
