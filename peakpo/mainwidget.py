@@ -724,7 +724,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         elif event.key == 'w':
             self.update_graph2whole()
         elif event.key == 'v':
-            lims = self.mpl.canvas.ax.axis()
+            lims = self.mpl.canvas.ax_pattern.axis()
             if self.ntb_Bgsub.isChecked():
                 x, y = self.Pattern.get_bgsub()
             else:
@@ -757,7 +757,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # listen
         if self.Pattern is None:
             return
-        lims = self.mpl.canvas.ax.axis()
+        lims = self.mpl.canvas.ax_pattern.axis()
         talk = "PeakPo,{0},{1: .2f},{2: .2f},{3: .2f},{4: .2f}".format(
             self.Pattern.fname, lims[0], lims[1], lims[2], lims[3])
         self.clip.setText(talk)
@@ -2022,37 +2022,38 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         t_start = time.time()
         self.setCursor(QtCore.Qt.WaitCursor)
         if limits is None:
-            lims = self.mpl.canvas.ax.axis()
-            limits = lims
+            limits = self.mpl.canvas.ax_pattern.axis()
         if (self.Pattern is None) and (self.jlist == []):
             return
         if self.pushButton_AddRemoveCake.isChecked():
             self.mpl.canvas.resize_axes(self.spinBox_CakeAxisSize.value())
+            self._plot_cake()
         else:
             self.mpl.canvas.resize_axes(1)
-            self.mpl.canvas.ax_bottom.tick_params(
-                axis='y', colors=self.objColor, labelleft=False)
-            self.mpl.canvas.ax_bottom.spines['right'].set_visible(False)
-            self.mpl.canvas.ax_bottom.spines['left'].set_visible(False)
-            self.mpl.canvas.ax_bottom.spines['top'].set_visible(False)
-            self.mpl.canvas.ax_bottom.spines['bottom'].set_visible(False)
         self._set_NightDayView()
-        # diff file only
         if self.Pattern is not None:
             self.mpl.canvas.fig.suptitle(self.Pattern.fname,
                                          color=self.objColor, fontsize=16)
             self._plot_diffpattern()
             if self.waterfallpatterns != []:
                 self._plot_waterfallpatterns()
-        # jcpds only
         if (self.jlist != []):
             self._plot_jcpds()
         if (self.ucfitlist != []):
             self._plot_ucfit()
-
-        self.mpl.canvas.ax.set_xlim(limits[0], limits[1])
+        self.mpl.canvas.ax_pattern.set_xlim(limits[0], limits[1])
         if not self.ntb_ResetY.isChecked():
-            self.mpl.canvas.ax.set_ylim(limits[2], limits[3])
+            self.mpl.canvas.ax_pattern.set_ylim(limits[2], limits[3])
+        xlabel = 'Two Theta (degrees), ' + \
+            "{0: 5.1f} GPa, {1: 4.0f} K, {2: 6.4f} A".\
+            format(self.doubleSpinBox_Pressure.value(),
+                   self.doubleSpinBox_Temperature.value(),
+                   self.doubleSpinBox_SetWavelength.value())
+        self.mpl.canvas.ax_pattern.set_xlabel(xlabel)
+        # if I move the line below to elsewhere I cannot get ylim or axis
+        #self.mpl.canvas.ax_pattern.autoscale(enable=False, axis=u'both', tight=True)
+        """Removing the lines below for the tick reduce the plot time
+        significantly.  So do not turn this on.
         x_size = limits[1] - limits[0]
         if x_size <= 50.:
             majortick_interval = 1
@@ -2060,24 +2061,11 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             majortick_interval = 10
             minortick_interval = 1
-        xlabel = 'Two Theta (Degrees), ' + \
-            "{0: 5.1f} GPa, {1: 4.0f} K, {2: 6.4f} A".\
-            format(self.doubleSpinBox_Pressure.value(),
-                   self.doubleSpinBox_Temperature.value(),
-                   self.doubleSpinBox_SetWavelength.value())
-        self.mpl.canvas.ax.set_xlabel(xlabel)
-        # cake only
-        if self.pushButton_AddRemoveCake.isChecked():
-            self._plot_cake()
-            self.mpl.canvas.ax_bottom.set_ylabel("Azimuthal angle (degrees)")
-        self.mpl.canvas.ax.set_ylabel('Intensity (arbitrary unit)')
-        self.mpl.canvas.ax.autoscale(enable=False, axis=u'both', tight=True)
         majorLocator = MultipleLocator(majortick_interval)
         minorLocator = MultipleLocator(minortick_interval)
-        self.mpl.canvas.ax.xaxis.set_major_locator(majorLocator)
-        self.mpl.canvas.ax.xaxis.set_minor_locator(minorLocator)
-        # Note that the line below takes most time.
-        # slow plotting is just because I use matplotlib.
+        self.mpl.canvas.ax_pattern.xaxis.set_major_locator(majorLocator)
+        self.mpl.canvas.ax_pattern.xaxis.set_minor_locator(minorLocator)
+        """
         self.mpl.canvas.draw()
         print("Plot takes: {0:.4f} s at".format(time.time() - t_start),
               str(datetime.datetime.now()))
@@ -2090,83 +2078,77 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 i += 1
         if i == 0:
             return
-        bottom, ymax = self.mpl.canvas.ax.get_ylim()
-        bar_scale = 1. / 100. * ymax
+        axisrange = self.mpl.canvas.ax_pattern.axis()
+        bar_scale = 1. / 100. * axisrange[3]
         i = 0
-        for j in self.ucfitlist:
-            if j.display:
-                j.cal_dsp()
-                tth, inten = j.get_tthVSint(
+        for phase in self.ucfitlist:
+            if phase.display:
+                phase.cal_dsp()
+                tth, inten = phase.get_tthVSint(
                     self.doubleSpinBox_SetWavelength.value())
-                bar_min = np.ones(tth.shape) * bottom
+                bar_min = np.ones(tth.shape) * axisrange[2]
                 intensity = inten
-                bar_min = np.ones(tth.shape) * bottom
+                bar_min = np.ones(tth.shape) * axisrange[2]
                 self.tableWidget_UnitCell.removeCellWidget(i, 3)
                 Item4 = QtWidgets.QTableWidgetItem(
-                    "{:.3f}".format(float(j.v)))
-                Item4.setFlags(QtCore.Qt.ItemIsSelectable |
-                               QtCore.Qt.ItemIsEnabled)
+                    "{:.3f}".format(float(phase.v)))
+                Item4.setFlags(
+                    QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
                 self.tableWidget_UnitCell.setItem(i, 3, Item4)
                 if self.checkBox_Intensity.isChecked():
-                    self.mpl.canvas.ax.vlines(tth, bar_min, intensity *
-                                              bar_scale, colors=j.color)
+                    self.mpl.canvas.ax_pattern.vlines(
+                        tth, bar_min, intensity * bar_scale, colors=phase.color)
                 else:
-                    self.mpl.canvas.ax.vlines(tth, bar_min, 100. * bar_scale,
-                                              colors=j.color)
-            else:
-                pass
+                    self.mpl.canvas.ax_pattern.vlines(
+                        tth, bar_min, 100. * bar_scale, colors=phase.color)
             i += 1
 
     def _plot_cake(self):
-        # t_start = time.time()
-        clim = (self.spinBox_VMin.value(), self.spinBox_VMax.value())
-        self.mpl.canvas.ax_bottom.imshow(
+        climits = (self.spinBox_VMin.value(), self.spinBox_VMax.value())
+        self.mpl.canvas.ax_cake.imshow(
             self.intensity_cake, origin="lower",
             extent=[self.tth_cake.min(), self.tth_cake.max(),
                     self.chi_cake.min(), self.chi_cake.max()],
-            aspect="auto", cmap="gray_r", clim=clim)
+            aspect="auto", cmap="gray_r", clim=climits)
         # print("Cake plot takes: %.4f second" % (time.time() - t_start))
 
     def _plot_jcpds(self):
-        # t_start = time.time()
         i = 0
-        for j in self.jlist:
-            if j.display:
+        for phase in self.jlist:
+            if phase.display:
                 i += 1
         if i == 0:
             return
-        # Reading ylim after zoom pan is not possible
-        # lims = self.mpl.canvas.ax.axis()
-        # bar_scale = 1./100. * lims[3]
-        # bottom = lims[2]
-        bottom, ymax = self.mpl.canvas.ax.get_ylim()
-        bar_scale = 1. / 100. * ymax
-        for j in self.jlist:
-            if j.display:
-                j.cal_dsp(self.doubleSpinBox_Pressure.value(),
-                          self.doubleSpinBox_Temperature.value())
-                tth, inten = j.get_tthVSint(
+        axisrange = self.mpl.canvas.ax_pattern.axis()
+        bar_scale = 1. / 100. * axisrange[3]
+        for phase in self.jlist:
+            if phase.display:
+                phase.cal_dsp(self.doubleSpinBox_Pressure.value(),
+                              self.doubleSpinBox_Temperature.value())
+                tth, inten = phase.get_tthVSint(
                     self.doubleSpinBox_SetWavelength.value())
-                intensity = inten * j.twk_int
-                bar_min = np.ones(tth.shape) * bottom
+                intensity = inten * phase.twk_int
+                bar_min = np.ones(tth.shape) * axisrange[2]
                 if self.checkBox_Intensity.isChecked():
-                    self.mpl.canvas.ax.vlines(
+                    self.mpl.canvas.ax_pattern.vlines(
                         tth, bar_min, intensity * bar_scale,
-                        colors=j.color, label=j.name + (", %.3f A^3" % j.v))
+                        colors=phase.color,
+                        label=phase.name + (", %.3f A^3" % phase.v))
                 else:
-                    self.mpl.canvas.ax.vlines(
+                    self.mpl.canvas.ax_pattern.vlines(
                         tth, bar_min, 100. * bar_scale,
-                        colors=j.color, label=j.name + (", %.3f A^3" % j.v))
+                        colors=phase.color,
+                        label=phase.name + (", %.3f A^3" % phase.v))
                 if self.pushButton_AddRemoveCake.isChecked():
                     for tth_i in tth:
-                        self.mpl.canvas.ax_bottom.axvline(
-                            x=tth_i, color=j.color, lw=0.5)
+                        self.mpl.canvas.ax_cake.axvline(
+                            x=tth_i, color=phase.color, lw=0.5)
             else:
                 pass
-        leg_j = self.mpl.canvas.ax.legend(loc=1, prop={'size': 10},
-                                          framealpha=0., handlelength=1)
+        leg_jcpds = self.mpl.canvas.ax_pattern.legend(
+            loc=1, prop={'size': 10}, framealpha=0., handlelength=1)
 
-        for line, txt in zip(leg_j.get_lines(), leg_j.get_texts()):
+        for line, txt in zip(leg_jcpds.get_lines(), leg_jcpds.get_texts()):
             txt.set_color(line.get_color())
         # print("JCPDS plot takes: %.4f second" % (time.time() - t_start))
 
@@ -2179,15 +2161,17 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 i += 1
         if i == 0:
             return
+        n_display = i
         j = 0  # this is needed for waterfall gaps
         # get y_max
         for pattern in self.waterfallpatterns:
             if pattern.display:
                 j += 1
-                self.mpl.canvas.ax.text(0.01, 0.97 - i * 0.03 + j * 0.03,
-                                        os.path.basename(pattern.fname),
-                                        transform=self.mpl.canvas.ax.transAxes,
-                                        color=pattern.color)
+                self.mpl.canvas.ax_pattern.text(
+                    0.01, 0.97 - n_display * 0.05 + j * 0.05,
+                    os.path.basename(pattern.fname),
+                    transform=self.mpl.canvas.ax_pattern.transAxes,
+                    color=pattern.color)
                 if self.ntb_Bgsub.isChecked():
                     ygap = self.doubleSpinBox_WaterfallGaps.value() * \
                         self.Pattern.y_bgsub.max() * float(j)
@@ -2217,15 +2201,15 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                     self.Pattern.wavelength)
                 else:
                     x = x_t
-                self.mpl.canvas.ax.plot(x, y + ygap, c=pattern.color)
-        self.mpl.canvas.ax.text(0.01, 0.97 - i * 0.03,
-                                os.path.basename(self.Pattern.fname),
-                                transform=self.mpl.canvas.ax.transAxes,
-                                color=self.Pattern.color)
+                self.mpl.canvas.ax_pattern.plot(x, y + ygap, c=pattern.color)
+        self.mpl.canvas.ax_pattern.text(0.01, 0.97 - n_display * 0.05,
+                                        os.path.basename(self.Pattern.fname),
+                                        transform=self.mpl.canvas.ax_pattern.transAxes,
+                                        color=self.Pattern.color)
         # print("Waterfall plot takes: %.4f second" % (time.time() - t_start))
 
 #        if j != 0:
-#            leg_wf = self.mpl.canvas.ax.legend(loc=2, prop={'size':10}, \
+#            leg_wf = self.mpl.canvas.ax_pattern.legend(loc=2, prop={'size':10}, \
 #                        framealpha=0., handlelength=1)
 #            for line, txt in zip(leg_wf.get_lines(), leg_wf.get_texts()):
 #                txt.set_color(line.get_color())
@@ -2233,9 +2217,9 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _plot_diffpattern(self):
         if self.ntb_Bgsub.isChecked():
             x, y = self.Pattern.get_bgsub()
-            self.mpl.canvas.ax.plot(x, y, c=self.Pattern.color)
+            self.mpl.canvas.ax_pattern.plot(x, y, c=self.Pattern.color)
         else:
             x, y = self.Pattern.get_raw()
-            self.mpl.canvas.ax.plot(x, y, c=self.Pattern.color)
+            self.mpl.canvas.ax_pattern.plot(x, y, c=self.Pattern.color)
             x_bg, y_bg = self.Pattern.get_background()
-            self.mpl.canvas.ax.plot(x_bg, y_bg, c=self.Pattern.color, lw=0.5)
+            self.mpl.canvas.ax_pattern.plot(x_bg, y_bg, c=self.Pattern.color, lw=0.5)
