@@ -222,9 +222,12 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Cake function
         Add/remove cake to the graph
         """
+        self._addremove_Cake()
+        self.update_graph()
+
+    def _addremove_Cake(self):
         if not self.pushButton_AddRemoveCake.isChecked():
             self.pushButton_AddRemoveCake.setText('Add Cake')
-            self.update_graph()
             return
         else:
             self.pushButton_AddRemoveCake.setText('Remove Cake')
@@ -253,11 +256,9 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         if (self.DiffImg is not None) and \
                 (samefilename(self.Pattern.fname, self.DiffImg.img_filename)):
-            self.update_graph()
             return
         self._load_new_image(filen_tif)
         self._update_cake()
-        self.update_graph()
 
     def _load_new_image(self, filen_tif):
         """
@@ -1935,7 +1936,7 @@ class DesignerMainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.spinBox_BGParam2.value()], yshift=0)
         if self.pushButton_AddRemoveCake.isChecked() and \
                 self.poni_filename is not None:
-            self.addremove_Cake()
+            self._addremove_Cake()
             # self._load_new_image()
             # self._update_cake()
 

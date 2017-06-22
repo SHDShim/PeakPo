@@ -1,0 +1,40 @@
+# Set black background default line colors to white.
+
+lines.color: white
+patch.edgecolor: white
+
+text.color: white
+
+font.sans-serif     : Helvetica
+
+axes.facecolor: black
+axes.edgecolor: white
+axes.labelcolor: white
+axes.prop_cycle: cycler('color', ['8dd3c7', 'feffb3', 'bfbbd9', 'fa8174', '81b1d2', 'fdb462', 'b3de69', 'bc82bd', 'ccebc4', 'ffed6f'])
+
+xtick.color: white
+ytick.color: white
+
+xtick.labelsize      : small # fontsize of the tick labels
+ytick.labelsize      : small # fontsize of the tick labels
+xtick.direction      : in     # direction: in, out, or inout
+ytick.direction      : in     # direction: in, out, or inout
+
+xtick.minor.top      : False   # draw x axis top minor ticks
+xtick.minor.bottom   : False   # draw x axis bottom minor ticks
+
+ytick.major.left     : False   # draw y axis left major ticks
+ytick.major.right    : False   # draw y axis right major ticks
+ytick.minor.left     : False   # draw y axis left minor ticks
+ytick.minor.right    : False   # draw y axis right minor ticks
+
+xtick.major.size     : 6     # major tick size in points
+
+
+grid.color: white
+
+figure.facecolor: black
+figure.edgecolor: black
+
+savefig.facecolor: black
+savefig.edgecolor: black
