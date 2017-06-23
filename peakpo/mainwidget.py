@@ -23,6 +23,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.shortcutkeys()
         #
         self.build_ui()
+        self.connect_channel()
         # the two lines needs to be considred for move from this widget file
         self.actionCiting_PeakPo.triggered.connect(self.about)
         self.actionShortcut_keys.triggered.connect(self.shortcutkeys)
@@ -80,6 +81,63 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.ntb_NightView.setChecked(True)
         self.ntb_NightView.setText("Night")
         self.mpl.ntb.addWidget(self.ntb_NightView)
+
+    def connect_channel(self):
+        self.pushButton_RoomT.clicked.connect(
+            lambda: self.set_temperature(300))
+        self.pushButton_1000K.clicked.connect(
+            lambda: self.set_temperature(1000))
+        self.pushButton_1500K.clicked.connect(
+            lambda: self.set_temperature(1500))
+        self.pushButton_2000K.clicked.connect(
+            lambda: self.set_temperature(2000))
+        self.pushButton_2500K.clicked.connect(
+            lambda: self.set_temperature(2500))
+        self.pushButton_3000K.clicked.connect(
+            lambda: self.set_temperature(3000))
+        self.pushButton_3500K.clicked.connect(
+            lambda: self.set_temperature(3500))
+        self.pushButton_4000K.clicked.connect(
+            lambda: self.set_temperature(4000))
+        self.pushButton_4500K.clicked.connect(
+            lambda: self.set_temperature(4500))
+        self.pushButton_5000K.clicked.connect(
+            lambda: self.set_temperature(5000))
+        self.radioButton_P01.clicked.connect(self.set_pstep)
+        self.radioButton_P1.clicked.connect(self.set_pstep)
+        self.radioButton_P10.clicked.connect(self.set_pstep)
+        self.radioButton_P100.clicked.connect(self.set_pstep)
+        self.radioButton_T1.clicked.connect(self.set_tstep)
+        self.radioButton_T10.clicked.connect(self.set_tstep)
+        self.radioButton_T100.clicked.connect(self.set_tstep)
+        self.radioButton_T1000.clicked.connect(self.set_tstep)
+
+    def set_temperature(self, temperature=None):
+        self.doubleSpinBox_Temperature.setValue(temperature)
+#        if self.model.jcpds_lst != []:
+#            self.update_graph()
+
+    def set_pstep(self, value):
+        if self.radioButton_P01.isChecked():
+            value = 0.1
+        elif self.radioButton_P10.isChecked():
+            value = 10.
+        elif self.radioButton_P100.isChecked():
+            value = 100.
+        else:
+            value = 1.
+        self.doubleSpinBox_Pressure.setSingleStep(value)
+
+    def set_tstep(self, value):
+        if self.radioButton_T1.isChecked():
+            value = 1.
+        elif self.radioButton_T10.isChecked():
+            value = 10.
+        elif self.radioButton_T1000.isChecked():
+            value = 1000.
+        else:
+            value = 100.
+        self.doubleSpinBox_Temperature.setSingleStep(value)
 
     def about(self):
         self.textEdit_about.setText(

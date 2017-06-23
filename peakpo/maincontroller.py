@@ -50,7 +50,8 @@ class MainController(object):
         self.widget.mpl.canvas.mpl_connect(
             'key_press_event', self.on_key_press)
         # Tab: Main
-        self.widget.pushButton_NewBasePtn.clicked.connect(self.select_base_ptn)
+        self.widget.pushButton_NewBasePtn.clicked.connect(
+            self.select_base_ptn)
         self.widget.pushButton_PrevBasePtn.clicked.connect(
             lambda: self.goto_next_file('previous'))
         self.widget.pushButton_NextBasePtn.clicked.connect(
@@ -59,34 +60,6 @@ class MainController(object):
             lambda: self.goto_next_file('last'))
         self.widget.pushButton_FirstBasePtn.clicked.connect(
             lambda: self.goto_next_file('first'))
-        self.widget.radioButton_P01.clicked.connect(self.set_pstep)
-        self.widget.radioButton_P1.clicked.connect(self.set_pstep)
-        self.widget.radioButton_P10.clicked.connect(self.set_pstep)
-        self.widget.radioButton_P100.clicked.connect(self.set_pstep)
-        self.widget.radioButton_T1.clicked.connect(self.set_tstep)
-        self.widget.radioButton_T10.clicked.connect(self.set_tstep)
-        self.widget.radioButton_T100.clicked.connect(self.set_tstep)
-        self.widget.radioButton_T1000.clicked.connect(self.set_tstep)
-        self.widget.pushButton_RoomT.clicked.connect(
-            lambda: self.set_temperature(300))
-        self.widget.pushButton_1000K.clicked.connect(
-            lambda: self.set_temperature(1000))
-        self.widget.pushButton_1500K.clicked.connect(
-            lambda: self.set_temperature(1500))
-        self.widget.pushButton_2000K.clicked.connect(
-            lambda: self.set_temperature(2000))
-        self.widget.pushButton_2500K.clicked.connect(
-            lambda: self.set_temperature(2500))
-        self.widget.pushButton_3000K.clicked.connect(
-            lambda: self.set_temperature(3000))
-        self.widget.pushButton_3500K.clicked.connect(
-            lambda: self.set_temperature(3500))
-        self.widget.pushButton_4000K.clicked.connect(
-            lambda: self.set_temperature(4000))
-        self.widget.pushButton_4500K.clicked.connect(
-            lambda: self.set_temperature(4500))
-        self.widget.pushButton_5000K.clicked.connect(
-            lambda: self.set_temperature(5000))
         self.widget.doubleSpinBox_Pressure.valueChanged.connect(
             self.apply_pt_to_graph)
         self.widget.doubleSpinBox_Temperature.valueChanged.connect(
@@ -157,35 +130,20 @@ class MainController(object):
         self.widget.ntb_Bgsub.clicked.connect(self.apply_changes_to_graph)
         self.widget.ntb_NightView.clicked.connect(self.set_nightday_view)
 
-    def load_new_base_pattern_from_name(self):
-        if self.widget.lineEdit_DiffractionPatternFileName.isModified():
-            filen = str(self.widget.lineEdit_DiffractionPatternFileName.text())
-            if os.path.exists(filen):
-                self.chi_path = os.path.split(filen)[0]
-                if self.model.base_ptn_exist():
-                    old_filename = self.model.base_ptn.fname
-                else:
-                    old_filename = None
-                new_filename = filen
-                self._load_a_new_pattern(new_filename)
-                if old_filename is None:
-                    self.zoom_out_graph()
-                else:
-                    self.update_graph()
-            else:
-                QtWidgets.QMessageBox.warning(
-                    self.widget, 'Warning', 'Cannot find ' + filen)
-                return
-
+    ##########################################################################
+    # cake controls
     def addremove_cake(self):
         """
-        Cake function
-        Add/remove cake to the graph
+        add/remove cake to the graph
         """
         self._addremove_cake()
         self.update_graph()
 
     def _addremove_cake(self):
+        """
+        add/remove cake
+        no signal to update_graph
+        """
         if not self.widget.pushButton_AddRemoveCake.isChecked():
             self.widget.pushButton_AddRemoveCake.setText('Add Cake')
             return
@@ -218,12 +176,12 @@ class MainController(object):
                 self.model.diff_img.img_filename):
             return
         self._load_new_image(filen_tif)
-        self._update_cake()
+        self._produce_cake()
 
     def _load_new_image(self, filen_tif):
         """
-        Cake function
         Load new image for cake view.  Cake should be the same as base pattern.
+        no signal to update_graph
         """
         self.model.reset_diff_img()
         self.model.diff_img.load(filen_tif)
@@ -231,41 +189,37 @@ class MainController(object):
             '2D Image: ' + filen_tif)
 
     def apply_mask(self):
-        self._update_cake()
+        self._produce_cake()
         self.update_graph()
 
-    def _update_cake(self):
+    def _produce_cake(self):
         """
-        Cake function
         Reprocess to get cake.  Slower re-processing
+        does not signal to update_graph
         """
         self.model.diff_img.set_calibration(self.model.poni)
         self.model.diff_img.set_mask((self.widget.spinBox_MaskMin.value(),
                                       self.widget.spinBox_MaskMax.value()))
         self.model.diff_img.integrate_to_cake()
-        intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
-        self.intensity_cake = intensity_cake
-        self.tth_cake = tth_cake
-        self.chi_cake = chi_cake
 
     def get_poni(self):
         """
-        Cake function
         Opens a pyFAI calibration file
+        signal to update_graph
         """
-        file = QtWidgets.QFileDialog.getOpenFileName(
+        filen = QtWidgets.QFileDialog.getOpenFileName(
             self.widget, "Open a PONI File",
             self.chi_path, "PONI files (*.poni)")[0]
-        if os.path.exists(str(file)):
-            poni_path, dum = os.path.split(str(file))
-            # I am unsure poni_path would be needed to be self
-            self.poni_path = poni_path
-            self.model.poni = str(file)
+        filename = str(filen)
+        if os.path.exists(filename):
+            self.model.poni = filename
             self.widget.textEdit_PONI.setText('PONI: ' + self.model.poni)
             if self.model.diff_img_exist():
-                self._update_cake()
+                self._produce_cake()
             self.update_graph()
 
+    ###########################################################################
+    # waterfall control
     def normalize_waterfall_intensity(self):
         """
         Waterfall function
@@ -1852,36 +1806,12 @@ class MainController(object):
         if self.model.jcpds_exist():
             self.update_graph()
 
-    def set_temperature(self, temperature=None):
-        self.widget.doubleSpinBox_Temperature.setValue(temperature)
-#        if self.model.jcpds_lst != []:
-#            self.update_graph()
-
-    def set_pstep(self, value):
-        if self.widget.radioButton_P01.isChecked():
-            value = 0.1
-        elif self.widget.radioButton_P10.isChecked():
-            value = 10.
-        elif self.widget.radioButton_P100.isChecked():
-            value = 100.
-        else:
-            value = 1.
-        self.widget.doubleSpinBox_Pressure.setSingleStep(value)
-
-    def set_tstep(self, value):
-        if self.widget.radioButton_T1.isChecked():
-            value = 1.
-        elif self.widget.radioButton_T10.isChecked():
-            value = 10.
-        elif self.widget.radioButton_T1000.isChecked():
-            value = 1000.
-        else:
-            value = 100.
-        self.widget.doubleSpinBox_Temperature.setSingleStep(value)
-
     ###########################################################################
     # base pattern control
     def _load_a_new_pattern(self, new_filename):
+        """
+        load and process base pattern.  does not signal to update_graph
+        """
         self.model.reset_base_ptn()
         self.model.base_ptn.read_file(new_filename)
         self.model.base_ptn.wavelength = \
@@ -1912,34 +1842,21 @@ class MainController(object):
         if self.widget.pushButton_AddRemoveCake.isChecked() and \
                 self.model.poni is not None:
             self._addremove_cake()
-            # self._load_new_image()
-            # self._update_cake()
 
     def select_base_ptn(self):
         """
         opens a file select dialog
-
-        2017/06/10 remove support for other file formats than chi
+        2017/06/10 remove support for other file formats
         """
-        file = QtWidgets.QFileDialog.getOpenFileName(
+        filen = QtWidgets.QFileDialog.getOpenFileName(
             self.widget, "Open a Chi File", self.chi_path,
             "Data files (*.chi)")[0]
-        chi_path, dum = os.path.split(str(file))
-        if os.path.exists(str(file)):
-            self.chi_path = chi_path
-            if self.model.base_ptn_exist():
-                old_filename = self.model.base_ptn.fname
-            else:
-                old_filename = ''
-            new_filename = str(file)
-            self._load_a_new_pattern(new_filename)
-            if old_filename == '':
-                self.zoom_out_graph()
-            else:
-                self.update_graph()
+        self._setshow_new_base_ptn(str(filen))
 
     def goto_next_file(self, move):
-        """quick move to the next file"""
+        """
+        quick move to the next base pattern file
+        """
         if not self.model.base_ptn_exist():
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning", "Choose a base pattern first.")
@@ -1988,13 +1905,39 @@ class MainController(object):
         if os.path.exists(new_filename):
             self._load_a_new_pattern(new_filename)
             self.model.base_ptn.color = self.obj_color
-            # Turn off the option below during synchrotron.  Not helping much.
-            # self._update_session()
             self.update_graph()
         else:
             QtWidgets.QMessageBox.warning(self.widget, "Warning",
                                           new_filename + " does not exist.")
 
+    def load_new_base_pattern_from_name(self):
+        if self.widget.lineEdit_DiffractionPatternFileName.isModified():
+            filen = str(self.widget.lineEdit_DiffractionPatternFileName.text())
+            self._setshow_new_base_ptn(self, filen)
+
+    def _setshow_new_base_ptn(self, filen):
+        """
+        load and then send signal to update_graph
+        """
+        if os.path.exists(filen):
+            self.chi_path = os.path.split(filen)[0]
+            if self.model.base_ptn_exist():
+                old_filename = self.model.base_ptn.fname
+            else:
+                old_filename = None
+            new_filename = filen
+            self._load_a_new_pattern(new_filename)
+            if old_filename is None:
+                self.zoom_out_graph()
+            else:
+                self.update_graph()
+        else:
+            QtWidgets.QMessageBox.warning(
+                self.widget, 'Warning', 'Cannot find ' + filen)
+            return
+
+    ###########################################################################
+    # plot control
     def update_graph(self, limits=None):
         """Updates the graph"""
         t_start = time.time()
@@ -2088,10 +2031,11 @@ class MainController(object):
     def _plot_cake(self):
         climits = (self.widget.spinBox_VMin.value(),
                    self.widget.spinBox_VMax.value())
+        intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
         self.widget.mpl.canvas.ax_cake.imshow(
-            self.intensity_cake, origin="lower",
-            extent=[self.tth_cake.min(), self.tth_cake.max(),
-                    self.chi_cake.min(), self.chi_cake.max()],
+            intensity_cake, origin="lower",
+            extent=[tth_cake.min(), tth_cake.max(),
+                    chi_cake.min(), chi_cake.max()],
             aspect="auto", cmap="gray_r", clim=climits)
         # print("Cake plot takes: %.4f second" % (time.time() - t_start))
 
