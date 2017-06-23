@@ -9,11 +9,10 @@ import matplotlib.cm as cmx
 from matplotlib import colors
 from matplotlib.backend_bases import key_press_handler
 import pickle
-import time
-import datetime
 import zipfile
 from mainwidget import MainWindow
 from model import PeakPoModel
+from mplcontroller import MplController
 # from model import PeakPoModel
 from utils import undo_button_press
 from utils import get_sorted_filelist, find_from_filelist, dialog_savefile, \
@@ -36,6 +35,7 @@ class MainController(object):
         self.obj_color = 'white'
         self.read_setting()
         self.connect_channel()
+        self.plot_ctrl = MplController(self.model, self.widget)
         #
         self.clip = QtWidgets.QApplication.clipboard()
         # no more stuff can be added below
@@ -137,7 +137,7 @@ class MainController(object):
         add/remove cake to the graph
         """
         self._addremove_cake()
-        self.update_graph()
+        self.plot_ctrl.update()
 
     def _addremove_cake(self):
         """
@@ -190,7 +190,7 @@ class MainController(object):
 
     def apply_mask(self):
         self._produce_cake()
-        self.update_graph()
+        self.plot_ctrl.update()
 
     def _produce_cake(self):
         """
@@ -216,7 +216,7 @@ class MainController(object):
             self.widget.textEdit_PONI.setText('PONI: ' + self.model.poni)
             if self.model.diff_img_exist():
                 self._produce_cake()
-            self.update_graph()
+            self.plot_ctrl.update()
 
     ###########################################################################
     # waterfall control
@@ -234,7 +234,7 @@ class MainController(object):
         if count == 0:
             return
         # update figure
-        self.update_graph()
+        self.plot_ctrl.update()
         return
 
     def export_to_xls(self):
@@ -270,7 +270,7 @@ class MainController(object):
             for idx in idx_checked:
                 self.model.ucfit_lst.remove(self.model.ucfit_lst[idx])
                 self.widget.tableWidget_UnitCell.removeRow(idx)
-            self.update_graph()
+            self.plot_ctrl.update()
         else:
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning',
@@ -316,7 +316,7 @@ class MainController(object):
                     "You cannot send a jcpds without symmetry.")
         self._list_ucfit()
         self._list_jcpds()
-        self.update_graph()
+        self.plot_ctrl.update()
         return
 
     def _list_ucfit(self):
@@ -580,7 +580,7 @@ class MainController(object):
             elif index.column() == 9:
                 self.model.ucfit_lst[idx].gamma = value
             if self.model.ucfit_lst[idx].display:
-                self.update_graph()
+                self.plot_ctrl.update()
 
     def _ucfitlist_handle_ColorButtonClicked(self):
         button = self.widget.sender()
@@ -593,7 +593,7 @@ class MainController(object):
                     self.widget.tableWidget_UnitCell.item(idx, 2).\
                         setBackground(color)
                     self.model.ucfit_lst[idx].color = str(color.name())
-                    self.update_graph()
+                    self.plot_ctrl.update()
 
     def _ucfitlist_handle_ItemClicked(self, item):
         if item.column() == 0:
@@ -605,7 +605,7 @@ class MainController(object):
                 self.model.ucfit_lst[idx].display = True
             elif item.checkState() == QtCore.Qt.Unchecked:
                 self.model.ucfit_lst[idx].display = False
-            self.update_graph()
+            self.plot_ctrl.update()
         else:
             return
 
@@ -663,7 +663,7 @@ class MainController(object):
             else:
                 x, y = self.model.base_ptn.get_raw()
             xroi, yroi = get_DataSection(x, y, [lims[0], lims[1]])
-            self.update_graph([lims[0], lims[1], yroi.min(), yroi.max()])
+            self.plot_ctrl.update([lims[0], lims[1], yroi.min(), yroi.max()])
         else:
             key_press_handler(event, self.widget.mpl.canvas,
                               self.widget.mpl.ntb)
@@ -686,7 +686,7 @@ class MainController(object):
         new_filen = a[1]
         new_lims = [float(i) for i in a[2:6]]
         self._load_a_new_pattern(new_filen)
-        self.update_graph(new_lims)
+        self.plot_ctrl.update(new_lims)
 
     def save_xls(self):
         """
@@ -777,7 +777,7 @@ class MainController(object):
         for j in self.model.jcpds_lst:
             j.display = True
         self._list_jcpds()
-        self.update_graph()
+        self.plot_ctrl.update()
 
     def uncheck_all_jcpds(self):
         if not self.model.jcpds_exist():
@@ -785,7 +785,7 @@ class MainController(object):
         for j in self.model.jcpds_lst:
             j.display = False
         self._list_jcpds()
-        self.update_graph()
+        self.plot_ctrl.update()
 
     def load_session(self):
         """
@@ -1027,31 +1027,9 @@ class MainController(object):
                 'Session: ' + str(fsession))
 
     def set_nightday_view(self):
-        self._set_nightday_view()
+        self.plot_ctrl._set_nightday_view()
         self._list_wfpatterns()
-        self.update_graph()
-
-    def _set_nightday_view(self):
-        if not self.widget.ntb_NightView.isChecked():
-            self.widget.mpl.canvas.set_toNight(False)
-            # reset plot objects with white
-            if self.model.base_ptn_exist():
-                self.model.base_ptn.color = 'k'
-            if self.model.waterfall_exist():
-                for pattern in self.model.waterfall_ptn:
-                    if (pattern.color == 'white') or \
-                            (pattern.color == '#ffffff'):
-                        pattern.color = 'k'
-            self.obj_color = 'k'
-        else:
-            self.widget.mpl.canvas.set_toNight(True)
-            if self.model.base_ptn_exist():
-                self.model.base_ptn.color = 'white'
-            if self.model.waterfall_exist():
-                for pattern in self.model.waterfall_ptn:
-                    if (pattern.color == 'k') or (pattern.color == '#000000'):
-                        pattern.color = 'white'
-            self.obj_color = 'white'
+        self.plot_ctrl.update()
 
     def add_patterns(self):
         """ get files for waterfall plot """
@@ -1088,7 +1066,7 @@ class MainController(object):
             if pattern.display:
                 i += 1
         if i != 0:
-            self.update_graph()
+            self.plot_ctrl.update()
 
     def _list_wfpatterns(self):
         """show a list of jcpds in the list window of tab 3"""
@@ -1160,7 +1138,7 @@ class MainController(object):
             if pattern.display:
                 i += 1
         if i != 0:
-            self.update_graph()
+            self.plot_ctrl.update()
 
     def _wfPatterns_handle_doubleSpinBoxChanged(self, value):
         box = self.widget.sender()
@@ -1189,7 +1167,7 @@ class MainController(object):
                         if pattern.display:
                             i += 1
                     if i != 0:
-                        self.update_graph()
+                        self.plot_ctrl.update()
 
     def _wfPatterns_handle_ItemClicked(self, item):
         if item.column() == 0:
@@ -1198,7 +1176,7 @@ class MainController(object):
                 self.model.waterfall_ptn[idx].display = True
             elif item.checkState() == QtCore.Qt.Unchecked:
                 self.model.waterfall_ptn[idx].display = False
-            self.update_graph()
+            self.plot_ctrl.update()
         else:
             return
 
@@ -1212,7 +1190,7 @@ class MainController(object):
         self._load_session(fn_jlist, True)
         self.widget.textEdit_Jlist.setText('Jlist: ' + str(fn_jlist))
         self._list_jcpds()
-        self.update_graph()
+        self.plot_ctrl.update()
 
     def remove_a_jcpds(self):
         reply = QtWidgets.QMessageBox.question(
@@ -1233,7 +1211,7 @@ class MainController(object):
                 self.model.jcpds_lst.remove(self.model.jcpds_lst[idx])
                 self.widget.tableWidget_JCPDS.removeRow(idx)
 #        self._list_jcpds()
-            self.update_graph()
+            self.plot_ctrl.update()
         else:
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning',
@@ -1496,7 +1474,7 @@ class MainController(object):
             elif index.column() == 9:
                 self.model.jcpds_lst[idx].twk_int = value
             if self.model.jcpds_lst[idx].display:
-                self.update_graph()
+                self.plot_ctrl.update()
 
     def _jcpds_handle_ColorButtonClicked(self):
         button = self.widget.sender()
@@ -1509,7 +1487,7 @@ class MainController(object):
                     self.widget.tableWidget_JCPDS.item(idx, 1).\
                         setBackground(color)
                     self.model.jcpds_lst[idx].color = str(color.name())
-                    self.update_graph()
+                    self.plot_ctrl.update()
 
     def _jcpds_handle_ItemClicked(self, item):
         if item.column() == 0:
@@ -1521,7 +1499,7 @@ class MainController(object):
                 self.model.jcpds_lst[idx].display = True
             elif item.checkState() == QtCore.Qt.Unchecked:
                 self.model.jcpds_lst[idx].display = False
-            self.update_graph()
+            self.plot_ctrl.update()
         else:
             return
 
@@ -1567,9 +1545,9 @@ class MainController(object):
         # display on the QTableWidget
         self._list_jcpds()
         if not self.model.base_ptn_exist():
-            self.update_graph(limits=[0., 25., 0., 100.])
+            self.plot_ctrl.update(limits=[0., 25., 0., 100.])
         else:
-            self.update_graph()
+            self.plot_ctrl.update()
 
     def read_plot(self, event):
         if self.widget.mpl.ntb._active is not None:
@@ -1697,7 +1675,7 @@ class MainController(object):
     def erase_waterfall(self):
         self.model.reset_waterfall_ptn()
         self.widget.tableWidget_wfPatterns.clearContents()
-        self.update_graph()
+        self.plot_ctrl.update()
 
     def remove_waterfall(self):
         reply = QtWidgets.QMessageBox.question(
@@ -1722,7 +1700,7 @@ class MainController(object):
                 self.model.waterfall_ptn.remove(self.model.waterfall_ptn[idx])
                 self.widget.tableWidget_wfPatterns.removeRow(idx)
 #        self._list_jcpds()
-            self.update_graph()
+            self.plot_ctrl.update()
 
     def move_up_waterfall(self):
         # get selected cell number
@@ -1750,13 +1728,13 @@ class MainController(object):
         self._list_wfpatterns()
 
     def apply_changes_to_graph(self, value):
-        self.update_graph()
+        self.plot_ctrl.update()
 
     def apply_wavelength(self):
         # self.wavelength = value
         self.model.base_ptn.wavelength = \
             self.widget.doubleSpinBox_SetWavelength.value()
-        self.update_graph()
+        self.plot_ctrl.update()
 
     def update_bgsub(self):
         '''
@@ -1800,11 +1778,11 @@ class MainController(object):
             x, y = self.model.base_ptn.get_bgsub()
         else:
             x, y = self.model.base_ptn.get_raw()
-        self.update_graph(limits=[x.min(), x.max(), y.min(), y.max()])
+        self.plot_ctrl.update(limits=[x.min(), x.max(), y.min(), y.max()])
 
     def apply_pt_to_graph(self):
         if self.model.jcpds_exist():
-            self.update_graph()
+            self.plot_ctrl.update()
 
     ###########################################################################
     # base pattern control
@@ -1905,7 +1883,7 @@ class MainController(object):
         if os.path.exists(new_filename):
             self._load_a_new_pattern(new_filename)
             self.model.base_ptn.color = self.obj_color
-            self.update_graph()
+            self.plot_ctrl.update()
         else:
             QtWidgets.QMessageBox.warning(self.widget, "Warning",
                                           new_filename + " does not exist.")
@@ -1930,221 +1908,8 @@ class MainController(object):
             if old_filename is None:
                 self.zoom_out_graph()
             else:
-                self.update_graph()
+                self.plot_ctrl.update()
         else:
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'Cannot find ' + filen)
             return
-
-    ###########################################################################
-    # plot control
-    def update_graph(self, limits=None):
-        """Updates the graph"""
-        t_start = time.time()
-        self.widget.setCursor(QtCore.Qt.WaitCursor)
-        if limits is None:
-            limits = self.widget.mpl.canvas.ax_pattern.axis()
-        if (not self.model.base_ptn_exist()) and \
-                (not self.model.jcpds_exist()):
-            return
-        if self.widget.pushButton_AddRemoveCake.isChecked():
-            self.widget.mpl.canvas.resize_axes(
-                self.widget.spinBox_CakeAxisSize.value())
-            self._plot_cake()
-        else:
-            self.widget.mpl.canvas.resize_axes(1)
-        self._set_nightday_view()
-        if self.model.base_ptn_exist():
-            self.widget.mpl.canvas.fig.suptitle(
-                self.model.base_ptn.fname, color=self.obj_color, fontsize=16)
-            self._plot_diffpattern()
-            if self.model.waterfall_exist():
-                self._plot_waterfallpatterns()
-        if self.model.jcpds_exist():
-            self._plot_jcpds()
-        if self.model.ucfit_exist():
-            self._plot_ucfit()
-        self.widget.mpl.canvas.ax_pattern.set_xlim(limits[0], limits[1])
-        if not self.widget.ntb_ResetY.isChecked():
-            self.widget.mpl.canvas.ax_pattern.set_ylim(limits[2], limits[3])
-        xlabel = 'Two Theta (degrees), ' + \
-            "{0: 5.1f} GPa, {1: 4.0f} K, {2: 6.4f} A".\
-            format(self.widget.doubleSpinBox_Pressure.value(),
-                   self.widget.doubleSpinBox_Temperature.value(),
-                   self.widget.doubleSpinBox_SetWavelength.value())
-        self.widget.mpl.canvas.ax_pattern.set_xlabel(xlabel)
-        # if I move the line below to elsewhere I cannot get ylim or axis
-        # self.widget.mpl.canvas.ax_pattern.autoscale(
-        # enable=False, axis=u'both', tight=True)
-        """Removing the lines below for the tick reduce the plot time
-        significantly.  So do not turn this on.
-        x_size = limits[1] - limits[0]
-        if x_size <= 50.:
-            majortick_interval = 1
-            minortick_interval = 0.1
-        else:
-            majortick_interval = 10
-            minortick_interval = 1
-        majorLocator = MultipleLocator(majortick_interval)
-        minorLocator = MultipleLocator(minortick_interval)
-        self.widget.mpl.canvas.ax_pattern.xaxis.set_major_locator(majorLocator)
-        self.widget.mpl.canvas.ax_pattern.xaxis.set_minor_locator(minorLocator)
-        """
-        self.widget.mpl.canvas.draw()
-        print("Plot takes: {0:.4f} s at".format(time.time() - t_start),
-              str(datetime.datetime.now()))
-        self.widget.unsetCursor()
-
-    def _plot_ucfit(self):
-        i = 0
-        for j in self.model.ucfit_lst:
-            if j.display:
-                i += 1
-        if i == 0:
-            return
-        axisrange = self.widget.mpl.canvas.ax_pattern.axis()
-        bar_scale = 1. / 100. * axisrange[3]
-        i = 0
-        for phase in self.model.ucfit_lst:
-            if phase.display:
-                phase.cal_dsp()
-                tth, inten = phase.get_tthVSint(
-                    self.widget.doubleSpinBox_SetWavelength.value())
-                bar_min = np.ones(tth.shape) * axisrange[2]
-                intensity = inten
-                bar_min = np.ones(tth.shape) * axisrange[2]
-                self.widget.tableWidget_UnitCell.removeCellWidget(i, 3)
-                Item4 = QtWidgets.QTableWidgetItem(
-                    "{:.3f}".format(float(phase.v)))
-                Item4.setFlags(
-                    QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
-                self.widget.tableWidget_UnitCell.setItem(i, 3, Item4)
-                if self.widget.checkBox_Intensity.isChecked():
-                    self.widget.mpl.canvas.ax_pattern.vlines(
-                        tth, bar_min, intensity * bar_scale,
-                        colors=phase.color)
-                else:
-                    self.widget.mpl.canvas.ax_pattern.vlines(
-                        tth, bar_min, 100. * bar_scale, colors=phase.color)
-            i += 1
-
-    def _plot_cake(self):
-        climits = (self.widget.spinBox_VMin.value(),
-                   self.widget.spinBox_VMax.value())
-        intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
-        self.widget.mpl.canvas.ax_cake.imshow(
-            intensity_cake, origin="lower",
-            extent=[tth_cake.min(), tth_cake.max(),
-                    chi_cake.min(), chi_cake.max()],
-            aspect="auto", cmap="gray_r", clim=climits)
-        # print("Cake plot takes: %.4f second" % (time.time() - t_start))
-
-    def _plot_jcpds(self):
-        i = 0
-        for phase in self.model.jcpds_lst:
-            if phase.display:
-                i += 1
-        if i == 0:
-            return
-        axisrange = self.widget.mpl.canvas.ax_pattern.axis()
-        bar_scale = 1. / 100. * axisrange[3]
-        for phase in self.model.jcpds_lst:
-            if phase.display:
-                phase.cal_dsp(self.widget.doubleSpinBox_Pressure.value(),
-                              self.widget.doubleSpinBox_Temperature.value())
-                tth, inten = phase.get_tthVSint(
-                    self.widget.doubleSpinBox_SetWavelength.value())
-                intensity = inten * phase.twk_int
-                bar_min = np.ones(tth.shape) * axisrange[2]
-                if self.widget.checkBox_Intensity.isChecked():
-                    self.widget.mpl.canvas.ax_pattern.vlines(
-                        tth, bar_min, intensity * bar_scale,
-                        colors=phase.color,
-                        label=phase.name + (", %.3f A^3" % phase.v))
-                else:
-                    self.widget.mpl.canvas.ax_pattern.vlines(
-                        tth, bar_min, 100. * bar_scale,
-                        colors=phase.color,
-                        label=phase.name + (", %.3f A^3" % phase.v))
-                if self.widget.pushButton_AddRemoveCake.isChecked():
-                    for tth_i in tth:
-                        self.widget.mpl.canvas.ax_cake.axvline(
-                            x=tth_i, color=phase.color, lw=0.5)
-            else:
-                pass
-        leg_jcpds = self.widget.mpl.canvas.ax_pattern.legend(
-            loc=1, prop={'size': 10}, framealpha=0., handlelength=1)
-
-        for line, txt in zip(leg_jcpds.get_lines(), leg_jcpds.get_texts()):
-            txt.set_color(line.get_color())
-        # print("JCPDS plot takes: %.4f second" % (time.time() - t_start))
-
-    def _plot_waterfallpatterns(self):
-        # t_start = time.time()
-        # count how many are dispaly
-        i = 0
-        for pattern in self.model.waterfall_ptn:
-            if pattern.display:
-                i += 1
-        if i == 0:
-            return
-        n_display = i
-        j = 0  # this is needed for waterfall gaps
-        # get y_max
-        for pattern in self.model.waterfall_ptn:
-            if pattern.display:
-                j += 1
-                self.widget.mpl.canvas.ax_pattern.text(
-                    0.01, 0.97 - n_display * 0.05 + j * 0.05,
-                    os.path.basename(pattern.fname),
-                    transform=self.widget.mpl.canvas.ax_pattern.transAxes,
-                    color=pattern.color)
-                if self.widget.ntb_Bgsub.isChecked():
-                    ygap = self.widget.doubleSpinBox_WaterfallGaps.value() * \
-                        self.model.base_ptn.y_bgsub.max() * float(j)
-                    if self.widget.checkBox_BasePtnBackground.isChecked() and \
-                            np.array_equal(pattern.x_raw,
-                                           self.model.base_ptn.x_raw):
-                        y_bgsub = pattern.y_bgsub + pattern.y_bg - \
-                            self.model.base_ptn.y_bg
-                    else:
-                        y_bgsub = pattern.y_bgsub
-                    if self.widget.checkBox_IntNorm.isChecked():
-                        y = y_bgsub / y_bgsub.max() * \
-                            self.model.base_ptn.y_bgsub.max()
-                    else:
-                        y = y_bgsub
-                    x_t = pattern.x_bgsub
-                else:
-                    ygap = self.widget.doubleSpinBox_WaterfallGaps.value() * \
-                        self.model.base_ptn.y_raw.max() * float(j)
-                    if self.widget.checkBox_IntNorm.isChecked():
-                        y = pattern.y_raw / pattern.y_raw.max() *\
-                            self.model.base_ptn.y_raw.max()
-                    else:
-                        y = pattern.y_raw
-                    x_t = pattern.x_raw
-                if self.widget.checkBox_SetToBasePtnLambda.isChecked():
-                    x = convert_tth(x_t, pattern.wavelength,
-                                    self.model.base_ptn.wavelength)
-                else:
-                    x = x_t
-                self.widget.mpl.canvas.ax_pattern.plot(x, y + ygap, c=pattern.color)
-        self.widget.mpl.canvas.ax_pattern.text(
-            0.01, 0.97 - n_display * 0.05,
-            os.path.basename(self.model.base_ptn.fname),
-            transform=self.widget.mpl.canvas.ax_pattern.transAxes,
-            color=self.model.base_ptn.color)
-
-    def _plot_diffpattern(self):
-        if self.widget.ntb_Bgsub.isChecked():
-            x, y = self.model.base_ptn.get_bgsub()
-            self.widget.mpl.canvas.ax_pattern.plot(
-                x, y, c=self.model.base_ptn.color)
-        else:
-            x, y = self.model.base_ptn.get_raw()
-            self.widget.mpl.canvas.ax_pattern.plot(
-                x, y, c=self.model.base_ptn.color)
-            x_bg, y_bg = self.model.base_ptn.get_background()
-            self.widget.mpl.canvas.ax_pattern.plot(
-                x_bg, y_bg, c=self.model.base_ptn.color, lw=0.5)
