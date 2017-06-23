@@ -3,18 +3,17 @@
 # Python Qt4 bindings for GUI objects
 from PyQt5 import QtGui, QtWidgets
 from PyQt5 import QtCore, QtWidgets
-
+import os
 # import the Qt4Agg FigureCanvas object, that binds Figure to
 # Qt4Agg backend. It also inherits from QWidget
 from matplotlib.backends.backend_qt5agg \
     import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg \
     import NavigationToolbar2QT as NavigationToolbar
-
 # Matplotlib Figure object
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
-import matplotlib.ticker as mtick
+# import matplotlib.ticker as mtick
 import matplotlib.pyplot as plt
 
 
@@ -45,7 +44,8 @@ class MplCanvas(FigureCanvas):
         self.ax_pattern.set_ylabel('Intensity (arbitrary unit)')
         self.ax_pattern.ticklabel_format(
             axis='y', style='sci', scilimits=(-2, 2))
-        self.ax_pattern.get_yaxis().get_offset_text().set_position((-0.04, -0.1))
+        self.ax_pattern.get_yaxis().get_offset_text().set_position(
+            (-0.04, -0.1))
 
     def resize_axes(self, h_cake):
         self.fig.clf()
@@ -62,11 +62,13 @@ class MplCanvas(FigureCanvas):
 
     def set_toNight(self, NightView=True):
         if NightView:
-            plt.style.use('./mplstyle/night.mplstyle')
+            plt.style.use(os.path.join(os.path.curdir,
+                                       'mplstyle', 'night.mplstyle'))
             self.bgColor = 'black'
             self.objColor = 'white'
         else:
-            plt.style.use('./mplstyle/day.mplstyle')
+            plt.style.use(os.path.join(os.path.curdir,
+                                       'mplstyle', 'day.mplstyle'))
             self.bgColor = 'white'
             self.objColor = 'black'
 #        self.fig.clf()

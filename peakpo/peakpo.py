@@ -1,15 +1,17 @@
 import sys
 from PyQt5 import QtWidgets
 import qdarkstyle
-from mainwidget import DesignerMainWindow
-
+#from mainwidget import MainWindow
+from maincontroller import MainController
 
 # create the GUI application
 app = QtWidgets.QApplication(sys.argv)
-dmw = DesignerMainWindow()
+# dmw = MainWindow()
 app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
 # app.setStyleSheet('fusion')
-dmw.show()
+# dmw.show()
+controller = MainController()
+controller.show_window()
 # start the Qt main loop execution, exiting from this script
 # with the same return code of Qt application
 ret = app.exec_()
