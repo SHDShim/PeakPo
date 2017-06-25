@@ -4,7 +4,6 @@ from PyQt5 import QtGui
 # from collections import OrderedDict
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 from matplotlib.backend_bases import key_press_handler
 import pickle
 import zipfile
@@ -14,16 +13,15 @@ from mplcontroller import MplController
 from cakecontroller import CakeController
 from waterfallcontroller import WaterfallController
 from jcpdscontroller import JcpdsController
+from ucfitcontroller import UcfitController
 # from model import PeakPoModel
 from utils import get_sorted_filelist, find_from_filelist, dialog_savefile, \
     xls_ucfitlist, xls_jlist, writechi, extract_filename
 from utils import SpinBoxFixStyle
-# ultimately the lines below should be moved to model
-from ds_cake import DiffImg
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
-from ds_jcpds import JCPDSplt, Session, UnitCell, convert_tth
-from ds_powdiff import PatternPeakPo, get_DataSection
+from ds_jcpds import Session, UnitCell
+from ds_powdiff import get_DataSection
 
 
 class MainController(object):
@@ -38,9 +36,10 @@ class MainController(object):
         self.plot_ctrl = MplController(self.model, self.widget)
         self.waterfall_ctrl = WaterfallController(
             self.model, self.widget, self.chi_path)
+        self.cake_ctrl = CakeController(self.model, self.widget, self.chi_path)
+        self.ucfit_ctrl = UcfitController(self.model, self.widget)
         self.jcpds_ctrl = JcpdsController(self.model, self.widget,
                                           self.jcpds_path)
-        self.cake_ctrl = CakeController(self.model, self.widget, self.chi_path)
         #
         self.clip = QtWidgets.QApplication.clipboard()
         # no more stuff can be added below
@@ -89,9 +88,6 @@ class MainController(object):
         # Tab: process
         self.widget.pushButton_UpdatePlots_tab2.clicked.connect(
             self.update_bgsub)
-        # Tab: UCFit List
-        self.widget.pushButton_RemoveUClist.clicked.connect(self.remove_ucfit)
-        self.widget.pushButton_ExportXLS_2.clicked.connect(self.export_to_xls)
         # file menu items
         self.widget.actionClose.triggered.connect(self.closeEvent)
         # navigation toolbar modification
@@ -104,19 +100,6 @@ class MainController(object):
 
     def apply_changes_to_graph(self):
         self.plot_ctrl.update()
-
-    def export_to_xls(self):
-        """
-        UCFit function
-        Export ucfitlist to an excel file
-        """
-        if not self.model.ucfit_exist():
-            return
-        new_filen_xls = self.model.make_filename('peakpo.ucfit.xls')
-        filen_xls = dialog_savefile(self.widget, new_filen_xls)
-        if str(filen_xls) == '':
-            return
-        xls_ucfitlist(filen_xls, self.model.ucfit_lst)
 
     def view_jcpds(self):
         if not self.model.jcpds_exist():
@@ -138,32 +121,6 @@ class MainController(object):
                 self.widget.doubleSpinBox_Pressure.value(),
                 self.widget.doubleSpinBox_Temperature.value())
             self.widget.plainTextEdit_ViewJCPDS.setPlainText(textoutput)
-
-    def remove_ucfit(self):
-        """
-        UCFit function
-        Remove items from the ucfitlist
-        """
-        reply = QtWidgets.QMessageBox.question(
-            self.widget, 'Message',
-            'Are you sure you want to remove the highlighted phases?',
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.Yes)
-        if reply == QtWidgets.QMessageBox.No:
-            return
-        idx_checked = [
-            s.row() for s in self.widget.tableWidget_UnitCell.selectionModel().
-            selectedRows()]
-        if idx_checked != []:
-            idx_checked.reverse()
-            for idx in idx_checked:
-                self.model.ucfit_lst.remove(self.model.ucfit_lst[idx])
-                self.widget.tableWidget_UnitCell.removeRow(idx)
-            self.plot_ctrl.update()
-        else:
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning',
-                'In order to remove, highlight the names.')
 
     def load_jlist(self):
         """get existing jlist file from data folder"""
@@ -215,300 +172,10 @@ class MainController(object):
                 QtWidgets.QMessageBox.warning(
                     self.widget, "Warning",
                     "You cannot send a jcpds without symmetry.")
-        self._list_ucfit()
+        self.ucfit_ctrl.update_table()
         self.jcpds_ctrl.update_table()
         self.plot_ctrl.update()
         return
-
-    def _list_ucfit(self):
-        """
-        UCFit function
-        Show ucfit in the QTableWidget
-        """
-        n_columns = 10
-        n_rows = self.model.ucfit_lst.__len__()  # count for number of jcpds
-        self.widget.tableWidget_UnitCell.setColumnCount(n_columns)
-        self.widget.tableWidget_UnitCell.setRowCount(n_rows)
-        self.widget.tableWidget_UnitCell.horizontalHeader().setVisible(True)
-        self.widget.tableWidget_UnitCell.verticalHeader().setVisible(True)
-        self.widget.tableWidget_UnitCell.setHorizontalHeaderLabels(
-            ['', 'Color', 'Color Change', 'Volume', 'a', 'b', 'c',
-             'alpha', 'beta', 'gamma'])
-        self.widget.tableWidget_UnitCell.setVerticalHeaderLabels(
-            [s.name for s in self.model.ucfit_lst])
-        for row in range(n_rows):
-            # column 0 - checkbox
-            item0 = QtWidgets.QTableWidgetItem()
-            item0.setFlags(
-                QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-            if self.model.ucfit_lst[row].display:
-                item0.setCheckState(QtCore.Qt.Checked)
-            else:
-                item0.setCheckState(QtCore.Qt.Unchecked)
-            self.widget.tableWidget_UnitCell.setItem(row, 0, item0)
-            # column 1 - color
-            item2 = QtWidgets.QTableWidgetItem('    ')
-            self.widget.tableWidget_UnitCell.setItem(row, 1, item2)
-            # column 2 - color setup
-            self.widget.tableWidget_UnitCell_pushButton_color = \
-                QtWidgets.QPushButton('change')
-            self.widget.tableWidget_UnitCell.item(row, 1).setBackground(
-                QtGui.QColor(self.model.ucfit_lst[row].color))
-            self.widget.tableWidget_UnitCell_pushButton_color.clicked.connect(
-                self._ucfitlist_handle_ColorButtonClicked)
-            self.widget.tableWidget_UnitCell.setCellWidget(
-                row, 2, self.widget.tableWidget_UnitCell_pushButton_color)
-            # column 3 - V output
-            self.model.ucfit_lst[row].cal_dsp()
-            Item4 = QtWidgets.QTableWidgetItem(
-                "{:.3f}".format(float(self.model.ucfit_lst[row].v)))
-            Item4.setFlags(QtCore.Qt.ItemIsSelectable |
-                           QtCore.Qt.ItemIsEnabled)
-            self.widget.tableWidget_UnitCell.setItem(row, 3, Item4)
-            # column 4 - a
-            self.widget.tableWidget_UnitCell_doubleSpinBox_a = \
-                QtWidgets.QDoubleSpinBox()
-            self.widget.tableWidget_UnitCell_doubleSpinBox_a.setAlignment(
-                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                QtCore.Qt.AlignVCenter)
-            self.widget.tableWidget_UnitCell_doubleSpinBox_a.setMaximum(50.0)
-            self.widget.tableWidget_UnitCell_doubleSpinBox_a.setSingleStep(
-                0.001)
-            self.widget.tableWidget_UnitCell_doubleSpinBox_a.setDecimals(4)
-            self.widget.tableWidget_UnitCell_doubleSpinBox_a.setProperty(
-                "value", float(self.model.ucfit_lst[row].a))
-            self.widget.tableWidget_UnitCell_doubleSpinBox_a.valueChanged.\
-                connect(self._ucfitlist_handle_doubleSpinBoxChanged)
-            self.widget.tableWidget_UnitCell_doubleSpinBox_a.setStyle(
-                SpinBoxFixStyle())
-            self.widget.tableWidget_UnitCell.setCellWidget(
-                row, 4, self.widget.tableWidget_UnitCell_doubleSpinBox_a)
-            self.widget.tableWidget_UnitCell_doubleSpinBox_a.\
-                setKeyboardTracking(False)
-            self.widget.tableWidget_UnitCell_doubleSpinBox_a.setFocusPolicy(
-                QtCore.Qt.StrongFocus)
-            # column 5 - b output
-            if (self.model.ucfit_lst[row].symmetry == 'cubic') or\
-                    (self.model.ucfit_lst[row].symmetry == 'tetragonal') or\
-                    (self.model.ucfit_lst[row].symmetry == 'hexagonal'):
-                item6 = QtWidgets.QTableWidgetItem('')
-                item6.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.widget.tableWidget_UnitCell.setItem(row, 5, item6)
-            else:
-                self.widget.tableWidget_UnitCell_doubleSpinBox_b = \
-                    QtWidgets.QDoubleSpinBox()
-                self.widget.tableWidget_UnitCell_doubleSpinBox_b.setAlignment(
-                    QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                    QtCore.Qt.AlignVCenter)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_b.setMaximum(
-                    50.0)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_b.setSingleStep(
-                    0.001)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_b.setDecimals(4)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_b.setProperty(
-                    "value", float(self.model.ucfit_lst[row].b))
-                self.widget.tableWidget_UnitCell_doubleSpinBox_b.valueChanged.\
-                    connect(
-                        self._ucfitlist_handle_doubleSpinBoxChanged)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_b.setStyle(
-                    SpinBoxFixStyle())
-                self.widget.tableWidget_UnitCell.setCellWidget(
-                    row, 5, self.widget.tableWidget_UnitCell_doubleSpinBox_b)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_b.\
-                    setKeyboardTracking(False)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_b.\
-                    setFocusPolicy(QtCore.Qt.StrongFocus)
-            # column 6 - c output
-            if (self.model.ucfit_lst[row].symmetry == 'cubic'):
-                item7 = QtWidgets.QTableWidgetItem('')
-                item7.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.widget.tableWidget_UnitCell.setItem(row, 6, item7)
-            else:
-                self.widget.tableWidget_UnitCell_doubleSpinBox_c = \
-                    QtWidgets.QDoubleSpinBox()
-                self.widget.tableWidget_UnitCell_doubleSpinBox_c.setAlignment(
-                    QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                    QtCore.Qt.AlignVCenter)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_c.setMaximum(
-                    50.0)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_c.setSingleStep(
-                    0.001)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_c.setDecimals(4)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_c.setProperty(
-                    "value", float(self.model.ucfit_lst[row].c))
-                self.widget.tableWidget_UnitCell_doubleSpinBox_c.valueChanged.\
-                    connect(self._ucfitlist_handle_doubleSpinBoxChanged)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_c.setStyle(
-                    SpinBoxFixStyle())
-                self.widget.tableWidget_UnitCell.setCellWidget(
-                    row, 6, self.widget.tableWidget_UnitCell_doubleSpinBox_c)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_c.\
-                    setKeyboardTracking(False)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_c.\
-                    setFocusPolicy(QtCore.Qt.StrongFocus)
-            # column 7 - alpha output
-            if not (self.model.ucfit_lst[row].symmetry == 'triclinic'):
-                item8 = QtWidgets.QTableWidgetItem('90.')
-                item8.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.widget.tableWidget_UnitCell.setItem(row, 7, item8)
-            else:
-                self.widget.tableWidget_UnitCell_doubleSpinBox_alpha = \
-                    QtWidgets.QDoubleSpinBox()
-                self.widget.tableWidget_UnitCell_doubleSpinBox_alpha.\
-                    setAlignment(
-                        QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                        QtCore.Qt.AlignVCenter)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_alpha.\
-                    setMaximum(179.0)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_alpha.\
-                    setSingleStep(0.1)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_alpha.\
-                    setDecimals(1)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_alpha.\
-                    setProperty("value",
-                                float(self.model.ucfit_lst[row].alpha))
-                self.widget.tableWidget_UnitCell_doubleSpinBox_alpha.\
-                    valueChanged.\
-                    connect(self._ucfitlist_handle_doubleSpinBoxChanged)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_alpha.setStyle(
-                    SpinBoxFixStyle())
-                self.widget.tableWidget_UnitCell.setCellWidget(
-                    row, 7,
-                    self.widget.tableWidget_UnitCell_doubleSpinBox_alpha)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_alpha.\
-                    setKeyboardTracking(False)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_alpha.\
-                    setFocusPolicy(QtCore.Qt.StrongFocus)
-            # column 8 - beta output
-            if (self.model.ucfit_lst[row].symmetry == 'cubic') or \
-                    (self.model.ucfit_lst[row].symmetry == 'tetragonal') or\
-                    (self.model.ucfit_lst[row].symmetry == 'hexagonal') or\
-                    (self.model.ucfit_lst[row].symmetry == 'orthorhombic'):
-                item9 = QtWidgets.QTableWidgetItem('90.')
-                item9.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.widget.tableWidget_UnitCell.setItem(row, 8, item9)
-            else:
-                self.widget.tableWidget_UnitCell_doubleSpinBox_beta = \
-                    QtWidgets.QDoubleSpinBox()
-                self.widget.tableWidget_UnitCell_doubleSpinBox_beta.\
-                    setAlignment(
-                        QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                        QtCore.Qt.AlignVCenter)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_beta.setMaximum(
-                    179.0)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_beta.\
-                    setSingleStep(0.1)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_beta.\
-                    setDecimals(1)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_beta.\
-                    setProperty("value", float(self.model.ucfit_lst[row].beta))
-                self.widget.tableWidget_UnitCell_doubleSpinBox_beta.\
-                    valueChanged.\
-                    connect(self._ucfitlist_handle_doubleSpinBoxChanged)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_beta.setStyle(
-                    SpinBoxFixStyle())
-                self.widget.tableWidget_UnitCell.setCellWidget(
-                    row, 8,
-                    self.widget.tableWidget_UnitCell_doubleSpinBox_beta)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_beta.\
-                    setKeyboardTracking(False)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_beta.\
-                    setFocusPolicy(QtCore.Qt.StrongFocus)
-            # column 9 - gamma output
-            if not (self.model.ucfit_lst[row].symmetry == 'triclinic'):
-                if self.model.ucfit_lst[row].symmetry == 'hexagonal':
-                    item10 = QtWidgets.QTableWidgetItem('120.')
-                else:
-                    item10 = QtWidgets.QTableWidgetItem('90.')
-                item10.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.widget.tableWidget_UnitCell.setItem(row, 9, item10)
-            else:
-                self.widget.tableWidget_UnitCell_doubleSpinBox_gamma = \
-                    QtWidgets.QDoubleSpinBox()
-                self.widget.tableWidget_UnitCell_doubleSpinBox_gamma.\
-                    setAlignment(
-                        QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                        QtCore.Qt.AlignVCenter)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_gamma.\
-                    setMaximum(179.0)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_gamma.\
-                    setSingleStep(0.1)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_gamma.\
-                    setDecimals(1)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_gamma.\
-                    setProperty("value",
-                                float(self.model.ucfit_lst[row].gamma))
-                self.widget.tableWidget_UnitCell_doubleSpinBox_gamma.\
-                    valueChanged.connect(
-                        self._ucfitlist_handle_doubleSpinBoxChanged)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_gamma.setStyle(
-                    SpinBoxFixStyle())
-                self.widget.tableWidget_UnitCell.setCellWidget(
-                    row, 9,
-                    self.widget.tableWidget_UnitCell_doubleSpinBox_gamma)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_gamma.\
-                    setKeyboardTracking(False)
-                self.widget.tableWidget_UnitCell_doubleSpinBox_gamma.\
-                    setFocusPolicy(QtCore.Qt.StrongFocus)
-        self.widget.tableWidget_UnitCell.resizeColumnsToContents()
-#        self.widget.tableWidget_UnitCell.resizeRowsToContents()
-        self.widget.tableWidget_UnitCell.itemClicked.connect(
-            self._ucfitlist_handle_ItemClicked)
-
-    def _ucfitlist_handle_doubleSpinBoxChanged(self, value):
-        box = self.widget.sender()
-        index = self.widget.tableWidget_UnitCell.indexAt(box.pos())
-        if index.isValid():
-            idx = index.row()
-            if index.column() == 4:
-                self.model.ucfit_lst[idx].a = value
-                if self.model.ucfit_lst[idx].symmetry == 'cubic':
-                    self.model.ucfit_lst[idx].b = value
-                    self.model.ucfit_lst[idx].c = value
-                elif (self.model.ucfit_lst[idx].symmetry == 'tetragonal') or \
-                        (self.model.ucfit_lst[idx].symmetry == 'hexagonal'):
-                    self.model.ucfit_lst[idx].b = value
-                else:
-                    pass
-            elif index.column() == 5:
-                self.model.ucfit_lst[idx].b = value
-            elif index.column() == 6:
-                self.model.ucfit_lst[idx].c = value
-            elif index.column() == 7:
-                self.model.ucfit_lst[idx].alpha = value
-            elif index.column() == 8:
-                self.model.ucfit_lst[idx].beta = value
-            elif index.column() == 9:
-                self.model.ucfit_lst[idx].gamma = value
-            if self.model.ucfit_lst[idx].display:
-                self.plot_ctrl.update()
-
-    def _ucfitlist_handle_ColorButtonClicked(self):
-        button = self.widget.sender()
-        index = self.widget.tableWidget_UnitCell.indexAt(button.pos())
-        if index.isValid():
-            idx = index.row()
-            if index.column() == 2:
-                color = QtWidgets.QColorDialog.getColor()
-                if color.isValid():
-                    self.widget.tableWidget_UnitCell.item(idx, 2).\
-                        setBackground(color)
-                    self.model.ucfit_lst[idx].color = str(color.name())
-                    self.plot_ctrl.update()
-
-    def _ucfitlist_handle_ItemClicked(self, item):
-        if item.column() == 0:
-            idx = item.row()
-            if (item.checkState() == QtCore.Qt.Checked) == \
-                    self.model.ucfit_lst[idx].display:
-                return
-            if item.checkState() == QtCore.Qt.Checked:
-                self.model.ucfit_lst[idx].display = True
-            elif item.checkState() == QtCore.Qt.Unchecked:
-                self.model.ucfit_lst[idx].display = False
-            self.plot_ctrl.update()
-        else:
-            return
 
     def save_bgsubchi(self):
         """
@@ -1053,3 +720,104 @@ class MainController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'Cannot find ' + filen)
             return
+
+    def _find_closestjcpds(self, x):
+        jcount = 0
+        for phase in self.model.jcpds_lst:
+            if phase.display:
+                jcount += 1
+        ucount = 0
+        for phase in self.model.ucfit_lst:
+            if phase.display:
+                ucount += 1
+        if (jcount + ucount) == 0:
+            return ''
+        if jcount != 0:
+            idx_j = []
+            diff_j = []
+            tth_j = []
+            h_j = []
+            k_j = []
+            l_j = []
+            names_j = []
+            dsp_j = []
+            int_j = []
+            for j in self.model.jcpds_lst:
+                if j.display:
+                    i, d, t = j.find_DiffLine(
+                        x, self.widget.doubleSpinBox_SetWavelength.value())
+                    idx_j.append(i)
+                    diff_j.append(d)
+                    tth_j.append(t)
+                    h_j.append(j.DiffLines[i].h)
+                    k_j.append(j.DiffLines[i].k)
+                    l_j.append(j.DiffLines[i].l)
+                    dsp_j.append(j.DiffLines[i].dsp)
+                    int_j.append(j.DiffLines[i].intensity)
+                    names_j.append(j.name)
+        if ucount != 0:
+            idx_u = []
+            diff_u = []
+            tth_u = []
+            h_u = []
+            k_u = []
+            l_u = []
+            names_u = []
+            dsp_u = []
+            int_u = []
+            for u in self.model.ucfit_lst:
+                if u.display:
+                    i, d, t = u.find_DiffLine(
+                        x, self.widget.doubleSpinBox_SetWavelength.value())
+                    idx_u.append(i)
+                    diff_u.append(d)
+                    tth_u.append(t)
+                    h_u.append(u.DiffLines[i].h)
+                    k_u.append(u.DiffLines[i].k)
+                    l_u.append(u.DiffLines[i].l)
+                    dsp_u.append(u.DiffLines[i].dsp)
+                    int_u.append(u.DiffLines[i].intensity)
+                    names_u.append(u.name)
+        if (jcount != 0) and (ucount == 0):
+            idx_min = diff_j.index(min(diff_j))
+            tth_min = tth_j[idx_min]
+            dsp_min = dsp_j[idx_min]
+            int_min = int_j[idx_min]
+            h_min = h_j[idx_min]
+            k_min = k_j[idx_min]
+            l_min = l_j[idx_min]
+            name_min = names_j[idx_min]
+        elif (jcount == 0) and (ucount != 0):
+            idx_min = diff_u.index(min(diff_u))
+            tth_min = tth_u[idx_min]
+            dsp_min = dsp_u[idx_min]
+            int_min = int_u[idx_min]
+            h_min = h_u[idx_min]
+            k_min = k_u[idx_min]
+            l_min = l_u[idx_min]
+            name_min = names_u[idx_min]
+        else:
+            if min(diff_j) <= min(diff_u):
+                idx_min = diff_j.index(min(diff_j))
+                tth_min = tth_j[idx_min]
+                dsp_min = dsp_j[idx_min]
+                int_min = int_j[idx_min]
+                h_min = h_j[idx_min]
+                k_min = k_j[idx_min]
+                l_min = l_j[idx_min]
+                name_min = names_j[idx_min]
+            else:
+                idx_min = diff_u.index(min(diff_u))
+                tth_min = tth_u[idx_min]
+                dsp_min = dsp_u[idx_min]
+                int_min = int_u[idx_min]
+                h_min = h_u[idx_min]
+                k_min = k_u[idx_min]
+                l_min = l_u[idx_min]
+                name_min = names_u[idx_min]
+        line1 = 'Two theta = {0: 10.4f}, d-spacing = {1: 10.4f} A'.format(
+            float(tth_min), float(dsp_min))
+        line2 = 'intensity = {0: 5.0f}, hkl = {1: 3.0f} {2: 3.0f} {3: 3.0f}'.\
+            format(int(int_min), int(h_min), int(k_min), int(l_min))
+        textoutput = name_min + '\n' + line1 + '\n' + line2
+        return textoutput
