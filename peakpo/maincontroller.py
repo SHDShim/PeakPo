@@ -5,16 +5,16 @@ from PyQt5 import QtGui
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.cm as cmx
-from matplotlib import colors
 from matplotlib.backend_bases import key_press_handler
 import pickle
 import zipfile
 from mainwidget import MainWindow
 from model import PeakPoModel
 from mplcontroller import MplController
+from cakecontroller import CakeController
+from waterfallcontroller import WaterfallController
+from jcpdscontroller import JcpdsController
 # from model import PeakPoModel
-from utils import undo_button_press
 from utils import get_sorted_filelist, find_from_filelist, dialog_savefile, \
     xls_ucfitlist, xls_jlist, writechi, extract_filename
 from utils import SpinBoxFixStyle
@@ -36,6 +36,11 @@ class MainController(object):
         self.read_setting()
         self.connect_channel()
         self.plot_ctrl = MplController(self.model, self.widget)
+        self.waterfall_ctrl = WaterfallController(
+            self.model, self.widget, self.chi_path)
+        self.jcpds_ctrl = JcpdsController(self.model, self.widget,
+                                          self.jcpds_path)
+        self.cake_ctrl = CakeController(self.model, self.widget, self.chi_path)
         #
         self.clip = QtWidgets.QApplication.clipboard()
         # no more stuff can be added below
@@ -67,56 +72,23 @@ class MainController(object):
         self.widget.pushButton_SaveSession.clicked.connect(self.save_session)
         self.widget.pushButton_LoadSession.clicked.connect(self.load_session)
         self.widget.pushButton_ZipSession.clicked.connect(self.zip_session)
-        self.widget.checkBox_IntNorm.clicked.connect(
-            self.normalize_waterfall_intensity)
         self.widget.lineEdit_DiffractionPatternFileName.editingFinished.\
             connect(self.load_new_base_pattern_from_name)
-        # Tab: waterfall
-        self.widget.pushButton_AddPatterns.clicked.connect(self.add_patterns)
-        self.widget.doubleSpinBox_WaterfallGaps.valueChanged.connect(
-            self.apply_changes_to_graph)
-        self.widget.pushButton_CleanPatterns.clicked.connect(
-            self.erase_waterfall)
-        self.widget.pushButton_RemovePatterns.clicked.connect(
-            self.remove_waterfall)
-        self.widget.pushButton_UpPattern.clicked.connect(
-            self.move_up_waterfall)
-        self.widget.pushButton_DownPattern.clicked.connect(
-            self.move_down_waterfall)
-        self.widget.pushButton_ApplyWaterfallChange.clicked.connect(
-            self.apply_changes_to_graph)
+        self.widget.pushButton_SaveJlist.clicked.connect(self.save_session)
+        self.widget.doubleSpinBox_SetWavelength.valueChanged.connect(
+            self.apply_wavelength)
+        self.widget.pushButton_ExportXLS.clicked.connect(self.save_xls)
+        self.widget.pushButton_SaveCHI.clicked.connect(self.save_bgsubchi)
+        # while the button is located in JCPDS tab, this one connect different
+        # tabs, so stays in main controller
+        self.widget.pushButton_ExportToUCFit.clicked.connect(
+            self.export_to_ucfit)
+        # save Jlist is linked to save_session in the main controller
+        self.widget.pushButton_LoadJlist.clicked.connect(self.load_jlist)
+        self.widget.pushButton_ViewJCPDS.clicked.connect(self.view_jcpds)
         # Tab: process
         self.widget.pushButton_UpdatePlots_tab2.clicked.connect(
             self.update_bgsub)
-        # Tab: JCPDS List
-        self.widget.pushButton_NewJlist.clicked.connect(self.make_jlist)
-        self.widget.pushButton_RemoveJCPDS.clicked.connect(self.remove_a_jcpds)
-        self.widget.pushButton_AddToJlist.clicked.connect(
-            lambda: self.make_jlist(append=True))
-        self.widget.pushButton_SaveJlist.clicked.connect(self.save_session)
-        self.widget.pushButton_LoadJlist.clicked.connect(self.load_jlist)
-        self.widget.pushButton_ViewJCPDS.clicked.connect(self.view_jcpds)
-        self.widget.checkBox_Intensity.clicked.connect(
-            self.apply_changes_to_graph)
-        self.widget.doubleSpinBox_SetWavelength.valueChanged.connect(
-            self.apply_wavelength)
-        self.widget.pushButton_CheckAllJCPDS.clicked.connect(
-            self.check_all_jcpds)
-        self.widget.pushButton_UncheckAllJCPDS.clicked.connect(
-            self.uncheck_all_jcpds)
-        self.widget.pushButton_MoveUp.clicked.connect(self.move_up_jcpds)
-        self.widget.pushButton_MoveDown.clicked.connect(self.move_down_jcpds)
-        self.widget.pushButton_ExportXLS.clicked.connect(self.save_xls)
-        self.widget.pushButton_SaveCHI.clicked.connect(self.save_bgsubchi)
-        self.widget.pushButton_ExportToUCFit.clicked.connect(
-            self.export_to_ucfit)
-        # Tab: Cake
-        self.widget.pushButton_AddRemoveCake.clicked.connect(
-            self.addremove_cake)
-        self.widget.pushButton_GetPONI.clicked.connect(self.get_poni)
-        self.widget.pushButton_ApplyCakeView.clicked.connect(
-            self.apply_changes_to_graph)
-        self.widget.pushButton_ApplyMask.clicked.connect(self.apply_mask)
         # Tab: UCFit List
         self.widget.pushButton_RemoveUClist.clicked.connect(self.remove_ucfit)
         self.widget.pushButton_ExportXLS_2.clicked.connect(self.export_to_xls)
@@ -130,112 +102,8 @@ class MainController(object):
         self.widget.ntb_Bgsub.clicked.connect(self.apply_changes_to_graph)
         self.widget.ntb_NightView.clicked.connect(self.set_nightday_view)
 
-    ##########################################################################
-    # cake controls
-    def addremove_cake(self):
-        """
-        add/remove cake to the graph
-        """
-        self._addremove_cake()
+    def apply_changes_to_graph(self):
         self.plot_ctrl.update()
-
-    def _addremove_cake(self):
-        """
-        add/remove cake
-        no signal to update_graph
-        """
-        if not self.widget.pushButton_AddRemoveCake.isChecked():
-            self.widget.pushButton_AddRemoveCake.setText('Add Cake')
-            return
-        else:
-            self.widget.pushButton_AddRemoveCake.setText('Remove Cake')
-        if not self.model.poni_exist():
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning', 'Choose PONI file first.')
-            undo_button_press(
-                self.widget.pushButton_AddRemoveCake,
-                released_text='Add Cake', pressed_text='Remove Cake')
-            return
-        if not self.model.base_ptn_exist():
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning', 'Choose CHI file first.')
-            undo_button_press(
-                self.widget.pushButton_AddRemoveCake,
-                released_text='Add Cake', pressed_text='Remove Cake')
-            return
-        filen_tif = self.model.make_filename('tif')
-        if not os.path.exists(filen_tif):
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning', 'Cannot find %s.' % filen_tif)
-            undo_button_press(
-                self.widget.pushButton_AddRemoveCake,
-                released_text='Add Cake', pressed_text='Remove Cake')
-            return
-        if self.model.diff_img_exist() and \
-                self.model.same_filename_as_base_ptn(
-                self.model.diff_img.img_filename):
-            return
-        self._load_new_image(filen_tif)
-        self._produce_cake()
-
-    def _load_new_image(self, filen_tif):
-        """
-        Load new image for cake view.  Cake should be the same as base pattern.
-        no signal to update_graph
-        """
-        self.model.reset_diff_img()
-        self.model.diff_img.load(filen_tif)
-        self.widget.textEdit_DiffractionImageFilename.setText(
-            '2D Image: ' + filen_tif)
-
-    def apply_mask(self):
-        self._produce_cake()
-        self.plot_ctrl.update()
-
-    def _produce_cake(self):
-        """
-        Reprocess to get cake.  Slower re-processing
-        does not signal to update_graph
-        """
-        self.model.diff_img.set_calibration(self.model.poni)
-        self.model.diff_img.set_mask((self.widget.spinBox_MaskMin.value(),
-                                      self.widget.spinBox_MaskMax.value()))
-        self.model.diff_img.integrate_to_cake()
-
-    def get_poni(self):
-        """
-        Opens a pyFAI calibration file
-        signal to update_graph
-        """
-        filen = QtWidgets.QFileDialog.getOpenFileName(
-            self.widget, "Open a PONI File",
-            self.chi_path, "PONI files (*.poni)")[0]
-        filename = str(filen)
-        if os.path.exists(filename):
-            self.model.poni = filename
-            self.widget.textEdit_PONI.setText('PONI: ' + self.model.poni)
-            if self.model.diff_img_exist():
-                self._produce_cake()
-            self.plot_ctrl.update()
-
-    ###########################################################################
-    # waterfall control
-    def normalize_waterfall_intensity(self):
-        """
-        Waterfall function
-        Need documentation for its function
-        """
-        if not self.model.waterfall_exist():
-            return
-        count = 0
-        for wf in self.model.waterfall_ptn:
-            if wf.display:
-                count += 1
-        if count == 0:
-            return
-        # update figure
-        self.plot_ctrl.update()
-        return
 
     def export_to_xls(self):
         """
@@ -249,6 +117,27 @@ class MainController(object):
         if str(filen_xls) == '':
             return
         xls_ucfitlist(filen_xls, self.model.ucfit_lst)
+
+    def view_jcpds(self):
+        if not self.model.jcpds_exist():
+            return
+        idx_checked = [
+            s.row() for s in
+            self.widget.tableWidget_JCPDS.selectionModel().selectedRows()]
+
+        if idx_checked == []:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning", "Highlight the name of JCPDS to view")
+            return
+        if idx_checked.__len__() != 1:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Only one JCPDS card can be shown at a time.")
+        else:
+            textoutput = self.model.jcpds_lst[idx_checked[0]].make_TextOutput(
+                self.widget.doubleSpinBox_Pressure.value(),
+                self.widget.doubleSpinBox_Temperature.value())
+            self.widget.plainTextEdit_ViewJCPDS.setPlainText(textoutput)
 
     def remove_ucfit(self):
         """
@@ -275,6 +164,18 @@ class MainController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning',
                 'In order to remove, highlight the names.')
+
+    def load_jlist(self):
+        """get existing jlist file from data folder"""
+        fn_jlist = QtWidgets.QFileDialog.getOpenFileName(
+            self.widget, "Choose A Session File",
+            self.chi_path, "(*.ppss)")[0]
+        if fn_jlist == '':
+            return
+        self._load_session(fn_jlist, True)
+        self.widget.textEdit_Jlist.setText('Jlist: ' + str(fn_jlist))
+        self.jcpds_ctrl.update_table()
+        self.plot_ctrl.update()
 
     def export_to_ucfit(self):
         """
@@ -315,7 +216,7 @@ class MainController(object):
                     self.widget, "Warning",
                     "You cannot send a jcpds without symmetry.")
         self._list_ucfit()
-        self._list_jcpds()
+        self.jcpds_ctrl.update_table()
         self.plot_ctrl.update()
         return
 
@@ -703,90 +604,6 @@ class MainController(object):
                   self.widget.doubleSpinBox_Pressure.value(),
                   self.widget.doubleSpinBox_Temperature.value())
 
-    def _find_a_jcpds(self):
-        idx_checked = \
-            self.widget.tableWidget_JCPDS.selectionModel().selectedRows()
-        if idx_checked == []:
-            print('no row selected')
-            return None
-        else:
-            return idx_checked[0].row()
-
-    def _find_a_wf(self):
-        idx_checked = [
-            s.row() for s in
-            self.widget.tableWidget_wfPatterns.selectionModel().selectedRows()]
-        if idx_checked == []:
-            return None
-        else:
-            return idx_checked[0]
-
-    def move_up_jcpds(self):
-        # get selected cell number
-        idx_selected = self._find_a_jcpds()
-        if idx_selected is None:
-            QtWidgets.QMessageBox.warning(self.widget, "Warning",
-                                          "Highlight the item to move first.")
-            return
-        i = idx_selected
-        if i == 0:
-            return
-        self.model.jcpds_lst[i - 1], self.model.jcpds_lst[i] = \
-            self.model.jcpds_lst[i], self.model.jcpds_lst[i - 1]
-        self.widget.tableWidget_JCPDS.selectRow(i - 1)
-        """
-        self.widget.tableWidget_JCPDS.setCurrentItem(
-            self.widget.tableWidget_JCPDS.item(i - 1, 1))
-        """
-        # self.widget.tableWidget_JCPDS.setCurrentItem(
-        #    self.widget.tableWidget_JCPDS.item(i, 1), False)
-        """
-        self.widget.tableWidget_JCPDS.setItemSelected(
-            self.widget.tableWidget_JCPDS.item(i - 1, 1), True)
-        self.widget.tableWidget_JCPDS.setItemSelected(
-            self.widget.tableWidget_JCPDS.item(i, 1), False)
-        """
-        self._list_jcpds()
-
-    def move_down_jcpds(self):
-        # get selected cell number
-        idx_selected = self._find_a_jcpds()
-        if idx_selected is None:
-            QtWidgets.QMessageBox.warning(self.widget, "Warning",
-                                          "Highlight the item to move first.")
-            return
-        i = idx_selected
-        if i >= self.model.jcpds_lst.__len__() - 1:
-            return
-        self.model.jcpds_lst[i + 1], self.model.jcpds_lst[i] = \
-            self.model.jcpds_lst[i], self.model.jcpds_lst[i + 1]
-        self.widget.tableWidget_JCPDS.selectRow(i + 1)
-        """
-        self.widget.tableWidget_JCPDS.setCurrentItem(
-            self.widget.tableWidget_JCPDS.item(i + 1, 1))
-        self.widget.tableWidget_JCPDS.setItemSelected(
-            self.widget.tableWidget_JCPDS.item(i + 1, 1), True)
-        self.widget.tableWidget_JCPDS.setItemSelected(
-            self.widget.tableWidget_JCPDS.item(i, 1), False)
-        """
-        self._list_jcpds()
-
-    def check_all_jcpds(self):
-        if not self.model.jcpds_exist():
-            return
-        for j in self.model.jcpds_lst:
-            j.display = True
-        self._list_jcpds()
-        self.plot_ctrl.update()
-
-    def uncheck_all_jcpds(self):
-        if not self.model.jcpds_exist():
-            return
-        for j in self.model.jcpds_lst:
-            j.display = False
-        self._list_jcpds()
-        self.plot_ctrl.update()
-
     def load_session(self):
         """
         get existing jlist file from data folder
@@ -949,8 +766,8 @@ class MainController(object):
 
     def update_inputs(self):
         self.reset_bgsub()
-        self._list_wfpatterns()
-        self._list_jcpds()
+        self.waterfall_ctrl.update_table()
+        self.jcpds_ctrl.update_table()
 
     def zip_session(self):
         if not self.model.base_ptn_exist():
@@ -1028,526 +845,8 @@ class MainController(object):
 
     def set_nightday_view(self):
         self.plot_ctrl._set_nightday_view()
-        self._list_wfpatterns()
+        self.waterfall_ctrl.update_table()
         self.plot_ctrl.update()
-
-    def add_patterns(self):
-        """ get files for waterfall plot """
-        if not self.model.base_ptn_exist():
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning",
-                "Pick a base pattern first.")
-            return
-        files = QtWidgets.QFileDialog.getOpenFileNames(
-            self.widget,
-            "Choose additional data files", self.chi_path,
-            "Data files (*.chi)")[0]
-        if files is None:
-            return
-        new_patterns = []
-        for f in files:
-            filename = str(f)
-            pattern = PatternPeakPo()
-            pattern.read_file(filename)
-            pattern.wavelength = \
-                self.widget.doubleSpinBox_SetWavelength.value()
-            pattern.display = False
-            bg_roi = [self.widget.doubleSpinBox_Background_ROI_min.value(),
-                      self.widget.doubleSpinBox_Background_ROI_max.value()]
-            bg_params = [self.widget.spinBox_BGParam0.value(),
-                         self.widget.spinBox_BGParam1.value(),
-                         self.widget.spinBox_BGParam2.value()]
-            pattern.get_chbg(bg_roi, bg_params, yshift=0)
-            new_patterns.append(pattern)
-        self.model.waterfall_ptn += new_patterns
-        self._list_wfpatterns()
-        i = 0
-        for pattern in self.model.waterfall_ptn:
-            if pattern.display:
-                i += 1
-        if i != 0:
-            self.plot_ctrl.update()
-
-    def _list_wfpatterns(self):
-        """show a list of jcpds in the list window of tab 3"""
-        n_columns = 4
-        n_rows = self.model.waterfall_ptn.__len__()  # count for number of jcpds
-        self.widget.tableWidget_wfPatterns.setColumnCount(n_columns)
-        self.widget.tableWidget_wfPatterns.setRowCount(n_rows)
-        self.widget.tableWidget_wfPatterns.horizontalHeader().setVisible(True)
-        self.widget.tableWidget_wfPatterns.setHorizontalHeaderLabels(
-            ['', 'Color', 'Color change', 'Wavelength'])
-        self.widget.tableWidget_wfPatterns.setVerticalHeaderLabels(
-            [extract_filename(wfp.fname) for wfp in self.model.waterfall_ptn])
-        for row in range(n_rows):
-            # column 0 - checkbox
-            item0 = QtWidgets.QTableWidgetItem()
-            item0.setFlags(QtCore.Qt.ItemIsUserCheckable |
-                           QtCore.Qt.ItemIsEnabled)
-            if self.model.waterfall_ptn[row].display:
-                item0.setCheckState(QtCore.Qt.Checked)
-            else:
-                item0.setCheckState(QtCore.Qt.Unchecked)
-            self.widget.tableWidget_wfPatterns.setItem(row, 0, item0)
-            # column 1 - color
-            item2 = QtWidgets.QTableWidgetItem('    ')
-            self.widget.tableWidget_wfPatterns.setItem(row, 1, item2)
-            # column 3 - color setup
-            self.widget.tableWidget_wfPatterns_pushButton_color = \
-                QtWidgets.QPushButton('change')
-            self.widget.tableWidget_wfPatterns.item(row, 1).setBackground(
-                QtGui.QColor(self.model.waterfall_ptn[row].color))
-            self.widget.tableWidget_wfPatterns_pushButton_color.clicked.\
-                connect(self._wfPatterns_handle_ColorButtonClicked)
-            self.widget.tableWidget_wfPatterns.setCellWidget(
-                row, 2,
-                self.widget.tableWidget_wfPatterns_pushButton_color)
-            # column 3 - wavelength
-            self.widget.tableWidget_wfPatterns_doubleSpinBox_wavelength = \
-                QtWidgets.QDoubleSpinBox()
-            self.widget.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
-                setAlignment(
-                    QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                    QtCore.Qt.AlignVCenter)
-            self.widget.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
-                setMaximum(2.0)
-            self.widget.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
-                setSingleStep(0.0001)
-            self.widget.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
-                setDecimals(4)
-            self.widget.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
-                setProperty("value", self.model.waterfall_ptn[row].wavelength)
-            self.widget.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
-                valueChanged.connect(
-                    self._wfPatterns_handle_doubleSpinBoxChanged)
-            self.widget.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
-                setStyle(SpinBoxFixStyle())
-            self.widget.tableWidget_wfPatterns.setCellWidget(
-                row, 3,
-                self.widget.tableWidget_wfPatterns_doubleSpinBox_wavelength)
-            self.widget.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
-                setKeyboardTracking(False)
-            self.widget.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
-                setFocusPolicy(QtCore.Qt.StrongFocus)
-        self.widget.tableWidget_wfPatterns.resizeColumnsToContents()
-#        self.widget.tableWidget_wfPatterns.resizeRowsToContents()
-        self.widget.tableWidget_wfPatterns.itemClicked.connect(
-            self._wfPatterns_handle_ItemClicked)
-        i = 0
-        for pattern in self.model.waterfall_ptn:
-            if pattern.display:
-                i += 1
-        if i != 0:
-            self.plot_ctrl.update()
-
-    def _wfPatterns_handle_doubleSpinBoxChanged(self, value):
-        box = self.widget.sender()
-        index = self.widget.tableWidget_wfPatterns.indexAt(box.pos())
-        if index.isValid():
-            idx = index.row()
-            self.model.waterfall_ptn[idx].wavelength = value
-            i = 0
-            for pattern in self.model.waterfall_ptn:
-                if pattern.display:
-                    i += 1
-
-    def _wfPatterns_handle_ColorButtonClicked(self):
-        button = self.widget.sender()
-        index = self.widget.tableWidget_wfPatterns.indexAt(button.pos())
-        if index.isValid():
-            idx = index.row()
-            if index.column() == 2:
-                color = QtWidgets.QColorDialog.getColor()
-                if color.isValid():
-                    self.widget.tableWidget_wfPatterns.item(idx, 2).\
-                        setBackground(color)
-                    self.model.waterfall_ptn[idx].color = str(color.name())
-                    i = 0
-                    for pattern in self.model.waterfall_ptn:
-                        if pattern.display:
-                            i += 1
-                    if i != 0:
-                        self.plot_ctrl.update()
-
-    def _wfPatterns_handle_ItemClicked(self, item):
-        if item.column() == 0:
-            idx = item.row()
-            if item.checkState() == QtCore.Qt.Checked:
-                self.model.waterfall_ptn[idx].display = True
-            elif item.checkState() == QtCore.Qt.Unchecked:
-                self.model.waterfall_ptn[idx].display = False
-            self.plot_ctrl.update()
-        else:
-            return
-
-    def load_jlist(self):
-        """get existing jlist file from data folder"""
-        fn_jlist = QtWidgets.QFileDialog.getOpenFileName(
-            self.widget, "Choose A Session File",
-            self.chi_path, "(*.ppss)")[0]
-        if fn_jlist == '':
-            return
-        self._load_session(fn_jlist, True)
-        self.widget.textEdit_Jlist.setText('Jlist: ' + str(fn_jlist))
-        self._list_jcpds()
-        self.plot_ctrl.update()
-
-    def remove_a_jcpds(self):
-        reply = QtWidgets.QMessageBox.question(
-            self.widget, 'Message',
-            'Are you sure you want to remove the highlighted JPCDSs?',
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.Yes)
-        if reply == QtWidgets.QMessageBox.No:
-            return
-        # print self.widget.tableWidget_JCPDS.selectedIndexes().__len__()
-        idx_checked = [s.row() for s in
-                       self.widget.tableWidget_JCPDS.selectionModel().
-                       selectedRows()]
-        # remove checked ones
-        if idx_checked != []:
-            idx_checked.reverse()
-            for idx in idx_checked:
-                self.model.jcpds_lst.remove(self.model.jcpds_lst[idx])
-                self.widget.tableWidget_JCPDS.removeRow(idx)
-#        self._list_jcpds()
-            self.plot_ctrl.update()
-        else:
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning',
-                'In order to remove, highlight the names.')
-
-    def view_jcpds(self):
-        if not self.model.jcpds_exist():
-            return
-        idx_checked = [
-            s.row() for s in
-            self.widget.tableWidget_JCPDS.selectionModel().selectedRows()]
-
-        if idx_checked == []:
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning", "Highlight the name of JCPDS to view")
-            return
-        if idx_checked.__len__() != 1:
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning",
-                "Only one JCPDS card can be shown at a time.")
-        else:
-            textoutput = self.model.jcpds_lst[idx_checked[0]].make_TextOutput(
-                self.widget.doubleSpinBox_Pressure.value(),
-                self.widget.doubleSpinBox_Temperature.value())
-            self.widget.plainTextEdit_ViewJCPDS.setPlainText(textoutput)
-
-    def _list_jcpds(self):
-        """show jcpds cards in the QTableWidget"""
-        n_columns = 10
-        n_rows = self.model.jcpds_lst.__len__()  # count for number of jcpds
-        self.widget.tableWidget_JCPDS.setColumnCount(n_columns)
-        self.widget.tableWidget_JCPDS.setRowCount(n_rows)
-        self.widget.tableWidget_JCPDS.horizontalHeader().setVisible(True)
-        self.widget.tableWidget_JCPDS.verticalHeader().setVisible(True)
-        self.widget.tableWidget_JCPDS.setHorizontalHeaderLabels(
-            ['', 'Color', 'Color Change', 'V0 Tweak', 'K0 Tweak', 'K0p Tweak',
-             'alpha0 Tweak', 'b/a Tweak', 'c/a Tweak', 'Int Tweak'])
-        self.widget.tableWidget_JCPDS.setVerticalHeaderLabels(
-            [j.name for j in self.model.jcpds_lst])
-        for row in range(n_rows):
-            # column 0 - checkbox
-            item0 = QtWidgets.QTableWidgetItem()
-            item0.setFlags(QtCore.Qt.ItemIsUserCheckable |
-                           QtCore.Qt.ItemIsEnabled)
-            if self.model.jcpds_lst[row].display:
-                item0.setCheckState(QtCore.Qt.Checked)
-            else:
-                item0.setCheckState(QtCore.Qt.Unchecked)
-            self.widget.tableWidget_JCPDS.setItem(row, 0, item0)
-            # column 1 - color
-            item2 = QtWidgets.QTableWidgetItem('    ')
-            self.widget.tableWidget_JCPDS.setItem(row, 1, item2)
-            # column 2 - color setup
-            self.widget.tableWidget_JCPDS_pushButton_color = \
-                QtWidgets.QPushButton('change')
-            self.widget.tableWidget_JCPDS.item(row, 1).setBackground(
-                QtGui.QColor(self.model.jcpds_lst[row].color))
-            self.widget.tableWidget_JCPDS_pushButton_color.clicked.connect(
-                self._jcpds_handle_ColorButtonClicked)
-            self.widget.tableWidget_JCPDS.setCellWidget(
-                row, 2, self.widget.tableWidget_JCPDS_pushButton_color)
-            # column 3 - V0 tweak
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk = \
-                QtWidgets.QDoubleSpinBox()
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setAlignment(
-                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                QtCore.Qt.AlignVCenter)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setMaximum(2.0)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setSingleStep(
-                0.001)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setDecimals(3)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setProperty(
-                "value", self.model.jcpds_lst[row].twk_v0)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.valueChanged.\
-                connect(self._jcpds_handle_doubleSpinBoxChanged)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setStyle(
-                SpinBoxFixStyle())
-            self.widget.tableWidget_JCPDS.setCellWidget(
-                row, 3, self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setFocusPolicy(
-                QtCore.Qt.StrongFocus)
-            # column 4 - K0 tweak
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk = \
-                QtWidgets.QDoubleSpinBox()
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setAlignment(
-                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                QtCore.Qt.AlignVCenter)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setMaximum(2.0)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setSingleStep(
-                0.01)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setDecimals(2)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setProperty(
-                "value", self.model.jcpds_lst[row].twk_k0)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.valueChanged.\
-                connect(self._jcpds_handle_doubleSpinBoxChanged)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setStyle(
-                SpinBoxFixStyle())
-            self.widget.tableWidget_JCPDS.setCellWidget(
-                row, 4, self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setFocusPolicy(
-                QtCore.Qt.StrongFocus)
-            # column 5 - K0p tweak
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk = \
-                QtWidgets.QDoubleSpinBox()
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setAlignment(
-                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                QtCore.Qt.AlignVCenter)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setMaximum(2.0)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setSingleStep(
-                0.01)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setDecimals(2)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setProperty(
-                "value", self.model.jcpds_lst[row].twk_k0p)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.valueChanged.\
-                connect(self._jcpds_handle_doubleSpinBoxChanged)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setStyle(
-                SpinBoxFixStyle())
-            self.widget.tableWidget_JCPDS.setCellWidget(
-                row, 5, self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setFocusPolicy(
-                QtCore.Qt.StrongFocus)
-            # column 6 - alpha0 tweak
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk = \
-                QtWidgets.QDoubleSpinBox()
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setAlignment(
-                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                QtCore.Qt.AlignVCenter)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setMaximum(
-                2.0)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
-                setSingleStep(0.01)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setDecimals(
-                2)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setProperty(
-                "value", self.model.jcpds_lst[row].twk_thermal_expansion)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
-                valueChanged.connect(self._jcpds_handle_doubleSpinBoxChanged)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setStyle(
-                SpinBoxFixStyle())
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
-                setFocusPolicy(QtCore.Qt.StrongFocus)
-            self.widget.tableWidget_JCPDS.setCellWidget(
-                row, 6, self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk)
-            # column 7 - b/a tweak
-            if (self.model.jcpds_lst[row].symmetry == 'cubic') or \
-                    (self.model.jcpds_lst[row].symmetry == 'tetragonal') or \
-                    (self.model.jcpds_lst[row].symmetry == 'hexagonal'):
-                item8 = QtWidgets.QTableWidgetItem('')
-                item8.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.widget.tableWidget_JCPDS.setItem(row, 8, item8)
-            else:
-                self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk = \
-                    QtWidgets.QDoubleSpinBox()
-                self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.\
-                    setAlignment(
-                        QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                        QtCore.Qt.AlignVCenter)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.setMaximum(
-                    2.0)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.\
-                    setSingleStep(0.001)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.setDecimals(
-                    3)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.setProperty(
-                    "value", self.model.jcpds_lst[row].twk_b_a)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.\
-                    valueChanged.connect(
-                        self._jcpds_handle_doubleSpinBoxChanged)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.setStyle(
-                    SpinBoxFixStyle())
-                self.widget.tableWidget_JCPDS.setCellWidget(
-                    row, 7, self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.\
-                    setKeyboardTracking(False)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.\
-                    setFocusPolicy(QtCore.Qt.StrongFocus)
-            # column 8 - c/a tweak
-            if (self.model.jcpds_lst[row].symmetry == 'cubic'):
-                item9 = QtWidgets.QTableWidgetItem('')
-                item9.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.widget.tableWidget_JCPDS.setItem(row, 9, item9)
-            else:
-                self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk = \
-                    QtWidgets.QDoubleSpinBox()
-                self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.\
-                    setAlignment(
-                        QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                        QtCore.Qt.AlignVCenter)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.setMaximum(
-                    2.0)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.\
-                    setSingleStep(0.001)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.setDecimals(
-                    3)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.setProperty(
-                    "value", self.model.jcpds_lst[row].twk_c_a)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.\
-                    valueChanged.connect(
-                        self._jcpds_handle_doubleSpinBoxChanged)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.setStyle(
-                    SpinBoxFixStyle())
-                self.widget.tableWidget_JCPDS.setCellWidget(
-                    row, 8, self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.\
-                    setKeyboardTracking(False)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.\
-                    setFocusPolicy(QtCore.Qt.StrongFocus)
-            # column 9 - int tweak
-            self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk = \
-                QtWidgets.QDoubleSpinBox()
-            self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setAlignment(
-                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                QtCore.Qt.AlignVCenter)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setMaximum(1.0)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setSingleStep(
-                0.05)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setDecimals(2)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setProperty(
-                "value", self.model.jcpds_lst[row].twk_int)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.valueChanged.\
-                connect(self._jcpds_handle_doubleSpinBoxChanged)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setStyle(
-                SpinBoxFixStyle())
-            self.widget.tableWidget_JCPDS.setCellWidget(
-                row, 9, self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setFocusPolicy(
-                QtCore.Qt.StrongFocus)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
-                setKeyboardTracking(False)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.\
-                setKeyboardTracking(False)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.\
-                setKeyboardTracking(False)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.\
-                setKeyboardTracking(False)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.\
-                setKeyboardTracking(False)
-        self.widget.tableWidget_JCPDS.resizeColumnsToContents()
-#        self.widget.tableWidget_JCPDS.resizeRowsToContents()
-        self.widget.tableWidget_JCPDS.itemClicked.connect(
-            self._jcpds_handle_ItemClicked)
-
-    def _jcpds_handle_doubleSpinBoxChanged(self, value):
-        box = self.widget.sender()
-        index = self.widget.tableWidget_JCPDS.indexAt(box.pos())
-        if index.isValid():
-            idx = index.row()
-            if index.column() == 3:
-                self.model.jcpds_lst[idx].twk_v0 = value
-            elif index.column() == 4:
-                self.model.jcpds_lst[idx].twk_k0 = value
-            elif index.column() == 5:
-                self.model.jcpds_lst[idx].twk_k0p = value
-            elif index.column() == 6:
-                self.model.jcpds_lst[idx].twk_thermal_expansion = value
-            elif index.column() == 7:
-                self.model.jcpds_lst[idx].twk_b_a = value
-            elif index.column() == 8:
-                self.model.jcpds_lst[idx].twk_c_a = value
-            elif index.column() == 9:
-                self.model.jcpds_lst[idx].twk_int = value
-            if self.model.jcpds_lst[idx].display:
-                self.plot_ctrl.update()
-
-    def _jcpds_handle_ColorButtonClicked(self):
-        button = self.widget.sender()
-        index = self.widget.tableWidget_JCPDS.indexAt(button.pos())
-        if index.isValid():
-            idx = index.row()
-            if index.column() == 2:
-                color = QtWidgets.QColorDialog.getColor()
-                if color.isValid():
-                    self.widget.tableWidget_JCPDS.item(idx, 1).\
-                        setBackground(color)
-                    self.model.jcpds_lst[idx].color = str(color.name())
-                    self.plot_ctrl.update()
-
-    def _jcpds_handle_ItemClicked(self, item):
-        if item.column() == 0:
-            idx = item.row()
-            if (item.checkState() == QtCore.Qt.Checked) ==\
-                    self.model.jcpds_lst[idx].display:
-                return
-            if item.checkState() == QtCore.Qt.Checked:
-                self.model.jcpds_lst[idx].display = True
-            elif item.checkState() == QtCore.Qt.Unchecked:
-                self.model.jcpds_lst[idx].display = False
-            self.plot_ctrl.update()
-        else:
-            return
-
-    def make_jlist(self, append=False):
-        """collect files for jlist"""
-        files = QtWidgets.QFileDialog.getOpenFileNames(
-            self.widget, "Choose JPCDS Files", self.jcpds_path, "(*.jcpds)")[0]
-        if files == []:
-            return
-        # reset jcpds_path
-        self.jcpds_path, dum = os.path.split(str(files[0]))
-        # construct jlist and assign default values
-        jlist = []
-#        for f, c in zip(files, colors.cnames):
-#        n_files = files.__len__()
-        n_color = 9
-        jet = plt.get_cmap('gist_rainbow')
-        cNorm = colors.Normalize(vmin=0, vmax=n_color)
-        val = range(n_color)
-        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
-        values = [val[0], val[3], val[6], val[1], val[4], val[7], val[2],
-                  val[5], val[8]]
-        if append:
-            n_existingjcpds = self.model.jcpds_lst.__len__()
-            n_addedjcpds = files.__len__()
-            if ((n_existingjcpds + n_addedjcpds) > n_color):
-                i = 0
-            else:
-                i = n_existingjcpds
-        else:
-            i = 0
-        for f in files:
-            phase = JCPDSplt()
-            phase.read_file(str(f))  # phase.file = f
-            phase.color = colors.rgb2hex(scalarMap.to_rgba(values[i]))
-            jlist.append(phase)
-            i += 1
-        if append:
-            self.model.jcpds_lst += jlist
-        else:  # initiate self.model.jcpds_lst
-            self.model.reset_jcpds_lst()
-            self.model.jcpds_lst = jlist
-        # display on the QTableWidget
-        self._list_jcpds()
-        if not self.model.base_ptn_exist():
-            self.plot_ctrl.update(limits=[0., 25., 0., 100.])
-        else:
-            self.plot_ctrl.update()
 
     def read_plot(self, event):
         if self.widget.mpl.ntb._active is not None:
@@ -1570,165 +869,6 @@ class MainController(object):
             textinfo = self._find_closestjcpds(x_find)
             QtWidgets.QMessageBox.warning(self.widget, "Information",
                                           clicked_position + '\n' + textinfo)
-
-    def _find_closestjcpds(self, x):
-        jcount = 0
-        for j in self.model.jcpds_lst:
-            if j.display:
-                jcount += 1
-        ucount = 0
-        for u in self.model.ucfit_lst:
-            if u.display:
-                ucount += 1
-        if (jcount + ucount) == 0:
-            return ''
-        if jcount != 0:
-            idx_j = []
-            diff_j = []
-            tth_j = []
-            h_j = []
-            k_j = []
-            l_j = []
-            names_j = []
-            dsp_j = []
-            int_j = []
-            for j in self.model.jcpds_lst:
-                if j.display:
-                    i, d, t = j.find_DiffLine(
-                        x, self.widget.doubleSpinBox_SetWavelength.value())
-                    idx_j.append(i)
-                    diff_j.append(d)
-                    tth_j.append(t)
-                    h_j.append(j.DiffLines[i].h)
-                    k_j.append(j.DiffLines[i].k)
-                    l_j.append(j.DiffLines[i].l)
-                    dsp_j.append(j.DiffLines[i].dsp)
-                    int_j.append(j.DiffLines[i].intensity)
-                    names_j.append(j.name)
-        if ucount != 0:
-            idx_u = []
-            diff_u = []
-            tth_u = []
-            h_u = []
-            k_u = []
-            l_u = []
-            names_u = []
-            dsp_u = []
-            int_u = []
-            for u in self.model.ucfit_lst:
-                if u.display:
-                    i, d, t = u.find_DiffLine(
-                        x, self.widget.doubleSpinBox_SetWavelength.value())
-                    idx_u.append(i)
-                    diff_u.append(d)
-                    tth_u.append(t)
-                    h_u.append(u.DiffLines[i].h)
-                    k_u.append(u.DiffLines[i].k)
-                    l_u.append(u.DiffLines[i].l)
-                    dsp_u.append(u.DiffLines[i].dsp)
-                    int_u.append(u.DiffLines[i].intensity)
-                    names_u.append(u.name)
-        if (jcount != 0) and (ucount == 0):
-            idx_min = diff_j.index(min(diff_j))
-            tth_min = tth_j[idx_min]
-            dsp_min = dsp_j[idx_min]
-            int_min = int_j[idx_min]
-            h_min = h_j[idx_min]
-            k_min = k_j[idx_min]
-            l_min = l_j[idx_min]
-            name_min = names_j[idx_min]
-        elif (jcount == 0) and (ucount != 0):
-            idx_min = diff_u.index(min(diff_u))
-            tth_min = tth_u[idx_min]
-            dsp_min = dsp_u[idx_min]
-            int_min = int_u[idx_min]
-            h_min = h_u[idx_min]
-            k_min = k_u[idx_min]
-            l_min = l_u[idx_min]
-            name_min = names_u[idx_min]
-        else:
-            if min(diff_j) <= min(diff_u):
-                idx_min = diff_j.index(min(diff_j))
-                tth_min = tth_j[idx_min]
-                dsp_min = dsp_j[idx_min]
-                int_min = int_j[idx_min]
-                h_min = h_j[idx_min]
-                k_min = k_j[idx_min]
-                l_min = l_j[idx_min]
-                name_min = names_j[idx_min]
-            else:
-                idx_min = diff_u.index(min(diff_u))
-                tth_min = tth_u[idx_min]
-                dsp_min = dsp_u[idx_min]
-                int_min = int_u[idx_min]
-                h_min = h_u[idx_min]
-                k_min = k_u[idx_min]
-                l_min = l_u[idx_min]
-                name_min = names_u[idx_min]
-        line1 = 'Two theta = {0: 10.4f}, d-spacing = {1: 10.4f} A'.format(
-            float(tth_min), float(dsp_min))
-        line2 = 'intensity = {0: 5.0f}, hkl = {1: 3.0f} {2: 3.0f} {3: 3.0f}'.\
-            format(int(int_min), int(h_min), int(k_min), int(l_min))
-        textoutput = name_min + '\n' + line1 + '\n' + line2
-        return textoutput
-
-    def erase_waterfall(self):
-        self.model.reset_waterfall_ptn()
-        self.widget.tableWidget_wfPatterns.clearContents()
-        self.plot_ctrl.update()
-
-    def remove_waterfall(self):
-        reply = QtWidgets.QMessageBox.question(
-            self.widget, 'Message',
-            'Are you sure you want to remove the highlighted pattern?',
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.Yes)
-        if reply == QtWidgets.QMessageBox.No:
-            return
-        # print self.widget.tableWidget_JCPDS.selectedIndexes().__len__()
-        idx_checked = [
-            s.row() for s in
-            self.widget.tableWidget_wfPatterns.selectionModel().selectedRows()]
-        if idx_checked == []:
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning',
-                'In order to remove, highlight the names.')
-            return
-        else:
-            idx_checked.reverse()
-            for idx in idx_checked:
-                self.model.waterfall_ptn.remove(self.model.waterfall_ptn[idx])
-                self.widget.tableWidget_wfPatterns.removeRow(idx)
-#        self._list_jcpds()
-            self.plot_ctrl.update()
-
-    def move_up_waterfall(self):
-        # get selected cell number
-        idx_selected = self._find_a_wf()
-        if idx_selected is None:
-            QtWidgets.QMessageBox.warning(self.widget, "Warning",
-                                          "Highlight the item to move first.")
-            return
-        i = idx_selected
-        self.model.waterfall_ptn[i - 1], self.model.waterfall_ptn[i] = \
-            self.model.waterfall_ptn[i], self.model.waterfall_ptn[i - 1]
-        self.widget.tableWidget_wfPatterns.selectRow(i - 1)
-        self._list_wfpatterns()
-
-    def move_down_waterfall(self):
-        idx_selected = self._find_a_wf()
-        if idx_selected is None:
-            QtWidgets.QMessageBox.warning(self.widget, "Warning",
-                                          "Highlight the item to move first.")
-            return
-        i = idx_selected
-        self.model.waterfall_ptn[i + 1], self.model.waterfall_ptn[i] = \
-            self.model.waterfall_ptn[i], self.model.waterfall_ptn[i + 1]
-        self.widget.tableWidget_wfPatterns.selectRow(i + 1)
-        self._list_wfpatterns()
-
-    def apply_changes_to_graph(self, value):
-        self.plot_ctrl.update()
 
     def apply_wavelength(self):
         # self.wavelength = value
@@ -1819,7 +959,7 @@ class MainController(object):
                 self.widget.spinBox_BGParam2.value()], yshift=0)
         if self.widget.pushButton_AddRemoveCake.isChecked() and \
                 self.model.poni is not None:
-            self._addremove_cake()
+            self.cake_ctrl.addremove_cake(update_plot=False)
 
     def select_base_ptn(self):
         """

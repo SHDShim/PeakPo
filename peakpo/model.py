@@ -89,3 +89,17 @@ class PeakPoModel(object):
 
     def get_base_ptn(self):
         return self.base_ptn
+
+    def append_a_waterfall_ptn(self, filename, wavelength, bg_roi, bg_params):
+        pattern = PatternPeakPo()
+        pattern.read_file(filename)
+        pattern.wavelength = wavelength
+        pattern.display = False
+        pattern.get_chbg(bg_roi, bg_params, yshift=0)
+        self.waterfall_ptn.append(pattern)
+
+    def append_a_jcpds(self, filen, color):
+        phase = JCPDSplt()
+        phase.read_file(filen)  # phase.file = f
+        phase.color = color
+        self.jcpds_lst.append(phase)
