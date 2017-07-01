@@ -1,5 +1,5 @@
-from PyQt5 import QtWidgets
 import os
+from PyQt5 import QtWidgets
 from utils import undo_button_press
 
 from mplcontroller import MplController

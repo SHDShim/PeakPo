@@ -1,12 +1,7 @@
-from PyQt5 import QtWidgets
-from PyQt5 import QtCore
-from PyQt5 import QtGui
-# from collections import OrderedDict
-import os
 import numpy as np
 from matplotlib.backend_bases import key_press_handler
-import pickle
-import zipfile
+from PyQt5 import QtWidgets
+from PyQt5 import QtCore
 from mainwidget import MainWindow
 from model import PeakPoModel
 from basepatterncontroller import BasePatternController
@@ -17,12 +12,10 @@ from jcpdscontroller import JcpdsController
 from ucfitcontroller import UcfitController
 from sessioncontroller import SessionController
 # from model import PeakPoModel
-from utils import get_sorted_filelist, find_from_filelist, dialog_savefile, \
-    xls_ucfitlist, xls_jlist, writechi, extract_filename
-from utils import SpinBoxFixStyle
+from utils import dialog_savefile, writechi
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
-from ds_jcpds import Session, UnitCell
+from ds_jcpds import UnitCell
 from ds_powdiff import get_DataSection
 
 
@@ -62,14 +55,10 @@ class MainController(object):
         self.widget.doubleSpinBox_SetWavelength.valueChanged.connect(
             self.apply_wavelength)
         self.widget.pushButton_SaveCHI.clicked.connect(self.save_bgsubchi)
-        # while the button is located in JCPDS tab, this one connect different
-        # tabs, so stays in main controller
         self.widget.pushButton_ExportToUCFit.clicked.connect(
             self.export_to_ucfit)
-        # save Jlist is linked to save_session in the main controller
         self.widget.pushButton_LoadJlist.clicked.connect(
             self.load_jlist_from_session)
-        # Tab: process
         self.widget.pushButton_UpdatePlots_tab2.clicked.connect(
             self.update_bgsub)
         # navigation toolbar modification.  Do not move the followings to
@@ -80,7 +69,6 @@ class MainController(object):
         self.widget.ntb_WholePtn.clicked.connect(self.plot_new_graph)
         self.widget.ntb_ResetY.clicked.connect(self.apply_changes_to_graph)
         self.widget.ntb_Bgsub.clicked.connect(self.apply_changes_to_graph)
-        # file menu items
         self.widget.actionClose.triggered.connect(self.closeEvent)
 
     def apply_changes_to_graph(self):
@@ -105,7 +93,6 @@ class MainController(object):
 
     def export_to_ucfit(self):
         """
-        UCFit function
         Export an item from jlist to ucfitlist
         """
         if not self.model.jcpds_exist():
@@ -263,9 +250,8 @@ class MainController(object):
         this is only to read the current inputs and replot
         '''
         if not self.model.base_ptn_exist():
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning",
-                "Load a base pattern first.")
+            QtWidgets.QMessageBox.warning(self.widget, "Warning",
+                                          "Load a base pattern first.")
             return
         """receive new bg parameters and update the graph"""
         bg_params = [self.widget.spinBox_BGParam0.value(),
@@ -282,9 +268,6 @@ class MainController(object):
     def apply_pt_to_graph(self):
         if self.model.jcpds_exist():
             self.plot_ctrl.update()
-
-    ###########################################################################
-    # base pattern control
 
     def _find_closestjcpds(self, x):
         jcount = 0
