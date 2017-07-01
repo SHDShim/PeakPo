@@ -1,11 +1,9 @@
-from PyQt5 import QtWidgets
-from PyQt5 import QtCore
-
 import os
 import time
 import datetime
-
 import numpy as np
+from PyQt5 import QtWidgets
+from PyQt5 import QtCore
 from ds_jcpds import convert_tth
 
 

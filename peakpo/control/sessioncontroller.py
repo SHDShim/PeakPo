@@ -1,8 +1,8 @@
 import os
 from PyQt5 import QtWidgets
-from mplcontroller import MplController
-from waterfallcontroller import WaterfallController
-from jcpdscontroller import JcpdsController
+from .mplcontroller import MplController
+from .waterfallcontroller import WaterfallController
+from .jcpdscontroller import JcpdsController
 from utils import dialog_savefile
 
 

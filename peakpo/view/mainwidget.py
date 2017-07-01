@@ -3,7 +3,7 @@
 import os
 from PyQt5 import QtWidgets
 # local modules
-from qtd import Ui_MainWindow
+from .qtd import Ui_MainWindow
 from utils import SpinBoxFixStyle
 exec(open(os.path.join(os.path.curdir, 'version.py')).read())
 exec(open(os.path.join(os.path.curdir, 'citation.py')).read())

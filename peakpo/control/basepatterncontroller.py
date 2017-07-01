@@ -1,6 +1,6 @@
 import os
 from PyQt5 import QtWidgets
-from mplcontroller import MplController
+from .mplcontroller import MplController
 from utils import get_sorted_filelist, find_from_filelist
 
 

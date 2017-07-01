@@ -4,7 +4,7 @@ from PyQt5 import QtGui
 # import matplotlib.pyplot as plt
 # from matplotlib import colors
 # import matplotlib.cm as cmx
-from mplcontroller import MplController
+from .mplcontroller import MplController
 # from utils import extract_filename
 from utils import SpinBoxFixStyle
 from utils import xls_ucfitlist, dialog_savefile

@@ -2,15 +2,15 @@ import numpy as np
 from matplotlib.backend_bases import key_press_handler
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
-from mainwidget import MainWindow
+from view import MainWindow
 from model import PeakPoModel
-from basepatterncontroller import BasePatternController
-from mplcontroller import MplController
-from cakecontroller import CakeController
-from waterfallcontroller import WaterfallController
-from jcpdscontroller import JcpdsController
-from ucfitcontroller import UcfitController
-from sessioncontroller import SessionController
+from .basepatterncontroller import BasePatternController
+from .mplcontroller import MplController
+from .cakecontroller import CakeController
+from .waterfallcontroller import WaterfallController
+from .jcpdscontroller import JcpdsController
+from .ucfitcontroller import UcfitController
+from .sessioncontroller import SessionController
 # from model import PeakPoModel
 from utils import dialog_savefile, writechi
 # do not change the module structure for ds_jcpds and ds_powdiff for
@@ -25,7 +25,7 @@ class MainController(object):
 
         self.widget = MainWindow()
         self.model = PeakPoModel()
-        #self.obj_color = 'white'
+        # self.obj_color = 'white'
         self.read_setting()
         self.connect_channel()
         self.base_ptn_ctrl = BasePatternController(self.model, self.widget)
@@ -145,7 +145,18 @@ class MainController(object):
         if str(filen_chi) == '':
             return
         x, y = self.model.base_ptn.get_bgsub()
-        writechi(filen_chi, x, y)
+        preheader_line0 = \
+            '# BG ROI: {0: .5e}, {1: .5e} \n'.format(
+                self.widget.doubleSpinBox_Background_ROI_min.value(),
+                self.widget.doubleSpinBox_Background_ROI_max.value())
+        preheader_line1 = \
+            '# BG Params: {0: d}, {1: d}, {2: d} \n'.format(
+                self.widget.spinBox_BGParam0.value(),
+                self.widget.spinBox_BGParam1.value(),
+                self.widget.spinBox_BGParam2.value())
+        preheader_line2 = '\n'
+        writechi(filen_chi, x, y, preheader=preheader_line0 +
+                 preheader_line1 + preheader_line2)
 
     def write_setting(self):
         """

@@ -3,8 +3,8 @@ import os
 from ds_cake import DiffImg
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
-from ds_jcpds import JCPDSplt, Session, UnitCell, convert_tth
-from ds_powdiff import PatternPeakPo, get_DataSection
+from ds_jcpds import JCPDSplt, Session
+from ds_powdiff import PatternPeakPo
 from utils import samefilename, make_filename
 
 

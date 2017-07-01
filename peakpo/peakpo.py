@@ -1,7 +1,7 @@
 import sys
 from PyQt5 import QtWidgets
 import qdarkstyle
-from maincontroller import MainController
+from control import MainController
 
 app = QtWidgets.QApplication(sys.argv)
 app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
