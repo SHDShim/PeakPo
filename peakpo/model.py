@@ -92,13 +92,15 @@ class PeakPoModel(object):
     def same_filename_as_base_ptn(self, filename):
         return samefilename(self.base_ptn.fname, filename)
 
-    def set_base_ptn(self, new_base_ptn):
+    def set_base_ptn(self, new_base_ptn, wavelength):
         """
         :param new_base_ptn: PatternPeakPo object
         """
         self.reset_base_ptn()
         self.base_ptn.read_file(new_base_ptn)
         self.set_chi_path(os.path.split(new_base_ptn)[0])
+        self.set_base_ptn_wavelength(wavelength)
+        self.base_ptn.display = True
 
     def get_base_ptn(self):
         return self.base_ptn
@@ -155,7 +157,6 @@ class PeakPoModel(object):
     def set_jcpds_from_session(self):
         if self.session is not None:
             self.jcpds_lst = self.session.jlist
-            self.set_jcpds_path(self.session.jcpds_path)
         else:
             self.set_jcpds_path('')
 
@@ -164,3 +165,15 @@ class PeakPoModel(object):
 
     def set_jcpds_path(self, jcpds_path):
         self.jcpds_path = jcpds_path
+
+    def get_base_ptn_wavelength(self):
+        return self.base_ptn.wavelength
+
+    def set_base_ptn_wavelength(self, wavelength):
+        self.base_ptn.wavelength = wavelength
+
+    def get_base_ptn_filename(self):
+        return self.base_ptn.fname
+
+    def set_base_ptn_color(self, color):
+        self.base_ptn.color = color

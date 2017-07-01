@@ -16,8 +16,6 @@ class MplController(object):
         self.model = model
         self.widget = widget
 
-    ###########################################################################
-    # plot control
     def _set_nightday_view(self):
         if not self.widget.ntb_NightView.isChecked():
             self.widget.mpl.canvas.set_toNight(False)

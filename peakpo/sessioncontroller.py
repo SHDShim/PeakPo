@@ -5,6 +5,7 @@ import os
 from mplcontroller import MplController
 from waterfallcontroller import WaterfallController
 from jcpdscontroller import JcpdsController
+from utils import dialog_savefile
 
 
 class SessionController(object):
@@ -93,11 +94,9 @@ class SessionController(object):
                 return False
         else:
             new_chi_filen = self.model.session.pattern.fname
-            new_chi_path = self.model.session.chi_path
-        self.model.set_base_ptn(new_chi_filen)
+        self.model.set_base_ptn(new_chi_filen, self.model.session.wavelength)
         self.model.base_ptn.get_chbg(self.model.session.bg_roi,
                                      self.model.session.bg_params, yshift=0)
-        self.model.set_chi_path(new_chi_path)
         self.widget.doubleSpinBox_SetWavelength.setValue(
             self.model.session.wavelength)
         self.widget.doubleSpinBox_Pressure.setValue(
@@ -150,7 +149,11 @@ class SessionController(object):
     def _load_jcpds_from_session(self):
         if (self.model.session.jcpds_path == ''):
             return False
-        if not os.path.exists(self.model.session.jcpds_path):
+        if os.path.exists(self.model.session.jcpds_path):
+            self.model.set_jcpds_path(self.model.session.jcpds_path)
+            self.model.set_jcpds_from_session()
+            return True
+        else:
             reply = QtWidgets.QMessageBox.question(
                 self.widget, "Question",
                 "The JCPDS path in the PPSS does not exist.  \
@@ -163,12 +166,12 @@ class SessionController(object):
                         self.widget, "Open Directory", self.model.jcpds_path,
                         QtWidgets.QFileDialog.ShowDirsOnly)
                 self.model.set_jcpds_path(jcpds_path)
+                self.model.set_jcpds_from_session()
+                return True
             else:
                 QtWidgets.QMessageBox.warning(
                     self.widget, "Warning", "JCPDS path does not match.")
                 return False
-        self.model.set_jcpds_from_session()
-        return True
 
     def _dump_session(self, fsession):
         self.model.write_as_session(
