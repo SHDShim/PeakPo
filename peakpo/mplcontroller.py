@@ -40,6 +40,15 @@ class MplController(object):
                         pattern.color = 'white'
             self.obj_color = 'white'
 
+    def zoom_out_graph(self):
+        if not self.model.base_ptn_exist():
+            return
+        if self.widget.ntb_Bgsub.isChecked():
+            x, y = self.model.base_ptn.get_bgsub()
+        else:
+            x, y = self.model.base_ptn.get_raw()
+        self.update(limits=[x.min(), x.max(), y.min(), y.max()])
+
     def update(self, limits=None):
         """Updates the graph"""
         t_start = time.time()

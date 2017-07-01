@@ -7,10 +7,9 @@ from mplcontroller import MplController
 
 class CakeController(object):
 
-    def __init__(self, model, widget, chi_path):
+    def __init__(self, model, widget):
         self.model = model
         self.widget = widget
-        self.chi_path = chi_path
         self.plot_ctrl = MplController(self.model, self.widget)
         self.connect_channel()
 
@@ -104,7 +103,7 @@ class CakeController(object):
         """
         filen = QtWidgets.QFileDialog.getOpenFileName(
             self.widget, "Open a PONI File",
-            self.chi_path, "PONI files (*.poni)")[0]
+            self.model.chi_path, "PONI files (*.poni)")[0]
         filename = str(filen)
         if os.path.exists(filename):
             self.model.poni = filename

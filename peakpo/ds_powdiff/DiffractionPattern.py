@@ -21,7 +21,7 @@ class Pattern(object):
         self.y_bgsub = None
         self.x_bg = None
         self.y_bg = None
-        self.params_chbg = np.asarray([10, 10, 50])
+        self.params_chbg = np.asarray([20, 10, 20])
 
     def read_file(self, fname):
         """
@@ -75,6 +75,7 @@ class Pattern(object):
         """
         self.y_bgsub = y_bgsub
         self.y_bg = y_bg
+        self.roi = roi
 
     def subtract_bg(self, roi, params=None, yshift=10.):
         self._get_bg(roi, params=params, yshift=yshift)

@@ -11,10 +11,9 @@ from utils import SpinBoxFixStyle
 
 class JcpdsController(object):
 
-    def __init__(self, model, widget, jcpds_path):
+    def __init__(self, model, widget):
         self.model = model
         self.widget = widget
-        self.jcpds_path = jcpds_path
         self.plot_ctrl = MplController(self.model, self.widget)
         self.connect_channel()
 
@@ -31,6 +30,8 @@ class JcpdsController(object):
             self.uncheck_all_jcpds)
         self.widget.pushButton_MoveUp.clicked.connect(self.move_up_jcpds)
         self.widget.pushButton_MoveDown.clicked.connect(self.move_down_jcpds)
+        self.widget.pushButton_ExportXLS.clicked.connect(self.save_xls)
+        self.widget.pushButton_ViewJCPDS.clicked.connect(self.view_jcpds)
 
     def apply_changes_to_graph(self, limits=None):
         self.plot_ctrl.update(limits=limits)
@@ -48,10 +49,11 @@ class JcpdsController(object):
         collect files for jlist
         """
         files = QtWidgets.QFileDialog.getOpenFileNames(
-            self.widget, "Choose JPCDS Files", self.jcpds_path, "(*.jcpds)")[0]
+            self.widget, "Choose JPCDS Files", self.model.jcpds_path,
+            "(*.jcpds)")[0]
         if files == []:
             return
-        self.jcpds_path = os.path.split(str(files[0]))[0]
+        self.model.set_jcpds_path(os.path.split(str(files[0]))[0])
         n_color = 9
         jet = plt.get_cmap('gist_rainbow')
         cNorm = colors.Normalize(vmin=0, vmax=n_color)
@@ -92,8 +94,8 @@ class JcpdsController(object):
         i = idx_selected
         if i == 0:
             return
-        self.model.jcpds_lst[i - 1], self.model.jcpds_lst[i] = \
-            self.model.jcpds_lst[i], self.model.jcpds_lst[i - 1]
+        self.model.jcpds_lst[i -
+                             1], self.model.jcpds_lst[i] = self.model.jcpds_lst[i], self.model.jcpds_lst[i - 1]
         self.widget.tableWidget_JCPDS.selectRow(i - 1)
         self.update_table()
 
@@ -107,8 +109,8 @@ class JcpdsController(object):
         i = idx_selected
         if i >= self.model.jcpds_lst.__len__() - 1:
             return
-        self.model.jcpds_lst[i + 1], self.model.jcpds_lst[i] = \
-            self.model.jcpds_lst[i], self.model.jcpds_lst[i + 1]
+        self.model.jcpds_lst[i +
+                             1], self.model.jcpds_lst[i] = self.model.jcpds_lst[i], self.model.jcpds_lst[i + 1]
         self.widget.tableWidget_JCPDS.selectRow(i + 1)
         """
         self.widget.tableWidget_JCPDS.setCurrentItem(
@@ -190,8 +192,7 @@ class JcpdsController(object):
             item2 = QtWidgets.QTableWidgetItem('    ')
             self.widget.tableWidget_JCPDS.setItem(row, 1, item2)
             # column 2 - color setup
-            self.widget.tableWidget_JCPDS_pushButton_color = \
-                QtWidgets.QPushButton('...')
+            self.widget.tableWidget_JCPDS_pushButton_color = QtWidgets.QPushButton('...')
             self.widget.tableWidget_JCPDS.item(row, 1).setBackground(
                 QtGui.QColor(self.model.jcpds_lst[row].color))
             self.widget.tableWidget_JCPDS_pushButton_color.clicked.connect(
@@ -199,8 +200,7 @@ class JcpdsController(object):
             self.widget.tableWidget_JCPDS.setCellWidget(
                 row, 2, self.widget.tableWidget_JCPDS_pushButton_color)
             # column 3 - V0 tweak
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk = \
-                QtWidgets.QDoubleSpinBox()
+            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk = QtWidgets.QDoubleSpinBox()
             self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
@@ -219,8 +219,7 @@ class JcpdsController(object):
             self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setFocusPolicy(
                 QtCore.Qt.StrongFocus)
             # column 4 - K0 tweak
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk = \
-                QtWidgets.QDoubleSpinBox()
+            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk = QtWidgets.QDoubleSpinBox()
             self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
@@ -239,8 +238,7 @@ class JcpdsController(object):
             self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setFocusPolicy(
                 QtCore.Qt.StrongFocus)
             # column 5 - K0p tweak
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk = \
-                QtWidgets.QDoubleSpinBox()
+            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk = QtWidgets.QDoubleSpinBox()
             self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
@@ -259,8 +257,7 @@ class JcpdsController(object):
             self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setFocusPolicy(
                 QtCore.Qt.StrongFocus)
             # column 6 - alpha0 tweak
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk = \
-                QtWidgets.QDoubleSpinBox()
+            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk = QtWidgets.QDoubleSpinBox()
             self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
@@ -288,8 +285,7 @@ class JcpdsController(object):
                 item8.setFlags(QtCore.Qt.ItemIsEnabled)
                 self.widget.tableWidget_JCPDS.setItem(row, 8, item8)
             else:
-                self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk = \
-                    QtWidgets.QDoubleSpinBox()
+                self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk = QtWidgets.QDoubleSpinBox()
                 self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.\
                     setAlignment(
                         QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
@@ -319,8 +315,7 @@ class JcpdsController(object):
                 item9.setFlags(QtCore.Qt.ItemIsEnabled)
                 self.widget.tableWidget_JCPDS.setItem(row, 9, item9)
             else:
-                self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk = \
-                    QtWidgets.QDoubleSpinBox()
+                self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk = QtWidgets.QDoubleSpinBox()
                 self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.\
                     setAlignment(
                         QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
@@ -345,8 +340,7 @@ class JcpdsController(object):
                 self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.\
                     setFocusPolicy(QtCore.Qt.StrongFocus)
             # column 9 - int tweak
-            self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk = \
-                QtWidgets.QDoubleSpinBox()
+            self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk = QtWidgets.QDoubleSpinBox()
             self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setAlignment(
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
@@ -427,3 +421,38 @@ class JcpdsController(object):
             self.apply_changes_to_graph()
         else:
             return
+
+    def save_xls(self):
+        """
+        Export jlist to an excel file
+        """
+        if not self.model.jcpds_exist():
+            return
+        filen_xls_t = self.model.make_filename('pkpo.xls')
+        filen_xls = dialog_savefile(self.widget, filen_xls_t)
+        if str(filen_xls) == '':
+            return
+        xls_jlist(filen_xls, self.model.jcpds_lst,
+                  self.widget.doubleSpinBox_Pressure.value(),
+                  self.widget.doubleSpinBox_Temperature.value())
+
+    def view_jcpds(self):
+        if not self.model.jcpds_exist():
+            return
+        idx_checked = [
+            s.row() for s in
+            self.widget.tableWidget_JCPDS.selectionModel().selectedRows()]
+
+        if idx_checked == []:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning", "Highlight the name of JCPDS to view")
+            return
+        if idx_checked.__len__() != 1:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Only one JCPDS card can be shown at a time.")
+        else:
+            textoutput = self.model.jcpds_lst[idx_checked[0]].make_TextOutput(
+                self.widget.doubleSpinBox_Pressure.value(),
+                self.widget.doubleSpinBox_Temperature.value())
+            self.widget.plainTextEdit_ViewJCPDS.setPlainText(textoutput)

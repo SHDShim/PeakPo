@@ -8,10 +8,9 @@ from utils import SpinBoxFixStyle
 
 class WaterfallController(object):
 
-    def __init__(self, model, widget, chi_path):
+    def __init__(self, model, widget):
         self.model = model
         self.widget = widget
-        self.chi_path = chi_path
         self.plot_ctrl = MplController(self.model, self.widget)
         self.connect_channel()
 
@@ -70,7 +69,7 @@ class WaterfallController(object):
                 "Pick a base pattern first.")
             return
         files = QtWidgets.QFileDialog.getOpenFileNames(
-            self.widget, "Choose additional data files", self.chi_path,
+            self.widget, "Choose additional data files", self.model.chi_path,
             "Data files (*.chi)")[0]
         if files is None:
             return
