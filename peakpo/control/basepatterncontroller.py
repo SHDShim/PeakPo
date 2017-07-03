@@ -1,7 +1,10 @@
 import os
 from PyQt5 import QtWidgets
+from utils import get_sorted_filelist, find_from_filelist, readchi, \
+    make_filename, writechi
+from utils import undo_button_press
 from .mplcontroller import MplController
-from utils import get_sorted_filelist, find_from_filelist
+from .cakecontroller import CakeController
 
 
 class BasePatternController(object):
@@ -10,10 +13,10 @@ class BasePatternController(object):
         self.model = model
         self.widget = widget
         self.plot_ctrl = MplController(self.model, self.widget)
+        self.cake_ctrl = CakeController(self.model, self.widget)
         self.connect_channel()
 
     def connect_channel(self):
-        # Tab: Main
         self.widget.pushButton_NewBasePtn.clicked.connect(
             self.select_base_ptn)
         self.widget.pushButton_PrevBasePtn.clicked.connect(
@@ -30,7 +33,6 @@ class BasePatternController(object):
     def select_base_ptn(self):
         """
         opens a file select dialog
-        2017/06/10 remove support for other file formats
         """
         filen = QtWidgets.QFileDialog.getOpenFileName(
             self.widget, "Open a Chi File", self.model.chi_path,
@@ -120,7 +122,6 @@ class BasePatternController(object):
                 self.widget, 'Warning', 'Cannot find ' + filen)
             self.widget.lineEdit_DiffractionPatternFileName.setText(
                 self.model.get_base_ptn_filename())
-            return
 
     def _load_a_new_pattern(self, new_filename):
         """
@@ -132,16 +133,46 @@ class BasePatternController(object):
             '1D Pattern: ' + self.model.get_base_ptn_filename())
         self.widget.lineEdit_DiffractionPatternFileName.setText(
             str(self.model.get_base_ptn_filename()))
+        temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
+        if self.widget.checkBox_UseTempBGSub.isChecked():
+            if os.path.exists(temp_dir):
+                success = self.model.base_ptn.read_bg_from_tempfile(
+                    temp_dir=temp_dir)
+                if success:
+                    self._update_bg_params_in_widget()
+                else:
+                    self._update_bgsub_from_current_values()
+            else:
+                os.makedirs(temp_dir)
+                self._update_bgsub_from_current_values()
+        else:
+            self._update_bgsub_from_current_values()
+        filen_tif = self.model.make_filename('tif')
+        if not os.path.exists(filen_tif):
+            self.widget.pushButton_AddRemoveCake.setChecked(False)
+            self.widget.pushButton_AddRemoveCake.setText("Add Cake")
+            return
+        # self._update_bg_params_in_widget()
+        if self.widget.pushButton_AddRemoveCake.isChecked() and \
+                (self.model.poni is not None):
+            self.cake_ctrl.process_temp_cake()
+            # not sure this is correct.
+            # self.cake_ctrl.addremove_cake(update_plot=False)
+
+    def _update_bg_params_in_widget(self):
+        self.widget.spinBox_BGParam0.setValue(self.model.base_ptn.params_chbg[0])
+        self.widget.spinBox_BGParam1.setValue(self.model.base_ptn.params_chbg[1])
+        self.widget.spinBox_BGParam2.setValue(self.model.base_ptn.params_chbg[2])
+        self.widget.doubleSpinBox_Background_ROI_min.setValue(self.model.base_ptn.roi[0])
+        self.widget.doubleSpinBox_Background_ROI_max.setValue(self.model.base_ptn.roi[1])
+
+    def _update_bgsub_from_current_values(self):
         x_raw, y_raw = self.model.base_ptn.get_raw()
-        if (x_raw.min() >=
-            self.widget.doubleSpinBox_Background_ROI_min.value()) or\
-                (x_raw.max() <=
-                    self.widget.doubleSpinBox_Background_ROI_min.value()):
+        if (x_raw.min() >= self.widget.doubleSpinBox_Background_ROI_min.value()) or \
+                (x_raw.max() <= self.widget.doubleSpinBox_Background_ROI_min.value()):
             self.widget.doubleSpinBox_Background_ROI_min.setValue(x_raw.min())
-        if (x_raw.max() <=
-            self.widget.doubleSpinBox_Background_ROI_max.value()) or\
-                (x_raw.min() >=
-                    self.widget.doubleSpinBox_Background_ROI_max.value()):
+        if (x_raw.max() <= self.widget.doubleSpinBox_Background_ROI_max.value()) or \
+                (x_raw.min() >= self.widget.doubleSpinBox_Background_ROI_max.value()):
             self.widget.doubleSpinBox_Background_ROI_max.setValue(x_raw.max())
         self.model.base_ptn.subtract_bg(
             [self.widget.doubleSpinBox_Background_ROI_min.value(),
@@ -149,9 +180,7 @@ class BasePatternController(object):
             [self.widget.spinBox_BGParam0.value(),
                 self.widget.spinBox_BGParam1.value(),
                 self.widget.spinBox_BGParam2.value()], yshift=0)
-        if self.widget.pushButton_AddRemoveCake.isChecked() and \
-                self.model.poni is not None:
-            self.cake_ctrl.addremove_cake(update_plot=False)
+        self.model.base_ptn.write_temporary_bgfiles()
 
     def apply_changes_to_graph(self):
         self.plot_ctrl.update()

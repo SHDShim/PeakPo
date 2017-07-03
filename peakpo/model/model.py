@@ -105,23 +105,35 @@ class PeakPoModel(object):
     def get_base_ptn(self):
         return self.base_ptn
 
-    def append_a_waterfall_ptn(self, filename, wavelength, bg_roi, bg_params):
+    def append_a_waterfall_ptn(self, filename, wavelength,
+                               bg_roi, bg_params, temp_dir=None):
         pattern = PatternPeakPo()
         pattern.read_file(filename)
         pattern.wavelength = wavelength
         pattern.display = False
-        pattern.get_chbg(bg_roi, bg_params, yshift=0)
+        if temp_dir is None:
+            pattern.get_chbg(bg_roi, params=bg_params, yshift=0)
+        else:
+            success = pattern.read_bg_from_tempfile(temp_dir=temp_dir)
+            if not success:
+                pattern.get_chbg(bg_roi, params=bg_params, yshift=0)
         self.waterfall_ptn.append(pattern)
 
     def set_waterfall_ptn(
-            self, filenames, wavelength, display, bg_roi, bg_params):
+            self, filenames, wavelength, display, bg_roi, bg_params,
+            temp_dir=None):
         new_waterfall_ptn = []
         for f, wl, dp in zip(filenames, wavelength, display):
             pattern = PatternPeakPo()
             pattern.read_file(f)
             pattern.wavelength = wl
             pattern.display = dp
-            pattern.get_chbg(bg_roi, bg_params, yshift=0)
+            if temp_dir is None:
+                pattern.get_chbg(bg_roi, params=bg_params, yshift=0)
+            else:
+                success = pattern.read_bg_from_tempfile(temp_dir=temp_dir)
+                if not success:
+                    pattern.get_chbg(bg_roi, params=bg_params, yshift=0)
             new_waterfall_ptn.append(pattern)
         self.waterfall_ptn = new_waterfall_ptn
 
@@ -177,3 +189,15 @@ class PeakPoModel(object):
 
     def set_base_ptn_color(self, color):
         self.base_ptn.color = color
+
+    def associated_image_exists(self):
+        filen_tif = self.make_filename('tif')
+        if os.path.exists(filen_tif):
+            return True
+        else:
+            return False
+
+    def load_associated_img(self):
+        filen_tif = self.make_filename('tif')
+        self.reset_diff_img()
+        self.diff_img.load(filen_tif)

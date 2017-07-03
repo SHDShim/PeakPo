@@ -1,6 +1,7 @@
 import os.path
 import glob
 import numpy as np
+import re
 
 
 def writechi(filen, x, y, preheader=None):
@@ -12,6 +13,19 @@ def writechi(filen, x, y, preheader=None):
     header = str(x.__len__())
     np.savetxt(filen, np.asarray([x, y]).T,
                fmt='%1.7e', header=header, comments=preheader)
+
+
+def readchi(filen):
+    """
+    read chi with BG ROI and BG PARAMS
+    """
+    with open(filen) as f:
+        content = f.readlines()
+    roi = re.findall(r"[-+]?\d*\.\d+|\d+", content[0])
+    bg_params = re.findall(r"[-+]?\d*\.\d+|\d+", content[1])
+    data = np.loadtxt(filen, skiprows=4)
+    x, y = data.T
+    return [float(r) for r in roi], [int(b) for b in bg_params], x, y
 
 
 def find_from_filelist(flist, filen):
@@ -77,7 +91,7 @@ def extract_extension(filen):
     return ext[1:]
 
 
-def make_filename(filename, ext):
+def make_filename(filename, ext, temp_dir=None):
     """
     make a new filename with different extension in the same folder
 
@@ -87,5 +101,8 @@ def make_filename(filename, ext):
     """
     path, filen = os.path.split(filename)
     new_filen = os.path.splitext(filen)[0] + '.' + ext
-    new_filename = os.path.join(path, new_filen)
+    if temp_dir is None:
+        new_filename = os.path.join(path, new_filen)
+    else:
+        new_filename = os.path.join(path, temp_dir, new_filen)
     return new_filename

@@ -1,8 +1,8 @@
 import numpy as np
 import os
-from .background import fit_bg_cheb_auto
-from utils import writechi
 import time
+from utils import writechi, readchi, make_filename
+from .background import fit_bg_cheb_auto
 
 
 class Pattern(object):
@@ -21,7 +21,7 @@ class Pattern(object):
         self.y_bgsub = None
         self.x_bg = None
         self.y_bg = None
-        self.params_chbg = np.asarray([20, 10, 20])
+        self.params_chbg = [20, 10, 20]
 
     def read_file(self, fname):
         """
@@ -65,7 +65,7 @@ class Pattern(object):
         t_start = time.time()
         y_bg = fit_bg_cheb_auto(x, y, self.params_chbg[0],
                                 self.params_chbg[1], self.params_chbg[2])
-        print("Bg sub update takes: %.4f second" % (time.time() - t_start))
+        print("Bgsub takes {:2f} s".format(time.time() - t_start))
         self.x_bg = x
         self.x_bgsub = x
         y_bgsub = y - y_bg
@@ -89,6 +89,17 @@ class Pattern(object):
     def get_bgsub(self):
         return self.x_bgsub, self.y_bgsub
 
+    def get_bg(self):
+        return self.x_bg, self.y_bg
+
+    def set_bg(self, x_bg, y_bg, x_bgsub, y_bgsub, roi, bg_params):
+        self.x_bg = x_bg
+        self.y_bg = y_bg
+        self.x_bgsub = x_bgsub
+        self.y_bgsub = y_bgsub
+        self.roi = roi
+        self.params_chbg = bg_params
+
     def get_chbg(self, roi, params=None, chiout=False, yshift=10.):
         """
         subtract background from raw data for a roi and then store in
@@ -107,6 +118,45 @@ class Pattern(object):
             text = "Background subtracted diffraction pattern\n" + \
                 "CHEB BG:" + ' '.join(map(str, self.params_chbg)) + "\n\n"
             writechi(f_bgsub, self.x_bgsub, self.y_bgsub, preheader=text)
+
+    def read_bg_from_tempfile(self, temp_dir=None):
+        bgsub_filen, bg_filen = self.make_temp_filenames(temp_dir=temp_dir)
+        if os.path.exists(bgsub_filen) and os.path.exists(bg_filen):
+            roi, bg_params, x_bgsub, y_bgsub = readchi(bgsub_filen)
+            __, __, x_bg, y_bg = readchi(bg_filen)
+            self.set_bg(x_bg, y_bg, x_bgsub, y_bgsub, roi, bg_params)
+            return True
+        else:
+            return False
+
+    def make_temp_filenames(self, temp_dir=None):
+        bgsub_filen = make_filename(self.fname, 'bgsub.chi',
+                                    temp_dir=temp_dir)
+        bg_filen = make_filename(self.fname, 'bg.chi',
+                                 temp_dir=temp_dir)
+        return bgsub_filen, bg_filen
+
+    def temp_files_exist(self, temp_dir=None):
+        bgsub_filen, bg_filen = self.make_temp_filenames(temp_dir=temp_dir)
+        if os.path.exists(bgsub_filen) and os.path.exists(bg_filen):
+            return True
+        else:
+            return False
+
+    def write_temporary_bgfiles(self, temp_dir='temporary_pkpo'):
+        bgsub_filen, bg_filen = self.make_temp_filenames(temp_dir=temp_dir)
+        x_bgsub, y_bgsub = self.get_bgsub()
+        x_bg, y_bg = self.get_bg()
+        preheader_line0 = \
+            '# BG ROI: {0: .5f}, {1: .5f} \n'.format(self.roi[0], self.roi[1])
+        preheader_line1 = \
+            '# BG Params: {0: d}, {1: d}, {2: d} \n'.format(
+                self.params_chbg[0], self.params_chbg[1], self.params_chbg[2])
+        preheader_line2 = '\n'
+        writechi(bgsub_filen, x_bgsub, y_bgsub, preheader=preheader_line0 +
+                 preheader_line1 + preheader_line2)
+        writechi(bg_filen, x_bg, y_bg, preheader=preheader_line0 +
+                 preheader_line1 + preheader_line2)
 
 
 class PatternPeakPo(Pattern):

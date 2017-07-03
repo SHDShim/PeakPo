@@ -6,12 +6,15 @@ from view import MainWindow
 from model import PeakPoModel
 from .basepatterncontroller import BasePatternController
 from .mplcontroller import MplController
-from .cakecontroller import CakeController
+# cake controller is called in BasePatternController already.
+# from .cakecontroller import CakeController
 from .waterfallcontroller import WaterfallController
 from .jcpdscontroller import JcpdsController
 from .ucfitcontroller import UcfitController
+from .waterfalltablecontroller import WaterfallTableController
+from .jcpdstablecontroller import JcpdsTableController
+from .ucfittablecontroller import UcfitTableController
 from .sessioncontroller import SessionController
-# from model import PeakPoModel
 from utils import dialog_savefile, writechi
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
@@ -27,14 +30,19 @@ class MainController(object):
         self.model = PeakPoModel()
         # self.obj_color = 'white'
         self.read_setting()
-        self.connect_channel()
         self.base_ptn_ctrl = BasePatternController(self.model, self.widget)
         self.plot_ctrl = MplController(self.model, self.widget)
-        self.waterfall_ctrl = WaterfallController(self.model, self.widget)
-        self.cake_ctrl = CakeController(self.model, self.widget)
+        # self.cake_ctrl = CakeController(self.model, self.widget)
+        self.waterfall_ctrl = \
+            WaterfallController(self.model, self.widget)
         self.ucfit_ctrl = UcfitController(self.model, self.widget)
         self.jcpds_ctrl = JcpdsController(self.model, self.widget)
+        self.waterfalltable_ctrl = \
+            WaterfallTableController(self.model, self.widget)
+        self.ucfittable_ctrl = UcfitTableController(self.model, self.widget)
+        self.jcpdstable_ctrl = JcpdsTableController(self.model, self.widget)
         self.session_ctrl = SessionController(self.model, self.widget)
+        self.connect_channel()
         #
         self.clip = QtWidgets.QApplication.clipboard()
         # no more stuff can be added below
@@ -88,7 +96,7 @@ class MainController(object):
             return
         self.session_ctrl._load_session(fn_jlist, jlistonly=True)
         self.widget.textEdit_Jlist.setText('Jlist: ' + str(fn_jlist))
-        self.jcpds_ctrl.update_table()
+        self.jcpdstable_ctrl.update()
         self.plot_ctrl.update()
 
     def export_to_ucfit(self):
@@ -128,14 +136,13 @@ class MainController(object):
                 QtWidgets.QMessageBox.warning(
                     self.widget, "Warning",
                     "You cannot send a jcpds without symmetry.")
-        self.ucfit_ctrl.update_table()
-        self.jcpds_ctrl.update_table()
+        self.ucfittable_ctrl.update()
+        self.jcpdstable_ctrl.update()
         self.plot_ctrl.update()
         return
 
     def save_bgsubchi(self):
         """
-        Output function
         Save bg subtractd pattern to a chi file
         """
         if not self.model.base_ptn_exist():
@@ -225,7 +232,7 @@ class MainController(object):
 
     def set_nightday_view(self):
         self.plot_ctrl._set_nightday_view()
-        self.waterfall_ctrl.update_table()
+        self.waterfalltable_ctrl.update()
         self.plot_ctrl.update()
 
     def read_plot(self, event):

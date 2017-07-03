@@ -98,7 +98,7 @@ class MplController(object):
         self.widget.mpl.canvas.ax_pattern.xaxis.set_minor_locator(minorLocator)
         """
         self.widget.mpl.canvas.draw()
-        print("Plot takes: {0:.4f} s at".format(time.time() - t_start),
+        print("Plot takes {0:.2f} s at".format(time.time() - t_start),
               str(datetime.datetime.now()))
         self.widget.unsetCursor()
 
@@ -209,13 +209,7 @@ class MplController(object):
                 if self.widget.ntb_Bgsub.isChecked():
                     ygap = self.widget.doubleSpinBox_WaterfallGaps.value() * \
                         self.model.base_ptn.y_bgsub.max() * float(j)
-                    if self.widget.checkBox_BasePtnBackground.isChecked() and \
-                            np.array_equal(pattern.x_raw,
-                                           self.model.base_ptn.x_raw):
-                        y_bgsub = pattern.y_bgsub + pattern.y_bg - \
-                            self.model.base_ptn.y_bg
-                    else:
-                        y_bgsub = pattern.y_bgsub
+                    y_bgsub = pattern.y_bgsub
                     if self.widget.checkBox_IntNorm.isChecked():
                         y = y_bgsub / y_bgsub.max() * \
                             self.model.base_ptn.y_bgsub.max()

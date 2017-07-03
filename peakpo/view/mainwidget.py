@@ -1,8 +1,5 @@
-#!/usr/bin/env python
-# used to parse files more easily
 import os
 from PyQt5 import QtWidgets
-# local modules
 from .qtd import Ui_MainWindow
 from utils import SpinBoxFixStyle
 exec(open(os.path.join(os.path.curdir, 'version.py')).read())
@@ -29,8 +26,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionShortcut_keys.triggered.connect(self.shortcutkeys)
 
     def build_ui(self):
-        # disable unsupported buttons
-        # self.pushButton_ApplyMask.setEnabled(False)
         self.pushButton_MakeBasePtn.setEnabled(False)
         self.pushButton_BackToOriginal.setEnabled(False)
         self.pushButton_Reintegrate1D.setEnabled(False)
@@ -114,8 +109,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def set_temperature(self, temperature=None):
         self.doubleSpinBox_Temperature.setValue(temperature)
-#        if self.model.jcpds_lst != []:
-#            self.update_graph()
 
     def set_pstep(self, value):
         if self.radioButton_P01.isChecked():

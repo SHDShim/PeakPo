@@ -1,7 +1,6 @@
 import os
 from PyQt5 import QtWidgets
 from utils import undo_button_press
-
 from .mplcontroller import MplController
 
 
@@ -14,24 +13,23 @@ class CakeController(object):
         self.connect_channel()
 
     def connect_channel(self):
-        # Tab: Cake
         self.widget.pushButton_AddRemoveCake.clicked.connect(
             self.addremove_cake)
-        self.widget.pushButton_GetPONI.clicked.connect(self._get_poni)
+        self.widget.pushButton_GetPONI.clicked.connect(self.get_poni)
         self.widget.pushButton_ApplyCakeView.clicked.connect(
-            self.apply_changes_to_graph)
-        self.widget.pushButton_ApplyMask.clicked.connect(self._apply_mask)
+            self._apply_changes_to_graph)
+        self.widget.pushButton_ApplyMask.clicked.connect(self.apply_mask)
 
-    def apply_changes_to_graph(self):
+    def _apply_changes_to_graph(self):
         self.plot_ctrl.update()
 
-    def addremove_cake(self, update_plot=True):
+    def addremove_cake(self):
         """
         add/remove cake to the graph
         """
-        self._addremove_cake()
-        if update_plot:
-            self.apply_changes_to_graph()
+        update = self._addremove_cake()
+        if update:
+            self._apply_changes_to_graph()
 
     def _addremove_cake(self):
         """
@@ -40,7 +38,7 @@ class CakeController(object):
         """
         if not self.widget.pushButton_AddRemoveCake.isChecked():
             self.widget.pushButton_AddRemoveCake.setText('Add Cake')
-            return
+            return True
         else:
             self.widget.pushButton_AddRemoveCake.setText('Remove Cake')
         if not self.model.poni_exist():
@@ -49,14 +47,14 @@ class CakeController(object):
             undo_button_press(
                 self.widget.pushButton_AddRemoveCake,
                 released_text='Add Cake', pressed_text='Remove Cake')
-            return
+            return False
         if not self.model.base_ptn_exist():
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'Choose CHI file first.')
             undo_button_press(
                 self.widget.pushButton_AddRemoveCake,
                 released_text='Add Cake', pressed_text='Remove Cake')
-            return
+            return False
         filen_tif = self.model.make_filename('tif')
         if not os.path.exists(filen_tif):
             QtWidgets.QMessageBox.warning(
@@ -64,39 +62,69 @@ class CakeController(object):
             undo_button_press(
                 self.widget.pushButton_AddRemoveCake,
                 released_text='Add Cake', pressed_text='Remove Cake')
-            return
+            return False
         if self.model.diff_img_exist() and \
                 self.model.same_filename_as_base_ptn(
                 self.model.diff_img.img_filename):
-            return
-        self._load_new_image(filen_tif)
-        self._produce_cake()
+            return True
+        self.process_temp_cake()
+        return True
 
-    def _load_new_image(self, filen_tif):
+    def _load_new_image(self):
         """
         Load new image for cake view.  Cake should be the same as base pattern.
         no signal to update_graph
         """
         self.model.reset_diff_img()
-        self.model.diff_img.load(filen_tif)
+        self.model.load_associated_img()
         self.widget.textEdit_DiffractionImageFilename.setText(
-            '2D Image: ' + filen_tif)
+            '2D Image: ' + self.model.diff_img.img_filename)
 
-    def _apply_mask(self):
-        self._produce_cake()
-        self.apply_changes_to_graph()
+    def apply_mask(self):
+        self.produce_cake()
+        self._apply_changes_to_graph()
 
-    def _produce_cake(self):
+    def produce_cake(self):
         """
         Reprocess to get cake.  Slower re-processing
         does not signal to update_graph
         """
+        self._load_new_image()
         self.model.diff_img.set_calibration(self.model.poni)
         self.model.diff_img.set_mask((self.widget.spinBox_MaskMin.value(),
                                       self.widget.spinBox_MaskMax.value()))
         self.model.diff_img.integrate_to_cake()
 
-    def _get_poni(self):
+    def process_temp_cake(self):
+        """
+        load cake through either temporary file or make a new cake
+        """
+        if not self.model.associated_image_exists():
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Image file for the base pattern does not exist.")
+            return
+        temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
+        if self.widget.checkBox_UseTempCake.isChecked():
+            if os.path.exists(temp_dir):
+                self._load_new_image()
+                success = self.model.diff_img.read_cake_from_tempfile(
+                    temp_dir=temp_dir)
+                if success:
+                    pass
+                else:
+                    self._update_temp_cake_files(temp_dir)
+            else:
+                os.makedirs(temp_dir)
+                self._update_temp_cake_files(temp_dir)
+        else:
+            self._update_temp_cake_files(temp_dir)
+
+    def _update_temp_cake_files(self, temp_dir):
+        self.produce_cake()
+        self.model.diff_img.write_temp_cakefiles(temp_dir=temp_dir)
+
+    def get_poni(self):
         """
         Opens a pyFAI calibration file
         signal to update_graph
@@ -109,5 +137,5 @@ class CakeController(object):
             self.model.poni = filename
             self.widget.textEdit_PONI.setText('PONI: ' + self.model.poni)
             if self.model.diff_img_exist():
-                self._produce_cake()
-            self.apply_changes_to_graph()
+                self.produce_cake()
+            self._apply_changes_to_graph()

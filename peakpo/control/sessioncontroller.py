@@ -1,8 +1,8 @@
 import os
 from PyQt5 import QtWidgets
 from .mplcontroller import MplController
-from .waterfallcontroller import WaterfallController
-from .jcpdscontroller import JcpdsController
+from .waterfalltablecontroller import WaterfallTableController
+from .jcpdstablecontroller import JcpdsTableController
 from utils import dialog_savefile
 
 
@@ -12,8 +12,9 @@ class SessionController(object):
         self.model = model
         self.widget = widget
         self.plot_ctrl = MplController(self.model, self.widget)
-        self.waterfall_ctrl = WaterfallController(self.model, self.widget)
-        self.jcpds_ctrl = JcpdsController(self.model, self.widget)
+        self.waterfalltable_ctrl = \
+            WaterfallTableController(self.model, self.widget)
+        self.jcpdstable_ctrl = JcpdsTableController(self.model, self.widget)
         self.connect_channel()
 
     def connect_channel(self):
@@ -178,8 +179,8 @@ class SessionController(object):
 
     def update_inputs(self):
         self.reset_bgsub()
-        self.waterfall_ctrl.update_table()
-        self.jcpds_ctrl.update_table()
+        self.waterfalltable_ctrl.update()
+        self.jcpdstable_ctrl.update()
 
     def zip_session(self):
         if not self.model.base_ptn_exist():

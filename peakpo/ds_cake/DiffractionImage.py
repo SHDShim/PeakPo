@@ -1,8 +1,11 @@
+import os
+import time
 from PIL import Image
 import numpy.ma as ma
 import numpy as np
 import pyFAI
 import matplotlib.pyplot as plt
+from utils import make_filename
 
 
 class DiffImg(object):
@@ -75,12 +78,14 @@ class DiffImg(object):
         self.intensity = intensity
 
     def integrate_to_cake(self, **kwargs):
+        t_start = time.time()
         n_azi_pnts = self.calculate_n_azi_pnts() * 2
         radial_range = (0., self.calculate_max_twotheta())
         intensity_cake, tth_cake, chi_cake = self.poni.integrate2d(
             self.img, n_azi_pnts, 360, unit="2th_deg", method='csr',
             radial_range=radial_range, mask=self.mask,
             **kwargs)
+        print("Caking takes {0:.2f} s".format(time.time() - t_start))
         self.intensity_cake = intensity_cake
         self.tth_cake = tth_cake
         self.chi_cake = chi_cake
@@ -103,3 +108,39 @@ class DiffImg(object):
         masked = ma.masked_where(
             (self.img <= range[0]) | (self.img >= range[1]), self.img)
         self.mask = masked.mask
+
+    def write_to_npy(self, chi_filen_wo_ext_in_temp):
+        """
+        filen = base filename without extension
+        """
+        f_tth = chi_filen_wo_ext_in_temp + '.tth.cake.npy'
+        f_chi = chi_filen_wo_ext_in_temp + '.chi.cake.npy'
+        f_int = chi_filen_wo_ext_in_temp + '.int.cake.npy'
+
+    def read_cake_from_tempfile(self, temp_dir=None):
+        tth_filen, azi_filen, int_filen = \
+            self.make_temp_filenames(temp_dir=temp_dir)
+        if os.path.exists(tth_filen) and os.path.exists(azi_filen) and \
+                os.path.exists(int_filen):
+            self.tth_cake = np.load(tth_filen)
+            self.chi_cake = np.load(azi_filen)
+            self.intensity_cake = np.load(int_filen)
+            return True
+        else:
+            return False
+
+    def make_temp_filenames(self, temp_dir=None):
+        tth_filen = make_filename(self.img_filename, 'tth.cake.npy',
+                                  temp_dir=temp_dir)
+        azi_filen = make_filename(self.img_filename, 'azi.cake.npy',
+                                  temp_dir=temp_dir)
+        int_filen = make_filename(self.img_filename, 'int.cake.npy',
+                                  temp_dir=temp_dir)
+        return tth_filen, azi_filen, int_filen
+
+    def write_temp_cakefiles(self, temp_dir='temporary_pkpo'):
+        tth_filen, azi_filen, int_filen = self.make_temp_filenames(
+            temp_dir=temp_dir)
+        np.save(tth_filen, self.tth_cake)
+        np.save(azi_filen, self.chi_cake)
+        np.save(int_filen, self.intensity_cake)
