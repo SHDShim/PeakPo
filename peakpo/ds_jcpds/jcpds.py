@@ -369,7 +369,7 @@ class JCPDS(object):
             self.a = (self.v)**(1. / 3.)
             self.b = self.a
             self.c = self.a
-        elif self.symmetry == 'hexagonal':
+        elif (self.symmetry == 'hexagonal') or (self.symmetry == 'trigonal'):
             # self.a = (2. * self.v / (np.sqrt(3.)*self.c0/self.a0) )**(1./3.)
             self.a = (2. * self.v / (np.sqrt(3.) * c_a))**(1. / 3.)
             self.b = self.a
