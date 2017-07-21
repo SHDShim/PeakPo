@@ -1899,21 +1899,7 @@
            <item>
             <widget class="QPushButton" name="pushButton_IntegrateCake">
              <property name="text">
-              <string>Integrate current cake range</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="pushButton_Reintegrate1D">
-             <property name="text">
-              <string>Reintegrate 1D</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="pushButton_OuputCHI">
-             <property name="text">
-              <string>Output CHI</string>
+              <string>Wright CHI from current cake range</string>
              </property>
             </widget>
            </item>

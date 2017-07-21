@@ -27,9 +27,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def build_ui(self):
         self.pushButton_MakeBasePtn.setEnabled(False)
-#        self.pushButton_BackToOriginal.setEnabled(False)
-        self.pushButton_Reintegrate1D.setEnabled(False)
-        self.pushButton_OuputCHI.setEnabled(False)
         self.doubleSpinBox_Pressure.setKeyboardTracking(False)
         self.doubleSpinBox_Pressure.setStyle(SpinBoxFixStyle())
         self.doubleSpinBox_Temperature.setKeyboardTracking(False)

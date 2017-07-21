@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file './ui/pkpo-v.ui'
+# Form implementation generated from reading ui file '../ui/pkpo-v.ui'
 #
 # Created by: PyQt5 UI code generator 5.6
 #
@@ -1002,12 +1002,6 @@ class Ui_MainWindow(object):
         self.pushButton_IntegrateCake = QtWidgets.QPushButton(self.groupBox_19)
         self.pushButton_IntegrateCake.setObjectName("pushButton_IntegrateCake")
         self.verticalLayout_8.addWidget(self.pushButton_IntegrateCake)
-        self.pushButton_Reintegrate1D = QtWidgets.QPushButton(self.groupBox_19)
-        self.pushButton_Reintegrate1D.setObjectName("pushButton_Reintegrate1D")
-        self.verticalLayout_8.addWidget(self.pushButton_Reintegrate1D)
-        self.pushButton_OuputCHI = QtWidgets.QPushButton(self.groupBox_19)
-        self.pushButton_OuputCHI.setObjectName("pushButton_OuputCHI")
-        self.verticalLayout_8.addWidget(self.pushButton_OuputCHI)
         self.verticalLayout_3.addWidget(self.groupBox_19)
         spacerItem1 = QtWidgets.QSpacerItem(
             20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
@@ -1841,9 +1835,7 @@ class Ui_MainWindow(object):
         self.pushButton_ApplyMask.setText(_translate("MainWindow", "Apply"))
         self.groupBox_19.setTitle(_translate("MainWindow", "1D pattern"))
         self.pushButton_IntegrateCake.setText(_translate(
-            "MainWindow", "Integrate current cake range"))
-        self.pushButton_Reintegrate1D.setText(_translate("MainWindow", "Reintegrate 1D"))
-        self.pushButton_OuputCHI.setText(_translate("MainWindow", "Output CHI"))
+            "MainWindow", "Wright CHI from current cake range"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(
             self.tabCake), _translate("MainWindow", "Cake"))
         self.groupBox_9.setTitle(_translate("MainWindow", "List"))
