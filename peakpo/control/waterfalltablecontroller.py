@@ -2,7 +2,7 @@ import os
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5 import QtGui
-from utils import SpinBoxFixStyle
+from utils import SpinBoxFixStyle, extract_filename
 from .mplcontroller import MplController
 
 

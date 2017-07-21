@@ -74,8 +74,11 @@ class DiffImg(object):
             self.img, n_azi_pnts, radial_range=radial_range,
             mask=self.mask, unit="2th_deg", method='csr',
             **kwargs)
+        """
         self.tth = tth
         self.intensity = intensity
+        """
+        return tth, intensity
 
     def integrate_to_cake(self, **kwargs):
         t_start = time.time()

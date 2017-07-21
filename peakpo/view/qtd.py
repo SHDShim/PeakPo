@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '../ui/pkpo-v.ui'
+# Form implementation generated from reading ui file './ui/pkpo-v.ui'
 #
 # Created by: PyQt5 UI code generator 5.6
 #
@@ -999,9 +999,9 @@ class Ui_MainWindow(object):
         self.groupBox_19.setObjectName("groupBox_19")
         self.verticalLayout_8 = QtWidgets.QVBoxLayout(self.groupBox_19)
         self.verticalLayout_8.setObjectName("verticalLayout_8")
-        self.pushButton_BackToOriginal = QtWidgets.QPushButton(self.groupBox_19)
-        self.pushButton_BackToOriginal.setObjectName("pushButton_BackToOriginal")
-        self.verticalLayout_8.addWidget(self.pushButton_BackToOriginal)
+        self.pushButton_IntegrateCake = QtWidgets.QPushButton(self.groupBox_19)
+        self.pushButton_IntegrateCake.setObjectName("pushButton_IntegrateCake")
+        self.verticalLayout_8.addWidget(self.pushButton_IntegrateCake)
         self.pushButton_Reintegrate1D = QtWidgets.QPushButton(self.groupBox_19)
         self.pushButton_Reintegrate1D.setObjectName("pushButton_Reintegrate1D")
         self.verticalLayout_8.addWidget(self.pushButton_Reintegrate1D)
@@ -1840,7 +1840,8 @@ class Ui_MainWindow(object):
         self.label_11.setText(_translate("MainWindow", "Max"))
         self.pushButton_ApplyMask.setText(_translate("MainWindow", "Apply"))
         self.groupBox_19.setTitle(_translate("MainWindow", "1D pattern"))
-        self.pushButton_BackToOriginal.setText(_translate("MainWindow", "Back to original"))
+        self.pushButton_IntegrateCake.setText(_translate(
+            "MainWindow", "Integrate current cake range"))
         self.pushButton_Reintegrate1D.setText(_translate("MainWindow", "Reintegrate 1D"))
         self.pushButton_OuputCHI.setText(_translate("MainWindow", "Output CHI"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(

@@ -1897,9 +1897,9 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_8">
            <item>
-            <widget class="QPushButton" name="pushButton_BackToOriginal">
+            <widget class="QPushButton" name="pushButton_IntegrateCake">
              <property name="text">
-              <string>Back to original</string>
+              <string>Integrate current cake range</string>
              </property>
             </widget>
            </item>

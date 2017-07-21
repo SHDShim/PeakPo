@@ -1,6 +1,6 @@
 import os
 from PyQt5 import QtWidgets
-from utils import undo_button_press
+from utils import undo_button_press, dialog_savefile, writechi
 from .mplcontroller import MplController
 
 
@@ -19,6 +19,31 @@ class CakeController(object):
         self.widget.pushButton_ApplyCakeView.clicked.connect(
             self._apply_changes_to_graph)
         self.widget.pushButton_ApplyMask.clicked.connect(self.apply_mask)
+        self.widget.pushButton_IntegrateCake.clicked.connect(
+            self.integrate_to_1d)
+
+    def integrate_to_1d(self):
+        tth_range, azi_range = self.plot_ctrl.get_cake_range()
+        if tth_range is None:
+            return
+        # self.produce_cake()
+        self.model.diff_img.set_calibration(self.model.poni)
+        self.model.diff_img.set_mask((self.widget.spinBox_MaskMin.value(),
+                                      self.widget.spinBox_MaskMax.value()))
+        tth, intensity = self.model.diff_img.integrate_to_1d(
+            azimuth_range=azi_range)
+        ext = "{0:d}to{1:d}.chi".format(int(azi_range[0]), int(azi_range[1]))
+        filen_chi_t = self.model.make_filename(ext)
+        filen_chi = dialog_savefile(self.widget, filen_chi_t)
+        if str(filen_chi) == '':
+            return
+        preheader_line0 = \
+            '# azimutal angle: {0: .5e}, {1: .5e} \n'.format(
+                azi_range[0], azi_range[1])
+        preheader_line1 = '\n'
+        preheader_line2 = '\n'
+        writechi(filen_chi, tth, intensity, preheader=preheader_line0 +
+                 preheader_line1 + preheader_line2)
 
     def _apply_changes_to_graph(self):
         self.plot_ctrl.update()

@@ -36,6 +36,13 @@ class MplController(object):
                         pattern.color = 'white'
             self.obj_color = 'white'
 
+    def get_cake_range(self):
+        if self.widget.pushButton_AddRemoveCake.isChecked():
+            return self.widget.mpl.canvas.ax_cake.get_xlim(),\
+                self.widget.mpl.canvas.ax_cake.get_ylim()
+        else:
+            return None, None
+
     def zoom_out_graph(self):
         if not self.model.base_ptn_exist():
             return
