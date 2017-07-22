@@ -80,7 +80,7 @@ class CakeController(object):
                 self.widget.pushButton_AddRemoveCake,
                 released_text='Add Cake', pressed_text='Remove Cake')
             return False
-        filen_tif = self.model.make_filename('tif')
+        filen_tif = self.model.make_filename('tif', original=True)
         if not os.path.exists(filen_tif):
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'Cannot find %s.' % filen_tif)

@@ -91,7 +91,7 @@ def extract_extension(filen):
     return ext[1:]
 
 
-def make_filename(filename, ext, temp_dir=None):
+def make_filename(filename, ext, temp_dir=None, original=False):
     """
     make a new filename with different extension in the same folder
 
@@ -100,7 +100,10 @@ def make_filename(filename, ext, temp_dir=None):
     :return: new filename
     """
     path, filen = os.path.split(filename)
-    new_filen = os.path.splitext(filen)[0] + '.' + ext
+    if original:
+        new_filen = filen.split(os.extsep)[0] + '.' + ext
+    else:
+        new_filen = os.path.splitext(filen)[0] + '.' + ext
     if temp_dir is None:
         new_filename = os.path.join(path, new_filen)
     else:

@@ -105,8 +105,8 @@ class MplController(object):
         self.widget.mpl.canvas.ax_pattern.xaxis.set_minor_locator(minorLocator)
         """
         self.widget.mpl.canvas.draw()
-        print("Plot takes {0:.2f} s at".format(time.time() - t_start),
-              str(datetime.datetime.now()))
+        print("Plot takes {0:.2f}s at".format(time.time() - t_start),
+              str(datetime.datetime.now())[:-7])
         self.widget.unsetCursor()
 
     def _plot_ucfit(self):
@@ -151,7 +151,6 @@ class MplController(object):
             extent=[tth_cake.min(), tth_cake.max(),
                     chi_cake.min(), chi_cake.max()],
             aspect="auto", cmap="gray_r", clim=climits)
-        # print("Cake plot takes: %.4f second" % (time.time() - t_start))
 
     def _plot_jcpds(self):
         i = 0
@@ -191,7 +190,6 @@ class MplController(object):
 
         for line, txt in zip(leg_jcpds.get_lines(), leg_jcpds.get_texts()):
             txt.set_color(line.get_color())
-        # print("JCPDS plot takes: %.4f second" % (time.time() - t_start))
 
     def _plot_waterfallpatterns(self):
         # t_start = time.time()

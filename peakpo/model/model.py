@@ -83,11 +83,11 @@ class PeakPoModel(object):
         else:
             return True
 
-    def make_filename(self, extension):
+    def make_filename(self, extension, original=False):
         """
         :param extension: extension without a dot
         """
-        return make_filename(self.base_ptn.fname, extension)
+        return make_filename(self.base_ptn.fname, extension, original=original)
 
     def same_filename_as_base_ptn(self, filename):
         return samefilename(self.base_ptn.fname, filename)
@@ -191,13 +191,13 @@ class PeakPoModel(object):
         self.base_ptn.color = color
 
     def associated_image_exists(self):
-        filen_tif = self.make_filename('tif')
+        filen_tif = self.make_filename('tif', original=True)
         if os.path.exists(filen_tif):
             return True
         else:
             return False
 
     def load_associated_img(self):
-        filen_tif = self.make_filename('tif')
+        filen_tif = self.make_filename('tif', original=True)
         self.reset_diff_img()
         self.diff_img.load(filen_tif)

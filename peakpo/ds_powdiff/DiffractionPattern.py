@@ -65,7 +65,7 @@ class Pattern(object):
         t_start = time.time()
         y_bg = fit_bg_cheb_auto(x, y, self.params_chbg[0],
                                 self.params_chbg[1], self.params_chbg[2])
-        print("Bgsub takes {:2f} s".format(time.time() - t_start))
+        print("Bgsub takes {0:.2f}s".format(time.time() - t_start))
         self.x_bg = x
         self.x_bgsub = x
         y_bgsub = y - y_bg

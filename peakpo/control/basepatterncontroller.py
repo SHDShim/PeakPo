@@ -147,7 +147,7 @@ class BasePatternController(object):
                 self._update_bgsub_from_current_values()
         else:
             self._update_bgsub_from_current_values()
-        filen_tif = self.model.make_filename('tif')
+        filen_tif = self.model.make_filename('tif', original=True)
         if not os.path.exists(filen_tif):
             self.widget.pushButton_AddRemoveCake.setChecked(False)
             self.widget.pushButton_AddRemoveCake.setText("Add Cake")

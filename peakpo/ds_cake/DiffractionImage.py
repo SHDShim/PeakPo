@@ -88,7 +88,7 @@ class DiffImg(object):
             self.img, n_azi_pnts, 360, unit="2th_deg", method='csr',
             radial_range=radial_range, mask=self.mask,
             **kwargs)
-        print("Caking takes {0:.2f} s".format(time.time() - t_start))
+        print("Caking takes {0:.2f}s".format(time.time() - t_start))
         self.intensity_cake = intensity_cake
         self.tth_cake = tth_cake
         self.chi_cake = chi_cake
