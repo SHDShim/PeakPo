@@ -55,10 +55,7 @@ class BasePatternController(object):
         if idx == -1:
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning", "Cannot find current file")
-        if self.widget.radioButton_FileStep1.isChecked():
-            step = 1
-        else:
-            step = 10
+        step = self.widget.spinBox_FileStep.value()
         if move == 'next':
             idx_new = idx + step
         elif move == 'previous':

@@ -7,7 +7,7 @@ from matplotlib.backends.backend_qt5agg \
     import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
-import matplotlib.pyplot as plt
+import matplotlib.style as mplstyle
 
 
 class MplCanvas(FigureCanvas):
@@ -52,12 +52,12 @@ class MplCanvas(FigureCanvas):
 
     def set_toNight(self, NightView=True):
         if NightView:
-            plt.style.use(
+            mplstyle.use(
                 os.path.join(os.path.curdir, 'mplstyle', 'night.mplstyle'))
             self.bgColor = 'black'
             self.objColor = 'white'
         else:
-            plt.style.use(
+            mplstyle.use(
                 os.path.join(os.path.curdir, 'mplstyle', 'day.mplstyle'))
             self.bgColor = 'white'
             self.objColor = 'black'

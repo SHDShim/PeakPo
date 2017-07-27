@@ -15,7 +15,8 @@ from .waterfalltablecontroller import WaterfallTableController
 from .jcpdstablecontroller import JcpdsTableController
 from .ucfittablecontroller import UcfitTableController
 from .sessioncontroller import SessionController
-from utils import dialog_savefile, writechi
+from .peakfitcontroller import PeakFitController
+from utils import dialog_savefile, writechi, extract_extension
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
 from ds_jcpds import UnitCell
@@ -42,6 +43,7 @@ class MainController(object):
         self.ucfittable_ctrl = UcfitTableController(self.model, self.widget)
         self.jcpdstable_ctrl = JcpdsTableController(self.model, self.widget)
         self.session_ctrl = SessionController(self.model, self.widget)
+        self.peakfit_ctrl = PeakFitController(self.model, self.widget)
         self.connect_channel()
         #
         self.clip = QtWidgets.QApplication.clipboard()
@@ -53,7 +55,7 @@ class MainController(object):
     def connect_channel(self):
         # connecting events
         self.widget.mpl.canvas.mpl_connect(
-            'button_press_event', self.read_plot)
+            'button_press_event', self.set_mouse_behavior)
         self.widget.mpl.canvas.mpl_connect(
             'key_press_event', self.on_key_press)
         self.widget.doubleSpinBox_Pressure.valueChanged.connect(
@@ -65,19 +67,31 @@ class MainController(object):
         self.widget.pushButton_SaveCHI.clicked.connect(self.save_bgsubchi)
         self.widget.pushButton_ExportToUCFit.clicked.connect(
             self.export_to_ucfit)
-        self.widget.pushButton_LoadJlist.clicked.connect(
+        self.widget.pushButton_ImportJlist.clicked.connect(
             self.load_jlist_from_session)
         self.widget.pushButton_UpdatePlots_tab2.clicked.connect(
             self.update_bgsub)
         # navigation toolbar modification.  Do not move the followings to
         # other controller files.
+        """
         self.widget.ntb_toPkFt.clicked.connect(self.to_PkFt)
         self.widget.ntb_fromPkFt.clicked.connect(self.from_PkFt)
         self.widget.ntb_NightView.clicked.connect(self.set_nightday_view)
+        """
+        self.widget.pushButton_toPkFt.clicked.connect(self.to_PkFt)
+        self.widget.pushButton_fromPkFt.clicked.connect(self.from_PkFt)
+        self.widget.checkBox_NightView.clicked.connect(self.set_nightday_view)
         self.widget.ntb_WholePtn.clicked.connect(self.plot_new_graph)
         self.widget.ntb_ResetY.clicked.connect(self.apply_changes_to_graph)
         self.widget.ntb_Bgsub.clicked.connect(self.apply_changes_to_graph)
         self.widget.actionClose.triggered.connect(self.closeEvent)
+        self.widget.tabWidget.currentChanged.connect(self.check_for_peakfit)
+        # self.widget.tabWidget.setTabEnabled(8, False)
+
+    def check_for_peakfit(self, i):
+        if i == 8:
+            self.widget.ntb_ResetY.setChecked(False)
+            self.apply_changes_to_graph()
 
     def apply_changes_to_graph(self):
         self.plot_ctrl.update()
@@ -91,10 +105,13 @@ class MainController(object):
         """
         fn_jlist = QtWidgets.QFileDialog.getOpenFileName(
             self.widget, "Choose A Session File",
-            self.model.chi_path, "(*.ppss)")[0]
+            self.model.chi_path, "(*.ppss *.dpp)")[0]
         if fn_jlist == '':
             return
-        self.session_ctrl._load_session(fn_jlist, jlistonly=True)
+        if extract_extension(fn_jlist) == 'ppss':
+            self.session_ctrl._load_ppss(fn_jlist, jlistonly=True)
+        elif extract_extension(fn_jlist) == 'dpp':
+            self.session_ctrl._load_dpp(fn_jlist, jlistonly=True)
         self.widget.textEdit_Jlist.setText('Jlist: ' + str(fn_jlist))
         self.jcpdstable_ctrl.update()
         self.plot_ctrl.update()
@@ -235,11 +252,18 @@ class MainController(object):
         self.waterfalltable_ctrl.update()
         self.plot_ctrl.update()
 
-    def read_plot(self, event):
+    def set_mouse_behavior(self, event):
         if self.widget.mpl.ntb._active is not None:
             return
         if (event.xdata is None) or (event.ydata is None):
             return
+        if (self.widget.tabWidget.currentIndex() == 8) and \
+                (self.widget.pushButton_AddRemoveFromMouse.isChecked()):
+            self.peakfit_ctrl.pick_peak(event)
+        else:
+            self.read_plot(event)
+
+    def read_plot(self, event):
         x_click = float(event.xdata)
         y_click = float(event.ydata)
         x_click_dsp = self.widget.doubleSpinBox_SetWavelength.value() / 2. / \

@@ -1,6 +1,7 @@
 # Created by https://www.gitignore.io/api/python
 
 ### local adjustment by Shim ###
+PeakFt/*
 */deletables/*
 deletables/
 ./setup_bin

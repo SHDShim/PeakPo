@@ -52,12 +52,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.ntb_WholePtn = QtWidgets.QPushButton()
         self.ntb_WholePtn.setText("ZoomOut")
         self.mpl.ntb.addWidget(self.ntb_WholePtn)
+        """
         self.ntb_toPkFt = QtWidgets.QPushButton()
         self.ntb_toPkFt.setText("toPkFt")
         self.mpl.ntb.addWidget(self.ntb_toPkFt)
         self.ntb_fromPkFt = QtWidgets.QPushButton()
         self.ntb_fromPkFt.setText("fromPkFt")
         self.mpl.ntb.addWidget(self.ntb_fromPkFt)
+        """
         self.ntb_ResetY = QtWidgets.QCheckBox()
         self.ntb_ResetY.setCheckable(True)
         self.ntb_ResetY.setChecked(False)
@@ -68,11 +70,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.ntb_Bgsub.setChecked(True)
         self.ntb_Bgsub.setText("BgSub")
         self.mpl.ntb.addWidget(self.ntb_Bgsub)
+        """
         self.ntb_NightView = QtWidgets.QCheckBox()
         self.ntb_NightView.setCheckable(True)
         self.ntb_NightView.setChecked(True)
         self.ntb_NightView.setText("Night")
         self.mpl.ntb.addWidget(self.ntb_NightView)
+        """
 
     def connect_channel(self):
         self.pushButton_RoomT.clicked.connect(

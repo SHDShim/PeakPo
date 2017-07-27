@@ -1,4 +1,6 @@
 import os
+import dill
+import zipfile
 from PyQt5 import QtWidgets
 from .mplcontroller import MplController
 from .waterfalltablecontroller import WaterfallTableController
@@ -18,12 +20,13 @@ class SessionController(object):
         self.connect_channel()
 
     def connect_channel(self):
-        self.widget.pushButton_SaveSession.clicked.connect(self.save_session)
-        self.widget.pushButton_LoadSession.clicked.connect(self.load_session)
-        self.widget.pushButton_ZipSession.clicked.connect(self.zip_session)
-        self.widget.pushButton_SaveJlist.clicked.connect(self.save_session)
+        self.widget.pushButton_SaveDPP.clicked.connect(self.save_dpp)
+        self.widget.pushButton_LoadPPSS.clicked.connect(self.load_ppss)
+        self.widget.pushButton_LoadDPP.clicked.connect(self.load_dpp)
+        self.widget.pushButton_ZipSession.clicked.connect(self.zip_ppss)
+        self.widget.pushButton_SaveJlist.clicked.connect(self.save_dpp)
 
-    def load_session(self):
+    def load_ppss(self):
         """
         get existing jlist file from data folder
         """
@@ -33,24 +36,89 @@ class SessionController(object):
 #       replaceing chi_path with '' does not work
         if fn == '':
             return
-        self._load_session(fn, jlistonly=False)
+        self._load_ppss(fn, jlistonly=False)
         self.plot_ctrl.zoom_out_graph()
         self.update_inputs()
 
-    def _update_session(self):
+    def load_dpp(self):
+        """
+        get existing jlist file from data folder
+        """
+        fn = QtWidgets.QFileDialog.getOpenFileName(
+            self.widget, "Choose A Session File",
+            self.model.chi_path, "(*.dpp)")[0]
+#       replaceing chi_path with '' does not work
+        if fn == '':
+            return
+        success = self._load_dpp(fn, jlistonly=False)
+        print(success)
+        if success:
+            self.plot_ctrl.zoom_out_graph()
+            self.update_inputs()
+
+    def _update_ppss(self):
         if not self.model.base_ptn_exist():
             return
         fn = self.model.make_filename('ppss')
         if not os.path.exists(fn):
             return
-        self._load_session(fn, jlistonly=False)
+        self._load_ppss(fn, jlistonly=False)
         self.update_inputs()
 
-    def _load_session(self, fsession, jlistonly=False):
+    def _load_ppss(self, fsession, jlistonly=False):
         '''
         internal method for reading pickled ppss file
         '''
-        self.model.read_session(fsession)
+        self.model.read_ppss(fsession)
+        success = self._load_jcpds_from_ppss()
+        if not success:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "The JCPDS in the PPSS cannot be found.")
+        else:
+            self.widget.textEdit_Jlist.setText('Jlist: ' + str(fsession))
+        if jlistonly:
+            return
+        success = self._load_base_ptn_from_ppss(fsession)
+        if not success:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "The base pattern file in the PPSS cannot be found.")
+        else:
+            self.widget.textEdit_DiffractionPatternFileName.setText(
+                '1D pattern: ' + str(self.model.base_ptn.fname))
+            self.widget.lineEdit_DiffractionPatternFileName.setText(
+                str(self.model.base_ptn.fname))
+            self.widget.textEdit_SessionFileName.setText(
+                'Session: ' + str(fsession))
+        success = self._load_waterfall_ptn_from_ppss()
+        if not success:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "The waterfall pattern files in the PPSS cannot be found.")
+
+    def _load_dpp(self, filen_dpp, jlistonly=False):
+        '''
+        internal method for reading dilled dpp file
+        '''
+        try:
+            with open(filen_dpp, 'rb') as f:
+                model_dpp = dill.load(f)
+        except Exception as inst:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning", str(inst))
+            return False
+        self.model.set_from(model_dpp)
+        self.widget.textEdit_Jlist.setText('Jlist: ' + str(filen_dpp))
+        self.widget.textEdit_DiffractionPatternFileName.setText(
+            '1D pattern: ' + str(self.model.base_ptn.fname))
+        self.widget.lineEdit_DiffractionPatternFileName.setText(
+            str(self.model.base_ptn.fname))
+        self.widget.textEdit_SessionFileName.setText(
+            'Session: ' + str(filen_dpp))
+        return True
+
+        """
         success = self._load_jcpds_from_session()
         if not success:
             QtWidgets.QMessageBox.warning(
@@ -77,8 +145,9 @@ class SessionController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning",
                 "The waterfall pattern files in the PPSS cannot be found.")
+        """
 
-    def _load_base_ptn_from_session(self, fsession):
+    def _load_base_ptn_from_ppss(self, fsession):
         if self.model.session.chi_path == '':
             return False
         if not os.path.exists(self.model.session.chi_path):
@@ -114,7 +183,7 @@ class SessionController(object):
             self.model.session.bg_params[2])
         return True
 
-    def _load_waterfall_ptn_from_session(self):
+    def _load_waterfall_ptn_from_ppss(self):
         if self.model.session.chi_path == '':
             return False
         if self.model.session.waterfallpatterns == []:
@@ -145,12 +214,12 @@ class SessionController(object):
                     self.model.session.bg_roi, self.model.session.bg_params)
                 return True
 
-    def _load_jcpds_from_session(self):
+    def _load_jcpds_from_ppss(self):
         if (self.model.session.jcpds_path == ''):
             return False
         if os.path.exists(self.model.session.jcpds_path):
             self.model.set_jcpds_path(self.model.session.jcpds_path)
-            self.model.set_jcpds_from_session()
+            self.model.set_jcpds_from_ppss()
             return True
         else:
             reply = QtWidgets.QMessageBox.question(
@@ -165,15 +234,22 @@ class SessionController(object):
                         self.widget, "Open Directory", self.model.jcpds_path,
                         QtWidgets.QFileDialog.ShowDirsOnly)
                 self.model.set_jcpds_path(jcpds_path)
-                self.model.set_jcpds_from_session()
+                self.model.set_jcpds_from_ppss()
                 return True
             else:
                 QtWidgets.QMessageBox.warning(
                     self.widget, "Warning", "JCPDS path does not match.")
                 return False
 
-    def _dump_session(self, fsession):
-        self.model.write_as_session(
+    def _dump_dpp(self, filen_dpp):
+        with open(filen_dpp, 'wb') as f:
+            dill.dump(self.model, f)
+
+    def _dump_ppss(self, fsession):
+        """
+        session = *.ppss
+        """
+        self.model.write_as_ppss(
             fsession, self.widget.doubleSpinBox_Pressure.value(),
             self.widget.doubleSpinBox_Temperature.value())
 
@@ -182,9 +258,12 @@ class SessionController(object):
         self.waterfalltable_ctrl.update()
         self.jcpdstable_ctrl.update()
 
-    def zip_session(self):
+    def zip_ppss(self):
+        """
+        session = *.ppss
+        """
         if not self.model.base_ptn_exist():
-            fzip = os.path.join(self.model.chi_path, 'dum.zip')
+            fzip = os.path.join(self.model.chi_path, 'default.zip')
         else:
             fzip = self.model.make_filename('zip')
         reply = QtWidgets.QMessageBox.question(
@@ -209,7 +288,7 @@ class SessionController(object):
             path, filen = os.path.split(str(fzip))
             fsession_name = '%s.forzip.ppss' % filen
             fsession = os.path.join(path, fsession_name)
-            self._dump_session(str(fsession))
+            self._dump_ppss(str(fsession))
             self.widget.textEdit_Jlist.setText('Jlist : ' + str(fsession))
             zf = zipfile.ZipFile(str(fzip), 'w', zipfile.ZIP_DEFLATED)
             zf.write(fsession, arcname=fsession_name)
@@ -222,18 +301,32 @@ class SessionController(object):
                     zf.write(wf.fname, arcname=filen)
             zf.close()
 
-    def save_session(self):
+    def save_dpp(self):
+        if not self.model.base_ptn_exist():
+            fsession = os.path.join(self.model.chi_path, 'default.dpp')
+        else:
+            fsession = self.model.make_filename('dpp')
+        new_filename = dialog_savefile(self.widget, fsession)
+        if new_filename != '':
+            self._dump_dpp(new_filename)
+            self.widget.textEdit_SessionFileName.setText('Session: ' +
+                                                         str(new_filename))
+
+    def save_ppss(self):
+        """
+        session = *.ppss
+        """
         if not self.model.base_ptn_exist():
             fsession = os.path.join(self.model.chi_path, 'dum.ppss')
         else:
             fsession = self.model.make_filename('ppss')
         new_filename = dialog_savefile(self.widget, fsession)
         if new_filename != '':
-            self._dump_session(new_filename)
+            self._dump_ppss(new_filename)
             self.widget.textEdit_SessionFileName.setText('Session: ' +
                                                          str(new_filename))
 
-    def save_session_with_default_name(self):
+    def save_ppss_with_default_name(self):
         if not self.model.base_ptn_exist():
             fsession = os.path.join(self.model.chi_path, 'dum.ppss')
         else:
@@ -247,7 +340,7 @@ class SessionController(object):
             if reply == QtWidgets.QMessageBox.No:
                 return
         if str(fsession) != '':
-            self._dump_session(str(fsession))
+            self._dump_ppss(str(fsession))
             self.widget.textEdit_SessionFileName.setText(
                 'Session: ' + str(fsession))
 

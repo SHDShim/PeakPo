@@ -15,7 +15,7 @@ class MplController(object):
         self.widget = widget
 
     def _set_nightday_view(self):
-        if not self.widget.ntb_NightView.isChecked():
+        if not self.widget.checkBox_NightView.isChecked():
             self.widget.mpl.canvas.set_toNight(False)
             # reset plot objects with white
             if self.model.base_ptn_exist():
@@ -78,6 +78,8 @@ class MplController(object):
             self._plot_jcpds()
         if self.model.ucfit_exist():
             self._plot_ucfit()
+        if (self.widget.tabWidget.currentIndex() == 8):
+            self._plot_peakfit()
         self.widget.mpl.canvas.ax_pattern.set_xlim(limits[0], limits[1])
         if not self.widget.ntb_ResetY.isChecked():
             self.widget.mpl.canvas.ax_pattern.set_ylim(limits[2], limits[3])
@@ -169,16 +171,21 @@ class MplController(object):
                     self.widget.doubleSpinBox_SetWavelength.value())
                 intensity = inten * phase.twk_int
                 bar_min = np.ones(tth.shape) * axisrange[2]
+                """
+                if self.widget.tabWidget.currentIndex() == 8:
+                    bar_min = 90. * bar_scale
+                    bar_max = 100. * bar_scale
+                    self.widget.mpl.canvas.ax_pattern.set_ylim(
+                        axisrange[2], axisrange[3])
+                """
                 if self.widget.checkBox_Intensity.isChecked():
-                    self.widget.mpl.canvas.ax_pattern.vlines(
-                        tth, bar_min, intensity * bar_scale,
-                        colors=phase.color,
-                        label=phase.name + (", %.3f A^3" % phase.v))
+                    bar_max = intensity * bar_scale
                 else:
-                    self.widget.mpl.canvas.ax_pattern.vlines(
-                        tth, bar_min, 100. * bar_scale,
-                        colors=phase.color,
-                        label=phase.name + (", %.3f A^3" % phase.v))
+                    bar_max = 100. * bar_scale
+                self.widget.mpl.canvas.ax_pattern.vlines(
+                    tth, bar_min, bar_max, colors=phase.color,
+                    label="{0:}, {1:.3f} A^3".format(
+                        phase.name, phase.v.item()))
                 if self.widget.pushButton_AddRemoveCake.isChecked():
                     for tth_i in tth:
                         self.widget.mpl.canvas.ax_cake.axvline(
@@ -187,7 +194,6 @@ class MplController(object):
                 pass
         leg_jcpds = self.widget.mpl.canvas.ax_pattern.legend(
             loc=1, prop={'size': 10}, framealpha=0., handlelength=1)
-
         for line, txt in zip(leg_jcpds.get_lines(), leg_jcpds.get_texts()):
             txt.set_color(line.get_color())
 
@@ -235,8 +241,8 @@ class MplController(object):
                                     self.model.base_ptn.wavelength)
                 else:
                     x = x_t
-                self.widget.mpl.canvas.ax_pattern.plot(x, y + ygap,
-                                                       c=pattern.color)
+                self.widget.mpl.canvas.ax_pattern.plot(
+                    x, y + ygap, c=pattern.color)
         self.widget.mpl.canvas.ax_pattern.text(
             0.01, 0.97 - n_display * 0.05,
             os.path.basename(self.model.base_ptn.fname),
@@ -255,3 +261,30 @@ class MplController(object):
             x_bg, y_bg = self.model.base_ptn.get_background()
             self.widget.mpl.canvas.ax_pattern.plot(
                 x_bg, y_bg, c=self.model.base_ptn.color, lw=0.5)
+
+    def _plot_peakfit(self):
+        if not self.model.current_section_exist():
+            return
+        if self.model.current_section.peaks_exist():
+            for x_c in self.model.current_section.get_peak_positions():
+                self.widget.mpl.canvas.ax_pattern.axvline(x_c, ls='--')
+        if self.model.current_section.fitted():
+            bgsub = self.widget.ntb_Bgsub.isChecked()
+            x_plot = self.model.current_section.x
+            profiles = self.model.current_section.get_individual_profiles(
+                bgsub=bgsub)
+            for key, value in profiles.items():
+                self.widget.mpl.canvas.ax_pattern.plot(
+                    x_plot, value, 'y-', lw=0.5)
+            total_profile = self.model.current_section.get_fit_profile(
+                bgsub=bgsub)
+            residue = self.model.current_section.get_fit_residue(bgsub=bgsub)
+            self.widget.mpl.canvas.ax_pattern.plot(
+                x_plot, total_profile, 'y-', lw=0.5)
+            self.widget.mpl.canvas.ax_pattern.plot(
+                x_plot, residue, 'r-', lw=0.5)
+            self.widget.mpl.canvas.ax_pattern.axhline(
+                self.model.current_section.get_fit_residue_baseline(
+                    bgsub=bgsub), c='r', ls=':', lw=0.5)
+        else:
+            print('there is no fitting result to plot')

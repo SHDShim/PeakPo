@@ -1,10 +1,12 @@
 import pickle
 import os
+import copy
 from ds_cake import DiffImg
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
 from ds_jcpds import JCPDSplt, Session
-from ds_powdiff import PatternPeakPo
+from ds_powdiff import PatternPeakPo, get_DataSection
+from ds_section import Section
 from utils import samefilename, make_filename
 
 
@@ -25,6 +27,58 @@ class PeakPoModel(object):
         self.session = None
         self.jcpds_path = ''
         self.chi_path = ''
+        self.current_section = None
+        self.section_lst = []
+
+    def clear_section_list(self):
+        self.section_list = []
+
+    def get_number_of_section(self):
+        return self.section_lst.__len__()
+
+    def set_current_section(self, roi):
+        x_section_bg, y_section_bg = get_DataSection(
+            self.base_ptn.x_bg, self.base_ptn.y_bg, roi)
+        __, y_section_bgsub = get_DataSection(
+            self.base_ptn.x_bgsub, self.base_ptn.y_bgsub, roi)
+        self.current_section.set(x_section_bg, y_section_bgsub, y_section_bg)
+
+    def current_section_saved(self):
+        if self.current_section_exist():
+            return True
+        elif self.current_section.timestamp is None:
+            return False
+        else:
+            return True
+
+    def initialize_current_section(self):
+        if self.current_section_exist():
+            self.current_section = None
+        self.current_section = Section()
+
+    def save_current_section(self):
+        new_section = copy.deepcopy(self.current_section)
+        self.section_lst.append(new_section)
+        self.current_section = None
+
+    def current_section_exist(self):
+        if self.current_section is None:
+            return False
+        if self.current_section.x is None:
+            return False
+        else:
+            return True
+
+    def set_from(self, model_r):
+        self.base_ptn = model_r.base_ptn
+        self.waterfall_ptn = model_r.waterfall_ptn
+        self.jcpds_lst = model_r.jcpds_lst
+        self.ucfit_lst = model_r.ucfit_lst
+        self.diff_img = model_r.diff_img
+        self.poni = model_r.poni
+        self.session = model_r.session
+        self.jcpds_path = model_r.jcpds_path
+        self.chi_path = model_r.chi_path
 
     def reset_base_ptn(self):
         self.base_ptn = PatternPeakPo()
@@ -143,8 +197,8 @@ class PeakPoModel(object):
         phase.color = color
         self.jcpds_lst.append(phase)
 
-    def write_as_session(self,
-                         fname, pressure, temperature):
+    def write_as_ppss(self,
+                      fname, pressure, temperature):
         session = Session()
         session.pattern = self.get_base_ptn()
         session.waterfallpatterns = self.waterfall_ptn
@@ -160,13 +214,13 @@ class PeakPoModel(object):
         pickle.dump(session, f)
         f.close()
 
-    def read_session(self, fname):
+    def read_ppss(self, fname):
         f = open(fname, 'rb')
         session = pickle.load(f, encoding='latin1')
         f.close()
         self.session = session
 
-    def set_jcpds_from_session(self):
+    def set_jcpds_from_ppss(self):
         if self.session is not None:
             self.jcpds_lst = self.session.jlist
         else:

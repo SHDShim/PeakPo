@@ -2,7 +2,7 @@ import os
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5 import QtGui
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from matplotlib import colors
 import matplotlib.cm as cmx
 from .mplcontroller import MplController
@@ -56,7 +56,8 @@ class JcpdsController(object):
             return
         self.model.set_jcpds_path(os.path.split(str(files[0]))[0])
         n_color = 9
-        jet = plt.get_cmap('gist_rainbow')
+        # jet = plt.get_cmap('gist_rainbow')
+        jet = cmx.get_cmap('gist_rainbow')
         cNorm = colors.Normalize(vmin=0, vmax=n_color)
         c_index = range(n_color)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
