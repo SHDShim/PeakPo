@@ -61,7 +61,7 @@ class Section(object):
         y_center = self.get_nearest_intensity(x_center)
         peak = {}
         peak['center'] = x_center
-        peak['amplitude'] = y_center
+        peak['amplitude'] = y_center * fwhm * 4.
         peak['sigma'] = fwhm
         peak['fraction'] = 0.5
         peak['phasename'] = phase_name

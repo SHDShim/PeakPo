@@ -42,8 +42,9 @@ class PeakFitController(object):
         x_range = self.model.current_section.get_xrange()
         y_range = self.model.current_section.get_yrange(
             bgsub=self.widget.ntb_Bgsub.isChecked())
+        margin = 0.1 * (y_range[1] - y_range[0])
         self.plot_ctrl.update(limits=(x_range[0], x_range[1],
-                                      y_range[0], y_range[1]))
+                                      y_range[0] - margin, y_range[1] + margin))
 
     def get_peaks_from_jcpds(self):
         if self.model.jcpds_lst == []:
@@ -131,7 +132,7 @@ class PeakFitController(object):
         self._list_localbg()
         self._update_config
         """
-        self.plot_ctrl.update()
+        self.zoom_to_section()
 
     def clear_section_list(self):
         reply = QtWidgets.QMessageBox.question(

@@ -2,6 +2,7 @@ import numpy as np
 from matplotlib.backend_bases import key_press_handler
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
+import gc
 from view import MainWindow
 from model import PeakPoModel
 from .basepatterncontroller import BasePatternController
@@ -203,8 +204,9 @@ class MainController(object):
         Close event function
         """
         self.write_setting()
-        del self.model
-        self.deleteLater()
+        self.widget.deleteLater()
+        gc.collect()
+        # self.deleteLater()
 
     def on_key_press(self, event):
         if event.key == 'i':

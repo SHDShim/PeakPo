@@ -260,14 +260,15 @@ class MplController(object):
                 x, y, c=self.model.base_ptn.color)
             x_bg, y_bg = self.model.base_ptn.get_background()
             self.widget.mpl.canvas.ax_pattern.plot(
-                x_bg, y_bg, c=self.model.base_ptn.color, ls='--', lw=0.5)
+                x_bg, y_bg, c=self.model.base_ptn.color, ls='--', lw=0.7)
 
     def _plot_peakfit(self):
         if not self.model.current_section_exist():
             return
         if self.model.current_section.peaks_exist():
             for x_c in self.model.current_section.get_peak_positions():
-                self.widget.mpl.canvas.ax_pattern.axvline(x_c, ls='--')
+                self.widget.mpl.canvas.ax_pattern.axvline(
+                    x_c, ls='--', dashes=(10, 5))
         if self.model.current_section.fitted():
             bgsub = self.widget.ntb_Bgsub.isChecked()
             x_plot = self.model.current_section.x
@@ -275,16 +276,24 @@ class MplController(object):
                 bgsub=bgsub)
             for key, value in profiles.items():
                 self.widget.mpl.canvas.ax_pattern.plot(
-                    x_plot, value, 'y--', lw=0.5)
+                    x_plot, value, ls='-', c=self.obj_color, lw=0.5)
             total_profile = self.model.current_section.get_fit_profile(
                 bgsub=bgsub)
             residue = self.model.current_section.get_fit_residue(bgsub=bgsub)
             self.widget.mpl.canvas.ax_pattern.plot(
-                x_plot, total_profile, 'y-', lw=0.5)
+                x_plot, total_profile, 'r-')
+            y_range = self.model.current_section.get_yrange(bgsub=bgsub)
+            y_shift = (y_range[1] - y_range[0]) * 1.05
+            self.widget.mpl.canvas.ax_pattern.fill_between(
+                x_plot, self.model.current_section.get_fit_residue_baseline(
+                    bgsub=bgsub) + y_shift, residue + y_shift, facecolor='r',
+                alpha=0.5)
+            """
             self.widget.mpl.canvas.ax_pattern.plot(
-                x_plot, residue, 'r-', lw=0.5)
+                x_plot, residue + y_shift, 'r-')
             self.widget.mpl.canvas.ax_pattern.axhline(
                 self.model.current_section.get_fit_residue_baseline(
-                    bgsub=bgsub), c='r', ls='--', lw=0.5)
+                    bgsub=bgsub) + y_shift, c='r', ls='-', lw=0.5)
+            """
         else:
             pass
