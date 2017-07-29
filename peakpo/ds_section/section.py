@@ -13,17 +13,20 @@ class Section(object):
         self.baseline = None
         self.parameters = None
         self.fit_result = None
-        self.x_c_lst = []
-        self.y_c_lst = []
-        self.phase_lst = []
-        self.hkl_lst = []
-        self.peakinfo = {}
+        self.peaks_in_queue = []
+
+    def get_xrange(self):
+        return (self.x.min(), self.x.max())
+
+    def get_yrange(self, bgsub=False):
+        if bgsub:
+            return (self.y_bgsub.min(), self.y_bgsub.max())
+        else:
+            return ((self.y_bgsub + self.y_bg).min(),
+                    (self.y_bgsub + self.y_bg).max())
 
     def clear_picks(self):
-        self.x_c_lst = []
-        self.y_c_lst = []
-        self.phase_lst = []
-        self.hkl_lst = []
+        self.peaks_in_queue = []
 
     def invalidate_fit_result(self):
         """use with caution"""
@@ -36,7 +39,13 @@ class Section(object):
             return True
 
     def get_peak_positions(self):
-        return self.x_c_lst
+        if self.get_number_of_peaks_in_queue() == 0:
+            return []
+        else:
+            x_c_lst = []
+            for peak in self.peaks_in_queue:
+                x_c_lst.append(peak['center'])
+            return x_c_lst
 
     def set(self, x, y_bgsub, y_bg):
         """
@@ -46,32 +55,35 @@ class Section(object):
         self.y_bgsub = y_bgsub
         self.y_bg = y_bg
 
-    def set_single_peak(self, x_center, hkl=[0, 0, 0], phase_name=''):
+    def set_single_peak(self, x_center, fwhm, hkl=[0, 0, 0], phase_name=''):
         if (x_center > self.x.max()) or (x_center < self.x.min()):
             return False
         y_center = self.get_nearest_intensity(x_center)
-        self.x_c_lst.append(x_center)
-        self.y_c_lst.append(y_center)
-        self.hkl_lst.append(hkl)
-        self.phase_lst.append(phase_name)
+        peak = {}
+        peak['center'] = x_center
+        peak['amplitude'] = y_center
+        peak['sigma'] = fwhm
+        peak['fraction'] = 0.5
+        peak['phasename'] = phase_name
+        peak['h'] = hkl[0]
+        peak['k'] = hkl[1]
+        peak['l'] = hkl[2]
+        self.peaks_in_queue.append(peak)
         return True
 
     def peaks_exist(self):
-        if self.x_c_lst == []:
+        if self.peaks_in_queue == []:
             return False
         else:
             return True
 
     def remove_single_peak_nearby(self, x):
         diffs = []
-        index = (np.abs(np.asarray(self.x_c_lst) - x)).argmin()
-        self.x_c_lst.pop(index)
-        self.y_c_lst.pop(index)
-        self.phase_lst.pop(index)
-        self.hkl_lst.pop(index)
+        x_c_lst = self.get_peak_positions()
+        index = (np.abs(np.asarray(x_c_lst) - x)).argmin()
+        self.peaks_in_queue.pop(index)
 
-    def set_peaks(self, x_center, y_center, fwhm, poly_order, hkl,
-                  phase_name):
+    def prepare_for_fitting(self, poly_order):
         """
         :param x_center: numpy array of initial x values at picked centers
         :param y_center: numpy array of initial y values at picked centers
@@ -85,20 +97,19 @@ class Section(object):
             prefix = "b_c{0:d}".format(i)
             pars[prefix].set(1)
         i = 0
-        for x, y, phase_name_i, hkl_i \
-                in zip(x_center, y_center, phase_name, hkl):
+        for peak in self.peaks_in_queue:
             prefix = "p{0:d}_".format(i)
             peak_mod = PseudoVoigtModel(prefix=prefix, )
             pars.update(peak_mod.make_params())
             pars[prefix + 'center'].set(
-                x, min=self.x.min(), max=self.x.max())
-            pars[prefix + 'sigma'].set(fwhm, min=0.0)
-            pars[prefix + 'amplitude'].set(y, min=0)
-            pars[prefix + 'fraction'].set(0.5, min=0., max=1.)
-            peakinfo[prefix + 'phasename'] = phase_name_i
-            peakinfo[prefix + 'h'] = hkl_i[0]
-            peakinfo[prefix + 'k'] = hkl_i[1]
-            peakinfo[prefix + 'l'] = hkl_i[2]
+                peak['center'], min=self.x.min(), max=self.x.max())
+            pars[prefix + 'sigma'].set(peak['sigma'], min=0.0)
+            pars[prefix + 'amplitude'].set(peak['amplitude'], min=0)
+            pars[prefix + 'fraction'].set(peak['fraction'], min=0., max=1.)
+            peakinfo[prefix + 'phasename'] = peak['phasename']
+            peakinfo[prefix + 'h'] = peak['h']
+            peakinfo[prefix + 'k'] = peak['k']
+            peakinfo[prefix + 'l'] = peak['l']
             mod += peak_mod
             i += 1
         self.parameters = pars
@@ -106,16 +117,11 @@ class Section(object):
         self.fit_model = mod
         self.baseline = baseline_mod
 
-    def prepare_for_fitting(self, fwhm, poly_order):
-        self.set_peaks(self.x_c_lst, self.y_c_lst, fwhm, poly_order,
-                       self.hkl_lst, self.phase_lst)
-
     def conduct_fitting(self):
         out = self.fit_model.fit(
             self.y_bgsub, self.parameters, x=self.x)
         self.fit_result = copy.deepcopy(out)
         self.timestamp = str(datetime.datetime.now())[:-7]
-        print(self.timestamp)
         self.copy_fit_result_to_queue()
         if self.fit_result is None:
             return False
@@ -130,30 +136,25 @@ class Section(object):
 
     def copy_fit_result_to_queue(self):
         n_peaks = self.get_number_of_peaks_in_queue()
-        x_c_lst = []
-        y_c_lst = []
-        phase_lst = []
-        hkl_lst = []
         self.clear_picks()
         for i in range(n_peaks):
+            peak = {}
             prefix = "p{0:d}_".format(i)
-            x_c = self.fit_result.params[prefix + 'center'].value
-            y_c = self.fit_result.params[prefix + 'amplitude'].value
-            phase = self.peakinfo[prefix + 'phasename']
-            hkl = [self.peakinfo[prefix + 'h'], self.peakinfo[prefix + 'k'],
-                   self.peakinfo[prefix + 'l']]
-            x_c_lst.append(x_c)
-            y_c_lst.append(y_c)
-            phase_lst.append(phase)
-            hkl_lst.append(hkl)
-        self.x_c_lst = x_c_lst
-        self.y_c_lst = y_c_lst
-        self.phase_lst = phase_lst
-        self.hkl_lst = hkl_lst
-        print(self.x_c_lst)
+            peak['center'] = self.fit_result.params[prefix + 'center'].value
+            peak['amplitude'] = self.fit_result.params[
+                prefix + 'amplitude'].value
+            peak['sigma'] = self.fit_result.params[
+                prefix + 'sigma'].value
+            peak['fraction'] = self.fit_result.params[
+                prefix + 'fraction'].value
+            peak['phasename'] = self.peakinfo[prefix + 'phasename']
+            peak['h'] = self.peakinfo[prefix + 'h']
+            peak['k'] = self.peakinfo[prefix + 'k']
+            peak['l'] = self.peakinfo[prefix + 'l']
+            self.peaks_in_queue.append(peak)
 
     def get_number_of_peaks_in_queue(self):
-        return self.x_c_lst.__len__()
+        return self.peaks_in_queue.__len__()
 
     def get_individual_profiles(self, bgsub=False):
         """
@@ -176,28 +177,23 @@ class Section(object):
             return self.fit_result.best_fit + self.y_bg
 
     def get_fit_residue(self, bgsub=False):
-        if bgsub:
-            return self.y_bgsub - self.fit_result.best_fit
-        else:
-            return self.y_bgsub - self.fit_result.best_fit + \
-                self.get_fit_residue_baseline()
+        return self.y_bgsub - self.fit_result.best_fit + \
+            self.get_fit_residue_baseline(bgsub=bgsub)
 
     def get_fit_residue_baseline(self, bgsub=False):
         if bgsub:
-            return self.y_bgsub.min()
+            return 0
+            # return self.y_bgsub.min()
         else:
             return self.y_bg.min()
-
-    def get_peak_parameters(self):
-        peak_parameters = {}
-        for key, value in self.parameters.items():
-            if key[0] == 'p':
-                peak_parameters[key] = value
-        return peak_parameters
 
     def get_nearest_intensity(self, x_pick):
         index = (np.abs(np.asarray(self.x) - x_pick)).argmin()
         return self.y_bgsub[index]
+
+    def get_nearest_xy(self, x_pick):
+        index = (np.abs(np.asarray(self.x) - x_pick)).argmin()
+        return self.x_bgsub[index], self.y_bgsub[index]
 
 
 class PeakModel(PseudoVoigtModel):

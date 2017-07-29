@@ -260,7 +260,7 @@ class MplController(object):
                 x, y, c=self.model.base_ptn.color)
             x_bg, y_bg = self.model.base_ptn.get_background()
             self.widget.mpl.canvas.ax_pattern.plot(
-                x_bg, y_bg, c=self.model.base_ptn.color, lw=0.5)
+                x_bg, y_bg, c=self.model.base_ptn.color, ls='--', lw=0.5)
 
     def _plot_peakfit(self):
         if not self.model.current_section_exist():
@@ -275,7 +275,7 @@ class MplController(object):
                 bgsub=bgsub)
             for key, value in profiles.items():
                 self.widget.mpl.canvas.ax_pattern.plot(
-                    x_plot, value, 'y-', lw=0.5)
+                    x_plot, value, 'y--', lw=0.5)
             total_profile = self.model.current_section.get_fit_profile(
                 bgsub=bgsub)
             residue = self.model.current_section.get_fit_residue(bgsub=bgsub)
@@ -285,6 +285,6 @@ class MplController(object):
                 x_plot, residue, 'r-', lw=0.5)
             self.widget.mpl.canvas.ax_pattern.axhline(
                 self.model.current_section.get_fit_residue_baseline(
-                    bgsub=bgsub), c='r', ls=':', lw=0.5)
+                    bgsub=bgsub), c='r', ls='--', lw=0.5)
         else:
-            print('there is no fitting result to plot')
+            pass

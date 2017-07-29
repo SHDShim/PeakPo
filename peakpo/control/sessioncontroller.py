@@ -5,6 +5,7 @@ from PyQt5 import QtWidgets
 from .mplcontroller import MplController
 from .waterfalltablecontroller import WaterfallTableController
 from .jcpdstablecontroller import JcpdsTableController
+from .peakfittablecontroller import PeakfitTableController
 from utils import dialog_savefile
 
 
@@ -17,6 +18,8 @@ class SessionController(object):
         self.waterfalltable_ctrl = \
             WaterfallTableController(self.model, self.widget)
         self.jcpdstable_ctrl = JcpdsTableController(self.model, self.widget)
+        self.peakfit_table_ctrl = PeakfitTableController(
+            self.model, self.widget)
         self.connect_channel()
 
     def connect_channel(self):
@@ -25,6 +28,10 @@ class SessionController(object):
         self.widget.pushButton_LoadDPP.clicked.connect(self.load_dpp)
         self.widget.pushButton_ZipSession.clicked.connect(self.zip_ppss)
         self.widget.pushButton_SaveJlist.clicked.connect(self.save_dpp)
+        self.widget.pushButton_PkFtSectionSavetoDPP.clicked.connect(
+            self.save_dpp)
+        self.widget.pushButton_SaveDPPandPPSS.clicked.connect(
+            self.save_dpp_ppss)
 
     def load_ppss(self):
         """
@@ -116,6 +123,10 @@ class SessionController(object):
             str(self.model.base_ptn.fname))
         self.widget.textEdit_SessionFileName.setText(
             'Session: ' + str(filen_dpp))
+        self.widget.doubleSpinBox_Pressure.setValue(
+            self.model.get_saved_pressure())
+        self.widget.doubleSpinBox_Temperature.setValue(
+            self.model.get_saved_temperature())
         return True
 
         """
@@ -257,6 +268,8 @@ class SessionController(object):
         self.reset_bgsub()
         self.waterfalltable_ctrl.update()
         self.jcpdstable_ctrl.update()
+        self.peakfit_table_ctrl.update_sections()
+        self.peakfit_table_ctrl.update_pkparams()
 
     def zip_ppss(self):
         """
@@ -301,6 +314,10 @@ class SessionController(object):
                     zf.write(wf.fname, arcname=filen)
             zf.close()
 
+    def save_dpp_ppss(self):
+        self.save_dpp()
+        self.save_ppss()
+
     def save_dpp(self):
         if not self.model.base_ptn_exist():
             fsession = os.path.join(self.model.chi_path, 'default.dpp')
@@ -308,9 +325,14 @@ class SessionController(object):
             fsession = self.model.make_filename('dpp')
         new_filename = dialog_savefile(self.widget, fsession)
         if new_filename != '':
+            self.model.save_pressure(self.widget.doubleSpinBox_Pressure.value())
+            self.model.save_temperature(
+                self.widget.doubleSpinBox_Temperature.value())
             self._dump_dpp(new_filename)
             self.widget.textEdit_SessionFileName.setText('Session: ' +
                                                          str(new_filename))
+            self.widget.tableWidget_PkFtSections.setStyleSheet(
+                "Background-color:None;color:rgb(0,0,0);")
 
     def save_ppss(self):
         """

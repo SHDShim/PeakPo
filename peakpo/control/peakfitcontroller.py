@@ -27,17 +27,118 @@ class PeakFitController(object):
             self.remove_section)
         self.widget.pushButton_PkFtSectionClear.clicked.connect(
             self.clear_section_list)
-        # self.widget.pushButton_AddRemoveFromMouse.clicked.connect(
-        #    self.set_mouse_for_pick_input)
-        # self.widget.mpl.canvas.mpl_connect(
-        #    'button_press_event', self.pick_peak)
+        self.widget.pushButton_PkFtSectionSetToCurrent.clicked.connect(
+            self.set_section_to_current)
+        self.widget.pushButton_AddRemoveFromJlist.clicked.connect(
+            self.get_peaks_from_jcpds)
+        self.widget.pushButton_ZoomToSection.clicked.connect(
+            self.zoom_to_section)
+        # The line below exist in session_ctrl
+        # self.widget.pushButton_PkFtSectionSavetoDPP.clicked.coonect
+
+    def zoom_to_section(self):
+        if not self.model.current_section_exist():
+            return
+        x_range = self.model.current_section.get_xrange()
+        y_range = self.model.current_section.get_yrange(
+            bgsub=self.widget.ntb_Bgsub.isChecked())
+        self.plot_ctrl.update(limits=(x_range[0], x_range[1],
+                                      y_range[0], y_range[1]))
+
+    def get_peaks_from_jcpds(self):
+        if self.model.jcpds_lst == []:
+            return
+        i = 0
+        for j in self.model.jcpds_lst:
+            if j.display:
+                i += 1
+        if i == 0:
+            return
+        if not self.model.current_section_exist():
+            QtWidgets.QMessageBox.warning(self.widget, "Warning",
+                                          "Set a section first.")
+            return
+        else:
+            if self.model.current_section.fitted():
+                reply = QtWidgets.QMessageBox.question(
+                    self.widget, "Question",
+                    "Are you OK with clearing any unsaved information. Proceed?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                    QtWidgets.QMessageBox.Yes)
+                if reply == QtWidgets.QMessageBox.No:
+                    return
+                else:
+                    self.clear_this_section()
+            else:
+                pass
+        # get xROI
+        x_range = self.model.current_section.get_xrange()
+        peaks = []
+        int_threshold = float(
+            self.widget.spinBox_PeaksFromJlistIntensity.value())
+        for j in self.model.jcpds_lst:
+            if j.display:
+                tths, intensities = j.get_tthVSint(
+                    self.widget.doubleSpinBox_SetWavelength.value())
+                for ii in range(tths.__len__()):
+                    tth = float(tths[ii])
+                    if (tth >= x_range[0]) and (tth <= x_range[1]) and \
+                            (intensities[ii] >= int_threshold):
+                        height = \
+                            self.model.current_section.get_nearest_intensity(tth)
+                        width = self.widget.doubleSpinBox_InitialFWHM.value()
+                        hkl = [j.DiffLines[ii].h, j.DiffLines[ii].k,
+                               j.DiffLines[ii].l]
+                        phasename = j.name  # + (', %.1f' % float(j.DiffLines[ii].intensity))
+                        self.model.current_section.set_single_peak(
+                            tth, width, hkl=hkl, phase_name=phasename)
+                    else:
+                        pass
+        self.widget.tableWidget_PkParams.setStyleSheet(
+            "Background-color:rgb(255,204,255);color:rgb(0,0,0);")
+        self.peakfit_table_ctrl.update_pkparams()
+        self.plot_ctrl.update()
+
+    def set_section_to_current(self):
+        if self.widget.tableWidget_PkFtSections.selectionModel().\
+                selectedRows().__len__() != 1:
+            QtWidgets.QMessageBox.warning(
+                self.widget, 'Warning',
+                'Select a row to make current.')
+            return
+        if self.model.current_section_exist():
+            if not self.model.current_section_saved():
+                reply = QtWidgets.QMessageBox.question(
+                    self.widget, 'Message',
+                    'Are you OK to loose current section information?',
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                    QtWidgets.QMessageBox.Yes)
+                if reply == QtWidgets.QMessageBox.No:
+                    return
+                else:
+                    pass
+            else:
+                pass
+        else:
+            pass
+        idx = self.widget.tableWidget_PkFtSections.selectionModel().\
+            selectedRows()[0].row()
+        self.model.set_this_section_current(idx)
+        self.peakfit_table_ctrl.update_pkparams()
+        self.peakfit_table_ctrl.update_sections()
+        """
+        self._list_peaks()
+        self._list_localbg()
+        self._update_config
+        """
+        self.plot_ctrl.update()
 
     def clear_section_list(self):
-        reply = QtGui.QMessageBox.question(
-            self.widget, 'Message', 'Unsaved sections will be erased. Proceed?',
-            QtGui.QMessageBox.Yes | QtGui.QMessageBox.No,
-            QtGui.QMessageBox.Yes)
-        if reply == QtGui.QMessageBox.No:
+        reply = QtWidgets.QMessageBox.question(
+            self.widget, 'Message', 'Any unsaved sections will be erased. Proceed?',
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.Yes)
+        if reply == QtWidgets.QMessageBox.No:
             return
         self._clear_all_sections()
 
@@ -70,7 +171,7 @@ class PeakFitController(object):
     def clear_this_section(self):
         reply = QtWidgets.QMessageBox.question(
             self.widget, 'Message',
-            'Unsaved fitting result will be discarded.  Proceed?',
+            'Any unsaved fitting result will be discarded.  Proceed?',
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
             QtWidgets.QMessageBox.Yes)
         limits = self.widget.mpl.canvas.ax_pattern.axis()
@@ -93,10 +194,10 @@ class PeakFitController(object):
             return
         self.model.save_current_section()
         self.widget.tableWidget_PkParams.setStyleSheet(
-            "Background-color:None;")
+            "Background-color:None; color:rgb(0,0,0)")
         # udpate the section table.
         self.widget.tableWidget_PkFtSections.setStyleSheet(
-            "Background-color:rgb(255,104,255);")
+            "Background-color:rgb(255,204,255); color:rgb(0,0,0)")
         # self._list_sections()
         self.model.initialize_current_section()
         self.widget.tableWidget_PkParams.clearContents()
@@ -147,7 +248,7 @@ class PeakFitController(object):
         self.widget.pushButton_AddRemoveFromMouse.setChecked(False)
         return
 
-    def pick_peak(self, event):
+    def pick_peak(self, mouse_button, xdata, ydata):
         """
         if self.widget.mpl.ntb._active is not None:
             self.release_mouse_from_peak_input()
@@ -169,25 +270,31 @@ class PeakFitController(object):
                 QtWidgets.QMessageBox.Yes)
             if reply == QtWidgets.QMessageBox.No:
                 return
+            else:
+                self.model.current_section.invalidate_fit_result()
             """
             else:
                 self.model.current_section.copy_fit_result_to_queue()
                 self.model.current_section.invalidate_fit_result()
             """
-        if event.button == 1:  # left click
+        if mouse_button == 'left':  # left click
             success = self.model.current_section.set_single_peak(
-                float(event.xdata))
+                float(xdata),
+                self.widget.doubleSpinBox_InitialFWHM.value())
             if not success:
                 QtWidgets.QMessageBox.warning(
                     self.widget, "Warning",
                     "You picked outside of the current section.")
                 return
-        else:  # right button for removal
+        elif mouse_button == 'right':  # right button for removal
             if not self.model.current_section.peaks_exist():
                 return
-            self.model.current_section.remove_single_peak_nearby(event.xdata)
+            self.model.current_section.remove_single_peak_nearby(xdata)
+        else:
+            return
         self.widget.tableWidget_PkParams.setStyleSheet(
-            "Background-color:rgb(255,104,255);")
+            "Background-color:rgb(255,204,255); color:rgb(0,0,0)")
+        self.peakfit_table_ctrl.update_pkparams()
         # self._list_peaks()
         # self._list_pkparams()
         self.plot_ctrl.update()
@@ -203,7 +310,7 @@ class PeakFitController(object):
             return
         width = self.widget.doubleSpinBox_InitialFWHM.value()
         order = self.widget.spinBox_BGPolyOrder.value()
-        self.model.current_section.prepare_for_fitting(width, order)
+        self.model.current_section.prepare_for_fitting(order)
         success = self.model.current_section.conduct_fitting()
         if success:
             QtWidgets.QMessageBox.warning(self.widget, "Information",

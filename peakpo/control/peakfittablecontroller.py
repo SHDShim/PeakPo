@@ -15,8 +15,11 @@ class PeakfitTableController(object):
         '''
         if not self.model.current_section_exist():
             return
+        """
         if not self.model.current_section.fitted():
+            print('current_sectio is not fitted')
             return
+        """
         self.widget.tableWidget_PkParams.clearContents()
         n_columns = 8
         n_rows = self.model.current_section.get_number_of_peaks_in_queue()
@@ -25,35 +28,34 @@ class PeakfitTableController(object):
         self.widget.tableWidget_PkParams.horizontalHeader().setVisible(True)
         self.widget.tableWidget_PkParams.setHorizontalHeaderLabels(
             ['Phase', 'h', 'k', 'l', 'Area', 'Pos', 'FWHM', 'nL'])
-        params = self.model.current_section.get_fit_result()
-        peakinfo = self.model.current_section.peakinfo
-        for row in range(n_rows):
-            prefix = "p{0:d}_".format(row)
+        row = 0
+        for peak in self.model.current_section.peaks_in_queue:
             # symmetric peaks
-            Item = QtWidgets.QTableWidgetItem(peakinfo[prefix + 'phasename'])
+            Item = QtWidgets.QTableWidgetItem(peak['phasename'])
             self.widget.tableWidget_PkParams.setItem(row, 0, Item)
-            Item = QtWidgets.QTableWidgetItem(peakinfo[prefix + 'h'])
+            Item = QtWidgets.QTableWidgetItem(str(int(peak['h'])))
             self.widget.tableWidget_PkParams.setItem(row, 1, Item)
-            Item = QtWidgets.QTableWidgetItem(peakinfo[prefix + 'k'])
+            Item = QtWidgets.QTableWidgetItem(str(int(peak['k'])))
             self.widget.tableWidget_PkParams.setItem(row, 2, Item)
-            Item = QtWidgets.QTableWidgetItem(peakinfo[prefix + 'l'])
+            Item = QtWidgets.QTableWidgetItem(str(int(peak['l'])))
             self.widget.tableWidget_PkParams.setItem(row, 3, Item)
-            amp = "{:.5e}".format(params[prefix + 'amplitude'].value)
+            amp = "{:.5e}".format(peak['amplitude'])
             Item = QtWidgets.QTableWidgetItem(amp)
             Item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
             self.widget.tableWidget_PkParams.setItem(row, 4, Item)
-            center = "{:.5e}".format(params[prefix + 'center'].value)
+            center = "{:.5e}".format(peak['center'])
             Item = QtWidgets.QTableWidgetItem(center)
             Item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
             self.widget.tableWidget_PkParams.setItem(row, 5, Item)
-            sigma = "{:.5e}".format(params[prefix + 'sigma'].value)
+            sigma = "{:.5e}".format(peak['sigma'])
             Item = QtWidgets.QTableWidgetItem(sigma)
             Item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
             self.widget.tableWidget_PkParams.setItem(row, 6, Item)
-            fraction = "{:.5e}".format(params[prefix + 'fraction'].value)
+            fraction = "{:.5e}".format(peak['fraction'])
             Item = QtWidgets.QTableWidgetItem(fraction)
             Item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
             self.widget.tableWidget_PkParams.setItem(row, 7, Item)
+            row += 1
         self.widget.tableWidget_PkParams.cellChanged.connect(
             self._get_cellvalue)
         self.widget.tableWidget_PkParams.resizeColumnsToContents()
@@ -68,18 +70,17 @@ class PeakfitTableController(object):
         else:
             self.model.current_section.invalidate_fit_result()
         """
-        prefix = "p{0:d}_".format(row)
         if col == 0:
-            self.model.current_section.peakinfo[prefix + 'phasename'] =\
+            self.model.current_section.peaks_in_queue[row]['phasename'] =\
                 self.widget.tableWidget_PkParams.currentItem().text()
         if col == 1:
-            self.model.current_section.peakinfo[prefix + 'h'] =\
+            self.model.current_section.peaks_in_queue[row]['h'] =\
                 int(self.widget.tableWidget_PkParams.currentItem().text())
         if col == 2:
-            self.model.current_section.peakinfo[prefix + 'k'] =\
+            self.model.current_section.peaks_in_queue[row]['k'] =\
                 int(self.widget.tableWidget_PkParams.currentItem().text())
         if col == 3:
-            self.model.current_section.peakinfo[prefix + 'l'] =\
+            self.model.current_section.peaks_in_queue[row]['l'] =\
                 int(self.widget.tableWidget_PkParams.currentItem().text())
 
     def update_sections(self):
@@ -90,7 +91,8 @@ class PeakfitTableController(object):
             return
         self.widget.tableWidget_PkFtSections.setColumnCount(n_columns)
         self.widget.tableWidget_PkFtSections.setRowCount(n_rows)
-        self.widget.tableWidget_PkFtSections.horizontalHeader().setVisible(True)
+        self.widget.tableWidget_PkFtSections.horizontalHeader().setVisible(
+            True)
         self.widget.tableWidget_PkFtSections.setHorizontalHeaderLabels(
             ['Time', 'xmin', 'xmax'])
         i = 0

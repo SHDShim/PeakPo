@@ -29,6 +29,24 @@ class PeakPoModel(object):
         self.chi_path = ''
         self.current_section = None
         self.section_lst = []
+        self.saved_pressure = 10.
+        self.saved_temperature = 300.
+
+    def get_saved_pressure(self):
+        return self.saved_pressure
+
+    def get_saved_temperature(self):
+        return self.saved_temperature
+
+    def save_pressure(self, pressure):
+        self.saved_pressure = pressure
+
+    def save_temperature(self, temperature):
+        self.saved_temperature = temperature
+
+    def set_this_section_current(self, index):
+        self.current_section = None
+        self.current_section = copy.deepcopy(self.section_lst[index])
 
     def clear_section_list(self):
         self.section_list = []
@@ -43,13 +61,21 @@ class PeakPoModel(object):
             self.base_ptn.x_bgsub, self.base_ptn.y_bgsub, roi)
         self.current_section.set(x_section_bg, y_section_bgsub, y_section_bg)
 
+    def current_section_exists_in_list(self):
+        for section in self.section_lst:
+            if self.current_section.get_timestamp() == section.get_timestamp():
+                return True
+        return False
+
     def current_section_saved(self):
-        if self.current_section_exist():
-            return True
-        elif self.current_section.timestamp is None:
+        if self.get_number_of_section() == 0:
             return False
-        else:
+        if self.current_section.timestamp is None:
+            return False
+        if self.current_section_exists_in_list():
             return True
+        else:
+            return False
 
     def initialize_current_section(self):
         if self.current_section_exist():
@@ -79,6 +105,9 @@ class PeakPoModel(object):
         self.session = model_r.session
         self.jcpds_path = model_r.jcpds_path
         self.chi_path = model_r.chi_path
+        self.section_lst = model_r.section_lst
+        self.saved_pressure = model_r.get_saved_pressure()
+        self.saved_temperature = model_r.get_saved_temperature()
 
     def reset_base_ptn(self):
         self.base_ptn = PatternPeakPo()

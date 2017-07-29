@@ -203,6 +203,7 @@ class MainController(object):
         Close event function
         """
         self.write_setting()
+        del self.model
         self.deleteLater()
 
     def on_key_press(self, event):
@@ -253,19 +254,27 @@ class MainController(object):
         self.plot_ctrl.update()
 
     def set_mouse_behavior(self, event):
+        if (event.button != 1) and (event.button != 3):
+            return
         if self.widget.mpl.ntb._active is not None:
             return
         if (event.xdata is None) or (event.ydata is None):
             return
+        if event.button == 1:
+            mouse_button = 'left'
+        elif event.button == 3:
+            mouse_button = 'right'
         if (self.widget.tabWidget.currentIndex() == 8) and \
                 (self.widget.pushButton_AddRemoveFromMouse.isChecked()):
-            self.peakfit_ctrl.pick_peak(event)
+            self.peakfit_ctrl.pick_peak(mouse_button, event.xdata, event.ydata)
         else:
-            self.read_plot(event)
+            self.read_plot(mouse_button, event.xdata, event.ydata)
 
-    def read_plot(self, event):
-        x_click = float(event.xdata)
-        y_click = float(event.ydata)
+    def read_plot(self, mouse_button, xdata, ydata):
+        if mouse_button == 'right':
+            return
+        x_click = float(xdata)
+        y_click = float(ydata)
         x_click_dsp = self.widget.doubleSpinBox_SetWavelength.value() / 2. / \
             np.sin(np.radians(x_click / 2.))
         clicked_position = \
@@ -276,7 +285,7 @@ class MainController(object):
                                           clicked_position)
         else:
             # get jcpds information
-            x_find = event.xdata
+            x_find = xdata
             textinfo = self._find_closestjcpds(x_find)
             QtWidgets.QMessageBox.warning(self.widget, "Information",
                                           clicked_position + '\n' + textinfo)
