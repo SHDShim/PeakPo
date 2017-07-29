@@ -127,6 +127,7 @@ class PeakFitController(object):
         self.model.set_this_section_current(idx)
         self.peakfit_table_ctrl.update_pkparams()
         self.peakfit_table_ctrl.update_sections()
+        self.peakfit_table_ctrl.update_baseline()
         """
         self._list_peaks()
         self._list_localbg()
@@ -318,7 +319,11 @@ class PeakFitController(object):
                                           'Fitting finished.')
             self.plot_ctrl.update()
             self.peakfit_table_ctrl.update_pkparams()
+            self.peakfit_table_ctrl.update_baseline()
             # self.model.current_section.clear_picks()
+            self.widget.tableWidget_PkParams.setStyleSheet(
+                "Background-color:rgb(255,204,255); color:rgb(0,0,0)")
+
         else:
             QtWidgets.QMessageBox.warning(self.widget, "Information",
                                           'Fitting failed.')

@@ -286,8 +286,7 @@ class MplController(object):
             y_shift = (y_range[1] - y_range[0]) * 1.05
             self.widget.mpl.canvas.ax_pattern.fill_between(
                 x_plot, self.model.current_section.get_fit_residue_baseline(
-                    bgsub=bgsub) + y_shift, residue + y_shift, facecolor='r',
-                alpha=0.5)
+                    bgsub=bgsub) + y_shift, residue + y_shift, facecolor='r')
             """
             self.widget.mpl.canvas.ax_pattern.plot(
                 x_plot, residue + y_shift, 'r-')

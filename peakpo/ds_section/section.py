@@ -10,10 +10,10 @@ class Section(object):
         self.y_bgsub = None
         self.y_bg = None  # this is the bg from peakpo
         self.timestamp = None
-        self.baseline = None
+        self.baseline_in_queue = []  # list of dict, value, constraints
         self.parameters = None
         self.fit_result = None
-        self.peaks_in_queue = []
+        self.peaks_in_queue = []  # list of dic, value, constraints
 
     def get_xrange(self):
         return (self.x.min(), self.x.max())
@@ -25,8 +25,9 @@ class Section(object):
             return ((self.y_bgsub + self.y_bg).min(),
                     (self.y_bgsub + self.y_bg).max())
 
-    def clear_picks(self):
-        self.peaks_in_queue = []
+    def clear_queue(self):
+        self.peaks_in_queue[:] = []
+        self.baseline_in_queue[:] = []
 
     def invalidate_fit_result(self):
         """use with caution"""
@@ -64,12 +65,39 @@ class Section(object):
         peak['amplitude'] = y_center * fwhm * 4.
         peak['sigma'] = fwhm
         peak['fraction'] = 0.5
+        peak['center_vary'] = True
+        peak['amplitude_vary'] = True
+        peak['sigma_vary'] = True
+        peak['fraction_vary'] = True
         peak['phasename'] = phase_name
         peak['h'] = hkl[0]
         peak['k'] = hkl[1]
         peak['l'] = hkl[2]
         self.peaks_in_queue.append(peak)
         return True
+
+    def get_order_of_baseline_in_queue(self):
+        return self.baseline_in_queue.__len__() - 1
+
+    def set_baseline(self, poly_order):
+        old_baseline = copy.deepcopy(self.baseline_in_queue)
+        new_baseline = []
+        for i in range(poly_order + 1):
+            factor = {}
+            factor['value'] = 0.
+            factor['vary'] = True
+            new_baseline.append(factor)
+        if old_baseline.__len__() == -1:
+            self.baseline_in_queue == new_baseline
+            return
+        if old_baseline.__len__() >= new_baseline.__len__():
+            max_iter = new_baseline.__len__()
+        else:
+            max_iter = old_baseline.__len__()
+        for i in range(max_iter):
+            new_baseline[i] = old_baseline[i]
+        self.baseline_in_queue = new_baseline
+        print(old_baseline, new_baseline, self.baseline_in_queue)
 
     def peaks_exist(self):
         if self.peaks_in_queue == []:
@@ -89,23 +117,31 @@ class Section(object):
         :param y_center: numpy array of initial y values at picked centers
         :param fwhm: single float number for initial fwhm value
         """
+        self.set_baseline(poly_order)
         baseline_mod = PolynomialModel(poly_order, prefix='b_')
         mod = baseline_mod
         pars = baseline_mod.make_params()
         peakinfo = {}
         for i in range(poly_order + 1):
             prefix = "b_c{0:d}".format(i)
-            pars[prefix].set(1)
+            pars[prefix].set(
+                value=self.baseline_in_queue[i]['value'],
+                vary=self.baseline_in_queue[i]['vary'])
         i = 0
         for peak in self.peaks_in_queue:
             prefix = "p{0:d}_".format(i)
             peak_mod = PseudoVoigtModel(prefix=prefix, )
             pars.update(peak_mod.make_params())
             pars[prefix + 'center'].set(
-                peak['center'], min=self.x.min(), max=self.x.max())
-            pars[prefix + 'sigma'].set(peak['sigma'], min=0.0)
-            pars[prefix + 'amplitude'].set(peak['amplitude'], min=0)
-            pars[prefix + 'fraction'].set(peak['fraction'], min=0., max=1.)
+                value=peak['center'], min=self.x.min(), max=self.x.max(),
+                vary=peak['center_vary'])
+            pars[prefix + 'sigma'].set(
+                value=peak['sigma'], min=0.0, vary=peak['sigma_vary'])
+            pars[prefix + 'amplitude'].set(
+                value=peak['amplitude'], min=0, vary=peak['amplitude_vary'])
+            pars[prefix + 'fraction'].set(
+                value=peak['fraction'], min=0., max=1.,
+                vary=peak['fraction_vary'])
             peakinfo[prefix + 'phasename'] = peak['phasename']
             peakinfo[prefix + 'h'] = peak['h']
             peakinfo[prefix + 'k'] = peak['k']
@@ -115,7 +151,6 @@ class Section(object):
         self.parameters = pars
         self.peakinfo = peakinfo
         self.fit_model = mod
-        self.baseline = baseline_mod
 
     def conduct_fitting(self):
         out = self.fit_model.fit(
@@ -136,9 +171,9 @@ class Section(object):
 
     def copy_fit_result_to_queue(self):
         n_peaks = self.get_number_of_peaks_in_queue()
-        self.clear_picks()
-        for i in range(n_peaks):
-            peak = {}
+        # self.clear_queue()
+        i = 0
+        for peak in self.peaks_in_queue:
             prefix = "p{0:d}_".format(i)
             peak['center'] = self.fit_result.params[prefix + 'center'].value
             peak['amplitude'] = self.fit_result.params[
@@ -151,7 +186,12 @@ class Section(object):
             peak['h'] = self.peakinfo[prefix + 'h']
             peak['k'] = self.peakinfo[prefix + 'k']
             peak['l'] = self.peakinfo[prefix + 'l']
-            self.peaks_in_queue.append(peak)
+            i += 1
+        i = 0
+        for factor in self.baseline_in_queue:
+            prefix = "b_c{0:d}".format(i)
+            factor['value'] = self.fit_result.params[prefix].value
+            i += 1
 
     def get_number_of_peaks_in_queue(self):
         return self.peaks_in_queue.__len__()

@@ -49,7 +49,7 @@ class PeakPoModel(object):
         self.current_section = copy.deepcopy(self.section_lst[index])
 
     def clear_section_list(self):
-        self.section_list = []
+        self.section_list[:] = []
 
     def get_number_of_section(self):
         return self.section_lst.__len__()
@@ -113,13 +113,13 @@ class PeakPoModel(object):
         self.base_ptn = PatternPeakPo()
 
     def reset_waterfall_ptn(self):
-        self.waterfall_patterns = []
+        self.waterfall_patterns[:] = []
 
     def reset_jcpds_lst(self):
-        self.jcpds_lst = []
+        self.jcpds_lst[:] = []
 
     def reset_ucfit_lst(self):
-        self.ucfit_lst = []
+        self.ucfit_lst[:] = []
 
     def reset_diff_img(self):
         self.diff_img = DiffImg()

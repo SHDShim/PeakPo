@@ -120,6 +120,76 @@ class PeakfitTableController(object):
         self.widget.tableWidget_PkFtSections.resizeColumnsToContents()
         self.widget.tableWidget_PkFtSections.resizeRowsToContents()
 
+    def update_baseline(self):
+        '''show a list of local bg in a tab'''
+        if not self.model.current_section_exist():
+            return
+        self.widget.tableWidget_BackgroundConstraints.clearContents()
+        n_columns = 2
+        poly_order = self.model.current_section.\
+            get_order_of_baseline_in_queue()
+        n_rows = poly_order + 1
+        self.widget.tableWidget_BackgroundConstraints.setColumnCount(n_columns)
+        self.widget.tableWidget_BackgroundConstraints.setRowCount(n_rows)
+        self.widget.tableWidget_BackgroundConstraints.horizontalHeader().\
+            setVisible(True)
+        self.widget.tableWidget_BackgroundConstraints.\
+            setHorizontalHeaderLabels(['Factor', 'Vary'])
+        for row in range(n_rows):
+            # column 0 - factor
+            self.Background_doubleSpinBox = QtWidgets.QDoubleSpinBox()
+            self.Background_doubleSpinBox.setAlignment(
+                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
+                QtCore.Qt.AlignVCenter)
+            self.Background_doubleSpinBox.setMaximum(100000.)
+            self.Background_doubleSpinBox.setMinimum(-100000.)
+            self.Background_doubleSpinBox.setSingleStep(0.001)
+            self.Background_doubleSpinBox.setDecimals(3)
+            self.Background_doubleSpinBox.setValue(
+                self.model.current_section.baseline_in_queue[row]['value'])
+            self.Background_doubleSpinBox.setKeyboardTracking(False)
+            self.Background_doubleSpinBox.valueChanged.connect(
+                self._bglist_handle_doubleSpinBoxChanged)
+            self.widget.tableWidget_BackgroundConstraints.setCellWidget(
+                row, 0, self.Background_doubleSpinBox)
+            # column 1 - fix checkbox
+            item = QtWidgets.QTableWidgetItem()
+            item.setFlags(QtCore.Qt.ItemIsUserCheckable |
+                          QtCore.Qt.ItemIsEnabled)
+            if self.model.current_section.baseline_in_queue[row]['vary']:
+                item.setCheckState(QtCore.Qt.Checked)
+            else:
+                item.setCheckState(QtCore.Qt.Unchecked)
+            self.widget.tableWidget_BackgroundConstraints.setItem(row, 1, item)
+            self.widget.tableWidget_BackgroundConstraints.itemClicked.connect(
+                self._bglist_handle_ItemClicked)
+        self.widget.tableWidget_BackgroundConstraints.resizeColumnsToContents()
+        self.widget.tableWidget_BackgroundConstraints.resizeRowsToContents()
+
+    def _bglist_handle_ItemClicked(self, item):
+        if (item.column() == 1):
+            row = item.row()
+            col = item.column()
+            self.model.current_section.invalidate_fit_result()
+            if item.checkState() == QtCore.Qt.Checked:
+                self.model.current_section.baseline_in_queue[row]['vary'] =\
+                    True
+            elif item.checkState() == QtCore.Qt.Unchecked:
+                self.model.current_section.baseline_in_queue[row]['vary'] =\
+                    False
+
+    def _bglist_handle_doubleSpinBoxChanged(self, value):
+        box = self.widget.sender()
+        index = self.widget.tableWidget_BackgroundConstraints.\
+            indexAt(box.pos())
+        if index.isValid():
+            self.model.current_section.invalidate_fit_result()
+            row = index.row()
+            col = index.column()
+            if col == 0:
+                self.model.current_section.baseline_in_queue[row]['value'] = \
+                    value
+
     """
     def _peaklist_handle_ItemClicked(self, item):
         if (item.column() == 1) or (item.column() == 3) or \
