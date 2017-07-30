@@ -1,6 +1,5 @@
 import os
 from PyQt5 import QtWidgets
-from PyQt5 import QtGui
 from .mplcontroller import MplController
 from .peakfittablecontroller import PeakfitTableController
 
@@ -33,6 +32,8 @@ class PeakFitController(object):
             self.get_peaks_from_jcpds)
         self.widget.pushButton_ZoomToSection.clicked.connect(
             self.zoom_to_section)
+        self.widget.pushButton_PkFtSectionSavetoXLS.clicked.connect(
+            self.save_to_xls)
         # The line below exist in session_ctrl
         # self.widget.pushButton_PkFtSectionSavetoDPP.clicked.coonect
 
@@ -43,11 +44,12 @@ class PeakFitController(object):
         y_range = self.model.current_section.get_yrange(
             bgsub=self.widget.ntb_Bgsub.isChecked())
         margin = 0.1 * (y_range[1] - y_range[0])
-        self.plot_ctrl.update(limits=(x_range[0], x_range[1],
-                                      y_range[0] - margin, y_range[1] + margin))
+        self.plot_ctrl.update(
+            limits=(x_range[0], x_range[1],
+                    y_range[0] - margin, y_range[1] + margin))
 
     def get_peaks_from_jcpds(self):
-        if self.model.jcpds_lst == []:
+        if not self.model.jcpds_exist():
             return
         i = 0
         for j in self.model.jcpds_lst:
@@ -63,7 +65,7 @@ class PeakFitController(object):
             if self.model.current_section.fitted():
                 reply = QtWidgets.QMessageBox.question(
                     self.widget, "Question",
-                    "Are you OK with clearing any unsaved information. Proceed?",
+                    "Are you OK with clearing any unsaved results?",
                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                     QtWidgets.QMessageBox.Yes)
                 if reply == QtWidgets.QMessageBox.No:
@@ -72,7 +74,6 @@ class PeakFitController(object):
                     self.clear_this_section()
             else:
                 pass
-        # get xROI
         x_range = self.model.current_section.get_xrange()
         peaks = []
         int_threshold = float(
@@ -85,20 +86,44 @@ class PeakFitController(object):
                     tth = float(tths[ii])
                     if (tth >= x_range[0]) and (tth <= x_range[1]) and \
                             (intensities[ii] >= int_threshold):
+                        """
                         height = \
                             self.model.current_section.get_nearest_intensity(tth)
+                        """
                         width = self.widget.doubleSpinBox_InitialFWHM.value()
                         hkl = [j.DiffLines[ii].h, j.DiffLines[ii].k,
                                j.DiffLines[ii].l]
-                        phasename = j.name  # + (', %.1f' % float(j.DiffLines[ii].intensity))
+                        phasename = j.name
                         self.model.current_section.set_single_peak(
                             tth, width, hkl=hkl, phase_name=phasename)
                     else:
                         pass
-        self.widget.tableWidget_PkParams.setStyleSheet(
-            "Background-color:rgb(255,204,255);color:rgb(0,0,0);")
-        self.peakfit_table_ctrl.update_pkparams()
+        self.set_tableWidget_PkParams_unsaved()
+        self.peakfit_table_ctrl.update_peak_parameters()
+        self.peakfit_table_ctrl.update_peak_constraints()
         self.plot_ctrl.update()
+
+    def get_style_for_unsaved(self):
+        return "Background-color:rgb(255,204,255);color:rgb(0,0,0);"
+
+    def get_style_for_saved(self):
+        return "Background-color:None;color:rgb(0,0,0);"
+
+    def set_tableWidget_PkParams_saved(self):
+        self.widget.tableWidget_PkParams.setStyleSheet(
+            self.get_style_for_saved())
+
+    def set_tableWidget_PkParams_unsaved(self):
+        self.widget.tableWidget_PkParams.setStyleSheet(
+            self.get_style_for_unsaved())
+
+    def set_tableWidget_PkFtSections_saved(self):
+        self.widget.tableWidget_PkFtSections.setStyleSheet(
+            self.get_style_for_saved())
+
+    def set_tableWidget_PkFtSections_unsaved(self):
+        self.widget.tableWidget_PkFtSections.setStyleSheet(
+            self.get_style_for_unsaved())
 
     def set_section_to_current(self):
         if self.widget.tableWidget_PkFtSections.selectionModel().\
@@ -125,9 +150,10 @@ class PeakFitController(object):
         idx = self.widget.tableWidget_PkFtSections.selectionModel().\
             selectedRows()[0].row()
         self.model.set_this_section_current(idx)
-        self.peakfit_table_ctrl.update_pkparams()
+        self.peakfit_table_ctrl.update_peak_parameters()
         self.peakfit_table_ctrl.update_sections()
-        self.peakfit_table_ctrl.update_baseline()
+        self.peakfit_table_ctrl.update_baseline_constraints()
+        self.peakfit_table_ctrl.update_peak_constraints()
         """
         self._list_peaks()
         self._list_localbg()
@@ -137,7 +163,8 @@ class PeakFitController(object):
 
     def clear_section_list(self):
         reply = QtWidgets.QMessageBox.question(
-            self.widget, 'Message', 'Any unsaved sections will be erased. Proceed?',
+            self.widget, 'Message',
+            'Any unsaved sections will be erased. Proceed?',
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
             QtWidgets.QMessageBox.Yes)
         if reply == QtWidgets.QMessageBox.No:
@@ -195,11 +222,8 @@ class PeakFitController(object):
         if not self.model.current_section_exist():
             return
         self.model.save_current_section()
-        self.widget.tableWidget_PkParams.setStyleSheet(
-            "Background-color:None; color:rgb(0,0,0)")
-        # udpate the section table.
-        self.widget.tableWidget_PkFtSections.setStyleSheet(
-            "Background-color:rgb(255,204,255); color:rgb(0,0,0)")
+        self.set_tableWidget_PkParams_saved()
+        self.set_tableWidget_PkFtSections_unsaved()
         # self._list_sections()
         self.model.initialize_current_section()
         self.widget.tableWidget_PkParams.clearContents()
@@ -232,9 +256,9 @@ class PeakFitController(object):
         # get X range from the current view
         axisrange = self.widget.mpl.canvas.ax_pattern.axis()
         self.model.set_current_section([axisrange[0], axisrange[1]])
-
         # This button itself should activate the mouse for peak picking model
         self.widget.pushButton_AddRemoveFromMouse.setChecked(True)
+        self.set_tableWidget_PkParams_unsaved()
 
     def set_mouse_for_peak_input(self):
         if self.widget.pushButton_AddRemoveFromMouse.isChecked():
@@ -252,11 +276,6 @@ class PeakFitController(object):
 
     def pick_peak(self, mouse_button, xdata, ydata):
         """
-        if self.widget.mpl.ntb._active is not None:
-            self.release_mouse_from_peak_input()
-            return
-        if (event.xdata is None) or (event.ydata is None):
-            return
         """
         if not self.model.current_section_exist():
             QtWidgets.QMessageBox.warning(
@@ -274,11 +293,6 @@ class PeakFitController(object):
                 return
             else:
                 self.model.current_section.invalidate_fit_result()
-            """
-            else:
-                self.model.current_section.copy_fit_result_to_queue()
-                self.model.current_section.invalidate_fit_result()
-            """
         if mouse_button == 'left':  # left click
             success = self.model.current_section.set_single_peak(
                 float(xdata),
@@ -294,11 +308,9 @@ class PeakFitController(object):
             self.model.current_section.remove_single_peak_nearby(xdata)
         else:
             return
-        self.widget.tableWidget_PkParams.setStyleSheet(
-            "Background-color:rgb(255,204,255); color:rgb(0,0,0)")
-        self.peakfit_table_ctrl.update_pkparams()
-        # self._list_peaks()
-        # self._list_pkparams()
+        self.set_tableWidget_PkParams_unsaved()
+        self.peakfit_table_ctrl.update_peak_parameters()
+        self.peakfit_table_ctrl.update_peak_constraints()
         self.plot_ctrl.update()
 
     def conduct_fitting(self):
@@ -318,15 +330,31 @@ class PeakFitController(object):
             QtWidgets.QMessageBox.warning(self.widget, "Information",
                                           'Fitting finished.')
             self.plot_ctrl.update()
-            self.peakfit_table_ctrl.update_pkparams()
-            self.peakfit_table_ctrl.update_baseline()
-            # self.model.current_section.clear_picks()
-            self.widget.tableWidget_PkParams.setStyleSheet(
-                "Background-color:rgb(255,204,255); color:rgb(0,0,0)")
-
+            self.peakfit_table_ctrl.update_peak_parameters()
+            self.peakfit_table_ctrl.update_baseline_constraints()
+            self.peakfit_table_ctrl.update_peak_constraints()
+            self.set_tableWidget_PkParams_unsaved()
         else:
             QtWidgets.QMessageBox.warning(self.widget, "Information",
                                           'Fitting failed.')
-    # -------------------------------------------
 
-    # This should add the section in the tableWidget_PkFtSections
+    def save_to_xls(self):
+        filen_xls = self.model.make_filename('peakfit.xls')
+        reply = QtWidgets.QMessageBox.question(
+            self.widget, 'Question',
+            'Do you want to save in default filename, %s ?' % filen_xls,
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.Yes)
+        if reply == QtWidgets.QMessageBox.No:
+            filen_xls = QtWidgets.QFileDialog.getSaveFileName(
+                self.widget, "Save an Excel File", filen_xls, "(*.xls)")
+        else:
+            if os.path.exists(filen_xls):
+                reply = QtWidgets.QMessageBox.question(
+                    self.widget, 'Question',
+                    'The file already exist.  Overwrite?',
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                    QtWidgets.QMessageBox.No)
+                if reply == QtWidgets.QMessageBox.No:
+                    return
+        self.model.save_peak_fit_results_to_xls(filen_xls)

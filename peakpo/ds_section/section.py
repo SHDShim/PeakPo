@@ -14,6 +14,7 @@ class Section(object):
         self.parameters = None
         self.fit_result = None
         self.peaks_in_queue = []  # list of dic, value, constraints
+        self.peakinfo = {}
 
     def get_xrange(self):
         return (self.x.min(), self.x.max())
@@ -97,7 +98,6 @@ class Section(object):
         for i in range(max_iter):
             new_baseline[i] = old_baseline[i]
         self.baseline_in_queue = new_baseline
-        print(old_baseline, new_baseline, self.baseline_in_queue)
 
     def peaks_exist(self):
         if self.peaks_in_queue == []:
@@ -234,28 +234,3 @@ class Section(object):
     def get_nearest_xy(self, x_pick):
         index = (np.abs(np.asarray(self.x) - x_pick)).argmin()
         return self.x_bgsub[index], self.y_bgsub[index]
-
-
-class PeakModel(PseudoVoigtModel):
-
-    def __init__(self, **kwargs):
-        PseudoVoigtModel.__init__(self, **kwargs)
-        self.set_phase(None)
-        self.set_hkl(None)
-        self.y_profile = None
-
-    def set_phase(self, phase_name):
-        self.phase_name = phase_name
-
-    def set_hkl(self, hkl):
-        if hkl is None:
-            self.h = 0
-            self.k = 0
-            self.l = 0
-        else:
-            self.h = hkl[0]
-            self.k = hkl[1]
-            self.l = hkl[2]
-
-    def set_y_profile(self, y_profile):
-        self.y_profile = y_profile

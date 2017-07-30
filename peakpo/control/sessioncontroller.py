@@ -269,7 +269,7 @@ class SessionController(object):
         self.waterfalltable_ctrl.update()
         self.jcpdstable_ctrl.update()
         self.peakfit_table_ctrl.update_sections()
-        self.peakfit_table_ctrl.update_pkparams()
+        self.peakfit_table_ctrl.update_peak_parameters()
 
     def zip_ppss(self):
         """

@@ -1,6 +1,7 @@
 import pickle
 import os
 import copy
+import xlwt
 from ds_cake import DiffImg
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
@@ -284,3 +285,133 @@ class PeakPoModel(object):
         filen_tif = self.make_filename('tif', original=True)
         self.reset_diff_img()
         self.diff_img.load(filen_tif)
+
+    def section_list_exist(self):
+        if self.section_lst == []:
+            return False
+        else:
+            return True
+
+    def save_peak_fit_results_to_xls(self, xls_filen):
+        """
+        returns boolean for success
+        """
+        if not self.section_list_exist():
+            return False
+        if str(xls_filen) == '':
+            return
+        num_sec = 0
+        workbook = xlwt.Workbook()
+        sheet_num = 0
+        for section in self.section_lst:
+            x_range = section.get_xrange()
+            xmin = x_range[0]
+            xmax = x_range[1]
+            sheet_name = "{0:d}_at_{1:.2f}-{2:.2f}".format(
+                sheet_num, xmin, xmax)
+            sheet_num += 1
+            sheet = workbook.add_sheet(sheet_name)
+            sheet.write(0, 0, section.timestamp)
+            sheet.write(1, 0, 'Section x range')
+            sheet.write(1, 1, xmin)
+            sheet.write(1, 2, xmax)
+            sheet.write(2, 0, 'Chisqr')
+            sheet.write(2, 1, section.fit_result.chisqr)
+            sheet.write(3, 0, 'Reduced Chisqr')
+            sheet.write(3, 1, section.fit_result.redchi)
+            sheet.write(4, 0, 'Akaike info crit')
+            sheet.write(4, 1, section.fit_result.aic)
+            sheet.write(5, 0, 'Bayesian info crit')
+            sheet.write(5, 1, section.fit_result.bic)
+            # write peak params and errors first
+            lineno = 6
+            sheet.write(lineno, 1, 'Phase')
+            sheet.write(lineno, 2, 'h')
+            sheet.write(lineno, 3, 'k')
+            sheet.write(lineno, 4, 'l')
+            sheet.write(lineno, 5, 'Area value')
+            sheet.write(lineno, 6, 'Area stderr')
+            sheet.write(lineno, 7, 'Area vary')
+            sheet.write(lineno, 8, 'Pos value')
+            sheet.write(lineno, 9, 'Pos stderr')
+            sheet.write(lineno, 10, 'Pos vary')
+            sheet.write(lineno, 11, 'FWHM value')
+            sheet.write(lineno, 12, 'FWHM stderr')
+            sheet.write(lineno, 13, 'FWHM vary')
+            sheet.write(lineno, 14, 'nL value')
+            sheet.write(lineno, 15, 'nL stderr')
+            sheet.write(lineno, 16, 'nL vary')
+            lineno += 1
+            n_peak = section.get_number_of_peaks_in_queue()
+            for i in range(n_peak):
+                prefix = "p{0:d}_".format(i)
+                sheet.write(lineno, 0, prefix)
+                sheet.write(lineno, 1, section.peakinfo[prefix + 'phasename'])
+                sheet.write(lineno, 2, section.peakinfo[prefix + 'h'])
+                sheet.write(lineno, 3, section.peakinfo[prefix + 'k'])
+                sheet.write(lineno, 4, section.peakinfo[prefix + 'l'])
+                sheet.write(lineno, 5, section.fit_result.
+                            params[prefix + 'amplitude'].value)
+                sheet.write(lineno, 6, section.fit_result.
+                            params[prefix + 'amplitude'].stderr)
+                sheet.write(lineno, 7, section.fit_result.
+                            params[prefix + 'amplitude'].vary)
+                sheet.write(lineno, 8, section.fit_result.
+                            params[prefix + 'center'].value)
+                sheet.write(lineno, 9, section.fit_result.
+                            params[prefix + 'center'].stderr)
+                sheet.write(lineno, 10, section.fit_result.
+                            params[prefix + 'center'].vary)
+                sheet.write(lineno, 11, section.fit_result.
+                            params[prefix + 'sigma'].value * 2.)
+                sheet.write(lineno, 12, section.fit_result.
+                            params[prefix + 'sigma'].stderr * 2.)
+                sheet.write(lineno, 13, section.fit_result.
+                            params[prefix + 'sigma'].vary)
+                sheet.write(lineno, 14, section.fit_result.
+                            params[prefix + 'fraction'].value)
+                sheet.write(lineno, 15, section.fit_result.
+                            params[prefix + 'fraction'].stderr)
+                sheet.write(lineno, 16, section.fit_result.
+                            params[prefix + 'fraction'].vary)
+                lineno += 1
+            lineno += 1
+            sheet.write(lineno, 0, 'Baseline factors')
+            lineno += 1
+            n_order = section.get_order_of_baseline_in_queue()
+            sheet.write(lineno, 1, 'value')
+            sheet.write(lineno, 2, 'stderr')
+            sheet.write(lineno, 3, 'vary')
+            lineno += 1
+            for i in range(n_order + 1):
+                prefix = "b_c{0:d}".format(i)
+                sheet.write(lineno, 0, prefix)
+                sheet.write(lineno, 1, section.fit_result.params[prefix].value)
+                sheet.write(lineno, 2, section.fit_result.params[prefix].stderr)
+                sheet.write(lineno, 3, section.fit_result.params[prefix].vary)
+                lineno += 1
+            lineno += 2
+            sheet.write(lineno, 0, 'x_data')
+            sheet.write(lineno, 1, 'y_data')
+            sheet.write(lineno, 2, 'y_bgsub')
+            sheet.write(lineno, 3, 'y_bg')
+            sheet.write(lineno, 4, 'y_fit_profile')
+            y_total_profile = section.get_fit_profile(bgsub=False)
+            y_single_profiles = section.get_individual_profiles(bgsub=False)
+            k = 0
+            for key, value in y_single_profiles.items():
+                sheet.write(lineno, 5 + k, key + 'profile')
+                k += 1
+            lineno += 1
+            for i in range(section.x.__len__()):
+                sheet.write(lineno, 0, section.x[i])
+                sheet.write(lineno, 1, section.y_bg[i] + section.y_bgsub[i])
+                sheet.write(lineno, 2, section.y_bgsub[i])
+                sheet.write(lineno, 3, section.y_bg[i])
+                sheet.write(lineno, 4, y_total_profile[i])
+                j = 0
+                for key, value in y_single_profiles.items():
+                    sheet.write(lineno, 5 + j, value[i])
+                    j += 1
+                lineno += 1
+        workbook.save(xls_filen)

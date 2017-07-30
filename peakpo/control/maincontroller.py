@@ -56,7 +56,7 @@ class MainController(object):
     def connect_channel(self):
         # connecting events
         self.widget.mpl.canvas.mpl_connect(
-            'button_press_event', self.set_mouse_behavior)
+            'button_press_event', self.deliver_mouse_signal)
         self.widget.mpl.canvas.mpl_connect(
             'key_press_event', self.on_key_press)
         self.widget.doubleSpinBox_Pressure.valueChanged.connect(
@@ -255,12 +255,12 @@ class MainController(object):
         self.waterfalltable_ctrl.update()
         self.plot_ctrl.update()
 
-    def set_mouse_behavior(self, event):
-        if (event.button != 1) and (event.button != 3):
-            return
+    def deliver_mouse_signal(self, event):
         if self.widget.mpl.ntb._active is not None:
             return
         if (event.xdata is None) or (event.ydata is None):
+            return
+        if (event.button != 1) and (event.button != 3):
             return
         if event.button == 1:
             mouse_button = 'left'

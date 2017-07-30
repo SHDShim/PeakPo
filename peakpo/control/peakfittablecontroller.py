@@ -9,7 +9,7 @@ class PeakfitTableController(object):
         self.model = model
         self.widget = widget
 
-    def update_pkparams(self):
+    def update_peak_parameters(self):
         '''
         show a list of peaks in the list window of tab 2
         '''
@@ -97,30 +97,26 @@ class PeakfitTableController(object):
             ['Time', 'xmin', 'xmax'])
         i = 0
         for section in self.model.section_lst:
-            '''
-            # column 0 - checkbox
-            item0 = QtGui.QTableWidgetItem()
-            item0.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-            item0.setCheckState(QtCore.Qt.Unchecked)
-            self.tableWidget_SectionsCurrent.setItem(row, 0, item0)
-            '''
-            # column 1 - time
+            # column 0 - time
             item1 = QtWidgets.QTableWidgetItem(section.get_timestamp())
-            item1.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+            item1.setFlags(QtCore.Qt.ItemIsEnabled |
+                           QtCore.Qt.ItemIsSelectable)
             self.widget.tableWidget_PkFtSections.setItem(i, 0, item1)
-            # column 2 - Xmin
+            # column 1 - Xmin
             item2 = QtWidgets.QTableWidgetItem("{:.2f}".format(section.x[0]))
-            item2.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+            item2.setFlags(QtCore.Qt.ItemIsEnabled |
+                           QtCore.Qt.ItemIsSelectable)
             self.widget.tableWidget_PkFtSections.setItem(i, 1, item2)
-            # column 3 - Xmax
+            # column 2 - Xmax
             item3 = QtWidgets.QTableWidgetItem("{:.2f}".format(section.x[-1]))
-            item3.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+            item3.setFlags(QtCore.Qt.ItemIsEnabled |
+                           QtCore.Qt.ItemIsSelectable)
             self.widget.tableWidget_PkFtSections.setItem(i, 2, item3)
             i += 1
         self.widget.tableWidget_PkFtSections.resizeColumnsToContents()
         self.widget.tableWidget_PkFtSections.resizeRowsToContents()
 
-    def update_baseline(self):
+    def update_baseline_constraints(self):
         '''show a list of local bg in a tab'''
         if not self.model.current_section_exist():
             return
@@ -167,73 +163,185 @@ class PeakfitTableController(object):
         self.widget.tableWidget_BackgroundConstraints.resizeRowsToContents()
 
     def _bglist_handle_ItemClicked(self, item):
-        if (item.column() == 1):
-            row = item.row()
-            col = item.column()
-            self.model.current_section.invalidate_fit_result()
-            if item.checkState() == QtCore.Qt.Checked:
-                self.model.current_section.baseline_in_queue[row]['vary'] =\
-                    True
-            elif item.checkState() == QtCore.Qt.Unchecked:
-                self.model.current_section.baseline_in_queue[row]['vary'] =\
-                    False
+        if (item.column() != 1):
+            return
+        row = item.row()
+        col = item.column()
+        self.model.current_section.invalidate_fit_result()
+        value = (item.checkState() == QtCore.Qt.Checked)
+        self.model.current_section.baseline_in_queue[row]['vary'] = value
 
     def _bglist_handle_doubleSpinBoxChanged(self, value):
         box = self.widget.sender()
         index = self.widget.tableWidget_BackgroundConstraints.\
             indexAt(box.pos())
-        if index.isValid():
-            self.model.current_section.invalidate_fit_result()
-            row = index.row()
-            col = index.column()
-            if col == 0:
-                self.model.current_section.baseline_in_queue[row]['value'] = \
-                    value
-
-    """
-    def _peaklist_handle_ItemClicked(self, item):
-        if (item.column() == 1) or (item.column() == 3) or \
-            (item.column() == 5) or (item.column() == 7) or\
-                (item.column() == 9) or (item.column() == 11):
-            self.currentSection.fittime = ''
-            row = item.row()
-            col = item.column()
-            if item.checkState() == QtCore.Qt.Checked:
-                if (self.currentSection.fitmodel.peaks[row].coeffs.__len__() == 4):
-                    if col <= 5:
-                        self.currentSection.fitmodel.peaks[row].constraints[(col - 1) / 2] = 1
-                    elif col == 9:
-                        self.currentSection.fitmodel.peaks[row].constraints[3] = 1
-                else:
-                    self.currentSection.fitmodel.peaks[row].constraints[(col - 1) / 2] = 1
-            elif item.checkState() == QtCore.Qt.Unchecked:
-                if (self.currentSection.fitmodel.peaks[row].coeffs.__len__() == 4):
-                    if col <= 5:
-                        self.currentSection.fitmodel.peaks[row].constraints[(col - 1) / 2] = 0
-                    elif col == 9:
-                        self.currentSection.fitmodel.peaks[row].constraints[3] = 0
-                else:
-                    self.currentSection.fitmodel.peaks[row].constraints[(col - 1) / 2] = 0
-        else:
+        if not index.isValid():
             return
-#        for i in range(self.currentSection.fitmodel.peaks.__len__()):
-#            print self.currentSection.fitmodel.peaks[i].coeffs, self.currentSection.fitmodel.peaks[i].constraints
+        self.model.current_section.invalidate_fit_result()
+        row = index.row()
+        col = index.column()
+        if col == 0:
+            self.model.current_section.baseline_in_queue[row]['value'] = \
+                value
+
+    def update_peak_constraints(self):
+        '''show a list of peaks in the list window of tab 3 for config'''
+        if not self.model.current_section_exist():
+            return
+        self.widget.tableWidget_PeakConstraints.clearContents()
+        n_columns = 8
+        n_rows = self.model.current_section.get_number_of_peaks_in_queue()
+        self.widget.tableWidget_PeakConstraints.setColumnCount(n_columns)
+        self.widget.tableWidget_PeakConstraints.setRowCount(n_rows)
+        self.widget.tableWidget_PeakConstraints.horizontalHeader().setVisible(
+            True)
+        self.widget.tableWidget_PeakConstraints.setHorizontalHeaderLabels(
+            ['Ampl', 'Vary', 'Center', 'Vary', 'FHWM', 'Vary', 'n_L', 'Vary'])
+        for row in range(n_rows):
+            # column 0 - height
+            self.PkConst_doubleSpinBox_height = QtWidgets.QDoubleSpinBox()
+            self.PkConst_doubleSpinBox_height.setAlignment(
+                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
+                QtCore.Qt.AlignVCenter)
+            self.PkConst_doubleSpinBox_height.setMaximum(100000.)
+            self.PkConst_doubleSpinBox_height.setSingleStep(10.)
+            self.PkConst_doubleSpinBox_height.setDecimals(0)
+            self.PkConst_doubleSpinBox_height.setValue(
+                self.model.current_section.peaks_in_queue[row]['amplitude'])
+            self.PkConst_doubleSpinBox_height.valueChanged.connect(
+                self._peaklist_handle_doubleSpinBoxChanged)
+            self.PkConst_doubleSpinBox_height.setKeyboardTracking(False)
+            self.widget.tableWidget_PeakConstraints.setCellWidget(
+                row, 0, self.PkConst_doubleSpinBox_height)
+            # column 1 - fix checkbox
+            item_h = QtWidgets.QTableWidgetItem()
+            item_h.setFlags(QtCore.Qt.ItemIsUserCheckable |
+                            QtCore.Qt.ItemIsEnabled)
+            if self.model.current_section.\
+                    peaks_in_queue[row]['amplitude_vary'] == False:
+                item_h.setCheckState(QtCore.Qt.Unchecked)
+            else:
+                item_h.setCheckState(QtCore.Qt.Checked)
+            self.widget.tableWidget_PeakConstraints.setItem(row, 1, item_h)
+            # column 2 - pos
+            self.PkConst_doubleSpinBox_pos = QtWidgets.QDoubleSpinBox()
+            self.PkConst_doubleSpinBox_pos.setAlignment(
+                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
+                QtCore.Qt.AlignVCenter)
+            self.PkConst_doubleSpinBox_pos.setMaximum(10000.)
+            self.PkConst_doubleSpinBox_pos.setSingleStep(0.001)
+            self.PkConst_doubleSpinBox_pos.setDecimals(3)
+            self.PkConst_doubleSpinBox_pos.setValue(
+                self.model.current_section.peaks_in_queue[row]['center'])
+            self.PkConst_doubleSpinBox_pos.valueChanged.connect(
+                self._peaklist_handle_doubleSpinBoxChanged)
+            self.PkConst_doubleSpinBox_pos.setKeyboardTracking(False)
+            self.widget.tableWidget_PeakConstraints.setCellWidget(
+                row, 2, self.PkConst_doubleSpinBox_pos)
+            # column 3 - fix checkbox
+            item_p = QtWidgets.QTableWidgetItem()
+            item_p.setFlags(QtCore.Qt.ItemIsUserCheckable |
+                            QtCore.Qt.ItemIsEnabled)
+            if self.model.current_section.peaks_in_queue[row][
+                    'center_vary'] == False:
+                item_p.setCheckState(QtCore.Qt.Unchecked)
+            else:
+                item_p.setCheckState(QtCore.Qt.Checked)
+            self.widget.tableWidget_PeakConstraints.setItem(row, 3, item_p)
+            # column 4 - width
+            self.PkConst_doubleSpinBox_width = QtWidgets.QDoubleSpinBox()
+            self.PkConst_doubleSpinBox_width.setAlignment(
+                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
+                QtCore.Qt.AlignVCenter)
+            self.PkConst_doubleSpinBox_width.setMaximum(10000.)
+            self.PkConst_doubleSpinBox_width.setSingleStep(0.00001)
+            self.PkConst_doubleSpinBox_width.setDecimals(5)
+            self.PkConst_doubleSpinBox_width.setValue(
+                self.model.current_section.peaks_in_queue[row]['sigma'])
+            self.PkConst_doubleSpinBox_width.valueChanged.connect(
+                self._peaklist_handle_doubleSpinBoxChanged)
+            self.PkConst_doubleSpinBox_width.setKeyboardTracking(False)
+            self.widget.tableWidget_PeakConstraints.setCellWidget(
+                row, 4, self.PkConst_doubleSpinBox_width)
+            # column 5 - fix checkbox
+            item_w = QtWidgets.QTableWidgetItem()
+            item_w.setFlags(QtCore.Qt.ItemIsUserCheckable |
+                            QtCore.Qt.ItemIsEnabled)
+            if self.model.current_section.peaks_in_queue[row]['sigma_vary'] \
+                    == False:
+                item_w.setCheckState(QtCore.Qt.Unchecked)
+            else:
+                item_w.setCheckState(QtCore.Qt.Checked)
+            self.widget.tableWidget_PeakConstraints.setItem(row, 5, item_w)
+            # column 6 - nL
+            self.PkConst_doubleSpinBox_nL = QtWidgets.QDoubleSpinBox()
+            self.PkConst_doubleSpinBox_nL.setAlignment(
+                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
+                QtCore.Qt.AlignVCenter)
+            self.PkConst_doubleSpinBox_nL.setMaximum(1.)
+            self.PkConst_doubleSpinBox_nL.setSingleStep(0.01)
+            self.PkConst_doubleSpinBox_nL.setDecimals(2)
+            self.PkConst_doubleSpinBox_nL.setValue(
+                self.model.current_section.peaks_in_queue[row]['fraction'])
+            self.PkConst_doubleSpinBox_nL.valueChanged.connect(
+                self._peaklist_handle_doubleSpinBoxChanged)
+            self.PkConst_doubleSpinBox_nL.setKeyboardTracking(False)
+            self.widget.tableWidget_PeakConstraints.setCellWidget(
+                row, 6, self.PkConst_doubleSpinBox_nL)
+            # column 7 - fix checkbox
+            item_nL = QtWidgets.QTableWidgetItem()
+            item_nL.setFlags(QtCore.Qt.ItemIsUserCheckable |
+                             QtCore.Qt.ItemIsEnabled)
+            if self.model.current_section.\
+                    peaks_in_queue[row]['fraction_vary'] == False:
+                item_nL.setCheckState(QtCore.Qt.Unchecked)
+            else:
+                item_nL.setCheckState(QtCore.Qt.Checked)
+            self.widget.tableWidget_PeakConstraints.setItem(row, 7, item_nL)
+        self.widget.tableWidget_PeakConstraints.itemClicked.connect(
+            self._peaklist_handle_ItemClicked)
+        self.widget.tableWidget_PeakConstraints.resizeColumnsToContents()
+        self.widget.tableWidget_PeakConstraints.resizeRowsToContents()
 
     def _peaklist_handle_doubleSpinBoxChanged(self, value):
-        box = self.sender()
-        index = self.tableWidget_Peaks.indexAt(box.pos())
-        if index.isValid():
-            self.currentSection.fittime = ''
-            row = index.row()
-            col = index.column()
-            if (self.currentSection.fitmodel.peaks[row].coeffs.__len__() == 4):
-                if col <= 4:
-                    self.currentSection.fitmodel.peaks[row].coeffs[col / 2] = value
-                elif col == 8:
-                    self.currentSection.fitmodel.peaks[row].coeffs[3] = value
-            else:
-                self.currentSection.fitmodel.peaks[row].coeffs[col / 2] = value
-            self.update_graph()
-        else:
+        box = self.widget.sender()
+        index = self.widget.tableWidget_PeakConstraints.indexAt(box.pos())
+        if not index.isValid():
             return
-"""
+        self.model.current_section.invalidate_fit_result()
+        row = index.row()
+        col = index.column()
+        if col == 0:
+            self.model.current_section.peaks_in_queue[row]['amplitude'] = \
+                value
+        elif col == 2:
+            self.model.current_section.peaks_in_queue[row]['center'] = \
+                value
+        elif col == 4:
+            self.model.current_section.peaks_in_queue[row]['sigma'] = \
+                value
+        elif col == 6:
+            self.model.current_section.peaks_in_queue[row]['fraction'] = \
+                value
+        # self.update_graph()
+
+    def _peaklist_handle_ItemClicked(self, item):
+        if (item.column() != 1) and (item.column() != 3) and \
+                (item.column() != 5) and (item.column() != 7):
+            return
+        self.model.current_section.invalidate_fit_result()
+        row = item.row()
+        col = item.column()
+        value = (item.checkState() == QtCore.Qt.Checked)
+        if col == 1:
+            self.model.current_section.peaks_in_queue[row]['amplitude_vary'] \
+                = value
+        elif col == 3:
+            self.model.current_section.peaks_in_queue[row]['center_vary'] \
+                = value
+        elif col == 5:
+            self.model.current_section.peaks_in_queue[row]['sigma_vary'] \
+                = value
+        elif col == 7:
+            self.model.current_section.peaks_in_queue[row]['fraction_vary'] \
+                = value
