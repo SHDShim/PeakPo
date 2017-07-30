@@ -58,7 +58,6 @@ class SessionController(object):
         if fn == '':
             return
         success = self._load_dpp(fn, jlistonly=False)
-        print(success)
         if success:
             self.plot_ctrl.zoom_out_graph()
             self.update_inputs()
@@ -115,7 +114,7 @@ class SessionController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning", str(inst))
             return False
-        self.model.set_from(model_dpp)
+        self.model.set_from(model_dpp, jlistonly=jlistonly)
         self.widget.textEdit_Jlist.setText('Jlist: ' + str(filen_dpp))
         self.widget.textEdit_DiffractionPatternFileName.setText(
             '1D pattern: ' + str(self.model.base_ptn.fname))

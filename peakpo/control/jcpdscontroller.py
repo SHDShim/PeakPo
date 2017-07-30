@@ -33,6 +33,12 @@ class JcpdsController(object):
         self.widget.pushButton_MoveDown.clicked.connect(self.move_down_jcpds)
         self.widget.pushButton_ExportXLS.clicked.connect(self.save_xls)
         self.widget.pushButton_ViewJCPDS.clicked.connect(self.view_jcpds)
+        self.widget.checkBox_JCPDSinPattern.clicked.connect(
+            lambda: self._apply_changes_to_graph(limits=None))
+        self.widget.checkBox_JCPDSinCake.clicked.connect(
+            lambda: self._apply_changes_to_graph(limits=None))
+        self.widget.pushButton_ForceUpdatePlot.clicked.connect(
+            lambda: self._apply_changes_to_graph(limits=None))
 
     def _apply_changes_to_graph(self, limits=None):
         self.plot_ctrl.update(limits=limits)

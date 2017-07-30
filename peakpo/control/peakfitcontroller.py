@@ -1,4 +1,5 @@
 import os
+import dill
 from PyQt5 import QtWidgets
 from .mplcontroller import MplController
 from .peakfittablecontroller import PeakfitTableController
@@ -34,8 +35,35 @@ class PeakFitController(object):
             self.zoom_to_section)
         self.widget.pushButton_PkFtSectionSavetoXLS.clicked.connect(
             self.save_to_xls)
+        self.widget.pushButton_PkFtSectionImport.clicked.connect(
+            self.import_section_from_dpp)
         # The line below exist in session_ctrl
         # self.widget.pushButton_PkFtSectionSavetoDPP.clicked.coonect
+
+    def import_section_from_dpp(self):
+        fn = QtWidgets.QFileDialog.getOpenFileName(
+            self.widget, "Choose A Session File",
+            self.model.chi_path, "(*.dpp)")[0]
+#       replaceing chi_path with '' does not work
+        if fn == '':
+            return
+        success = self._load_from_dpp(fn)
+        if success:
+            self.peakfit_table_ctrl.update_sections()
+
+    def _load_from_dpp(self, filen_dpp):
+        '''
+        internal method for reading dilled dpp file
+        '''
+        try:
+            with open(filen_dpp, 'rb') as f:
+                model_dpp = dill.load(f)
+        except Exception as inst:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning", str(inst))
+            return False
+        self.model.import_section_list(model_dpp)
+        return True
 
     def zoom_to_section(self):
         if not self.model.current_section_exist():

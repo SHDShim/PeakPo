@@ -96,10 +96,12 @@ class PeakPoModel(object):
         else:
             return True
 
-    def set_from(self, model_r):
+    def set_from(self, model_r, jlistonly=False):
+        self.jcpds_lst = model_r.jcpds_lst
+        if jlistonly:
+            return
         self.base_ptn = model_r.base_ptn
         self.waterfall_ptn = model_r.waterfall_ptn
-        self.jcpds_lst = model_r.jcpds_lst
         self.ucfit_lst = model_r.ucfit_lst
         self.diff_img = model_r.diff_img
         self.poni = model_r.poni
@@ -109,6 +111,26 @@ class PeakPoModel(object):
         self.section_lst = model_r.section_lst
         self.saved_pressure = model_r.get_saved_pressure()
         self.saved_temperature = model_r.get_saved_temperature()
+
+    def import_section_list(self, model_r):
+        new_section_lst = copy.deepcopy(model_r.section_lst)
+        if new_section_lst == []:
+            return
+        for section in new_section_lst:
+            section.invalidate_fit_result()
+            roi = section.get_xrange()
+            x, y_bgsub, y_bg = self.get_single_section(roi)
+            section.set(x, y_bgsub, y_bg)
+        existing_section_lst = copy.deepcopy(self.section_lst)
+        self.section_lst[:] = []
+        self.section_lst = existing_section_lst + new_section_lst
+
+    def get_single_section(self, roi):
+        x_section_bg, y_section_bg = get_DataSection(
+            self.base_ptn.x_bg, self.base_ptn.y_bg, roi)
+        __, y_section_bgsub = get_DataSection(
+            self.base_ptn.x_bgsub, self.base_ptn.y_bgsub, roi)
+        return x_section_bg, y_section_bgsub, y_section_bg
 
     def reset_base_ptn(self):
         self.base_ptn = PatternPeakPo()

@@ -155,6 +155,9 @@ class MplController(object):
             aspect="auto", cmap="gray_r", clim=climits)
 
     def _plot_jcpds(self):
+        if (not self.widget.checkBox_JCPDSinPattern.isChecked()) and \
+                (not self.widget.checkBox_JCPDSinCake.isChecked()):
+            return
         i = 0
         for phase in self.model.jcpds_lst:
             if phase.display:
@@ -162,15 +165,14 @@ class MplController(object):
         if i == 0:
             return
         axisrange = self.widget.mpl.canvas.ax_pattern.axis()
-        bar_scale = 1. / 100. * axisrange[3]
+        bar_scale = 1. / 100. * axisrange[3] * \
+            self.widget.doubleSpinBox_ScaleForAllJCPDS.value()
         for phase in self.model.jcpds_lst:
             if phase.display:
                 phase.cal_dsp(self.widget.doubleSpinBox_Pressure.value(),
                               self.widget.doubleSpinBox_Temperature.value())
                 tth, inten = phase.get_tthVSint(
                     self.widget.doubleSpinBox_SetWavelength.value())
-                intensity = inten * phase.twk_int
-                bar_min = np.ones(tth.shape) * axisrange[2]
                 """
                 if self.widget.tabWidget.currentIndex() == 8:
                     bar_min = 90. * bar_scale
@@ -178,24 +180,29 @@ class MplController(object):
                     self.widget.mpl.canvas.ax_pattern.set_ylim(
                         axisrange[2], axisrange[3])
                 """
-                if self.widget.checkBox_Intensity.isChecked():
-                    bar_max = intensity * bar_scale
-                else:
-                    bar_max = 100. * bar_scale
-                self.widget.mpl.canvas.ax_pattern.vlines(
-                    tth, bar_min, bar_max, colors=phase.color,
-                    label="{0:}, {1:.3f} A^3".format(
-                        phase.name, phase.v.item()))
-                if self.widget.pushButton_AddRemoveCake.isChecked():
+                if self.widget.checkBox_JCPDSinPattern.isChecked():
+                    intensity = inten * phase.twk_int
+                    bar_min = np.ones(tth.shape) * axisrange[2]
+                    if self.widget.checkBox_Intensity.isChecked():
+                        bar_max = intensity * bar_scale
+                    else:
+                        bar_max = 100. * bar_scale
+                    self.widget.mpl.canvas.ax_pattern.vlines(
+                        tth, bar_min, bar_max, colors=phase.color,
+                        label="{0:}, {1:.3f} A^3".format(
+                            phase.name, phase.v.item()))
+                if self.widget.pushButton_AddRemoveCake.isChecked() and \
+                        self.widget.checkBox_JCPDSinCake.isChecked():
                     for tth_i in tth:
                         self.widget.mpl.canvas.ax_cake.axvline(
                             x=tth_i, color=phase.color, lw=0.5)
             else:
                 pass
-        leg_jcpds = self.widget.mpl.canvas.ax_pattern.legend(
-            loc=1, prop={'size': 10}, framealpha=0., handlelength=1)
-        for line, txt in zip(leg_jcpds.get_lines(), leg_jcpds.get_texts()):
-            txt.set_color(line.get_color())
+        if self.widget.checkBox_JCPDSinPattern.isChecked():
+            leg_jcpds = self.widget.mpl.canvas.ax_pattern.legend(
+                loc=1, prop={'size': 10}, framealpha=0., handlelength=1)
+            for line, txt in zip(leg_jcpds.get_lines(), leg_jcpds.get_texts()):
+                txt.set_color(line.get_color())
 
     def _plot_waterfallpatterns(self):
         # t_start = time.time()
