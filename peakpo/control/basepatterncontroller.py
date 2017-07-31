@@ -146,11 +146,10 @@ class BasePatternController(object):
             self._update_bgsub_from_current_values()
         filen_tif = self.model.make_filename('tif', original=True)
         if not os.path.exists(filen_tif):
-            self.widget.pushButton_AddRemoveCake.setChecked(False)
-            self.widget.pushButton_AddRemoveCake.setText("Add Cake")
+            self.widget.checkBox_ShowCake.setChecked(False)
             return
         # self._update_bg_params_in_widget()
-        if self.widget.pushButton_AddRemoveCake.isChecked() and \
+        if self.widget.checkBox_ShowCake.isChecked() and \
                 (self.model.poni is not None):
             self.cake_ctrl.process_temp_cake()
             # not sure this is correct.

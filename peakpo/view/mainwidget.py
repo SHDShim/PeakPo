@@ -45,9 +45,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.doubleSpinBox_Background_ROI_min.setStyle(SpinBoxFixStyle())
         self.doubleSpinBox_SetWavelength.setKeyboardTracking(False)
         self.doubleSpinBox_SetWavelength.setStyle(SpinBoxFixStyle())
-        self.spinBox_VMin.setValue(100)
-        self.spinBox_VMax.setValue(7000)
-        self.spinBox_CakeAxisSize.setValue(50)
         # navigation toolbar modification
         self.ntb_WholePtn = QtWidgets.QPushButton()
         self.ntb_WholePtn.setText("ZoomOut")
@@ -59,7 +56,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.ntb_fromPkFt = QtWidgets.QPushButton()
         self.ntb_fromPkFt.setText("fromPkFt")
         self.mpl.ntb.addWidget(self.ntb_fromPkFt)
-        """
         self.ntb_ResetY = QtWidgets.QCheckBox()
         self.ntb_ResetY.setCheckable(True)
         self.ntb_ResetY.setChecked(False)
@@ -70,7 +66,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.ntb_Bgsub.setChecked(True)
         self.ntb_Bgsub.setText("BgSub")
         self.mpl.ntb.addWidget(self.ntb_Bgsub)
-        """
         self.ntb_NightView = QtWidgets.QCheckBox()
         self.ntb_NightView.setCheckable(True)
         self.ntb_NightView.setChecked(True)

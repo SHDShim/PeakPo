@@ -70,7 +70,7 @@ class PeakFitController(object):
             return
         x_range = self.model.current_section.get_xrange()
         y_range = self.model.current_section.get_yrange(
-            bgsub=self.widget.ntb_Bgsub.isChecked())
+            bgsub=self.widget.checkBox_BgSub.isChecked())
         margin = 0.1 * (y_range[1] - y_range[0])
         self.plot_ctrl.update(
             limits=(x_range[0], x_range[1],

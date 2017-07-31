@@ -83,15 +83,15 @@ class MainController(object):
         self.widget.pushButton_fromPkFt.clicked.connect(self.from_PkFt)
         self.widget.checkBox_NightView.clicked.connect(self.set_nightday_view)
         self.widget.ntb_WholePtn.clicked.connect(self.plot_new_graph)
-        self.widget.ntb_ResetY.clicked.connect(self.apply_changes_to_graph)
-        self.widget.ntb_Bgsub.clicked.connect(self.apply_changes_to_graph)
+        self.widget.checkBox_AutoY.clicked.connect(self.apply_changes_to_graph)
+        self.widget.checkBox_BgSub.clicked.connect(self.apply_changes_to_graph)
         self.widget.actionClose.triggered.connect(self.closeEvent)
         self.widget.tabWidget.currentChanged.connect(self.check_for_peakfit)
         # self.widget.tabWidget.setTabEnabled(8, False)
 
     def check_for_peakfit(self, i):
         if i == 8:
-            self.widget.ntb_ResetY.setChecked(False)
+            self.widget.checkBox_AutoY.setChecked(False)
             self.apply_changes_to_graph()
 
     def apply_changes_to_graph(self):
@@ -220,7 +220,7 @@ class MainController(object):
             self.plot_new_graph()
         elif event.key == 'v':
             lims = self.widget.mpl.canvas.ax_pattern.axis()
-            if self.widget.ntb_Bgsub.isChecked():
+            if self.widget.checkBox_BgSub.isChecked():
                 x, y = self.model.base_ptn.get_bgsub()
             else:
                 x, y = self.model.base_ptn.get_raw()

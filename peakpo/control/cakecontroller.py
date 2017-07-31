@@ -13,7 +13,7 @@ class CakeController(object):
         self.connect_channel()
 
     def connect_channel(self):
-        self.widget.pushButton_AddRemoveCake.clicked.connect(
+        self.widget.checkBox_ShowCake.clicked.connect(
             self.addremove_cake)
         self.widget.pushButton_GetPONI.clicked.connect(self.get_poni)
         self.widget.pushButton_ApplyCakeView.clicked.connect(
@@ -61,32 +61,23 @@ class CakeController(object):
         add/remove cake
         no signal to update_graph
         """
-        if not self.widget.pushButton_AddRemoveCake.isChecked():
-            self.widget.pushButton_AddRemoveCake.setText('Add Cake')
+        if not self.widget.checkBox_ShowCake.isChecked():
             return True
-        else:
-            self.widget.pushButton_AddRemoveCake.setText('Remove Cake')
         if not self.model.poni_exist():
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'Choose PONI file first.')
-            undo_button_press(
-                self.widget.pushButton_AddRemoveCake,
-                released_text='Add Cake', pressed_text='Remove Cake')
+            self.widget.checkBox_ShowCake.setChecked(False),
             return False
         if not self.model.base_ptn_exist():
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'Choose CHI file first.')
-            undo_button_press(
-                self.widget.pushButton_AddRemoveCake,
-                released_text='Add Cake', pressed_text='Remove Cake')
+            self.widget.checkBox_ShowCake.setChecked(False)
             return False
         filen_tif = self.model.make_filename('tif', original=True)
         if not os.path.exists(filen_tif):
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'Cannot find %s.' % filen_tif)
-            undo_button_press(
-                self.widget.pushButton_AddRemoveCake,
-                released_text='Add Cake', pressed_text='Remove Cake')
+            self.widget.checkBox_ShowCake.setChecked(False)
             return False
         if self.model.diff_img_exist() and \
                 self.model.same_filename_as_base_ptn(

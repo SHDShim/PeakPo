@@ -37,7 +37,7 @@ class MplController(object):
             self.obj_color = 'white'
 
     def get_cake_range(self):
-        if self.widget.pushButton_AddRemoveCake.isChecked():
+        if self.widget.checkBox_ShowCake.isChecked():
             return self.widget.mpl.canvas.ax_cake.get_xlim(),\
                 self.widget.mpl.canvas.ax_cake.get_ylim()
         else:
@@ -46,7 +46,7 @@ class MplController(object):
     def zoom_out_graph(self):
         if not self.model.base_ptn_exist():
             return
-        if self.widget.ntb_Bgsub.isChecked():
+        if self.widget.checkBox_BgSub.isChecked():
             x, y = self.model.base_ptn.get_bgsub()
         else:
             x, y = self.model.base_ptn.get_raw()
@@ -61,9 +61,9 @@ class MplController(object):
         if (not self.model.base_ptn_exist()) and \
                 (not self.model.jcpds_exist()):
             return
-        if self.widget.pushButton_AddRemoveCake.isChecked():
+        if self.widget.checkBox_ShowCake.isChecked():
             self.widget.mpl.canvas.resize_axes(
-                self.widget.spinBox_CakeAxisSize.value())
+                self.widget.horizontalSlider_CakeAxisSize.value())
             self._plot_cake()
         else:
             self.widget.mpl.canvas.resize_axes(1)
@@ -81,7 +81,7 @@ class MplController(object):
         if (self.widget.tabWidget.currentIndex() == 8):
             self._plot_peakfit()
         self.widget.mpl.canvas.ax_pattern.set_xlim(limits[0], limits[1])
-        if not self.widget.ntb_ResetY.isChecked():
+        if not self.widget.checkBox_AutoY.isChecked():
             self.widget.mpl.canvas.ax_pattern.set_ylim(limits[2], limits[3])
         xlabel = 'Two Theta (degrees), ' + \
             "{0: 5.1f} GPa, {1: 4.0f} K, {2: 6.4f} A".\
@@ -145,9 +145,17 @@ class MplController(object):
             i += 1
 
     def _plot_cake(self):
-        climits = (self.widget.spinBox_VMin.value(),
-                   self.widget.spinBox_VMax.value())
         intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
+        min_slider_pos = self.widget.horizontalSlider_VMin.value()
+        max_slider_pos = self.widget.horizontalSlider_VMax.value()
+        if (max_slider_pos <= min_slider_pos):
+            self.widget.horizontalSlider_VMin.setValue(25)
+            self.widget.horizontalSlider_VMax.setValue(75)
+        prefactor = self.widget.spinBox_MaxScaleBars.value() / 100. * \
+            intensity_cake.max() / 100.
+        climits =  \
+            (prefactor * self.widget.horizontalSlider_VMin.value(),
+             prefactor * self.widget.horizontalSlider_VMax.value())
         self.widget.mpl.canvas.ax_cake.imshow(
             intensity_cake, origin="lower",
             extent=[tth_cake.min(), tth_cake.max(),
@@ -191,7 +199,7 @@ class MplController(object):
                         tth, bar_min, bar_max, colors=phase.color,
                         label="{0:}, {1:.3f} A^3".format(
                             phase.name, phase.v.item()))
-                if self.widget.pushButton_AddRemoveCake.isChecked() and \
+                if self.widget.checkBox_ShowCake.isChecked() and \
                         self.widget.checkBox_JCPDSinCake.isChecked():
                     for tth_i in tth:
                         self.widget.mpl.canvas.ax_cake.axvline(
@@ -205,6 +213,8 @@ class MplController(object):
                 txt.set_color(line.get_color())
 
     def _plot_waterfallpatterns(self):
+        if not self.widget.checkBox_ShowWaterfall.isChecked():
+            return
         # t_start = time.time()
         # count how many are dispaly
         i = 0
@@ -224,7 +234,7 @@ class MplController(object):
                     os.path.basename(pattern.fname),
                     transform=self.widget.mpl.canvas.ax_pattern.transAxes,
                     color=pattern.color)
-                if self.widget.ntb_Bgsub.isChecked():
+                if self.widget.checkBox_BgSub.isChecked():
                     ygap = self.widget.doubleSpinBox_WaterfallGaps.value() * \
                         self.model.base_ptn.y_bgsub.max() * float(j)
                     y_bgsub = pattern.y_bgsub
@@ -257,7 +267,7 @@ class MplController(object):
             color=self.model.base_ptn.color)
 
     def _plot_diffpattern(self):
-        if self.widget.ntb_Bgsub.isChecked():
+        if self.widget.checkBox_BgSub.isChecked():
             x, y = self.model.base_ptn.get_bgsub()
             self.widget.mpl.canvas.ax_pattern.plot(
                 x, y, c=self.model.base_ptn.color)
@@ -277,7 +287,7 @@ class MplController(object):
                 self.widget.mpl.canvas.ax_pattern.axvline(
                     x_c, ls='--', dashes=(10, 5))
         if self.model.current_section.fitted():
-            bgsub = self.widget.ntb_Bgsub.isChecked()
+            bgsub = self.widget.checkBox_BgSub.isChecked()
             x_plot = self.model.current_section.x
             profiles = self.model.current_section.get_individual_profiles(
                 bgsub=bgsub)
