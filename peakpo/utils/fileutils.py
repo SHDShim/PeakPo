@@ -109,3 +109,8 @@ def make_filename(filename, ext, temp_dir=None, original=False):
     else:
         new_filename = os.path.join(path, temp_dir, new_filen)
     return new_filename
+
+def change_file_path(filename, new_path):
+    path, filen_ext = os.path.split(filename)
+    new_filename = os.path.join(new_path, filen_ext)
+    return new_filename

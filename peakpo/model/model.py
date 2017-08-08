@@ -8,7 +8,7 @@ from ds_cake import DiffImg
 from ds_jcpds import JCPDSplt, Session
 from ds_powdiff import PatternPeakPo, get_DataSection
 from ds_section import Section
-from utils import samefilename, make_filename
+from utils import samefilename, make_filename, change_file_path
 
 
 class PeakPoModel(object):
@@ -96,21 +96,48 @@ class PeakPoModel(object):
         else:
             return True
 
-    def set_from(self, model_r, jlistonly=False):
+    def set_from(self, model_r, new_chi_path=None, jlistonly=False):
         self.jcpds_lst = model_r.jcpds_lst
         if jlistonly:
             return
+        if new_chi_path is None:
+            pass
+        else:
+            new_base_ptn_fname = change_file_path(model_r.base_ptn.fname,
+                new_chi_path)
+            model_r.base_ptn.fname = new_base_ptn_fname
+            if model_r.waterfall_ptn != []:
+                new_waterfall_ptn = []
+                for ptn in model_r.waterfall_ptn:
+                    new_fname = change_file_path(ptn.fname, new_chi_path)
+                    if os.path.exists(new_fname):
+                        ptn.fname = new_fname
+                        new_waterfall_pnt.append(ptn)
+                if new_waterfall_ptn != []:
+                    model_r.waterfall_ptn = new_waterfall_ptn
+            if model_r.diff_img is not None:
+                new_img_fname = change_file_path(\
+                    model_r.diff_img.img_filename, \
+                    new_chi_path)
+                model_r.diff_img.img_filename = new_img_fname
+            if model_r.poni is not None:
+                new_poni_fname = change_file_path(model_r.poni, \
+                    new_chi_path)
+                model_r.poni = new_poni_fname
+            model_r.chi_path = new_chi_path
         self.base_ptn = model_r.base_ptn
         self.waterfall_ptn = model_r.waterfall_ptn
-        self.ucfit_lst = model_r.ucfit_lst
         self.diff_img = model_r.diff_img
-        self.poni = model_r.poni
-        self.session = model_r.session
-        self.jcpds_path = model_r.jcpds_path
-        self.chi_path = model_r.chi_path
         self.section_lst = model_r.section_lst
         self.saved_pressure = model_r.get_saved_pressure()
         self.saved_temperature = model_r.get_saved_temperature()
+        self.poni = model_r.poni
+        self.ucfit_lst = model_r.ucfit_lst
+        self.session = model_r.session
+        self.jcpds_path = model_r.jcpds_path
+        self.chi_path = model_r.chi_path
+
+
 
     def import_section_list(self, model_r):
         new_section_lst = copy.deepcopy(model_r.section_lst)

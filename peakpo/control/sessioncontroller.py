@@ -114,7 +114,45 @@ class SessionController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning", str(inst))
             return False
-        self.model.set_from(model_dpp, jlistonly=jlistonly)
+        # inspect the paths of baseptn and update all file paths
+        if not jlistonly:
+            if (model_dpp.chi_path != os.path.dirname(filen_dpp)):
+                if os.path.exists(model_dpp.chi_path):
+                    reply = QtWidgets.QMessageBox.question(
+                        self.widget, "Question",
+                        "DPP seems to be moved from the original folder. \
+                        However, you seem to have files in the original folder.\
+                        OK to proceed?",
+                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                        QtWidgets.QMessageBox.Yes)
+                    if reply == QtWidgets.QMessageBox.Yes:
+                        return self._set_from_dpp(filen_dpp, model_dpp, \
+                            jlistonly=jlistonly)
+                    else:
+                        return False
+                else: # file no longer exist in the original location
+                    reply = QtWidgets.QMessageBox.question(
+                        self.widget, "Question",
+                        "DPP seems to be moved from the original folder. " +\
+                        "I cannot find the files for this DPP. " +\
+                        "Move related files to this DPP folder." +\
+                        "If files have been moved, click Yes.",
+                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                        QtWidgets.QMessageBox.Yes)
+                    if reply == QtWidgets.QMessageBox.Yes:
+                        return self._set_from_dpp(filen_dpp, model_dpp, \
+                            new_folder=os.path.dirname(filen_dpp), \
+                            jlistonly=jlistonly)
+                    else:
+                        return False
+        #
+    def _set_from_dpp(self, filen_dpp, model_dpp, new_folder=None, \
+        jlistonly=False):
+        if new_folder is None:
+            self.model.set_from(model_dpp, jlistonly=jlistonly)
+        else:
+            self.model.set_from(model_dpp, new_chi_path=new_folder, \
+                jlistonly=jlistonly)
         self.widget.textEdit_Jlist.setText('Jlist: ' + str(filen_dpp))
         self.widget.textEdit_DiffractionPatternFileName.setText(
             '1D pattern: ' + str(self.model.base_ptn.fname))
