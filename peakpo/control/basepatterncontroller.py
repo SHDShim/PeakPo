@@ -117,8 +117,8 @@ class BasePatternController(object):
         else:
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'Cannot find ' + filen)
-            self.widget.lineEdit_DiffractionPatternFileName.setText(
-                self.model.get_base_ptn_filename())
+            # self.widget.lineEdit_DiffractionPatternFileName.setText(
+            #    self.model.get_base_ptn_filename())
 
     def _load_a_new_pattern(self, new_filename):
         """

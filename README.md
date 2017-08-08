@@ -14,37 +14,12 @@ A python application for X-ray diffraction analysis for samples at high pressure
 3. Rename the folder to `peakpo-v7`.  Under the `peakpo-v7` folder, you should be able to see a few folders and one of them is `peakpo`.
 
 
-
-## Install required packages
-
-I provide a conda environment file: `py35pkpo.yml`.  This can be found in the `~/python/peakpo-v7` folder.
-
-
-1. Open a terminal, and in the `peakpo-v7` folder, create an environment.
-
-    For Mac and Linux:
-
-    ```
-    $ conda env create -f py35pkpo.yml
-    ```
-
-    For window users:
-
-    ```
-    $ conda env create -f py35pkpo-win.yml
-    ```
-
-2. If you do not see any error messages, you are done and go to the **Run peakpo** section below.
-
-
 ## Manually install required packages
-
-However, if the method above does not work, particularly for windows, you need to manually install necessary python modules.
 
 1. Create a `conda` environment for `peakpo`:
 
     ```
-    $ conda create --name py35pkpo python=3.5
+    $ conda create --name py36pkpo python=3.6
     ```
 
 2. Switch to the environment.
@@ -52,25 +27,25 @@ However, if the method above does not work, particularly for windows, you need t
     For windows:
 
     ```
-    $ activate py35pkpo
+    $ activate py36pkpo
     ```
 
     For Linux and Mac:
 
     ```
-    $ source activate py35pkpo
+    $ source activate py36pkpo
     ```
 
-3. Install the anaconda meta-package.  This includes `matplotlib` > 2.0, and `pyqt5`:
+3. Install the anaconda meta-package.  
 
     ```
     $ conda install anaconda
     ```
 
-4. Install `pytheos`:
+4. Install `pytheos`, `periodictable`, and `qdarkstyle`.  For example:
 
     ```
-    $ conda install -c shdshim pytheos
+    $ pip install pytheos
     ```
 
 5. Install `pymatgen`:
@@ -85,34 +60,34 @@ However, if the method above does not work, particularly for windows, you need t
     $ conda install -c cprescher pyfai
     ```
 
-7. Install `qdarkstyle`:
-
-    ```
-    $ pip install qdarkstyle
-    ```
-
-8. Install some packages from `conda-forge`, such as `periodictable`, `uncertainties`, and `lmfit`.  For example:
+7. Install some packages from `conda-forge`, such as `uncertainties` and `lmfit`.  For example:
 
     ```
     $ conda install -c conda-forge lmfit
     ```
 
+8. Also, install `dill` and `pyopencl`:
+
+  ```
+  $ conda install dill
+  ```
+
 
 ## Run peakpo
 
 
-1. Activate `py35pkpo`.
+1. Activate `py36pkpo`.
 
     For Mac and Linux:
 
     ```
-    $ source activate py35pkpo
+    $ source activate py36pkpo
     ```
 
     For windows::
 
     ```
-    $ activate py35pkpo
+    $ activate py36pkpo
     ```
 
 2. Go into the `peakpo-v7/peakpo` folder and run:
@@ -133,6 +108,8 @@ However, if the method above does not work, particularly for windows, you need t
 1. Complete the installation instruction above.
 
 2. Find `peakpo.command` file in the `peakpo-v7` folder, and copy and paste the file in your applications folder.
+
+3. Open the `peakpo.command` file in a text editor and check if the paths in the file matches with your folder structures. 
 
 3. Double click the file and you will see `peakpo` running.
 
@@ -155,12 +132,6 @@ You do not need to do any of above for update.  You can just download updated zi
 ## Theme
 
 Version 7 adapted a dark theme from: https://github.com/ColinDuquesnoy/QDarkStyleSheet.
-
-
-## Unresolved issue
-
-Even if I install `pyopencl`, `pyfai` still complains that it cannot be found.  Yet, this does not appear to cause any problem for running `peakpo`.
-
 
 
 ## How to cite
