@@ -1905,7 +1905,7 @@
            <item>
             <widget class="QPushButton" name="pushButton_IntegrateCake">
              <property name="text">
-              <string>Wright CHI from current cake range</string>
+              <string>Wright CHI from current azimuthal range</string>
              </property>
             </widget>
            </item>
