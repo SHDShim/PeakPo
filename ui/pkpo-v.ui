@@ -85,7 +85,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>0</number>
       </property>
       <property name="iconSize">
        <size>
@@ -1905,7 +1905,7 @@
            <item>
             <widget class="QPushButton" name="pushButton_IntegrateCake">
              <property name="text">
-              <string>Wright CHI from current cake range</string>
+              <string>Wright CHI from current azimuthal range</string>
              </property>
             </widget>
            </item>
@@ -2404,7 +2404,7 @@
       </widget>
       <widget class="QWidget" name="tab_UnitCellFit">
        <attribute name="title">
-        <string>UnitCellFit</string>
+        <string>UCFit</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
