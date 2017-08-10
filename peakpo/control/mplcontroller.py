@@ -195,10 +195,18 @@ class MplController(object):
                         bar_max = intensity * bar_scale
                     else:
                         bar_max = 100. * bar_scale
-                    self.widget.mpl.canvas.ax_pattern.vlines(
-                        tth, bar_min, bar_max, colors=phase.color,
-                        label="{0:}, {1:.3f} A^3".format(
-                            phase.name, phase.v.item()))
+                    pressure = self.widget.doubleSpinBox_Pressure.value()
+                    if pressure == 0.:
+                        self.widget.mpl.canvas.ax_pattern.vlines(
+                            tth, bar_min, bar_max, colors=phase.color,
+                            label="{0:}, {1:.3f} A^3".format(
+                                phase.name, phase.v))
+                    else:
+                        self.widget.mpl.canvas.ax_pattern.vlines(
+                            tth, bar_min, bar_max, colors=phase.color,
+                            label="{0:}, {1:.3f} A^3".format(
+                                phase.name, phase.v.item()))
+                    # phase.name, phase.v.item()))
                 if self.widget.checkBox_ShowCake.isChecked() and \
                         self.widget.checkBox_JCPDSinCake.isChecked():
                     for tth_i in tth:

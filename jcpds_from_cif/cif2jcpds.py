@@ -36,14 +36,20 @@ def main(argv):
     alpha = 1.00e-5
     xrange = (0, 40)
 
+    '''
     if os.path.dirname(inputfile) == '':
-        ifile = os.path.join('cifs', inputfile)
+        ifile = inputfile  # os.path.join('cifs', inputfile)
+    '''
+    if not os.path.exists(inputfile):
+        print('[Error] Cannot find the input file')
+        return
     material_jcpds = ds_jcpds.JCPDS()
-    material_jcpds.set_from_cif(ifile, k0, k0p, thermal_expansion=alpha,
+    material_jcpds.set_from_cif(inputfile, k0, k0p, thermal_expansion=alpha,
                                 two_theta_range=xrange)
-    material_jcpds.write_to_file(outputfile,
-                                 comments='Write comment here. Update the k0, k0p, and alpha ' +
-                                 'values in lines 3 and 5.')
+    material_jcpds.write_to_file(
+        outputfile,
+        comments='Write comment here. Update the k0, k0p, and alpha ' +
+        'values in lines 3 and 5.')
 
 
 def help():
