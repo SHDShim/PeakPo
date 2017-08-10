@@ -256,7 +256,7 @@ class SessionController(object):
                     QtWidgets.QMessageBox.warning(
                         self.widget, "Warning",
                         "Some waterfall paterns in PPSS do not exist.")
-            if new_wf_ptn_name == []:
+            if new_wf_ptn_names == []:
                 return False
             else:
                 self.model.set_waterfall_ptn(
