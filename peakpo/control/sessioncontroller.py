@@ -62,6 +62,9 @@ class SessionController(object):
         if success:
             self.plot_ctrl.zoom_out_graph()
             self.update_inputs()
+        else:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning", "DPP loading was not successful.")
 
     def _update_ppss(self):
         if not self.model.base_ptn_exist():
@@ -146,6 +149,9 @@ class SessionController(object):
                                                   jlistonly=jlistonly)
                     else:
                         return False
+            else:
+                return self._set_from_dpp(filen_dpp, model_dpp,
+                                          jlistonly=jlistonly)
         #
 
     def _set_from_dpp(self, filen_dpp, model_dpp, new_folder=None,
@@ -386,7 +392,12 @@ class SessionController(object):
             fsession = os.path.join(self.model.chi_path, 'dum.ppss')
         else:
             fsession = self.model.make_filename('ppss')
-        new_filename = dialog_savefile(self.widget, fsession)
+        if self.widget.checkBox_ForceOverwite.isChecked():
+            new_filename = fsession
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning", "Overwritten with default name.")
+        else:
+            new_filename = dialog_savefile(self.widget, fsession)
         if new_filename != '':
             self._dump_ppss(new_filename)
             self.widget.textEdit_SessionFileName.setText('Session: ' +
