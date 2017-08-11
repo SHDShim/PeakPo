@@ -256,7 +256,7 @@ class SessionController(object):
                     new_wf_ptn_names.append(
                         os.path.join(
                             self.model.chi_path, os.path.basename(ptn.fname)))
-                    new_wf_wavelengh.append(ptn.wavelength)
+                    new_wf_wavelength.append(ptn.wavelength)
                     new_wf_display.append(ptn.display)
                 else:
                     QtWidgets.QMessageBox.warning(

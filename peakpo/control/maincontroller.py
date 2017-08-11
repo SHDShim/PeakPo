@@ -45,6 +45,8 @@ class MainController(object):
         self.jcpdstable_ctrl = JcpdsTableController(self.model, self.widget)
         self.session_ctrl = SessionController(self.model, self.widget)
         self.peakfit_ctrl = PeakFitController(self.model, self.widget)
+        self.settings = QtCore.QSettings('pkpo_settings.ini',
+                                         QtCore.QSettings.IniFormat)
         self.connect_channel()
         #
         self.clip = QtWidgets.QApplication.clipboard()
@@ -206,7 +208,7 @@ class MainController(object):
         self.write_setting()
         self.widget.deleteLater()
         gc.collect()
-        # self.deleteLater()
+        self.deleteLater()
 
     def on_key_press(self, event):
         if event.key == 'i':

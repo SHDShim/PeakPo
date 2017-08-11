@@ -1,0 +1,50 @@
+data_global
+_chemical_name_mineral 'Brucite'
+loop_
+_publ_author_name
+'Zigan F'
+'Rothbauer R'
+_journal_name_full 'Neues Jahrbuch fur Mineralogie, Monatshefte'
+_journal_volume 1967 
+_journal_year 1967
+_journal_page_first 137
+_journal_page_last 143
+_publ_section_title
+;
+ Neutronenbeugungsmessungen am Brucit
+ _cod_database_code 1000054
+;
+_database_code_amcsd 0014731
+_chemical_formula_sum 'Mg O2 H2'
+_cell_length_a 3.142
+_cell_length_b 3.142
+_cell_length_c 4.766
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 120
+_cell_volume 40.747
+_exptl_crystal_density_diffrn      2.377
+_symmetry_space_group_name_H-M 'P -3 m 1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '-y,-x,z'
+  'y,-x+y,-z'
+  '-x,-x+y,-z'
+  '-x+y,-x,z'
+  '-x+y,y,z'
+  '-x,-y,-z'
+  'y,x,-z'
+  '-y,x-y,z'
+  'x,x-y,z'
+  'x-y,x,-z'
+  'x-y,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Mg   0.00000   0.00000   0.00000
+O   0.33333   0.66667   0.22160
+H   0.33333   0.66667   0.43030
+
