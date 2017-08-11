@@ -192,9 +192,9 @@ class MplController(object):
                     intensity = inten * phase.twk_int
                     bar_min = np.ones(tth.shape) * axisrange[2]
                     if self.widget.checkBox_Intensity.isChecked():
-                        bar_max = intensity * bar_scale
+                        bar_max = intensity * bar_scale + bar_min
                     else:
-                        bar_max = 100. * bar_scale
+                        bar_max = 100. * bar_scale + bar_min
                     pressure = self.widget.doubleSpinBox_Pressure.value()
                     if pressure == 0.:
                         self.widget.mpl.canvas.ax_pattern.vlines(
