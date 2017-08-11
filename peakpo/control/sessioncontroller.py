@@ -362,7 +362,12 @@ class SessionController(object):
             fsession = os.path.join(self.model.chi_path, 'default.dpp')
         else:
             fsession = self.model.make_filename('dpp')
-        new_filename = dialog_savefile(self.widget, fsession)
+        if self.widget.checkBox_ForceOverwite.isChecked():
+            new_filename = fsession
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning", "Overwritten with default name.")
+        else:
+            new_filename = dialog_savefile(self.widget, fsession)
         if new_filename != '':
             self.model.save_pressure(self.widget.doubleSpinBox_Pressure.value())
             self.model.save_temperature(
