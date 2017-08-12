@@ -1410,7 +1410,7 @@
           <property name="flat">
            <bool>true</bool>
           </property>
-          <layout class="QGridLayout" name="gridLayout_13">
+          <layout class="QGridLayout" name="gridLayout_13" columnstretch="0,0,0,0" columnminimumwidth="0,0,0,0">
            <item row="0" column="0">
             <widget class="QPushButton" name="pushButton_CheckAllWaterfall">
              <property name="text">
@@ -1520,7 +1520,7 @@
           <property name="flat">
            <bool>true</bool>
           </property>
-          <layout class="QGridLayout" name="gridLayout_12">
+          <layout class="QGridLayout" name="gridLayout_12" columnstretch="0,0,0">
            <item row="0" column="2">
             <widget class="QPushButton" name="pushButton_MakeBasePtn">
              <property name="sizePolicy">
@@ -1759,35 +1759,29 @@
             </widget>
            </item>
            <item>
-            <widget class="QGroupBox" name="groupBox_18">
-             <property name="title">
-              <string/>
+            <widget class="QLabel" name="label_19">
+             <property name="text">
+              <string>Scale (coarse)</string>
              </property>
-             <property name="flat">
-              <bool>true</bool>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
              </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_9">
-              <item>
-               <widget class="QLabel" name="label_19">
-                <property name="text">
-                 <string>Max. for scale bars (%)</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QSpinBox" name="spinBox_MaxScaleBars">
-                <property name="alignment">
-                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                </property>
-                <property name="maximum">
-                 <number>100</number>
-                </property>
-                <property name="value">
-                 <number>15</number>
-                </property>
-               </widget>
-              </item>
-             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="horizontalSlider_MaxScaleBars">
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>100</number>
+             </property>
+             <property name="sliderPosition">
+              <number>50</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
             </widget>
            </item>
            <item>
@@ -1816,20 +1810,20 @@
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QPushButton" name="pushButton_ApplyCakeView">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Apply</string>
+             </property>
+            </widget>
+           </item>
           </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButton_ApplyCakeView">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Apply</string>
-          </property>
          </widget>
         </item>
         <item>
@@ -2084,6 +2078,13 @@
            <bool>true</bool>
           </property>
           <layout class="QGridLayout" name="gridLayout">
+           <item row="6" column="0">
+            <widget class="QLabel" name="label_15">
+             <property name="text">
+              <string>Min. Int. for Display</string>
+             </property>
+            </widget>
+           </item>
            <item row="5" column="1">
             <widget class="QPushButton" name="pushButton_UncheckAllJCPDS">
              <property name="sizePolicy">
@@ -2106,32 +2107,19 @@
              </property>
             </widget>
            </item>
-           <item row="6" column="0">
-            <widget class="QLabel" name="label_15">
-             <property name="text">
-              <string>Min. Int. for Display</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="0">
-            <widget class="QPushButton" name="pushButton_CheckAllJCPDS">
+           <item row="5" column="3">
+            <widget class="QCheckBox" name="checkBox_Intensity">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
-             <property name="font">
-              <font>
-               <family>Helvetica</family>
-               <pointsize>12</pointsize>
-               <weight>50</weight>
-               <italic>false</italic>
-               <bold>false</bold>
-              </font>
-             </property>
              <property name="text">
-              <string>Check</string>
+              <string>Intensity</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -2154,49 +2142,25 @@
              </property>
             </widget>
            </item>
-           <item row="7" column="0">
-            <widget class="QLabel" name="label_17">
-             <property name="text">
-              <string>Scale</string>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="1">
-            <widget class="QDoubleSpinBox" name="doubleSpinBox_ScaleForAllJCPDS">
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-             <property name="maximum">
-              <double>1.000000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.010000000000000</double>
-             </property>
-             <property name="value">
-              <double>1.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="3">
-            <widget class="QPushButton" name="pushButton_ForceUpdatePlot">
-             <property name="text">
-              <string>Update plot</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="3">
-            <widget class="QCheckBox" name="checkBox_Intensity">
+           <item row="5" column="0">
+            <widget class="QPushButton" name="pushButton_CheckAllJCPDS">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
-             <property name="text">
-              <string>Intensity</string>
+             <property name="font">
+              <font>
+               <family>Helvetica</family>
+               <pointsize>12</pointsize>
+               <weight>50</weight>
+               <italic>false</italic>
+               <bold>false</bold>
+              </font>
              </property>
-             <property name="checked">
-              <bool>true</bool>
+             <property name="text">
+              <string>Check</string>
              </property>
             </widget>
            </item>
@@ -2388,6 +2352,38 @@
              </property>
              <property name="text">
               <string>Add jcpds</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupBox_20">
+          <property name="title">
+           <string>JCPDS Bar scale</string>
+          </property>
+          <property name="flat">
+           <bool>true</bool>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_6">
+           <item>
+            <widget class="QSlider" name="horizontalSlider_JCPDSBarScale">
+             <property name="maximum">
+              <number>100</number>
+             </property>
+             <property name="value">
+              <number>100</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushButton_ForceUpdatePlot">
+             <property name="text">
+              <string>Update plot</string>
              </property>
             </widget>
            </item>

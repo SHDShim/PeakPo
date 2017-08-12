@@ -151,7 +151,7 @@ class MplController(object):
         if (max_slider_pos <= min_slider_pos):
             self.widget.horizontalSlider_VMin.setValue(25)
             self.widget.horizontalSlider_VMax.setValue(75)
-        prefactor = self.widget.spinBox_MaxScaleBars.value() / 100. * \
+        prefactor = self.widget.horizontalSlider_MaxScaleBars.value() / 100. * \
             intensity_cake.max() / 100.
         climits =  \
             (prefactor * self.widget.horizontalSlider_VMin.value(),
@@ -174,7 +174,7 @@ class MplController(object):
             return
         axisrange = self.widget.mpl.canvas.ax_pattern.axis()
         bar_scale = 1. / 100. * axisrange[3] * \
-            self.widget.doubleSpinBox_ScaleForAllJCPDS.value()
+            self.widget.horizontalSlider_JCPDSBarScale.value() / 100.
         for phase in self.model.jcpds_lst:
             if phase.display:
                 phase.cal_dsp(self.widget.doubleSpinBox_Pressure.value(),
