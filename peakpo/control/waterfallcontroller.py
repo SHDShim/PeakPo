@@ -1,4 +1,5 @@
 import os
+import copy
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5 import QtGui
@@ -17,6 +18,7 @@ class WaterfallController(object):
         self.connect_channel()
 
     def connect_channel(self):
+        self.widget.pushButton_MakeBasePtn.clicked.connect(self.make_base_ptn)
         self.widget.pushButton_AddPatterns.clicked.connect(self.add_patterns)
         self.widget.doubleSpinBox_WaterfallGaps.valueChanged.connect(
             self._apply_changes_to_graph)
@@ -32,6 +34,60 @@ class WaterfallController(object):
             self._apply_changes_to_graph)
         self.widget.checkBox_IntNorm.clicked.connect(
             self._apply_changes_to_graph)
+        self.widget.checkBox_ShowWaterfall.clicked.connect(
+            self._apply_changes_to_graph)
+        self.widget.pushButton_CheckAllWaterfall.clicked.connect(
+            self.check_all_waterfall)
+        self.widget.pushButton_UncheckAllWaterfall.clicked.connect(
+            self.uncheck_all_waterfall)
+
+    def make_base_ptn(self):
+        # read selected from the table.  It should be single item
+        idx_selected = self._find_a_waterfall_ptn()
+        if idx_selected is None:
+            QtWidgets.QMessageBox.warning(self.widget, "Warning",
+                                          "Highlight an item to switch with.")
+            return
+
+        i = idx_selected
+        # make a deep copy of current model
+        model_temp = copy.deepcopy(self.model)
+        # save the old base pattern
+        old_base_ptn = copy.deepcopy(self.model.get_base_ptn())
+        new_base_ptn = copy.deepcopy(self.model.waterfall_ptn[i])
+        # switch the base pattern
+        self.model.set_base_ptn(new_base_ptn.fname, new_base_ptn.wavelength)
+        bg_roi = [self.widget.doubleSpinBox_Background_ROI_min.value(),
+                  self.widget.doubleSpinBox_Background_ROI_max.value()]
+        bg_params = [self.widget.spinBox_BGParam0.value(),
+                     self.widget.spinBox_BGParam1.value(),
+                     self.widget.spinBox_BGParam2.value()]
+        self.model.base_ptn.get_chbg(bg_roi, bg_params, yshift=0)
+        # self.model.load_associated_img()
+        self.widget.checkBox_ShowCake.setChecked(False)
+        self.model.replace_a_waterfall(old_base_ptn, i)
+        self.widget.lineEdit_DiffractionPatternFileName.setText(
+            str(self.model.get_base_ptn_filename()))
+        self.widget.doubleSpinBox_SetWavelength.setValue(
+            self.model.get_base_ptn_wavelength())
+        self.waterfall_table_ctrl.update()
+        self._apply_changes_to_graph()
+
+    def check_all_waterfall(self):
+        if not self.model.waterfall_exist():
+            return
+        for ptn in self.model.waterfall_ptn:
+            ptn.display = True
+        self.waterfall_table_ctrl.update()
+        self._apply_changes_to_graph(reinforced=True)
+
+    def uncheck_all_waterfall(self):
+        if not self.model.waterfall_exist():
+            return
+        for ptn in self.model.waterfall_ptn:
+            ptn.display = False
+        self.waterfall_table_ctrl.update()
+        self._apply_changes_to_graph(reinforced=True)
 
     def _apply_changes_to_graph(self, reinforced=False):
         """

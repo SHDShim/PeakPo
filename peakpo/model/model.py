@@ -223,13 +223,13 @@ class PeakPoModel(object):
     def same_filename_as_base_ptn(self, filename):
         return samefilename(self.base_ptn.fname, filename)
 
-    def set_base_ptn(self, new_base_ptn, wavelength):
+    def set_base_ptn(self, new_base_ptn_filen, wavelength):
         """
         :param new_base_ptn: PatternPeakPo object
         """
         self.reset_base_ptn()
-        self.base_ptn.read_file(new_base_ptn)
-        self.set_chi_path(os.path.split(new_base_ptn)[0])
+        self.base_ptn.read_file(new_base_ptn_filen)
+        self.set_chi_path(os.path.split(new_base_ptn_filen)[0])
         self.set_base_ptn_wavelength(wavelength)
         self.base_ptn.display = True
 
@@ -249,6 +249,9 @@ class PeakPoModel(object):
             if not success:
                 pattern.get_chbg(bg_roi, params=bg_params, yshift=0)
         self.waterfall_ptn.append(pattern)
+
+    def replace_a_waterfall(self, new_pattern, index_to_replace):
+        self.waterfall_ptn[index_to_replace] = new_pattern
 
     def set_waterfall_ptn(
             self, filenames, wavelength, display, bg_roi, bg_params,

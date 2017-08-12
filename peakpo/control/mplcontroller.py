@@ -70,7 +70,7 @@ class MplController(object):
         self._set_nightday_view()
         if self.model.base_ptn_exist():
             self.widget.mpl.canvas.fig.suptitle(
-                self.model.base_ptn.fname, color=self.obj_color, fontsize=16)
+                self.model.base_ptn.fname, color=self.obj_color)
             self._plot_diffpattern()
             if self.model.waterfall_exist():
                 self._plot_waterfallpatterns()

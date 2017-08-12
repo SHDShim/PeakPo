@@ -26,7 +26,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionShortcut_keys.triggered.connect(self.shortcutkeys)
 
     def build_ui(self):
-        self.pushButton_MakeBasePtn.setEnabled(False)
+        # self.pushButton_MakeBasePtn.setEnabled(False)
         self.doubleSpinBox_Pressure.setKeyboardTracking(False)
         self.doubleSpinBox_Pressure.setStyle(SpinBoxFixStyle())
         self.doubleSpinBox_Temperature.setKeyboardTracking(False)
