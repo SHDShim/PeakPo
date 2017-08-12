@@ -104,7 +104,7 @@ class PeakPoModel(object):
             pass
         else:
             new_base_ptn_fname = change_file_path(model_r.base_ptn.fname,
-                new_chi_path)
+                                                  new_chi_path)
             model_r.base_ptn.fname = new_base_ptn_fname
             if model_r.waterfall_ptn != []:
                 new_waterfall_ptn = []
@@ -116,13 +116,13 @@ class PeakPoModel(object):
                 if new_waterfall_ptn != []:
                     model_r.waterfall_ptn = new_waterfall_ptn
             if model_r.diff_img is not None:
-                new_img_fname = change_file_path(\
-                    model_r.diff_img.img_filename, \
+                new_img_fname = change_file_path(
+                    model_r.diff_img.img_filename,
                     new_chi_path)
                 model_r.diff_img.img_filename = new_img_fname
             if model_r.poni is not None:
-                new_poni_fname = change_file_path(model_r.poni, \
-                    new_chi_path)
+                new_poni_fname = change_file_path(model_r.poni,
+                                                  new_chi_path)
                 model_r.poni = new_poni_fname
             model_r.chi_path = new_chi_path
         self.base_ptn = model_r.base_ptn
@@ -136,8 +136,6 @@ class PeakPoModel(object):
         self.session = model_r.session
         self.jcpds_path = model_r.jcpds_path
         self.chi_path = model_r.chi_path
-
-
 
     def import_section_list(self, model_r):
         new_section_lst = copy.deepcopy(model_r.section_lst)
@@ -163,7 +161,7 @@ class PeakPoModel(object):
         self.base_ptn = PatternPeakPo()
 
     def reset_waterfall_ptn(self):
-        self.waterfall_patterns[:] = []
+        self.waterfall_ptn[:] = []
 
     def reset_jcpds_lst(self):
         self.jcpds_lst[:] = []

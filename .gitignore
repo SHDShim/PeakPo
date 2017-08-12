@@ -2,6 +2,7 @@
 
 ### local adjustment by Shim ###
 PeakFt/*
+jcpds_from_cif/cif-SLAC/*
 */deletables/*
 deletables/
 ./setup_bin

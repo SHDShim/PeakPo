@@ -31,7 +31,6 @@ class MainController(object):
         self.widget = MainWindow()
         self.model = PeakPoModel()
         # self.obj_color = 'white'
-        self.read_setting()
         self.base_ptn_ctrl = BasePatternController(self.model, self.widget)
         self.plot_ctrl = MplController(self.model, self.widget)
         # self.cake_ctrl = CakeController(self.model, self.widget)
@@ -45,8 +44,7 @@ class MainController(object):
         self.jcpdstable_ctrl = JcpdsTableController(self.model, self.widget)
         self.session_ctrl = SessionController(self.model, self.widget)
         self.peakfit_ctrl = PeakFitController(self.model, self.widget)
-        self.settings = QtCore.QSettings('pkpo_settings.ini',
-                                         QtCore.QSettings.IniFormat)
+        self.read_setting()
         self.connect_channel()
         #
         self.clip = QtWidgets.QApplication.clipboard()
@@ -87,7 +85,7 @@ class MainController(object):
         self.widget.ntb_WholePtn.clicked.connect(self.plot_new_graph)
         self.widget.checkBox_AutoY.clicked.connect(self.apply_changes_to_graph)
         self.widget.checkBox_BgSub.clicked.connect(self.apply_changes_to_graph)
-        self.widget.actionClose.triggered.connect(self.closeEvent)
+        # self.widget.actionClose.triggered.connect(self.closeEvent)
         self.widget.tabWidget.currentChanged.connect(self.check_for_peakfit)
         # self.widget.tabWidget.setTabEnabled(8, False)
 
@@ -189,7 +187,9 @@ class MainController(object):
         """
         Write default setting
         """
+        # self.settings = QtCore.QSettings('DS', 'PeakPo')
         self.settings = QtCore.QSettings('DS', 'PeakPo')
+        # print('write:' + self.model.chi_path)
         self.settings.setValue('chi_path', self.model.chi_path)
         self.settings.setValue('jcpds_path', self.model.jcpds_path)
 
@@ -198,17 +198,18 @@ class MainController(object):
         Read default setting
         """
         self.settings = QtCore.QSettings('DS', 'PeakPo')
-        self.model.set_chi_path(str(self.settings.value('chi_path')))
-        self.model.set_jcpds_path(str(self.settings.value('jcpds_path')))
+        # self.settings.setFallbacksEnabled(False)
+        self.model.set_chi_path(self.settings.value('chi_path'))
+        self.model.set_jcpds_path(self.settings.value('jcpds_path'))
 
+    """
     def closeEvent(self, event):
-        """
-        Close event function
-        """
         self.write_setting()
         self.widget.deleteLater()
         gc.collect()
         self.deleteLater()
+        event.accept()
+    """
 
     def on_key_press(self, event):
         if event.key == 'i':

@@ -3,11 +3,13 @@
 import sys
 import os
 import getopt
+"""
 import pymatgen as mg
 from pymatgen import Lattice, Structure
 from pymatgen.analysis.diffraction.xrd import XRDCalculator
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 import numpy as np
+"""
 sys.path.insert(0, '../peakpo')
 import ds_jcpds
 
@@ -16,7 +18,7 @@ def main(argv):
     inputfile = ''
     outputfile = ''
     try:
-        opts, args = getopt.getopt(argv, "hi:o:", ["ifile=", "ofile="])
+        opts, __ = getopt.getopt(argv, "hi:o:", ["ifile=", "ofile="])
     except getopt.GetoptError:
         help()
         sys.exit(2)
@@ -28,6 +30,7 @@ def main(argv):
             inputfile = arg
         elif opt in ("-o", "--ofile"):
             outputfile = arg
+    print('cif2jcpds by S.-H. Dan Shim, 2017')
     print('Input file is: ', inputfile)
     print('Output file is: ', outputfile)
 
@@ -48,13 +51,13 @@ def main(argv):
                                 two_theta_range=xrange)
     material_jcpds.write_to_file(
         outputfile,
-        comments='Write comment here. Update the k0, k0p, and alpha ' +
-        'values in lines 3 and 5.')
+        comments='From cif2jcpds. Write comment here.' +
+        ' Update the k0, k0p, and alpha values in lines 3 and 5.')
 
 
 def help():
     print('cif2jcpds.py -i <inputfile> -o <outputfile>')
-    print("If path is not given cif files will be searched in the cifs folder.")
+    print('by S.-H. Dan Shim, 2017.')
     print("New jcpds has: k0=200, k0p=4, and alpha=1e-5.")
     print("Open the jcpds file and adjust those numbers.")
     print("Do not move this script out of this folder.")

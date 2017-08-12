@@ -73,6 +73,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.mpl.ntb.addWidget(self.ntb_NightView)
         """
 
+    def closeEvent(self, event):
+        self.deleteLater()
+        event.accept()
+
     def connect_channel(self):
         self.pushButton_RoomT.clicked.connect(
             lambda: self.set_temperature(300))

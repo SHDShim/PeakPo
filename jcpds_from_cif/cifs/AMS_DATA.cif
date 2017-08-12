@@ -1,0 +1,68 @@
+data_global
+_chemical_name_mineral 'Talc'
+loop_
+_publ_author_name
+'Perdikatsis B'
+'Burzlaff H'
+_journal_name_full 'Zeitschrift fur Kristallographie'
+_journal_volume 156 
+_journal_year 1981
+_journal_page_first 177
+_journal_page_last 186
+_publ_section_title
+;
+ Strukturverfeinerung am talk Mg3[(OH)2Si4O10]
+;
+_database_code_amcsd 0010839
+_chemical_formula_sum 'Si4 Mg3 O12 H2'
+_cell_length_a 5.290
+_cell_length_b 9.173
+_cell_length_c 9.460
+_cell_angle_alpha 90.46
+_cell_angle_beta 98.68
+_cell_angle_gamma 90.09
+_cell_volume 453.774
+_exptl_crystal_density_diffrn      2.776
+_symmetry_space_group_name_H-M 'C -1'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  '1/2+x,1/2+y,z'
+  '-x,-y,-z'
+  '1/2-x,1/2-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+Si1   0.24527   0.50259   0.29093 ?
+Si2   0.24590   0.83587   0.29108 ?
+Mg1   0.00000   0.00000   0.00000 ?
+Mg2   0.50012   0.83332   0.99994 ?
+O1   0.19910   0.83440   0.11760 ?
+O2   0.69700   0.66740   0.11260 ?
+O3   0.19800   0.50120   0.11760 ?
+O4   0.01990   0.92870   0.34810 ?
+O5   0.52020   0.91090   0.34940 ?
+O6   0.24290   0.66990   0.34840 ?
+H   0.71900   0.66900   0.20300   0.00760
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Si1 0.00870 0.00740 0.00950 0.00020 0.00140 0.00000
+Si2 0.00860 0.00740 0.00970 0.00030 0.00190 -0.00030
+Mg1 0.00760 0.00690 0.00970 0.00010 0.00170 -0.00010
+Mg2 0.00780 0.00690 0.01010 0.00000 0.00150 -0.00040
+O1 0.01000 0.00940 0.01060 0.00000 0.00170 -0.00010
+O2 0.01210 0.01020 0.01100 0.00050 0.00170 -0.00010
+O3 0.01030 0.00940 0.00970 0.00000 0.00120 0.00000
+O4 0.01040 0.01360 0.01330 0.00440 0.00150 -0.00100
+O5 0.01120 0.01410 0.01240 -0.00320 0.00220 0.00000
+O6 0.01620 0.00850 0.01200 0.00020 0.00240 0.00020
+
