@@ -2,6 +2,7 @@ import os
 import time
 import datetime
 import numpy as np
+from matplotlib.widgets import Cursor
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from ds_jcpds import convert_tth
@@ -110,6 +111,12 @@ class MplController(object):
         print("Plot takes {0:.2f}s at".format(time.time() - t_start),
               str(datetime.datetime.now())[:-7])
         self.widget.unsetCursor()
+        self.widget.cursor_pattern = Cursor(
+            self.widget.mpl.canvas.ax_pattern, useblit=False, lw = 1, ls=':')
+        self.widget.cursor_cake = Cursor(
+            self.widget.mpl.canvas.ax_cake, useblit=False, c= 'r',
+            lw = 1, ls=':')
+
 
     def _plot_ucfit(self):
         i = 0
