@@ -72,6 +72,8 @@ class MainController(object):
             self.load_jlist_from_session)
         self.widget.pushButton_UpdatePlots_tab2.clicked.connect(
             self.update_bgsub)
+        self.widget.checkBox_LongCursor.clicked.connect(
+            self.apply_changes_to_graph)
         # navigation toolbar modification.  Do not move the followings to
         # other controller files.
         """

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file './ui/pkpo-v.ui'
+# Form implementation generated from reading ui file '../ui/pkpo-v.ui'
 #
 # Created by: PyQt5 UI code generator 5.6
 #
@@ -133,6 +133,10 @@ class Ui_MainWindow(object):
         self.checkBox_AutoY.setSizePolicy(sizePolicy)
         self.checkBox_AutoY.setObjectName("checkBox_AutoY")
         self.gridLayout_20.addWidget(self.checkBox_AutoY, 2, 2, 1, 1)
+        self.checkBox_LongCursor = QtWidgets.QCheckBox(self.groupBox_34)
+        self.checkBox_LongCursor.setChecked(False)
+        self.checkBox_LongCursor.setObjectName("checkBox_LongCursor")
+        self.gridLayout_20.addWidget(self.checkBox_LongCursor, 2, 0, 1, 1)
         self.verticalLayout.addWidget(self.groupBox_34)
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
         self.verticalLayout.addItem(spacerItem)
@@ -1923,6 +1927,7 @@ class Ui_MainWindow(object):
         self.checkBox_Intensity.setText(_translate("MainWindow", "jcpd by int."))
         self.checkBox_BgSub.setText(_translate("MainWindow", "Bg sub"))
         self.checkBox_AutoY.setText(_translate("MainWindow", "Auto y scale"))
+        self.checkBox_LongCursor.setText(_translate("MainWindow", "Long cursor"))
         self.groupBox_4.setTitle(_translate("MainWindow", "Base pattern"))
         self.label_20.setText(_translate("MainWindow", "Wavelength (A)"))
         self.pushButton_NewBasePtn.setText(_translate("MainWindow", "Open"))

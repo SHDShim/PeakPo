@@ -241,6 +241,16 @@
              </property>
             </widget>
            </item>
+           <item row="2" column="0">
+            <widget class="QCheckBox" name="checkBox_LongCursor">
+             <property name="text">
+              <string>Long cursor</string>
+             </property>
+             <property name="checked">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>
