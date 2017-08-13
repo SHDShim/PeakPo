@@ -21,7 +21,7 @@ class WaterfallController(object):
         self.widget.pushButton_MakeBasePtn.clicked.connect(self.make_base_ptn)
         self.widget.pushButton_AddPatterns.clicked.connect(self.add_patterns)
         self.widget.pushButton_CleanPatterns.clicked.connect(
-            self.erase_waterfall)
+            self.erase_waterfall_list)
         self.widget.pushButton_RemovePatterns.clicked.connect(
             self.remove_waterfall)
         self.widget.pushButton_UpPattern.clicked.connect(
@@ -173,10 +173,11 @@ class WaterfallController(object):
         self.waterfall_table_ctrl.update()
         self._apply_changes_to_graph()
 
-    def erase_waterfall(self):
+    def erase_waterfall_list(self):
         self.model.reset_waterfall_ptn()
-        self.widget.tableWidget_wfPatterns.clearContents()
-        self._apply_changes_to_graph()
+        # self.widget.tableWidget_wfPatterns.clearContents()
+        self.waterfall_table_ctrl.update()
+        self._apply_changes_to_graph(reinforced=True)
 
     def remove_waterfall(self):
         reply = QtWidgets.QMessageBox.question(
