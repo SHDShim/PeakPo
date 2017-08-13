@@ -31,8 +31,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.doubleSpinBox_Pressure.setStyle(SpinBoxFixStyle())
         self.doubleSpinBox_Temperature.setKeyboardTracking(False)
         self.doubleSpinBox_Temperature.setStyle(SpinBoxFixStyle())
-        self.doubleSpinBox_WaterfallGaps.setKeyboardTracking(False)
-        self.doubleSpinBox_WaterfallGaps.setStyle(SpinBoxFixStyle())
         self.spinBox_BGParam0.setKeyboardTracking(False)
         self.spinBox_BGParam1.setKeyboardTracking(False)
         self.spinBox_BGParam2.setKeyboardTracking(False)

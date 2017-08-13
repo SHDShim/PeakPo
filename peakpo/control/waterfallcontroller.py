@@ -20,8 +20,6 @@ class WaterfallController(object):
     def connect_channel(self):
         self.widget.pushButton_MakeBasePtn.clicked.connect(self.make_base_ptn)
         self.widget.pushButton_AddPatterns.clicked.connect(self.add_patterns)
-        self.widget.doubleSpinBox_WaterfallGaps.valueChanged.connect(
-            self._apply_changes_to_graph)
         self.widget.pushButton_CleanPatterns.clicked.connect(
             self.erase_waterfall)
         self.widget.pushButton_RemovePatterns.clicked.connect(

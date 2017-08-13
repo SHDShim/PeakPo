@@ -9,7 +9,6 @@ from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 import matplotlib.style as mplstyle
 
-
 class MplCanvas(FigureCanvas):
     """Class to represent the FigureCanvas widget"""
 
@@ -71,7 +70,6 @@ class MplCanvas(FigureCanvas):
         self.ax_cake.tick_params(axis='both', which='both', length=0)
 
         self.ax_pattern.xaxis.set_label_position('bottom')
-
 
 class MplWidget(QtWidgets.QWidget):
     """Widget defined in Qt Designer"""

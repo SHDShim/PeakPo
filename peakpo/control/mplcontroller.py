@@ -243,8 +243,8 @@ class MplController(object):
                     transform=self.widget.mpl.canvas.ax_pattern.transAxes,
                     color=pattern.color)
                 if self.widget.checkBox_BgSub.isChecked():
-                    ygap = self.widget.doubleSpinBox_WaterfallGaps.value() * \
-                        self.model.base_ptn.y_bgsub.max() * float(j)
+                    ygap = self.widget.horizontalSlider_WaterfallGaps.value() * \
+                        self.model.base_ptn.y_bgsub.max() * float(j) / 100.
                     y_bgsub = pattern.y_bgsub
                     if self.widget.checkBox_IntNorm.isChecked():
                         y = y_bgsub / y_bgsub.max() * \
@@ -253,8 +253,8 @@ class MplController(object):
                         y = y_bgsub
                     x_t = pattern.x_bgsub
                 else:
-                    ygap = self.widget.doubleSpinBox_WaterfallGaps.value() * \
-                        self.model.base_ptn.y_raw.max() * float(j)
+                    ygap = self.widget.horizontalSlider_WaterfallGaps.value() * \
+                        self.model.base_ptn.y_raw.max() * float(j) / 100.
                     if self.widget.checkBox_IntNorm.isChecked():
                         y = pattern.y_raw / pattern.y_raw.max() *\
                             self.model.base_ptn.y_raw.max()
