@@ -1,5 +1,6 @@
 import os
 import sys
+import numpy as np
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from matplotlib.backends.backend_qt5agg \

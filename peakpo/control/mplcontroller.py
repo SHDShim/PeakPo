@@ -107,6 +107,14 @@ class MplController(object):
         self.widget.mpl.canvas.ax_pattern.xaxis.set_major_locator(majorLocator)
         self.widget.mpl.canvas.ax_pattern.xaxis.set_minor_locator(minorLocator)
         """
+        self.widget.mpl.canvas.ax_pattern.format_coord = lambda x, y: \
+            "x={0: .4f},y={1: 1.2e},dsp={2: .4f}".\
+            format(x, y, self.widget.doubleSpinBox_SetWavelength.value() / 2. / \
+                np.sin(np.radians(x / 2.)))
+        self.widget.mpl.canvas.ax_cake.format_coord = lambda x, y: \
+            "x={0: .4f},y={1: 1.2e},dsp={2: .4f}".\
+            format(x, y, self.widget.doubleSpinBox_SetWavelength.value() / 2. / \
+                np.sin(np.radians(x / 2.)))
         self.widget.mpl.canvas.draw()
         print("Plot takes {0:.2f}s at".format(time.time() - t_start),
               str(datetime.datetime.now())[:-7])

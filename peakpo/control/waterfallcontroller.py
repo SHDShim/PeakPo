@@ -53,6 +53,8 @@ class WaterfallController(object):
         # save the old base pattern
         old_base_ptn = copy.deepcopy(self.model.get_base_ptn())
         new_base_ptn = copy.deepcopy(self.model.waterfall_ptn[i])
+        old_color = new_base_ptn.color
+        old_base_ptn.color = old_color
         # switch the base pattern
         self.model.set_base_ptn(new_base_ptn.fname, new_base_ptn.wavelength)
         bg_roi = [self.widget.doubleSpinBox_Background_ROI_min.value(),
