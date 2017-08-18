@@ -78,24 +78,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def connect_channel(self):
         self.pushButton_RoomT.clicked.connect(
             lambda: self.set_temperature(300))
-        self.pushButton_1000K.clicked.connect(
-            lambda: self.set_temperature(1000))
-        self.pushButton_1500K.clicked.connect(
-            lambda: self.set_temperature(1500))
-        self.pushButton_2000K.clicked.connect(
-            lambda: self.set_temperature(2000))
-        self.pushButton_2500K.clicked.connect(
-            lambda: self.set_temperature(2500))
-        self.pushButton_3000K.clicked.connect(
-            lambda: self.set_temperature(3000))
-        self.pushButton_3500K.clicked.connect(
-            lambda: self.set_temperature(3500))
-        self.pushButton_4000K.clicked.connect(
-            lambda: self.set_temperature(4000))
-        self.pushButton_4500K.clicked.connect(
-            lambda: self.set_temperature(4500))
-        self.pushButton_5000K.clicked.connect(
-            lambda: self.set_temperature(5000))
+        self.pushButton_1bar.clicked.connect(
+            lambda: self.set_pressure(0.01))
         self.radioButton_P01.clicked.connect(self.set_pstep)
         self.radioButton_P1.clicked.connect(self.set_pstep)
         self.radioButton_P10.clicked.connect(self.set_pstep)
@@ -105,8 +89,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.radioButton_T100.clicked.connect(self.set_tstep)
         self.radioButton_T1000.clicked.connect(self.set_tstep)
 
-    def set_temperature(self, temperature=None):
+    def set_temperature(self, temperature):
         self.doubleSpinBox_Temperature.setValue(temperature)
+
+    def set_pressure(self, pressure):
+        self.doubleSpinBox_Pressure.setValue(pressure)
 
     def set_pstep(self, value):
         if self.radioButton_P01.isChecked():

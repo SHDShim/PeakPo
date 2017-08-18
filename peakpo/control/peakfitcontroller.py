@@ -20,21 +20,22 @@ class PeakFitController(object):
             self.set_fit_section)
         self.widget.pushButton_ConductFitting.clicked.connect(
             self.conduct_fitting)
-        self.widget.pushButton_PkSave.clicked.connect(self.save_to_section)
+        self.widget.pushButton_PkSave.clicked.connect(
+            self.save_to_section)
         self.widget.pushButton_ClearSection.clicked.connect(
             self.clear_this_section)
         self.widget.pushButton_PkFtSectionRemove.clicked.connect(
             self.remove_section)
         self.widget.pushButton_PkFtSectionClear.clicked.connect(
             self.clear_section_list)
-        self.widget.pushButton_PkFtSectionSetToCurrent.clicked.connect(
-            self.set_section_to_current)
+        self.widget.pushButton_PkFtSectionSetToCurrent.clicked.\
+            connect(self.set_section_to_current)
         self.widget.pushButton_AddRemoveFromJlist.clicked.connect(
             self.get_peaks_from_jcpds)
         self.widget.pushButton_ZoomToSection.clicked.connect(
             self.zoom_to_section)
-        self.widget.pushButton_PkFtSectionSavetoXLS.clicked.connect(
-            self.save_to_xls)
+        self.widget.pushButton_PkFtSectionSavetoXLS.clicked.\
+            connect(self.save_to_xls)
         self.widget.pushButton_PkFtSectionImport.clicked.connect(
             self.import_section_from_dpp)
         # The line below exist in session_ctrl
