@@ -108,22 +108,23 @@ class MplController(object):
         self.widget.mpl.canvas.ax_pattern.xaxis.set_minor_locator(minorLocator)
         """
         self.widget.mpl.canvas.ax_pattern.format_coord = lambda x, y: \
-            "{0: .2f},{1: .2e},dsp={2: .3f}".\
-            format(x, y, self.widget.doubleSpinBox_SetWavelength.value() / 2. / \
-                np.sin(np.radians(x / 2.)))
+            "{0:.2f},{1:.2e},dsp={2:.3f}".\
+            format(x, y, self.widget.doubleSpinBox_SetWavelength.value() / 2. /
+                   np.sin(np.radians(x / 2.)))
         self.widget.mpl.canvas.ax_cake.format_coord = lambda x, y: \
-            "{0: .2f},{1: .2e},dsp={2: .3f}".\
-            format(x, y, self.widget.doubleSpinBox_SetWavelength.value() / 2. / \
-                np.sin(np.radians(x / 2.)))
+            "{0:.2f},{1:.2e},dsp={2:.3f}".\
+            format(x, y, self.widget.doubleSpinBox_SetWavelength.value() / 2. /
+                   np.sin(np.radians(x / 2.)))
         self.widget.mpl.canvas.draw()
         print("Plot takes {0:.2f}s at".format(time.time() - t_start),
               str(datetime.datetime.now())[:-7])
         self.widget.unsetCursor()
         if self.widget.checkBox_LongCursor.isChecked():
-            self.widget.cursor = MultiCursor(self.widget.mpl.canvas,
+            self.widget.cursor = MultiCursor(
+                self.widget.mpl.canvas,
                 (self.widget.mpl.canvas.ax_pattern,
-                self.widget.mpl.canvas.ax_cake), color='r', lw=1,
-                ls=':', useblit=False)
+                 self.widget.mpl.canvas.ax_cake), color='r', lw=1,
+                ls='--', useblit=False)  # useblit not supported for pyqt5 yet
             """
             self.widget.cursor_pattern = Cursor(
                 self.widget.mpl.canvas.ax_pattern, useblit=False,
@@ -132,7 +133,6 @@ class MplController(object):
                 self.widget.mpl.canvas.ax_cake, useblit=False, c= 'r',
                 lw = 1, ls=':')
             """
-
 
     def _plot_ucfit(self):
         i = 0

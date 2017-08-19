@@ -4,7 +4,7 @@ import numpy as np
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from matplotlib.backends.backend_qt5agg \
-    import FigureCanvasQTAgg #as FigureCanvas
+    import FigureCanvasQTAgg  # as FigureCanvas
 from matplotlib.backends.backend_qt5agg \
     import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
@@ -12,6 +12,7 @@ from matplotlib.gridspec import GridSpec
 import matplotlib.style as mplstyle
 
 DEBUG = False
+
 
 class FigureCanvas(FigureCanvasQTAgg):
 
@@ -92,9 +93,10 @@ class FigureCanvas(FigureCanvasQTAgg):
                 # Adjust the stringBuffer reference count to work
                 # around a memory leak bug in QImage() under PySide on
                 # Python 3.x
+                """
                 if QT_API == 'PySide' and six.PY3:
                     ctypes.c_long.from_address(id(stringBuffer)).value = 1
-
+                """
                 origin = QtCore.QPoint(l, self.renderer.height - t)
                 pixmap = QtGui.QPixmap.fromImage(qImage)
                 p.drawPixmap(origin / self._dpi_ratio, pixmap)
@@ -108,6 +110,7 @@ class FigureCanvas(FigureCanvasQTAgg):
                 p.drawRect(x, y, w, h)
 
             p.end()
+
 
 class MplCanvas(FigureCanvas):
     """Class to represent the FigureCanvas widget"""
@@ -170,6 +173,7 @@ class MplCanvas(FigureCanvas):
         self.ax_cake.tick_params(axis='both', which='both', length=0)
 
         self.ax_pattern.xaxis.set_label_position('bottom')
+
 
 class MplWidget(QtWidgets.QWidget):
     """Widget defined in Qt Designer"""

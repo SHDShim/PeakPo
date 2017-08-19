@@ -10,26 +10,41 @@ from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
 from os import path
+# for cx_freeze
+import sys
+from cx_Freeze import setup, Executable
+
+if sys.platform == "win32":
+    base = "Win32GUI"
 
 here = path.abspath(path.dirname(__file__))
+# for cx_freeze
+application_title = "PeakPo"  # what you want to application to be called
+main_python_file = "./peakpo/peakpo.py"  # the name of the python file you use to run the progr
+base = None
+build_exe_options = {"includes": 'atexit'}
 
 # Get the long description from the README file
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='PeakPo',
+    name=application_title,
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='6.0',
+    version='7.6.2',
 
     description='X-ray diffraction alaysis for high pressure science',
     long_description=long_description,
 
+    # for cx_Freeze
+    options={"build_exe": build_exe_options},
+    executables=[Executable(main_python_file, base=base)],
+
     # The project's main homepage.
-    url='https://github.com/shdshim/xxxx',
+    url='https://github.com/shdshim/peakpo-v7',
 
     # Author details
     author='S.-H. Dan Shim',
@@ -55,7 +70,7 @@ setup(
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
 
     # What does your project relate to?
@@ -63,7 +78,7 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=find_packages(exclude=['deletables', 'setup_bin']),
+    #packages=find_packages(exclude=['deletables', 'setup_bin']),
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:
@@ -73,8 +88,8 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['matplotlib>=2.0', 'pytheos', 'pyFAI', 'pyqt4',
-        'pyfai', 'pymatgen', 'periodictable', 'uncertainties', 'pyopencl'],
+    # install_requires=['matplotlib>=2.0', 'pytheos', 'pyFAI', 'pyqt4',
+    #    'pyfai', 'pymatgen', 'periodictable', 'uncertainties', 'pyopencl'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
@@ -101,9 +116,9 @@ setup(
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
-    entry_points={
-        'console_scripts': [
-            'peakpo=peakpo.peakpo',
-        ],
-    },
+    # entry_points={
+    #    'console_scripts': [
+    #        'peakpo=peakpo.peakpo',
+    #    ],
+    #},
 )

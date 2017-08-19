@@ -5,10 +5,11 @@ PeakFt/*
 jcpds_from_cif/cif-SLAC/*
 */deletables/*
 deletables/
-./setup_bin
+./setup_bin/*
 README-forDS.rst
 */obsolete/*
 .idea/
+./setup.py
 
 ### conda setup ###
 conda-build-recipe/
