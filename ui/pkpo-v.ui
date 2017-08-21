@@ -53,7 +53,7 @@
      </widget>
     </item>
     <item row="2" column="1">
-     <widget class="QTabWidget" name="tabWidget">
+     <widget class="QTabWidget" name="tabWidget_Utils">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
         <horstretch>0</horstretch>
@@ -85,7 +85,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>6</number>
       </property>
       <property name="iconSize">
        <size>
@@ -1720,7 +1720,7 @@
            <item>
             <widget class="QPushButton" name="pushButton_IntegrateCake">
              <property name="text">
-              <string>Wright CHI from current azimuthal range</string>
+              <string>Write CHI from current azimuthal range</string>
              </property>
             </widget>
            </item>
