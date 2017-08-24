@@ -32,7 +32,7 @@ class Section(object):
 
     def invalidate_fit_result(self):
         """use with caution"""
-        self.fit_result = None
+        # self.fit_result = None
 
     def fitted(self):
         if (self.fit_result is None):

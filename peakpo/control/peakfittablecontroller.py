@@ -39,7 +39,7 @@ class PeakfitTableController(object):
             self.widget.tableWidget_PkParams.setItem(row, 2, Item)
             Item = QtWidgets.QTableWidgetItem(str(int(peak['l'])))
             self.widget.tableWidget_PkParams.setItem(row, 3, Item)
-            amp = "{:.5e}".format(peak['amplitude'])
+            amp = "{:f}".format(peak['amplitude'])
             Item = QtWidgets.QTableWidgetItem(amp)
             Item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
             self.widget.tableWidget_PkParams.setItem(row, 4, Item)
