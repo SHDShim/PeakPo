@@ -145,7 +145,8 @@ class BasePatternController(object):
         else:
             self._update_bgsub_from_current_values()
         filen_tif = self.model.make_filename('tif', original=True)
-        if not os.path.exists(filen_tif):
+        filen_mar3450 = self.model.make_filename('mar3450', original=True)
+        if not (os.path.exists(filen_tif) or os.path.exists(filen_mar3450)):
             self.widget.checkBox_ShowCake.setChecked(False)
             return
         # self._update_bg_params_in_widget()

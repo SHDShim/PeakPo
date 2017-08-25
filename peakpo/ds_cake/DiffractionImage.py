@@ -1,11 +1,12 @@
 import os
 import time
 from PIL import Image
+import fabio
 import numpy.ma as ma
 import numpy as np
 import pyFAI
 import matplotlib.pyplot as plt
-from utils import make_filename
+from utils import make_filename, extract_extension
 
 
 class DiffImg(object):
@@ -22,7 +23,11 @@ class DiffImg(object):
 
     def load(self, img_filename):
         self.img_filename = img_filename
-        data = Image.open(self.img_filename)
+        if extract_extension(self.img_filename) == 'tif':
+            data = Image.open(self.img_filename)
+        elif extract_extension(self.img_filename) == 'mar3450':
+            data_fabio = fabio.open(img_filename)
+            data = data_fabio.data
         self.img = np.array(data)[::-1]
 
     def histogram(self):
@@ -42,6 +47,9 @@ class DiffImg(object):
         self.poni = pyFAI.load(poni_filename)
 
     def calculate_n_azi_pnts(self):
+        """
+        circular for mar3450 style detector.
+        """
         x_dim = self.img.shape[0]
         y_dim = self.img.shape[1]
         fit2d_parameter = self.poni.getFit2D()
@@ -52,18 +60,17 @@ class DiffImg(object):
             side1 = np.max([abs(x_dim - center_x), center_x])
         else:
             side1 = x_dim
-
         if center_y < y_dim and center_y > 0:
             side2 = np.max([abs(y_dim - center_y), center_y])
         else:
             side2 = y_dim
         max_dist = np.sqrt(side1 ** 2 + side2 ** 2)
-        return int(max_dist)
+        return int(max_dist * 2)
 
     def calculate_max_twotheta(self):
         d = self.poni.dist
         r = self.calculate_n_azi_pnts() * \
-            np.max([self.poni.pixel1, self.poni.pixel2])
+            np.max([self.poni.pixel1, self.poni.pixel2]) / 2.
         tth_max = np.rad2deg(np.arctan(r / d))
         return tth_max
 
@@ -72,8 +79,8 @@ class DiffImg(object):
         radial_range = (0., self.calculate_max_twotheta())
         tth, intensity = self.poni.integrate1d(
             self.img, n_azi_pnts, radial_range=radial_range,
-            mask=self.mask, unit="2th_deg", method='csr',
-            **kwargs)
+            mask=self.mask, unit="2th_deg", polarization_factor=0.99,
+            method='csr', **kwargs)
         """
         self.tth = tth
         self.intensity = intensity
@@ -86,7 +93,7 @@ class DiffImg(object):
         radial_range = (0., self.calculate_max_twotheta())
         intensity_cake, tth_cake, chi_cake = self.poni.integrate2d(
             self.img, n_azi_pnts, 360, unit="2th_deg", method='csr',
-            radial_range=radial_range, mask=self.mask,
+            radial_range=radial_range, polarization_factor=0.99, mask=self.mask,
             **kwargs)
         print("Caking takes {0:.2f}s".format(time.time() - t_start))
         self.intensity_cake = intensity_cake

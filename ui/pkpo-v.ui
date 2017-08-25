@@ -53,7 +53,7 @@
      </widget>
     </item>
     <item row="2" column="1">
-     <widget class="QTabWidget" name="tabWidget_Utils">
+     <widget class="QTabWidget" name="tabWidget">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
         <horstretch>0</horstretch>
@@ -85,7 +85,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>6</number>
+       <number>0</number>
       </property>
       <property name="iconSize">
        <size>
@@ -3088,6 +3088,9 @@
                </item>
                <item>
                 <widget class="QPushButton" name="pushButton_PkFtSectionClear">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="text">
                   <string>Clear</string>
                  </property>

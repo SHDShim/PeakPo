@@ -1673,6 +1673,7 @@ class Ui_MainWindow(object):
         self.pushButton_PkFtSectionRemove.setObjectName("pushButton_PkFtSectionRemove")
         self.horizontalLayout_8.addWidget(self.pushButton_PkFtSectionRemove)
         self.pushButton_PkFtSectionClear = QtWidgets.QPushButton(self.groupBox_28)
+        self.pushButton_PkFtSectionClear.setEnabled(False)
         self.pushButton_PkFtSectionClear.setObjectName("pushButton_PkFtSectionClear")
         self.horizontalLayout_8.addWidget(self.pushButton_PkFtSectionClear)
         self.pushButton_PkFtSectionSetToCurrent = QtWidgets.QPushButton(self.groupBox_28)
@@ -2020,7 +2021,7 @@ class Ui_MainWindow(object):
         self.pushButton_ApplyMask.setText(_translate("MainWindow", "Apply"))
         self.groupBox_19.setTitle(_translate("MainWindow", "1D pattern"))
         self.pushButton_IntegrateCake.setText(_translate(
-            "MainWindow", "Wright CHI from current azimuthal range"))
+            "MainWindow", "Write CHI from current azimuthal range"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(
             self.tab_Cake), _translate("MainWindow", "Cake"))
         self.groupBox_9.setTitle(_translate("MainWindow", "List"))
