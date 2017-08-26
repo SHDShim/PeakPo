@@ -1,3 +1,5 @@
+import os
+import glob
 import numpy as np
 from matplotlib.backend_bases import key_press_handler
 from PyQt5 import QtWidgets
@@ -90,6 +92,40 @@ class MainController(object):
         # self.widget.actionClose.triggered.connect(self.closeEvent)
         self.widget.tabWidget.currentChanged.connect(self.check_for_peakfit)
         # self.widget.tabWidget.setTabEnabled(8, False)
+        self.widget.pushButton_DelTempCHI.clicked.connect(self.del_temp_chi)
+        self.widget.pushButton_DelTempCake.clicked.connect(self.del_temp_cake)
+
+    def del_temp_chi(self):
+        reply = QtWidgets.QMessageBox.question(
+            self.widget, 'Message',
+            'This can slow down PeakPo, but update the background. Proceed?',
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.Yes)
+        if reply == QtWidgets.QMessageBox.No:
+            return
+        if self._temporary_pkpo_exists():
+            temp_chi = os.path.join(self.model.chi_path, 'temporary_pkpo',
+                                    '*.chi')
+            for f in glob.glob(temp_chi):
+                os.remove(f)
+
+    def del_temp_cake(self):
+        reply = QtWidgets.QMessageBox.question(
+            self.widget, 'Message',
+            'This can slow down PeakPo, but update PONI. Proceed?',
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.Yes)
+        if reply == QtWidgets.QMessageBox.No:
+            return
+        if self._temporary_pkpo_exists():
+            temp_cake = os.path.join(self.model.chi_path, 'temporary_pkpo',
+                                     '*.npy')
+            for f in glob.glob(temp_cake):
+                os.remove(f)
+
+    def _temporary_pkpo_exists(self):
+        temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
+        return os.path.exists(temp_dir)
 
     def check_for_peakfit(self, i):
         if i == 8:
