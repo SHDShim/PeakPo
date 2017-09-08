@@ -2,6 +2,7 @@ import os
 import time
 import datetime
 import numpy as np
+import numpy.ma as ma
 from matplotlib.widgets import MultiCursor
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
@@ -173,15 +174,16 @@ class MplController(object):
         min_slider_pos = self.widget.horizontalSlider_VMin.value()
         max_slider_pos = self.widget.horizontalSlider_VMax.value()
         if (max_slider_pos <= min_slider_pos):
-            self.widget.horizontalSlider_VMin.setValue(25)
-            self.widget.horizontalSlider_VMax.setValue(75)
+            self.widget.horizontalSlider_VMin.setValue(1)
+            self.widget.horizontalSlider_VMax.setValue(99)
         prefactor = self.widget.horizontalSlider_MaxScaleBars.value() / 100. * \
             intensity_cake.max() / 100.
+        intensity_cake_plot = ma.masked_values(intensity_cake, 0.)
         climits =  \
             (prefactor * self.widget.horizontalSlider_VMin.value(),
              prefactor * self.widget.horizontalSlider_VMax.value())
         self.widget.mpl.canvas.ax_cake.imshow(
-            intensity_cake, origin="lower",
+            intensity_cake_plot, origin="lower",
             extent=[tth_cake.min(), tth_cake.max(),
                     chi_cake.min(), chi_cake.max()],
             aspect="auto", cmap="gray_r", clim=climits)

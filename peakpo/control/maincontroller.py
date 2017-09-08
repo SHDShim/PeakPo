@@ -94,6 +94,21 @@ class MainController(object):
         # self.widget.tabWidget.setTabEnabled(8, False)
         self.widget.pushButton_DelTempCHI.clicked.connect(self.del_temp_chi)
         self.widget.pushButton_DelTempCake.clicked.connect(self.del_temp_cake)
+        # slide bars
+        self.widget.horizontalSlider_VMin.setValue(0)
+        self.widget.horizontalSlider_VMax.setValue(100)
+        self.widget.horizontalSlider_MaxScaleBars.valueChanged.connect(
+            self.apply_changes_to_graph)
+        self.widget.horizontalSlider_VMin.valueChanged.connect(
+            self.apply_changes_to_graph)
+        self.widget.horizontalSlider_VMax.valueChanged.connect(
+            self.apply_changes_to_graph)
+        self.widget.horizontalSlider_CakeAxisSize.valueChanged.connect(
+            self.apply_changes_to_graph)
+        self.widget.horizontalSlider_JCPDSBarScale.valueChanged.connect(
+            self.apply_changes_to_graph)
+        self.widget.horizontalSlider_WaterfallGaps.valueChanged.connect(
+            self.apply_changes_to_graph)
 
     def del_temp_chi(self):
         reply = QtWidgets.QMessageBox.question(
