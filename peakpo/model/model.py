@@ -112,7 +112,7 @@ class PeakPoModel(object):
                     new_fname = change_file_path(ptn.fname, new_chi_path)
                     if os.path.exists(new_fname):
                         ptn.fname = new_fname
-                        new_waterfall_pnt.append(ptn)
+                        new_waterfall_ptn.append(ptn)
                 if new_waterfall_ptn != []:
                     model_r.waterfall_ptn = new_waterfall_ptn
             if model_r.diff_img is not None:

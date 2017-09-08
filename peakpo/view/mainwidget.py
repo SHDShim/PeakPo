@@ -47,6 +47,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.ntb_WholePtn = QtWidgets.QPushButton()
         self.ntb_WholePtn.setText("ZoomOut")
         self.mpl.ntb.addWidget(self.ntb_WholePtn)
+        self.ntb_SaveSession = QtWidgets.QPushButton()
+        self.ntb_SaveSession.setText("SaveSession")
+        self.mpl.ntb.addWidget(self.ntb_SaveSession)
         """
         self.ntb_toPkFt = QtWidgets.QPushButton()
         self.ntb_toPkFt.setText("toPkFt")

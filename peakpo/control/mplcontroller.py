@@ -62,7 +62,8 @@ class MplController(object):
         if (not self.model.base_ptn_exist()) and \
                 (not self.model.jcpds_exist()):
             return
-        if self.widget.checkBox_ShowCake.isChecked():
+        if self.widget.checkBox_ShowCake.isChecked() and \
+                self.model.diff_img_exist():
             self.widget.mpl.canvas.resize_axes(
                 self.widget.horizontalSlider_CakeAxisSize.value())
             self._plot_cake()

@@ -2,6 +2,7 @@ import os
 from PyQt5 import QtWidgets
 from utils import undo_button_press, dialog_savefile, writechi
 from .mplcontroller import MplController
+from .cakemakecontroller import CakemakeController
 
 
 class CakeController(object):
@@ -9,6 +10,7 @@ class CakeController(object):
     def __init__(self, model, widget):
         self.model = model
         self.widget = widget
+        self.cakemake_ctrl = CakemakeController(self.model, self.widget)
         self.plot_ctrl = MplController(self.model, self.widget)
         self.connect_channel()
 
@@ -27,9 +29,7 @@ class CakeController(object):
         if tth_range is None:
             return
         # self.produce_cake()
-        self.model.diff_img.set_calibration(self.model.poni)
-        self.model.diff_img.set_mask((self.widget.spinBox_MaskMin.value(),
-                                      self.widget.spinBox_MaskMax.value()))
+        self.cakemake_ctrl.read_settings()
         tth, intensity = self.model.diff_img.integrate_to_1d(
             azimuth_range=azi_range)
         ext = "{0:d}to{1:d}.chi".format(int(azi_range[0]), int(azi_range[1]))
@@ -108,10 +108,7 @@ class CakeController(object):
         does not signal to update_graph
         """
         self._load_new_image()
-        self.model.diff_img.set_calibration(self.model.poni)
-        self.model.diff_img.set_mask((self.widget.spinBox_MaskMin.value(),
-                                      self.widget.spinBox_MaskMax.value()))
-        self.model.diff_img.integrate_to_cake()
+        self.cakemake_ctrl.cook()
 
     def process_temp_cake(self):
         """

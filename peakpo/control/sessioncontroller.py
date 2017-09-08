@@ -1,11 +1,13 @@
 import os
 import dill
 import zipfile
+import copy
 from PyQt5 import QtWidgets
 from .mplcontroller import MplController
 from .waterfalltablecontroller import WaterfallTableController
 from .jcpdstablecontroller import JcpdsTableController
 from .peakfittablecontroller import PeakfitTableController
+from .cakemakecontroller import CakemakeController
 from utils import dialog_savefile
 
 
@@ -20,6 +22,7 @@ class SessionController(object):
         self.jcpdstable_ctrl = JcpdsTableController(self.model, self.widget)
         self.peakfit_table_ctrl = PeakfitTableController(
             self.model, self.widget)
+        self.cakemake_ctrl = CakemakeController(self.model, self.widget)
         self.connect_channel()
 
     def connect_channel(self):
@@ -33,6 +36,7 @@ class SessionController(object):
             self.save_dpp)
         self.widget.pushButton_SaveDPPandPPSS.clicked.connect(
             self.save_dpp_ppss)
+        self.widget.ntb_SaveSession.clicked.connect(self.save_dpp_ppss)
 
     def load_ppss(self):
         """
@@ -161,6 +165,9 @@ class SessionController(object):
         else:
             self.model.set_from(model_dpp, new_chi_path=new_folder,
                                 jlistonly=jlistonly)
+        if self.model.poni_exist() and (not self.model.diff_img_exist()):
+            self.model.load_associated_img()
+            self.cakemake_ctrl.cook()
         self.widget.textEdit_Jlist.setText('Jlist: ' + str(filen_dpp))
         self.widget.textEdit_DiffractionPatternFileName.setText(
             '1D pattern: ' + str(self.model.base_ptn.fname))
@@ -172,6 +179,8 @@ class SessionController(object):
             self.model.get_saved_pressure())
         self.widget.doubleSpinBox_Temperature.setValue(
             self.model.get_saved_temperature())
+        self.widget.doubleSpinBox_SetWavelength.setValue(
+            self.model.get_base_ptn_wavelength())
         return True
 
         """
@@ -299,7 +308,13 @@ class SessionController(object):
 
     def _dump_dpp(self, filen_dpp):
         with open(filen_dpp, 'wb') as f:
-            dill.dump(self.model, f)
+            # cake cannot be dilled, so I remove it before dill
+            model_dill = copy.deepcopy(self.model)
+            try:
+                dill.dump(model_dill, f)
+            except:
+                model_dill.diff_img = None
+                dill.dump(model_dill, f)
 
     def _dump_ppss(self, fsession):
         """
