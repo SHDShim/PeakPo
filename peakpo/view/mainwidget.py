@@ -45,10 +45,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.doubleSpinBox_SetWavelength.setStyle(SpinBoxFixStyle())
         # navigation toolbar modification
         self.ntb_WholePtn = QtWidgets.QPushButton()
-        self.ntb_WholePtn.setText("ZoomOut")
+        self.ntb_WholePtn.setText("Z")
+        self.ntb_WholePtn.setToolTip("Zoom Out")
         self.mpl.ntb.addWidget(self.ntb_WholePtn)
         self.ntb_SaveSession = QtWidgets.QPushButton()
-        self.ntb_SaveSession.setText("SaveSession")
+        self.ntb_SaveSession.setText("S")
+        self.ntb_SaveSession.setToolTip("Save dpp and ppss")
         self.mpl.ntb.addWidget(self.ntb_SaveSession)
         """
         self.ntb_toPkFt = QtWidgets.QPushButton()
