@@ -163,13 +163,19 @@ class MplCanvas(FigureCanvas):
 
     def set_toNight(self, NightView=True):
         if NightView:
-            mplstyle.use(
-                os.path.join(os.path.curdir, 'mplstyle', 'night.mplstyle'))
+            try:
+                mplstyle.use(
+                    os.path.join(os.path.curdir, 'mplstyle', 'night.mplstyle'))
+            except:
+                mplstyle.use('dark_background')
             self.bgColor = 'black'
             self.objColor = 'white'
         else:
-            mplstyle.use(
-                os.path.join(os.path.curdir, 'mplstyle', 'day.mplstyle'))
+            try:
+                mplstyle.use(
+                    os.path.join(os.path.curdir, 'mplstyle', 'day.mplstyle'))
+            except:
+                mplstyle.use('classic')
             self.bgColor = 'white'
             self.objColor = 'black'
 #        self.fig.clf()
