@@ -1,5 +1,6 @@
 import sys
 import time
+import numpy
 import traceback
 from io import StringIO
 from PyQt5 import QtWidgets

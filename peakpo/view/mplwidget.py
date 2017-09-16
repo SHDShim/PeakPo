@@ -123,9 +123,9 @@ class MplCanvas(FigureCanvas):
         width, height = bbox.width * self.fig.dpi, bbox.height * self.fig.dpi
         self.fig.subplots_adjust(
             left=40 / width,
-            bottom=10 / height,
+            bottom=20 / height,
             right=1 - 5 / width,
-            top=1 - 15 / height,
+            top=1 - 30 / height,
             hspace=0.0)
         # left=0.07, right=0.98,
         # top=0.94, bottom=0.07, hspace=0.0)
