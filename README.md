@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.810401.svg)](https://doi.org/10.5281/zenodo.810401)
 
-A python application for X-ray diffraction analysis for samples at high pressure and high temperature.
+A python application for X-ray diffraction analysis for the samples at high pressure and high temperature.
 
 ## Manual
 
