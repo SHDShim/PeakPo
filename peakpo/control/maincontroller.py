@@ -271,7 +271,7 @@ class MainController(object):
             if self.widget.mpl.ntb._active == 'ZOOM':
                 self.widget.mpl.ntb.zoom()
         elif event.key == 's':
-            self.session_ctrl.save_session_with_default_name()
+            self.session_ctrl.save_dpp_ppss()
         elif event.key == 'w':
             self.plot_new_graph()
         elif event.key == 'v':

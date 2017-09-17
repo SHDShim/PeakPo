@@ -126,20 +126,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def about(self):
         self.textEdit_about.setText(
-            'PeakPo<br><br>' +
-            'A Visual Diffraction Analysis Tool<br><br>' +
+            'PeakPo ver.' + __version__ + '<br>' +
+            'A Visual Diffraction Analysis Tool<br>' +
             'by S.-H. Dan Shim, SHDShim@gmail.com<br>' +
             'Arizona State University<br><br>' +
-            'where to find updates: https://github.com/SHDShim/peakpo-v7 <br><br>' +
+            'Source: https://github.com/SHDShim/peakpo-v7 <br><br>' +
+            'Manual: https://github.com/SHDShim/PeakPo/wiki <br><br>'
             'how to cite: ' + str(__citation__) + '<br><br>'
             'WARNING. Use at your own risk. ' +
-            'This is a free software and no support is provided.<br>' +
-            'You may report bugs or send comments to SHDShim@gmail.com.')
+            'This is a free software and no support is provided.<br>')
 
     def shortcutkeys(self):
         self.textEdit_shortcuts.setText(
             '** Shortcut Keys ** <br><br>' +
-            'To activate shortcut keys, make sure no mpl buttons are in press. <br>'
+            'To activate shortcut keys: <br>' +
+            ' - Mouse click the plotting area. <br>' +
+            ' - Make sure no toolbar buttons are in blue. <br><br>' +
             'Save session: s<br>' +
             'Rescale vertical: v<br>' +
             'Whole spectrum: w<br>' +
