@@ -77,8 +77,8 @@ class MplController(object):
             self._plot_diffpattern()
             if self.model.waterfall_exist():
                 self._plot_waterfallpatterns()
-        if self.model.jcpds_exist():
-            self._plot_jcpds()
+        # if self.model.jcpds_exist():
+        #    self._plot_jcpds(limits)
         if self.model.ucfit_exist():
             self._plot_ucfit()
         if (self.widget.tabWidget.currentIndex() == 8):
@@ -86,6 +86,8 @@ class MplController(object):
         self.widget.mpl.canvas.ax_pattern.set_xlim(limits[0], limits[1])
         if not self.widget.checkBox_AutoY.isChecked():
             self.widget.mpl.canvas.ax_pattern.set_ylim(limits[2], limits[3])
+        if self.model.jcpds_exist():
+            self._plot_jcpds(limits)
         xlabel = 'Two Theta (degrees), ' + \
             "{0: 5.1f} GPa, {1: 4.0f} K, {2: 6.4f} A".\
             format(self.widget.doubleSpinBox_Pressure.value(),
@@ -182,13 +184,17 @@ class MplController(object):
         climits =  \
             (prefactor * self.widget.horizontalSlider_VMin.value(),
              prefactor * self.widget.horizontalSlider_VMax.value())
+        if self.widget.checkBox_WhiteForPeak.isChecked():
+            cmap = 'gray'
+        else:
+            cmap = 'gray_r'
         self.widget.mpl.canvas.ax_cake.imshow(
             intensity_cake_plot, origin="lower",
             extent=[tth_cake.min(), tth_cake.max(),
                     chi_cake.min(), chi_cake.max()],
-            aspect="auto", cmap="gray_r", clim=climits)
+            aspect="auto", cmap=cmap, clim=climits) #gray_r
 
-    def _plot_jcpds(self):
+    def _plot_jcpds(self, axisrange):
         if (not self.widget.checkBox_JCPDSinPattern.isChecked()) and \
                 (not self.widget.checkBox_JCPDSinCake.isChecked()):
             return
@@ -198,7 +204,7 @@ class MplController(object):
                 i += 1
         if i == 0:
             return
-        axisrange = self.widget.mpl.canvas.ax_pattern.axis()
+        # axisrange = self.widget.mpl.canvas.ax_pattern.axis()
         bar_scale = 1. / 100. * axisrange[3] * \
             self.widget.horizontalSlider_JCPDSBarScale.value() / 100.
         for phase in self.model.jcpds_lst:

@@ -67,7 +67,7 @@ class MainController(object):
             self.apply_pt_to_graph)
         self.widget.doubleSpinBox_SetWavelength.valueChanged.connect(
             self.apply_wavelength)
-        self.widget.pushButton_SaveCHI.clicked.connect(self.save_bgsubchi)
+        self.widget.pushButton_SaveBgSubCHI.clicked.connect(self.save_bgsubchi)
         self.widget.pushButton_ExportToUCFit.clicked.connect(
             self.export_to_ucfit)
         self.widget.pushButton_ImportJlist.clicked.connect(
