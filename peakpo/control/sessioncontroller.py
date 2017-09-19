@@ -8,7 +8,7 @@ from .waterfalltablecontroller import WaterfallTableController
 from .jcpdstablecontroller import JcpdsTableController
 from .peakfittablecontroller import PeakfitTableController
 from .cakemakecontroller import CakemakeController
-from utils import dialog_savefile
+from utils import dialog_savefile, convert_wl_to_energy
 
 
 class SessionController(object):
@@ -90,7 +90,7 @@ class SessionController(object):
                 self.widget, "Warning",
                 "The JCPDS in the PPSS cannot be found.")
         else:
-            self.widget.textEdit_Jlist.setText('Jlist: ' + str(fsession))
+            self.widget.textEdit_Jlist.setText(str(fsession))
         if jlistonly:
             return
         success = self._load_base_ptn_from_ppss(fsession)
@@ -99,12 +99,11 @@ class SessionController(object):
                 self.widget, "Warning",
                 "The base pattern file in the PPSS cannot be found.")
         else:
-            self.widget.textEdit_DiffractionPatternFileName.setText(
-                '1D pattern: ' + str(self.model.base_ptn.fname))
+            #self.widget.textEdit_DiffractionPatternFileName.setText(
+            #    '1D pattern: ' + str(self.model.base_ptn.fname))
             self.widget.lineEdit_DiffractionPatternFileName.setText(
                 str(self.model.base_ptn.fname))
-            self.widget.textEdit_SessionFileName.setText(
-                'Session: ' + str(fsession))
+            self.widget.textEdit_SessionFileName.setText(str(fsession))
         success = self._load_waterfall_ptn_from_ppss()
         if not success:
             QtWidgets.QMessageBox.warning(
@@ -168,19 +167,30 @@ class SessionController(object):
         if self.model.poni_exist() and (not self.model.diff_img_exist()):
             self.model.load_associated_img()
             self.cakemake_ctrl.cook()
-        self.widget.textEdit_Jlist.setText('Jlist: ' + str(filen_dpp))
-        self.widget.textEdit_DiffractionPatternFileName.setText(
-            '1D pattern: ' + str(self.model.base_ptn.fname))
+        self.widget.textEdit_Jlist.setText(str(filen_dpp))
+        # self.widget.textEdit_DiffractionPatternFileName.setText(
+        #    '1D pattern: ' + str(self.model.base_ptn.fname))
         self.widget.lineEdit_DiffractionPatternFileName.setText(
             str(self.model.base_ptn.fname))
-        self.widget.textEdit_SessionFileName.setText(
-            'Session: ' + str(filen_dpp))
+        self.widget.textEdit_SessionFileName.setText(str(filen_dpp))
+        if self.model.poni_exist():
+            self.widget.textEdit_PONI.setText(self.model.poni)
+        else:
+            self.widget.textEdit_PONI.setText('')
+        if self.model.diff_img_exist():
+            self.widget.textEdit_DiffractionImageFilename.setText(
+                self.model.diff_img.img_filename)
+        else:
+            self.widget.textEdit_DiffractionImageFilename.setText(
+                'Image file must have the same name as base ptn in the same folder.')
         self.widget.doubleSpinBox_Pressure.setValue(
             self.model.get_saved_pressure())
         self.widget.doubleSpinBox_Temperature.setValue(
             self.model.get_saved_temperature())
         self.widget.doubleSpinBox_SetWavelength.setValue(
             self.model.get_base_ptn_wavelength())
+        xray_energy = convert_wl_to_energy(self.model.get_base_ptn_wavelength())
+        self.widget.label_XRayEnergy.setText("({:.3f} keV)".format(xray_energy))
         return True
 
         """
@@ -232,6 +242,8 @@ class SessionController(object):
                                      self.model.session.bg_params, yshift=0)
         self.widget.doubleSpinBox_SetWavelength.setValue(
             self.model.session.wavelength)
+        xray_energy = convert_wl_to_energy(self.model.session.wavelength)
+        self.widget.label_XRayEnergy.setText("({:.3f} keV)".format(xray_energy))
         self.widget.doubleSpinBox_Pressure.setValue(
             self.model.session.pressure)
         self.widget.doubleSpinBox_Temperature.setValue(
@@ -394,8 +406,7 @@ class SessionController(object):
             self.model.save_temperature(
                 self.widget.doubleSpinBox_Temperature.value())
             self._dump_dpp(new_filename)
-            self.widget.textEdit_SessionFileName.setText('Session: ' +
-                                                         str(new_filename))
+            self.widget.textEdit_SessionFileName.setText(str(new_filename))
             self.widget.tableWidget_PkFtSections.setStyleSheet(
                 "Background-color:None;color:rgb(0,0,0);")
 
@@ -415,8 +426,7 @@ class SessionController(object):
             new_filename = dialog_savefile(self.widget, fsession)
         if new_filename != '':
             self._dump_ppss(new_filename)
-            self.widget.textEdit_SessionFileName.setText('Session: ' +
-                                                         str(new_filename))
+            self.widget.textEdit_SessionFileName.setText(str(new_filename))
 
     def save_ppss_with_default_name(self):
         if not self.model.base_ptn_exist():
@@ -433,8 +443,7 @@ class SessionController(object):
                 return
         if str(fsession) != '':
             self._dump_ppss(str(fsession))
-            self.widget.textEdit_SessionFileName.setText(
-                'Session: ' + str(fsession))
+            self.widget.textEdit_SessionFileName.setText(str(fsession))
 
     def reset_bgsub(self):
         '''

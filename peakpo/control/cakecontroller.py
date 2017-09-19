@@ -23,6 +23,8 @@ class CakeController(object):
         self.widget.pushButton_ApplyMask.clicked.connect(self.apply_mask)
         self.widget.pushButton_IntegrateCake.clicked.connect(
             self.integrate_to_1d)
+        self.widget.checkBox_WhiteForPeak.clicked.connect(
+            self._apply_changes_to_graph)
 
     def integrate_to_1d(self):
         tth_range, azi_range = self.plot_ctrl.get_cake_range()
@@ -96,7 +98,7 @@ class CakeController(object):
         self.model.reset_diff_img()
         self.model.load_associated_img()
         self.widget.textEdit_DiffractionImageFilename.setText(
-            '2D Image: ' + self.model.diff_img.img_filename)
+            self.model.diff_img.img_filename)
 
     def apply_mask(self):
         self.produce_cake()
@@ -150,7 +152,7 @@ class CakeController(object):
         filename = str(filen)
         if os.path.exists(filename):
             self.model.poni = filename
-            self.widget.textEdit_PONI.setText('PONI: ' + self.model.poni)
+            self.widget.textEdit_PONI.setText(self.model.poni)
             if self.model.diff_img_exist():
                 self.produce_cake()
             self._apply_changes_to_graph()

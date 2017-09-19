@@ -126,8 +126,8 @@ class BasePatternController(object):
         """
         self.model.set_base_ptn(
             new_filename, self.widget.doubleSpinBox_SetWavelength.value())
-        self.widget.textEdit_DiffractionPatternFileName.setText(
-            '1D Pattern: ' + self.model.get_base_ptn_filename())
+        # self.widget.textEdit_DiffractionPatternFileName.setText(
+        #    '1D Pattern: ' + self.model.get_base_ptn_filename())
         self.widget.lineEdit_DiffractionPatternFileName.setText(
             str(self.model.get_base_ptn_filename()))
         temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')

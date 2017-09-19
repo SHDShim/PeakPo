@@ -5,7 +5,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtGui
 from .mplcontroller import MplController
 from .waterfalltablecontroller import WaterfallTableController
-
+from utils import convert_wl_to_energy
 
 class WaterfallController(object):
 
@@ -70,6 +70,8 @@ class WaterfallController(object):
             str(self.model.get_base_ptn_filename()))
         self.widget.doubleSpinBox_SetWavelength.setValue(
             self.model.get_base_ptn_wavelength())
+        xray_energy = convert_wl_to_energy(self.model.get_base_ptn_wavelength())
+        self.widget.label_XRayEnergy.setText("({:.3f} keV)".format(xray_energy))
         self.waterfall_table_ctrl.update()
         self._apply_changes_to_graph()
 

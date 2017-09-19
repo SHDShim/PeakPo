@@ -19,7 +19,8 @@ from .jcpdstablecontroller import JcpdsTableController
 from .ucfittablecontroller import UcfitTableController
 from .sessioncontroller import SessionController
 from .peakfitcontroller import PeakFitController
-from utils import dialog_savefile, writechi, extract_extension
+from utils import dialog_savefile, writechi, extract_extension, \
+    convert_wl_to_energy
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
 from ds_jcpds import UnitCell
@@ -166,7 +167,7 @@ class MainController(object):
             self.session_ctrl._load_ppss(fn_jlist, jlistonly=True)
         elif extract_extension(fn_jlist) == 'dpp':
             self.session_ctrl._load_dpp(fn_jlist, jlistonly=True)
-        self.widget.textEdit_Jlist.setText('Jlist: ' + str(fn_jlist))
+        self.widget.textEdit_Jlist.setText(str(fn_jlist))
         self.jcpdstable_ctrl.update()
         self.plot_ctrl.update()
 
@@ -352,6 +353,8 @@ class MainController(object):
         # self.wavelength = value
         self.model.base_ptn.wavelength = \
             self.widget.doubleSpinBox_SetWavelength.value()
+        xray_energy = convert_wl_to_energy(self.model.base_ptn.wavelength)
+        self.widget.label_XRayEnergy.setText("({:.3f} keV)".format(xray_energy))
         self.plot_ctrl.update()
 
     def update_bgsub(self):
