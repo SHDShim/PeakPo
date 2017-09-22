@@ -131,7 +131,10 @@ class MplController(object):
             self.widget.cursor = MultiCursor(
                 self.widget.mpl.canvas,
                 (self.widget.mpl.canvas.ax_pattern,
-                 self.widget.mpl.canvas.ax_cake), color='r', lw=1,
+                 self.widget.mpl.canvas.ax_cake), color='r',
+                lw=float(
+                    self.widget.comboBox_VertCursorThickness.
+                    currentText()),
                 ls='--', useblit=False)  # useblit not supported for pyqt5 yet
             """
             self.widget.cursor_pattern = Cursor(

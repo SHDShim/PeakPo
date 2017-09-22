@@ -24,6 +24,7 @@ class FigureCanvas(FigureCanvasQTAgg):
         """
         # if the canvas does not have a renderer, then give up and wait for
         # FigureCanvasAgg.draw(self) to be called
+        thickness = 5
         if not hasattr(self, 'renderer'):
             return
 
@@ -60,7 +61,7 @@ class FigureCanvas(FigureCanvasQTAgg):
 
             # draw the zoom rectangle to the QPainter
             if self._drawRect is not None:
-                pen = QtGui.QPen(QtCore.Qt.red, 5 / self._dpi_ratio,
+                pen = QtGui.QPen(QtCore.Qt.red, thickness / self._dpi_ratio,
                                  QtCore.Qt.DotLine)
                 p.setPen(pen)
                 x, y, w, h = self._drawRect
@@ -103,7 +104,7 @@ class FigureCanvas(FigureCanvasQTAgg):
 
             # draw the zoom rectangle to the QPainter
             if self._drawRect is not None:
-                pen = QtGui.QPen(QtCore.Qt.black, 1 / self._dpi_ratio,
+                pen = QtGui.QPen(QtCore.Qt.black, thickness / self._dpi_ratio,
                                  QtCore.Qt.DotLine)
                 p.setPen(pen)
                 x, y, w, h = self._drawRect
