@@ -77,6 +77,19 @@ class MainController(object):
             self.update_bgsub)
         self.widget.checkBox_LongCursor.clicked.connect(
             self.apply_changes_to_graph)
+        self.widget.comboBox_BasePtnLineThickness.currentIndexChanged.connect(
+            self.apply_changes_to_graph)
+        self.widget.comboBox_PtnJCPDSBarThickness.currentIndexChanged.connect(
+            self.apply_changes_to_graph)
+        self.widget.comboBox_CakeJCPDSBarThickness.currentIndexChanged.connect(
+            self.apply_changes_to_graph)
+        self.widget.comboBox_BkgnLineThickness.currentIndexChanged.connect(
+            self.apply_changes_to_graph)
+        self.widget.comboBox_WaterfallLineThickness.currentIndexChanged.connect(
+            self.apply_changes_to_graph)
+        self.widget.checkBox_ShortPlotTitle.clicked.connect(
+            self.apply_changes_to_graph)
+
         # navigation toolbar modification.  Do not move the followings to
         # other controller files.
         """

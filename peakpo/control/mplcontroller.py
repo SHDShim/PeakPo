@@ -72,8 +72,12 @@ class MplController(object):
             self.widget.mpl.canvas.resize_axes(1)
         self._set_nightday_view()
         if self.model.base_ptn_exist():
+            if self.widget.checkBox_ShortPlotTitle.isChecked():
+                title = os.path.basename(self.model.base_ptn.fname)
+            else:
+                title = self.model.base_ptn.fname
             self.widget.mpl.canvas.fig.suptitle(
-                self.model.base_ptn.fname, color=self.obj_color)
+                title, color=self.obj_color)
             self._plot_diffpattern()
             if self.model.waterfall_exist():
                 self._plot_waterfallpatterns()
@@ -165,10 +169,17 @@ class MplController(object):
                 if self.widget.checkBox_Intensity.isChecked():
                     self.widget.mpl.canvas.ax_pattern.vlines(
                         tth, bar_min, intensity * bar_scale,
-                        colors=phase.color)
+                        colors=phase.color,
+                        lw=float(
+                            self.widget.comboBox_PtnJCPDSBarThickness.
+                            currentText()))
                 else:
                     self.widget.mpl.canvas.ax_pattern.vlines(
-                        tth, bar_min, 100. * bar_scale, colors=phase.color)
+                        tth, bar_min, 100. * bar_scale,
+                        colors=phase.color,
+                        lw=float(
+                            self.widget.comboBox_PtnJCPDSBarThickness.
+                            currentText()))
             i += 1
 
     def _plot_cake(self):
@@ -192,7 +203,7 @@ class MplController(object):
             intensity_cake_plot, origin="lower",
             extent=[tth_cake.min(), tth_cake.max(),
                     chi_cake.min(), chi_cake.max()],
-            aspect="auto", cmap=cmap, clim=climits) #gray_r
+            aspect="auto", cmap=cmap, clim=climits)  # gray_r
 
     def _plot_jcpds(self, axisrange):
         if (not self.widget.checkBox_JCPDSinPattern.isChecked()) and \
@@ -232,18 +243,27 @@ class MplController(object):
                         self.widget.mpl.canvas.ax_pattern.vlines(
                             tth, bar_min, bar_max, colors=phase.color,
                             label="{0:}, {1:.3f} A^3".format(
-                                phase.name, phase.v))
+                                phase.name, phase.v),
+                            lw=float(
+                                self.widget.comboBox_PtnJCPDSBarThickness.
+                                currentText()))
                     else:
                         self.widget.mpl.canvas.ax_pattern.vlines(
                             tth, bar_min, bar_max, colors=phase.color,
                             label="{0:}, {1:.3f} A^3".format(
-                                phase.name, phase.v.item()))
+                                phase.name, phase.v.item()),
+                            lw=float(
+                                self.widget.comboBox_PtnJCPDSBarThickness.
+                                currentText()))
                     # phase.name, phase.v.item()))
                 if self.widget.checkBox_ShowCake.isChecked() and \
                         self.widget.checkBox_JCPDSinCake.isChecked():
                     for tth_i in tth:
                         self.widget.mpl.canvas.ax_cake.axvline(
-                            x=tth_i, color=phase.color, lw=0.5)
+                            x=tth_i, color=phase.color,
+                            lw=float(
+                                self.widget.comboBox_CakeJCPDSBarThickness.
+                                currentText()))
             else:
                 pass
         if self.widget.checkBox_JCPDSinPattern.isChecked():
@@ -299,7 +319,9 @@ class MplController(object):
                 else:
                     x = x_t
                 self.widget.mpl.canvas.ax_pattern.plot(
-                    x, y + ygap, c=pattern.color)
+                    x, y + ygap, c=pattern.color, lw=float(
+                        self.widget.comboBox_WaterfallLineThickness.
+                        currentText()))
         self.widget.mpl.canvas.ax_pattern.text(
             0.01, 0.97 - n_display * 0.05,
             os.path.basename(self.model.base_ptn.fname),
@@ -310,14 +332,23 @@ class MplController(object):
         if self.widget.checkBox_BgSub.isChecked():
             x, y = self.model.base_ptn.get_bgsub()
             self.widget.mpl.canvas.ax_pattern.plot(
-                x, y, c=self.model.base_ptn.color)
+                x, y, c=self.model.base_ptn.color,
+                lw=float(
+                    self.widget.comboBox_BasePtnLineThickness.
+                    currentText()))
         else:
             x, y = self.model.base_ptn.get_raw()
             self.widget.mpl.canvas.ax_pattern.plot(
-                x, y, c=self.model.base_ptn.color)
+                x, y, c=self.model.base_ptn.color,
+                lw=float(
+                    self.widget.comboBox_BasePtnLineThickness.
+                    currentText()))
             x_bg, y_bg = self.model.base_ptn.get_background()
             self.widget.mpl.canvas.ax_pattern.plot(
-                x_bg, y_bg, c=self.model.base_ptn.color, ls='--', lw=0.7)
+                x_bg, y_bg, c=self.model.base_ptn.color, ls='--',
+                lw=float(
+                    self.widget.comboBox_BkgnLineThickness.
+                    currentText()))
 
     def _plot_peakfit(self):
         if not self.model.current_section_exist():
@@ -333,12 +364,16 @@ class MplController(object):
                 bgsub=bgsub)
             for key, value in profiles.items():
                 self.widget.mpl.canvas.ax_pattern.plot(
-                    x_plot, value, ls='-', c=self.obj_color, lw=0.5)
+                    x_plot, value, ls='-', c=self.obj_color, lw=float(
+                        self.widget.comboBox_BasePtnLineThickness.
+                        currentText()))
             total_profile = self.model.current_section.get_fit_profile(
                 bgsub=bgsub)
             residue = self.model.current_section.get_fit_residue(bgsub=bgsub)
             self.widget.mpl.canvas.ax_pattern.plot(
-                x_plot, total_profile, 'r-')
+                x_plot, total_profile, 'r-', lw=float(
+                    self.widget.comboBox_BasePtnLineThickness.
+                    currentText()))
             y_range = self.model.current_section.get_yrange(bgsub=bgsub)
             y_shift = (y_range[1] - y_range[0]) * 1.05
             self.widget.mpl.canvas.ax_pattern.fill_between(

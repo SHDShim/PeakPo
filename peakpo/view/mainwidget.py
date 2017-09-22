@@ -45,6 +45,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.doubleSpinBox_Background_ROI_min.setStyle(SpinBoxFixStyle())
         self.doubleSpinBox_SetWavelength.setKeyboardTracking(False)
         self.doubleSpinBox_SetWavelength.setStyle(SpinBoxFixStyle())
+        linethicknesses = ['0', '0.1', '0.5', '0.75', '1', '1.5', '2', '3', '4', '5']
+        self.comboBox_BasePtnLineThickness.addItems(linethicknesses)
+        self.comboBox_PtnJCPDSBarThickness.addItems(linethicknesses)
+        self.comboBox_CakeJCPDSBarThickness.addItems(linethicknesses)
+        self.comboBox_BkgnLineThickness.addItems(linethicknesses)
+        self.comboBox_WaterfallLineThickness.addItems(linethicknesses)
+        self.comboBox_BasePtnLineThickness.setCurrentText('1')
+        self.comboBox_PtnJCPDSBarThickness.setCurrentText('1')
+        self.comboBox_CakeJCPDSBarThickness.setCurrentText('0.5')
+        self.comboBox_BkgnLineThickness.setCurrentText('0.5')
+        self.comboBox_WaterfallLineThickness.setCurrentText('0.5')
         # navigation toolbar modification
         self.ntb_WholePtn = QtWidgets.QPushButton()
         self.ntb_WholePtn.setText("Z")
