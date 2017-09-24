@@ -75,7 +75,7 @@ class DiffImg(object):
         return tth_max
 
     def integrate_to_1d(self, **kwargs):
-        n_azi_pnts = self.calculate_n_azi_pnts() * 2
+        n_azi_pnts = self.calculate_n_azi_pnts()  # * 2 reduced number for Mar345 data
         radial_range = (0., self.calculate_max_twotheta())
         tth, intensity = self.poni.integrate1d(
             self.img, n_azi_pnts, radial_range=radial_range,

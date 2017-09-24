@@ -4,6 +4,7 @@ import datetime
 import numpy as np
 import numpy.ma as ma
 from matplotlib.widgets import MultiCursor
+import matplotlib.patches as patches
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from ds_jcpds import convert_tth
@@ -44,6 +45,19 @@ class MplController(object):
                 self.widget.mpl.canvas.ax_cake.get_ylim()
         else:
             return None, None
+
+    def _read_azilist(self):
+        n_row = self.widget.tableWidget_DiffImgAzi.rowCount()
+        if n_row == 0:
+            return None
+        azi_list = []
+        for i in range(n_row):
+            azi_min = float(
+                self.widget.tableWidget_DiffImgAzi.item(i, 0).text())
+            azi_max = float(
+                self.widget.tableWidget_DiffImgAzi.item(i, 1).text())
+            azi_list.append([azi_min, azi_max])
+        return azi_list
 
     def zoom_out_graph(self):
         if not self.model.base_ptn_exist():
@@ -207,6 +221,27 @@ class MplController(object):
             extent=[tth_cake.min(), tth_cake.max(),
                     chi_cake.min(), chi_cake.max()],
             aspect="auto", cmap=cmap, clim=climits)  # gray_r
+        azi_list = self._read_azilist()
+        tth_min = tth_cake.min()
+        tth_max = tth_cake.max()
+        if azi_list is not None:
+            for azi in azi_list:
+                rect = patches.Rectangle(
+                    (tth_min, azi[0]), (tth_max - tth_min), (azi[1] - azi[0]),
+                    linewidth=0, edgecolor='b', facecolor='b', alpha=0.3)
+                self.widget.mpl.canvas.ax_cake.add_patch(rect)
+        rows = self.widget.tableWidget_DiffImgAzi.selectionModel().\
+            selectedRows()
+        if rows != []:
+            for r in rows:
+                azi_min = float(
+                    self.widget.tableWidget_DiffImgAzi.item(r.row(), 0).text())
+                azi_max = float(
+                    self.widget.tableWidget_DiffImgAzi.item(r.row(), 1).text())
+                rect = patches.Rectangle(
+                    (tth_min, azi_min), (tth_max - tth_min), (azi_max - azi_min),
+                    linewidth=0, facecolor='r', alpha=0.3)
+                self.widget.mpl.canvas.ax_cake.add_patch(rect)
 
     def _plot_jcpds(self, axisrange):
         if (not self.widget.checkBox_JCPDSinPattern.isChecked()) and \

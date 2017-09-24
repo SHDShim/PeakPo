@@ -1653,6 +1653,9 @@
          <string>Cake</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_3">
+         <property name="spacing">
+          <number>-1</number>
+         </property>
          <property name="leftMargin">
           <number>3</number>
          </property>
@@ -1828,6 +1831,9 @@
                <enum>QFrame::Raised</enum>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_20">
+               <property name="spacing">
+                <number>0</number>
+               </property>
                <item>
                 <widget class="QLabel" name="label_8">
                  <property name="text">
@@ -1992,7 +1998,7 @@
            <property name="flat">
             <bool>true</bool>
            </property>
-           <layout class="QGridLayout" name="gridLayout_11">
+           <layout class="QHBoxLayout" name="horizontalLayout_16">
             <property name="leftMargin">
              <number>12</number>
             </property>
@@ -2005,20 +2011,7 @@
             <property name="bottomMargin">
              <number>3</number>
             </property>
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_10">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="text">
-               <string>Min</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
+            <item>
              <widget class="QLabel" name="label_11">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -2031,7 +2024,7 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="1">
+            <item>
              <widget class="QSpinBox" name="spinBox_MaskMin">
               <property name="focusPolicy">
                <enum>Qt::StrongFocus</enum>
@@ -2044,7 +2037,20 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="1">
+            <item>
+             <widget class="QLabel" name="label_10">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Min</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QSpinBox" name="spinBox_MaskMax">
               <property name="focusPolicy">
                <enum>Qt::StrongFocus</enum>
@@ -2060,16 +2066,16 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="2">
+            <item>
              <widget class="QPushButton" name="pushButton_ApplyMask">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Apply mask</string>
+               <string>Apply</string>
               </property>
               <property name="checkable">
                <bool>true</bool>
@@ -2088,12 +2094,12 @@
             </sizepolicy>
            </property>
            <property name="title">
-            <string>1D pattern</string>
+            <string>Selective integration</string>
            </property>
            <property name="flat">
             <bool>true</bool>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_8">
+           <layout class="QHBoxLayout" name="horizontalLayout_15">
             <property name="topMargin">
              <number>3</number>
             </property>
@@ -2101,9 +2107,30 @@
              <number>3</number>
             </property>
             <item>
+             <widget class="QPushButton" name="pushButton_AddAzi">
+              <property name="text">
+               <string>Add</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_RemoveAzi">
+              <property name="text">
+               <string>Remove</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_ClearAziList">
+              <property name="text">
+               <string>Clear</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QPushButton" name="pushButton_IntegrateCake">
               <property name="text">
-               <string>Write CHI from current azimuthal range</string>
+               <string>Integrate</string>
               </property>
              </widget>
             </item>
@@ -2111,17 +2138,16 @@
           </widget>
          </item>
          <item>
-          <spacer name="verticalSpacer">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
+          <widget class="QTableWidget" name="tableWidget_DiffImgAzi">
+           <property name="rowCount">
+            <number>0</number>
            </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
+           <property name="columnCount">
+            <number>2</number>
            </property>
-          </spacer>
+           <column/>
+           <column/>
+          </widget>
          </item>
         </layout>
        </widget>
