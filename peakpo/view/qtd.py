@@ -59,7 +59,7 @@ class Ui_MainWindow(object):
         self.mpl.setObjectName("mpl")
         self.tabWidget = QtWidgets.QTabWidget(self.splitter)
         sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.tabWidget.sizePolicy().hasHeightForWidth())
@@ -1062,7 +1062,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.addWidget(self.groupBox_19)
         self.tableWidget_DiffImgAzi = QtWidgets.QTableWidget(self.tab_Cake)
         self.tableWidget_DiffImgAzi.setRowCount(0)
-        self.tableWidget_DiffImgAzi.setColumnCount(2)
+        self.tableWidget_DiffImgAzi.setColumnCount(4)
         self.tableWidget_DiffImgAzi.setObjectName("tableWidget_DiffImgAzi")
         self.verticalLayout_3.addWidget(self.tableWidget_DiffImgAzi)
         self.tabWidget.addTab(self.tab_Cake, "")

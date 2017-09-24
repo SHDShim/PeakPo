@@ -60,7 +60,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_WaterfallLineThickness.setCurrentText('0.5')
         self.comboBox_VertCursorThickness.setCurrentText('1')
         self.tableWidget_DiffImgAzi.\
-            setHorizontalHeaderLabels(['Min', 'Max'])
+            setHorizontalHeaderLabels(['2Theta', 'Azi', '2Theta', 'Azi'])
         # navigation toolbar modification
         self.ntb_WholePtn = QtWidgets.QPushButton()
         self.ntb_WholePtn.setText("Z")

@@ -49,15 +49,21 @@ class MplController(object):
     def _read_azilist(self):
         n_row = self.widget.tableWidget_DiffImgAzi.rowCount()
         if n_row == 0:
-            return None
+            return None, None
         azi_list = []
+        tth_list = []
         for i in range(n_row):
             azi_min = float(
-                self.widget.tableWidget_DiffImgAzi.item(i, 0).text())
-            azi_max = float(
                 self.widget.tableWidget_DiffImgAzi.item(i, 1).text())
+            azi_max = float(
+                self.widget.tableWidget_DiffImgAzi.item(i, 3).text())
+            tth_min = float(
+                self.widget.tableWidget_DiffImgAzi.item(i, 0).text())
+            tth_max = float(
+                self.widget.tableWidget_DiffImgAzi.item(i, 2).text())
+            tth_list.append([tth_min, tth_max])
             azi_list.append([azi_min, azi_max])
-        return azi_list
+        return tth_list, azi_list
 
     def zoom_out_graph(self):
         if not self.model.base_ptn_exist():
@@ -221,25 +227,30 @@ class MplController(object):
             extent=[tth_cake.min(), tth_cake.max(),
                     chi_cake.min(), chi_cake.max()],
             aspect="auto", cmap=cmap, clim=climits)  # gray_r
-        azi_list = self._read_azilist()
+        tth_list, azi_list = self._read_azilist()
         tth_min = tth_cake.min()
         tth_max = tth_cake.max()
         if azi_list is not None:
-            for azi in azi_list:
+            for tth, azi in zip(tth_list, azi_list):
                 rect = patches.Rectangle(
                     (tth_min, azi[0]), (tth_max - tth_min), (azi[1] - azi[0]),
                     linewidth=0, edgecolor='b', facecolor='b', alpha=0.3)
+                rect1 = patches.Rectangle(
+                    (tth[0], azi[0]), (tth[1] - tth[0]), (azi[1] - azi[0]),
+                    linewidth=1, edgecolor='b', facecolor='None')
                 self.widget.mpl.canvas.ax_cake.add_patch(rect)
+                self.widget.mpl.canvas.ax_cake.add_patch(rect1)
         rows = self.widget.tableWidget_DiffImgAzi.selectionModel().\
             selectedRows()
         if rows != []:
             for r in rows:
                 azi_min = float(
-                    self.widget.tableWidget_DiffImgAzi.item(r.row(), 0).text())
-                azi_max = float(
                     self.widget.tableWidget_DiffImgAzi.item(r.row(), 1).text())
+                azi_max = float(
+                    self.widget.tableWidget_DiffImgAzi.item(r.row(), 3).text())
                 rect = patches.Rectangle(
-                    (tth_min, azi_min), (tth_max - tth_min), (azi_max - azi_min),
+                    (tth_min, azi_min), (tth_max - tth_min),
+                    (azi_max - azi_min),
                     linewidth=0, facecolor='r', alpha=0.3)
                 self.widget.mpl.canvas.ax_cake.add_patch(rect)
 

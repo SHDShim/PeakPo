@@ -35,15 +35,19 @@ class CakeController(object):
 
     def _add_azi_to_list(self):
         # read azimuth_range
-        azi_range = self._read_azi_from_plot()
+        tth_range, azi_range = self._read_azi_from_plot()
         if azi_range is None:
             return
         rowPosition = self.widget.tableWidget_DiffImgAzi.rowCount()
         self.widget.tableWidget_DiffImgAzi.insertRow(rowPosition)
         self.widget.tableWidget_DiffImgAzi.setItem(
-            rowPosition, 0, QtWidgets.QTableWidgetItem(str(azi_range[0])))
+            rowPosition, 0, QtWidgets.QTableWidgetItem(str(tth_range[0])))
         self.widget.tableWidget_DiffImgAzi.setItem(
-            rowPosition, 1, QtWidgets.QTableWidgetItem(str(azi_range[1])))
+            rowPosition, 2, QtWidgets.QTableWidgetItem(str(tth_range[1])))
+        self.widget.tableWidget_DiffImgAzi.setItem(
+            rowPosition, 1, QtWidgets.QTableWidgetItem(str(azi_range[0])))
+        self.widget.tableWidget_DiffImgAzi.setItem(
+            rowPosition, 3, QtWidgets.QTableWidgetItem(str(azi_range[1])))
         self._apply_changes_to_graph()
 
     def _remove_azi_from_list(self):
@@ -75,9 +79,9 @@ class CakeController(object):
         azi_list = []
         for i in range(n_row):
             azi_min = float(
-                self.widget.tableWidget_DiffImgAzi.item(i, 0).text())
-            azi_max = float(
                 self.widget.tableWidget_DiffImgAzi.item(i, 1).text())
+            azi_max = float(
+                self.widget.tableWidget_DiffImgAzi.item(i, 3).text())
             azi_list.append([azi_min, azi_max])
         return azi_list
 
@@ -88,9 +92,9 @@ class CakeController(object):
     def _read_azi_from_plot(self):
         tth_range, azi_range = self.plot_ctrl.get_cake_range()
         if tth_range is None:
-            return None
+            return None, None
         else:
-            return azi_range
+            return tth_range, azi_range
 
     def integrate_to_1d(self):
         azi_range = self._read_azilist()
