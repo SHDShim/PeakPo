@@ -234,7 +234,7 @@ class MplController(object):
             for tth, azi in zip(tth_list, azi_list):
                 rect = patches.Rectangle(
                     (tth_min, azi[0]), (tth_max - tth_min), (azi[1] - azi[0]),
-                    linewidth=0, edgecolor='b', facecolor='b', alpha=0.3)
+                    linewidth=0, edgecolor='b', facecolor='b', alpha=0.2)
                 rect1 = patches.Rectangle(
                     (tth[0], azi[0]), (tth[1] - tth[0]), (azi[1] - azi[0]),
                     linewidth=1, edgecolor='b', facecolor='None')
@@ -251,7 +251,7 @@ class MplController(object):
                 rect = patches.Rectangle(
                     (tth_min, azi_min), (tth_max - tth_min),
                     (azi_max - azi_min),
-                    linewidth=0, facecolor='r', alpha=0.3)
+                    linewidth=0, facecolor='r', alpha=0.2)
                 self.widget.mpl.canvas.ax_cake.add_patch(rect)
 
     def _plot_jcpds(self, axisrange):

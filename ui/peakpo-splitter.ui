@@ -2108,6 +2108,12 @@
             </property>
             <item>
              <widget class="QPushButton" name="pushButton_AddAzi">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="text">
                <string>Add</string>
               </property>
@@ -2115,6 +2121,12 @@
             </item>
             <item>
              <widget class="QPushButton" name="pushButton_RemoveAzi">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="text">
                <string>Remove</string>
               </property>
@@ -2122,13 +2134,38 @@
             </item>
             <item>
              <widget class="QPushButton" name="pushButton_ClearAziList">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="text">
                <string>Clear</string>
               </property>
              </widget>
             </item>
             <item>
+             <widget class="QPushButton" name="pushButton_InvertCakeBoxes">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Invert</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QPushButton" name="pushButton_IntegrateCake">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="text">
                <string>Integrate</string>
               </property>

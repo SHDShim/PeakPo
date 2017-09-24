@@ -32,6 +32,54 @@ class CakeController(object):
             self._remove_azi_from_list)
         self.widget.pushButton_ClearAziList.clicked.connect(
             self._clear_azilist)
+        self.widget.pushButton_InvertCakeBoxes.clicked.connect(
+            self._invert_cake_selections)
+
+    def _invert_cake_selections(self):
+        azi_list = self._read_azilist()
+        if azi_list is None:
+            return
+        __, __, azi_whole = self.model.diff_img.get_cake()
+        new_azi_list = []
+        epsilon = 0.01
+        if azi_list.__len__() == 1:
+            azi = azi_list[0]
+            if (np.abs(azi[1] - azi_whole.min()) < epsilon) and \
+                    (np.abs(azi[3] - azi_whole.max()) < epsilon):
+                self._clear_azilist()
+            elif np.abs(azi[1] - azi_whole.min()) < epsilon:
+                new_azi_list.append([azi[0], azi[3], azi[2], azi_whole.max()])
+            elif np.abs(azi[3] - azi_whole.max()) < epsilon:
+                new_azi_list.append([azi[0], azi_whole.min(), azi[2], azi[1]])
+            else:
+                new_azi_list.append([azi[0], azi_whole.min(), azi[2], azi[1]])
+                new_azi_list.append([azi[0], azi[3], azi[2], azi_whole.max()])
+        else:
+            sorted_azi_list = sorted(azi_list,
+                                     key=lambda azi_list: azi_list[1])
+            lower_azi = azi_whole.min()
+            for azi in sorted_azi_list:
+                if np.abs(lower_azi - azi[1]) > epsilon:
+                    new_azi_list.append([azi[0], lower_azi, azi[2], azi[1]])
+                else:
+                    pass
+                lower_azi = azi[3]
+            last_azi = sorted_azi_list[-1]
+            if np.abs(last_azi[3] - azi_whole.max()) > epsilon:
+                new_azi_list.append(
+                    [azi[0], last_azi[3], azi[2], azi_whole.max()])
+        if new_azi_list != []:
+            self._clear_azilist()
+            self._post_to_table(new_azi_list)
+            self._apply_changes_to_graph()
+
+    def _post_to_table(self, azi_list):
+        i = 0
+        for azi in azi_list:
+            self.widget.tableWidget_DiffImgAzi.insertRow(i)
+            for j in range(4):
+                self.widget.tableWidget_DiffImgAzi.setItem(
+                    i, j, QtWidgets.QTableWidgetItem(str(azi[j])))
 
     def _add_azi_to_list(self):
         # read azimuth_range
@@ -78,11 +126,15 @@ class CakeController(object):
             return None
         azi_list = []
         for i in range(n_row):
+            tth_min = float(
+                self.widget.tableWidget_DiffImgAzi.item(i, 0).text())
             azi_min = float(
                 self.widget.tableWidget_DiffImgAzi.item(i, 1).text())
+            tth_max = float(
+                self.widget.tableWidget_DiffImgAzi.item(i, 2).text())
             azi_max = float(
                 self.widget.tableWidget_DiffImgAzi.item(i, 3).text())
-            azi_list.append([azi_min, azi_max])
+            azi_list.append([tth_min, azi_min, tth_max, azi_max])
         return azi_list
 
     def _clear_azilist(self):
@@ -97,8 +149,8 @@ class CakeController(object):
             return tth_range, azi_range
 
     def integrate_to_1d(self):
-        azi_range = self._read_azilist()
-        if azi_range is None:
+        azi_list = self._read_azilist()
+        if azi_list is None:
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'No azimuthal ranges in the queue.')
             return
@@ -106,9 +158,9 @@ class CakeController(object):
         self.cakemake_ctrl.read_settings()
         tth = []
         intensity = []
-        for azi_i in azi_range:
+        for azi_i in azi_list:
             tth_i, intensity_i = self.model.diff_img.integrate_to_1d(
-                azimuth_range=azi_i)
+                azimuth_range=(azi_i[1], azi_i[3]))
             tth.append(tth_i)
             intensity.append(intensity_i)
         intensity_merged = np.zeros_like(intensity[0])
@@ -118,22 +170,23 @@ class CakeController(object):
                     self.widget, 'Warning', 'Error occured.  No output.')
                 return
             intensity_merged += intensity_i
-        n_azi = azi_range.__len__()
-        first_azi = azi_range[0]
+        n_azi = azi_list.__len__()
+        first_azi = azi_list[0]
+        intensity_output = intensity_merged
         ext = "{0:d}_{1:d}_{2:d}.chi".format(
-            n_azi, int(first_azi[0]), int(first_azi[1]))
+            n_azi, int(first_azi[1]), int(first_azi[3]))
         filen_chi_t = self.model.make_filename(ext)
         filen_chi = dialog_savefile(self.widget, filen_chi_t)
         if str(filen_chi) == '':
             return
-        azi_text = '# azimuthal angles: '
-        for azi_i in azi_range:
-            azi_text += "({0:.5e}, {1:.5e})".format(azi_i[0], azi_i[1])
+        azi_text = '# azi. angles: '
+        for azi_i in azi_list:
+            azi_text += "({0:.5e}, {1:.5e})".format(azi_i[1], azi_i[3])
         preheader_line0 = azi_text + ' \n'
         preheader_line1 = '\n'
         preheader_line2 = '\n'
-        writechi(filen_chi, tth[0], intensity_merged, preheader=preheader_line0 +
-                 preheader_line1 + preheader_line2)
+        writechi(filen_chi, tth[0], intensity_output,
+                 preheader=preheader_line0 + preheader_line1 + preheader_line2)
     """
     def integrate_to_1d(self):
         azi_range = self._read_azi_from_plot()
