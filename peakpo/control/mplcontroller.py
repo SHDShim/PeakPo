@@ -68,11 +68,15 @@ class MplController(object):
     def zoom_out_graph(self):
         if not self.model.base_ptn_exist():
             return
+        data_limits = self._get_data_limits()
+        self.update(limits=data_limits)
+
+    def _get_data_limits(self):
         if self.widget.checkBox_BgSub.isChecked():
             x, y = self.model.base_ptn.get_bgsub()
         else:
             x, y = self.model.base_ptn.get_raw()
-        self.update(limits=[x.min(), x.max(), y.min(), y.max()])
+        return (x.min(), x.max(), y.min(), y.max())
 
     def update(self, limits=None):
         """Updates the graph"""
@@ -112,6 +116,11 @@ class MplController(object):
             self.widget.mpl.canvas.ax_pattern.set_ylim(limits[2], limits[3])
         if self.model.jcpds_exist():
             self._plot_jcpds(limits)
+            if not self.widget.checkBox_Intensity.isChecked():
+                new_low_limit = -1.1 * limits[3] * \
+                    self.widget.horizontalSlider_JCPDSBarScale.value() / 100.
+                self.widget.mpl.canvas.ax_pattern.set_ylim(
+                    new_low_limit, limits[3])
         xlabel = 'Two Theta (degrees), ' + \
             "{0: 5.1f} GPa, {1: 4.0f} K, {2: 6.4f} A".\
             format(self.widget.doubleSpinBox_Pressure.value(),
@@ -264,9 +273,12 @@ class MplController(object):
                 i += 1
         if i == 0:
             return
+        else:
+            n_displayed_jcpds = i
         # axisrange = self.widget.mpl.canvas.ax_pattern.axis()
         bar_scale = 1. / 100. * axisrange[3] * \
             self.widget.horizontalSlider_JCPDSBarScale.value() / 100.
+        i = 0
         for phase in self.model.jcpds_lst:
             if phase.display:
                 phase.cal_dsp(self.widget.doubleSpinBox_Pressure.value(),
@@ -282,11 +294,17 @@ class MplController(object):
                 """
                 if self.widget.checkBox_JCPDSinPattern.isChecked():
                     intensity = inten * phase.twk_int
-                    bar_min = np.ones(tth.shape) * axisrange[2]
                     if self.widget.checkBox_Intensity.isChecked():
+                        bar_min = np.ones(tth.shape) * axisrange[2]
                         bar_max = intensity * bar_scale + bar_min
                     else:
-                        bar_max = 100. * bar_scale + bar_min
+                        data_limits = self._get_data_limits()
+                        starting_intensity = np.ones(tth.shape) * data_limits[2]
+                        bar_max = starting_intensity - \
+                            i * 100. * bar_scale / n_displayed_jcpds
+                        i += 1
+                        bar_min = starting_intensity - \
+                            i * 100. * bar_scale / n_displayed_jcpds
                     pressure = self.widget.doubleSpinBox_Pressure.value()
                     if pressure == 0.:
                         self.widget.mpl.canvas.ax_pattern.vlines(
