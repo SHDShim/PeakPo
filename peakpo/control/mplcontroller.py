@@ -295,11 +295,16 @@ class MplController(object):
                 if self.widget.checkBox_JCPDSinPattern.isChecked():
                     intensity = inten * phase.twk_int
                     if self.widget.checkBox_Intensity.isChecked():
-                        bar_min = np.ones(tth.shape) * axisrange[2]
+                        bar_min = np.ones(tth.shape) * axisrange[2] + \
+                            self.widget.horizontalSlider_JCPDSBarPosition.\
+                            value() / 100. * axisrange[3]
                         bar_max = intensity * bar_scale + bar_min
                     else:
                         data_limits = self._get_data_limits()
-                        starting_intensity = np.ones(tth.shape) * data_limits[2]
+                        starting_intensity = \
+                            np.ones(tth.shape) * data_limits[2] + \
+                            self.widget.horizontalSlider_JCPDSBarPosition.\
+                            value() / 100. * axisrange[3]
                         bar_max = starting_intensity - \
                             i * 100. * bar_scale / n_displayed_jcpds
                         i += 1

@@ -121,6 +121,8 @@ class MainController(object):
             self.apply_changes_to_graph)
         self.widget.horizontalSlider_JCPDSBarScale.valueChanged.connect(
             self.apply_changes_to_graph)
+        self.widget.horizontalSlider_JCPDSBarPosition.valueChanged.connect(
+            self.apply_changes_to_graph)
         self.widget.horizontalSlider_WaterfallGaps.valueChanged.connect(
             self.apply_changes_to_graph)
 

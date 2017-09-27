@@ -1945,6 +1945,9 @@
                <enum>QFrame::Raised</enum>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_21">
+               <property name="spacing">
+                <number>0</number>
+               </property>
                <item>
                 <widget class="QLabel" name="label_12">
                  <property name="text">
@@ -2263,6 +2266,9 @@
             <bool>true</bool>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_6">
+            <property name="spacing">
+             <number>0</number>
+            </property>
             <item>
              <widget class="QLabel" name="label_27">
               <property name="sizePolicy">
