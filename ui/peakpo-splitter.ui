@@ -2257,18 +2257,54 @@
             </sizepolicy>
            </property>
            <property name="title">
-            <string>Bar vertical scale</string>
+            <string>JCPDS bars</string>
            </property>
            <property name="flat">
             <bool>true</bool>
            </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_5">
+           <layout class="QVBoxLayout" name="verticalLayout_6">
+            <item>
+             <widget class="QLabel" name="label_27">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Height</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
             <item>
              <widget class="QSlider" name="horizontalSlider_JCPDSBarScale">
               <property name="maximum">
                <number>100</number>
               </property>
               <property name="value">
+               <number>100</number>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_28">
+              <property name="text">
+               <string>Position</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSlider" name="horizontalSlider_JCPDSBarPosition">
+              <property name="maximum">
                <number>100</number>
               </property>
               <property name="orientation">
