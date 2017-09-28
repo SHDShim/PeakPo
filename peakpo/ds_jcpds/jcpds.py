@@ -92,6 +92,28 @@ class UnitCell(object):
 
         return idx, abs(tth[idx] - tth_c), tth[idx]
 
+    def make_TextOutput(self, pressure, temperature):
+        textout = self.name + '\n'
+        textout += self.symmetry + '\n'
+        textout += '******************\n'
+        textout += \
+            'Values for Ucfit\n'
+        textout += 'a = {0: .5f} A, b = {1: .5f} A, c = {2: .5f} A\n'.\
+            format(float(self.a), float(self.b), float(self.c))
+        textout += 'alpha = {0: .5f}, beta = {1: .5f}, gamma = {2: .5f}\n'.\
+            format(self.alpha, self.beta, self.gamma)
+        textout += 'b/a = {0: .5f}, c/a = {1: .5f}\n'.\
+            format(self.b / self.a, self.c / self.a)
+        textout += 'V = {0: .5f} A^3\n\n'.format(float(self.v))
+        textout += 'Below are the peaks at {0: 6.1f} GPa, {1: 5.0f} K\n'.\
+            format(pressure, temperature)
+        textout += 'd-spacing (A), intensity (%), h, k, l\n'
+        for dl in self.DiffLines:
+            textout += \
+                "{0: .5f}, {1: .1f}, {2: .0f}, {3: .0f}, {4: .0f}\n".\
+                format(float(dl.dsp), dl.intensity, dl.h, dl.k, dl.l)
+        return textout
+
 
 class JCPDS(object):
     """
@@ -646,6 +668,8 @@ class JCPDSplt(JCPDS):
         textout += 'alpha0 = ' + str(self.alpha0) + \
             ', beta0 = ' + str(self.beta0) + ', gamma0 = ' + \
             str(self.gamma0) + '\n'
+        textout += 'b0/a0 = {0: .5f}, c0/a0 = {1: .5f}\n'.\
+            format(self.b0 / self.a0, self.c0 / self.a0)
         textout += 'V0 = {0: 12.5f} A^3\n'.format(self.v0_org)
         textout += '******************\n'
         textout += \
@@ -654,12 +678,15 @@ class JCPDSplt(JCPDS):
             str(self.k0p) + '\n'
         textout += 'Thermal expansion = ' + str(self.thermal_expansion) + '\n'
         textout += 'V0 = {0: 12.5f} A^3\n'.format(self.v0)
-
         textout += 'a = {0: 10.5f} A, b = {1: 10.5f} A, c = {2: 10.5f} A\n'.\
             format(float(self.a), float(self.b), float(self.c))
         textout += 'alpha = ' + str(self.alpha) + \
             ', beta = ' + str(self.beta) + ', gamma = ' + \
             str(self.gamma) + '\n'
+        textout += 'b/a = {0: .5f}, c/a = {1: .5f}\n'.\
+            format(self.b / self.a, self.c / self.a)
+        textout += 'Tweak for b/a = {0: .5f}, Tweak for c/a = {1: .5f}\n'.\
+            format(self.twk_b_a, self.twk_c_a)
         textout += 'V = {0: 12.5f} A^3\n\n'.format(float(self.v))
         textout += 'Below are the peaks at {0: 6.1f} GPa, {1: 5.0f} K\n'.\
             format(pressure, temperature)

@@ -42,7 +42,7 @@ class WaterfallTableController(object):
         self.widget.tableWidget_wfPatterns.setRowCount(n_rows)
         self.widget.tableWidget_wfPatterns.horizontalHeader().setVisible(True)
         self.widget.tableWidget_wfPatterns.setHorizontalHeaderLabels(
-            ['', 'Color', ' ', 'Wavelength'])
+            ['', '', '', 'Wavelength'])
         self.widget.tableWidget_wfPatterns.setVerticalHeaderLabels(
             [extract_filename(wfp.fname) for wfp in self.model.waterfall_ptn])
         for row in range(n_rows):
@@ -56,11 +56,11 @@ class WaterfallTableController(object):
                 item0.setCheckState(QtCore.Qt.Unchecked)
             self.widget.tableWidget_wfPatterns.setItem(row, 0, item0)
             # column 1 - color
-            item2 = QtWidgets.QTableWidgetItem('    ')
+            item2 = QtWidgets.QTableWidgetItem('')
             self.widget.tableWidget_wfPatterns.setItem(row, 1, item2)
             # column 3 - color setup
             self.widget.tableWidget_wfPatterns_pushButton_color = \
-                QtWidgets.QPushButton('...')
+                QtWidgets.QPushButton('.')
             self.widget.tableWidget_wfPatterns.item(row, 1).setBackground(
                 QtGui.QColor(self.model.waterfall_ptn[row].color))
             self.widget.tableWidget_wfPatterns_pushButton_color.clicked.\

@@ -28,15 +28,15 @@ class JcpdsTableController(object):
         # move b/a and c/a from 7 and 8 to 4 and 5
         self.widget.tableWidget_JCPDS.setHorizontalHeaderLabels(
             ['',  # 0
-             'Color',  # 1
+             ' ',  # 1
              ' ',  # 2
-             'V0 Tweak',  # 3
-             'b/a Tweak',  # 4
-             'c/a Tweak',  # 5
-             'K0 Tweak',  # 6
-             'K0p Tweak',  # 7
-             'alpha0 Tweak',  # 8
-             'Int Tweak'])  # 9
+             'V0 twk',  # 3
+             'b/a twk',  # 4
+             'c/a twk',  # 5
+             'K0 twk',  # 6
+             'K0p twk',  # 7
+             'alpha0 twk',  # 8
+             'Int twk'])  # 9
         self.widget.tableWidget_JCPDS.setVerticalHeaderLabels(
             [phase.name for phase in self.model.jcpds_lst])
         for row in range(n_rows):
@@ -50,10 +50,11 @@ class JcpdsTableController(object):
                 item0.setCheckState(QtCore.Qt.Unchecked)
             self.widget.tableWidget_JCPDS.setItem(row, 0, item0)
             # column 1 - color
-            item2 = QtWidgets.QTableWidgetItem('    ')
+            item2 = QtWidgets.QTableWidgetItem('')
             self.widget.tableWidget_JCPDS.setItem(row, 1, item2)
             # column 2 - color setup
-            self.widget.tableWidget_JCPDS_pushButton_color = QtWidgets.QPushButton('...')
+            self.widget.tableWidget_JCPDS_pushButton_color = \
+                QtWidgets.QPushButton('.')
             self.widget.tableWidget_JCPDS.item(row, 1).setBackground(
                 QtGui.QColor(self.model.jcpds_lst[row].color))
             self.widget.tableWidget_JCPDS_pushButton_color.clicked.connect(

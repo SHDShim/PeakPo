@@ -27,7 +27,7 @@ class UcfitTableController(object):
         self.widget.tableWidget_UnitCell.horizontalHeader().setVisible(True)
         self.widget.tableWidget_UnitCell.verticalHeader().setVisible(True)
         self.widget.tableWidget_UnitCell.setHorizontalHeaderLabels(
-            ['', 'Color', '  ', 'Volume', 'a', 'b', 'c',
+            ['', '', '', 'Volume', 'a', 'b', 'c',
              'alpha', 'beta', 'gamma'])
         self.widget.tableWidget_UnitCell.setVerticalHeaderLabels(
             [s.name for s in self.model.ucfit_lst])
@@ -42,11 +42,11 @@ class UcfitTableController(object):
                 item0.setCheckState(QtCore.Qt.Unchecked)
             self.widget.tableWidget_UnitCell.setItem(row, 0, item0)
             # column 1 - color
-            item2 = QtWidgets.QTableWidgetItem('    ')
+            item2 = QtWidgets.QTableWidgetItem('')
             self.widget.tableWidget_UnitCell.setItem(row, 1, item2)
             # column 2 - color setup
             self.widget.tableWidget_UnitCell_pushButton_color = \
-                QtWidgets.QPushButton('...')
+                QtWidgets.QPushButton('.')
             self.widget.tableWidget_UnitCell.item(row, 1).setBackground(
                 QtGui.QColor(self.model.ucfit_lst[row].color))
             self.widget.tableWidget_UnitCell_pushButton_color.clicked.connect(

@@ -18,9 +18,31 @@ class UcfitController(object):
     def connect_channel(self):
         self.widget.pushButton_RemoveUClist.clicked.connect(self.remove_ucfit)
         self.widget.pushButton_ExportXLS_2.clicked.connect(self.export_to_xls)
+        self.widget.pushButton_ViewUcfit.clicked.connect(self.view_ucfit)
 
     def _apply_changes_to_graph(self):
         self.plot_ctrl.update()
+
+    def view_ucfit(self):
+        if not self.model.ucfit_exist():
+            return
+        idx_checked = [
+            s.row() for s in
+            self.widget.tableWidget_UnitCell.selectionModel().selectedRows()]
+
+        if idx_checked == []:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning", "Highlight the name of phase to view")
+            return
+        if idx_checked.__len__() != 1:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Only one phase can be shown at a time.")
+        else:
+            textoutput = self.model.ucfit_lst[idx_checked[0]].make_TextOutput(
+                self.widget.doubleSpinBox_Pressure.value(),
+                self.widget.doubleSpinBox_Temperature.value())
+            self.widget.plainTextEdit_ViewUcfit.setPlainText(textoutput)
 
     def remove_ucfit(self):
         """
