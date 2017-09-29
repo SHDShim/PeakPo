@@ -59,6 +59,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_BkgnLineThickness.setCurrentText('0.5')
         self.comboBox_WaterfallLineThickness.setCurrentText('0.5')
         self.comboBox_VertCursorThickness.setCurrentText('1')
+        fontsizes = ['4', '6', '8', '10', '12', '14', '16', '18', '20']
+        self.comboBox_HKLFontSize.addItems(fontsizes)
+        self.comboBox_HKLFontSize.setCurrentText('8')
         self.tableWidget_DiffImgAzi.\
             setHorizontalHeaderLabels(['2Theta', 'Azi', '2Theta', 'Azi'])
         # navigation toolbar modification

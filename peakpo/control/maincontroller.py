@@ -77,6 +77,8 @@ class MainController(object):
             self.update_bgsub)
         self.widget.checkBox_LongCursor.clicked.connect(
             self.apply_changes_to_graph)
+        self.widget.checkBox_ShowMillerIndices.clicked.connect(
+            self.apply_changes_to_graph)
         self.widget.comboBox_BasePtnLineThickness.currentIndexChanged.connect(
             self.apply_changes_to_graph)
         self.widget.comboBox_PtnJCPDSBarThickness.currentIndexChanged.connect(
@@ -86,6 +88,8 @@ class MainController(object):
         self.widget.comboBox_BkgnLineThickness.currentIndexChanged.connect(
             self.apply_changes_to_graph)
         self.widget.comboBox_WaterfallLineThickness.currentIndexChanged.connect(
+            self.apply_changes_to_graph)
+        self.widget.comboBox_HKLFontSize.currentIndexChanged.connect(
             self.apply_changes_to_graph)
         self.widget.checkBox_ShortPlotTitle.clicked.connect(
             self.apply_changes_to_graph)
@@ -490,9 +494,9 @@ class MainController(object):
                 k_min = k_u[idx_min]
                 l_min = l_u[idx_min]
                 name_min = names_u[idx_min]
-        line1 = 'Two theta = {0: 10.4f}, d-spacing = {1: 10.4f} A'.format(
+        line1 = 'Two theta = {0: .4f}, d-spacing = {1: .4f} A'.format(
             float(tth_min), float(dsp_min))
-        line2 = 'intensity = {0: 5.0f}, hkl = {1: 3.0f} {2: 3.0f} {3: 3.0f}'.\
+        line2 = 'intensity = {0: .0f}, hkl = {1: .0f} {2: .0f} {3: .0f}'.\
             format(int(int_min), int(h_min), int(k_min), int(l_min))
         textoutput = name_min + '\n' + line1 + '\n' + line2
         return textoutput

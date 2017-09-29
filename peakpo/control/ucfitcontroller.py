@@ -76,7 +76,7 @@ class UcfitController(object):
         """
         if not self.model.ucfit_exist():
             return
-        new_filen_xls = self.model.make_filename('peakpo.ucfit.xls')
+        new_filen_xls = self.model.make_filename('ucfit.xls')
         filen_xls = dialog_savefile(self.widget, new_filen_xls)
         if str(filen_xls) == '':
             return

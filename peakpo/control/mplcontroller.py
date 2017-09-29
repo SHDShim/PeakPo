@@ -327,6 +327,18 @@ class MplController(object):
                             lw=float(
                                 self.widget.comboBox_PtnJCPDSBarThickness.
                                 currentText()))
+                    # hkl
+                    if self.widget.checkBox_ShowMillerIndices.isChecked():
+                        hkl_list = phase.get_hkl_in_text()
+                        j = 0
+                        for hkl in hkl_list:
+                            self.widget.mpl.canvas.ax_pattern.text(
+                                tth[j], bar_max[j], hkl, color=phase.color,
+                                rotation=90, verticalalignment='bottom',
+                                horizontalalignment='center',
+                                fontsize=int(
+                                    self.widget.comboBox_HKLFontSize.currentText()))
+                            j += 1
                     # phase.name, phase.v.item()))
                 if self.widget.checkBox_ShowCake.isChecked() and \
                         self.widget.checkBox_JCPDSinCake.isChecked():

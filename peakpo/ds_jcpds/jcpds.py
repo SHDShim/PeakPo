@@ -374,6 +374,12 @@ class JCPDS(object):
         tth = 2. * np.degrees(np.arcsin(wavelength / 2. / np.array(dsp)))
         return tth, np.array(intensity)
 
+    def get_hkl_in_text(self):
+        hkl = []
+        for line in self.DiffLines:
+            hkl.append("{0:.0f} {1:.0f} {2:.0f}".format(line.h, line.k, line.l))
+        return hkl
+
     def find_DiffLine(self, tth_c, wavelength):
         """
         Returns index of the cloest diffraction line, its difference

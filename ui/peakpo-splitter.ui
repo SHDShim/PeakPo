@@ -168,13 +168,32 @@
            <property name="flat">
             <bool>true</bool>
            </property>
-           <layout class="QGridLayout" name="gridLayout_20">
+           <layout class="QGridLayout" name="gridLayout_11">
             <property name="leftMargin">
              <number>3</number>
             </property>
             <property name="rightMargin">
              <number>3</number>
             </property>
+            <property name="horizontalSpacing">
+             <number>-1</number>
+            </property>
+            <property name="verticalSpacing">
+             <number>6</number>
+            </property>
+            <item row="0" column="0">
+             <widget class="QCheckBox" name="checkBox_ShowCake">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Cake</string>
+              </property>
+             </widget>
+            </item>
             <item row="0" column="1">
              <widget class="QCheckBox" name="checkBox_JCPDSinCake">
               <property name="sizePolicy">
@@ -185,22 +204,6 @@
               </property>
               <property name="text">
                <string>jcpds in cake</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QCheckBox" name="checkBox_NightView">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="text">
-               <string>Night view</string>
               </property>
               <property name="checked">
                <bool>true</bool>
@@ -223,19 +226,6 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="0">
-             <widget class="QCheckBox" name="checkBox_ShowCake">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="text">
-               <string>Cake</string>
-              </property>
-             </widget>
-            </item>
             <item row="1" column="1">
              <widget class="QCheckBox" name="checkBox_JCPDSinPattern">
               <property name="sizePolicy">
@@ -249,6 +239,58 @@
               </property>
               <property name="checked">
                <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QCheckBox" name="checkBox_NightView">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Night view</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="2">
+             <widget class="QCheckBox" name="checkBox_WhiteForPeak">
+              <property name="text">
+               <string>Night, cake</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="2">
+             <widget class="QCheckBox" name="checkBox_BgSub">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Bg sub</string>
+              </property>
+              <property name="checked">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="2">
+             <widget class="QCheckBox" name="checkBox_AutoY">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Auto y scale</string>
               </property>
              </widget>
             </item>
@@ -268,36 +310,14 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="2">
-             <widget class="QCheckBox" name="checkBox_BgSub">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
+            <item row="3" column="1">
+             <widget class="QCheckBox" name="checkBox_ShowMillerIndices">
               <property name="text">
-               <string>Bg sub</string>
-              </property>
-              <property name="checked">
-               <bool>false</bool>
+               <string>hkl indices</string>
               </property>
              </widget>
             </item>
-            <item row="2" column="2">
-             <widget class="QCheckBox" name="checkBox_AutoY">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="text">
-               <string>Auto y scale</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
+            <item row="3" column="0">
              <widget class="QCheckBox" name="checkBox_LongCursor">
               <property name="text">
                <string>Vert. cursor</string>
@@ -1843,6 +1863,12 @@
                <property name="spacing">
                 <number>0</number>
                </property>
+               <property name="topMargin">
+                <number>3</number>
+               </property>
+               <property name="bottomMargin">
+                <number>3</number>
+               </property>
                <item>
                 <widget class="QLabel" name="label_8">
                  <property name="text">
@@ -1957,6 +1983,12 @@
                <property name="spacing">
                 <number>0</number>
                </property>
+               <property name="topMargin">
+                <number>3</number>
+               </property>
+               <property name="bottomMargin">
+                <number>3</number>
+               </property>
                <item>
                 <widget class="QLabel" name="label_12">
                  <property name="text">
@@ -1984,13 +2016,6 @@
                 </widget>
                </item>
               </layout>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="checkBox_WhiteForPeak">
-              <property name="text">
-               <string>White for peak</string>
-              </property>
              </widget>
             </item>
            </layout>
@@ -2357,13 +2382,6 @@
             <property name="bottomMargin">
              <number>12</number>
             </property>
-            <item row="0" column="3">
-             <widget class="QPushButton" name="pushButton_ExportXLS">
-              <property name="text">
-               <string>Export</string>
-              </property>
-             </widget>
-            </item>
             <item row="0" column="2">
              <widget class="QPushButton" name="pushButton_SaveJlist">
               <property name="sizePolicy">
@@ -2475,28 +2493,9 @@
              </widget>
             </item>
             <item row="1" column="2">
-             <widget class="QLabel" name="label_15">
+             <widget class="QPushButton" name="pushButton_ExportXLS">
               <property name="text">
-               <string>Min. Intensity</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="3">
-             <widget class="QSpinBox" name="spinBox_LowestJCPDSInt">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="focusPolicy">
-               <enum>Qt::StrongFocus</enum>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-              </property>
-              <property name="value">
-               <number>0</number>
+               <string>Save to XLS</string>
               </property>
              </widget>
             </item>
@@ -2596,28 +2595,6 @@
               </property>
               <property name="text">
                <string>To UCFit</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="5">
-             <widget class="QPushButton" name="pushButton_SaveAsJCPDS">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="font">
-               <font>
-                <family>Helvetica</family>
-                <pointsize>12</pointsize>
-                <weight>50</weight>
-                <italic>false</italic>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>Save twk</string>
               </property>
              </widget>
             </item>
@@ -3035,7 +3012,7 @@
             <item row="0" column="0">
              <widget class="QLabel" name="label_4">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -3060,14 +3037,14 @@
             <item row="0" column="1">
              <widget class="QSpinBox" name="spinBox_BGParam0">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
               <property name="minimumSize">
                <size>
-                <width>70</width>
+                <width>0</width>
                 <height>0</height>
                </size>
               </property>
@@ -3085,7 +3062,7 @@
             <item row="1" column="0">
              <widget class="QLabel" name="label_6">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -3110,14 +3087,14 @@
             <item row="1" column="1">
              <widget class="QSpinBox" name="spinBox_BGParam1">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
               <property name="minimumSize">
                <size>
-                <width>70</width>
+                <width>0</width>
                 <height>0</height>
                </size>
               </property>
@@ -3135,7 +3112,7 @@
             <item row="2" column="0">
              <widget class="QLabel" name="label_5">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -3160,14 +3137,14 @@
             <item row="2" column="1">
              <widget class="QSpinBox" name="spinBox_BGParam2">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
               <property name="minimumSize">
                <size>
-                <width>70</width>
+                <width>0</width>
                 <height>0</height>
                </size>
               </property>
@@ -3197,7 +3174,7 @@
             <item row="0" column="0">
              <widget class="QLabel" name="label_2">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -3252,6 +3229,12 @@
             </item>
             <item row="1" column="0">
              <widget class="QLabel" name="label">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="font">
                <font>
                 <family>Helvetica</family>
@@ -3349,79 +3332,6 @@
           <number>3</number>
          </property>
          <item>
-          <widget class="QGroupBox" name="groupBox_13">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="title">
-            <string>Plot options</string>
-           </property>
-           <property name="flat">
-            <bool>true</bool>
-           </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_4">
-            <property name="leftMargin">
-             <number>12</number>
-            </property>
-            <property name="topMargin">
-             <number>12</number>
-            </property>
-            <property name="rightMargin">
-             <number>12</number>
-            </property>
-            <property name="bottomMargin">
-             <number>12</number>
-            </property>
-            <item>
-             <widget class="QLabel" name="label_3">
-              <property name="text">
-               <string>Shift X</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QDoubleSpinBox" name="doubleSpinBox_ShiftX">
-              <property name="focusPolicy">
-               <enum>Qt::StrongFocus</enum>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-              </property>
-              <property name="minimum">
-               <double>-99.989999999999995</double>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="label_7">
-              <property name="text">
-               <string>Shift Y (%)</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QDoubleSpinBox" name="doubleSpinBox_ShiftY">
-              <property name="focusPolicy">
-               <enum>Qt::StrongFocus</enum>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-              </property>
-              <property name="minimum">
-               <double>-99.989999999999995</double>
-              </property>
-              <property name="maximum">
-               <double>99.989999999999995</double>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
-         <item>
           <widget class="QGroupBox" name="groupBox_10">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -3446,7 +3356,7 @@
             <item row="1" column="1">
              <widget class="QCheckBox" name="checkBox_UseTempCake">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -3469,7 +3379,7 @@
             <item row="0" column="1">
              <widget class="QCheckBox" name="checkBox_UseTempBGSub">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -3603,6 +3513,9 @@
             <property name="bottomMargin">
              <number>12</number>
             </property>
+            <property name="verticalSpacing">
+             <number>0</number>
+            </property>
             <item row="1" column="0">
              <widget class="QGroupBox" name="groupBox_7">
               <property name="title">
@@ -3612,36 +3525,130 @@
                <bool>true</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_15">
-               <item row="0" column="2">
-                <widget class="QLabel" name="label_22">
-                 <property name="text">
-                  <string>JCPDS, ptn</string>
+               <property name="topMargin">
+                <number>3</number>
+               </property>
+               <property name="bottomMargin">
+                <number>3</number>
+               </property>
+               <item row="1" column="3">
+                <widget class="QComboBox" name="comboBox_CakeJCPDSBarThickness">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="layoutDirection">
+                  <enum>Qt::RightToLeft</enum>
+                 </property>
+                 <property name="maxCount">
+                  <number>10</number>
                  </property>
                 </widget>
                </item>
-               <item row="1" column="1">
-                <widget class="QComboBox" name="comboBox_BkgnLineThickness">
+               <item row="0" column="3">
+                <widget class="QComboBox" name="comboBox_PtnJCPDSBarThickness">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="layoutDirection">
+                  <enum>Qt::RightToLeft</enum>
+                 </property>
+                 <property name="maxCount">
+                  <number>10</number>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="3">
+                <widget class="QComboBox" name="comboBox_VertCursorThickness">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="layoutDirection">
                   <enum>Qt::RightToLeft</enum>
                  </property>
                 </widget>
                </item>
-               <item row="2" column="0">
-                <widget class="QLabel" name="label_25">
+               <item row="2" column="2">
+                <widget class="QLabel" name="label_26">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="text">
-                  <string>Waterfall</string>
+                  <string>Vert. cursor</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="2">
+                <widget class="QLabel" name="label_23">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>JCPDS, cake</string>
                  </property>
                 </widget>
                </item>
                <item row="0" column="0">
                 <widget class="QLabel" name="label_17">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="text">
                   <string>Pattern</string>
                  </property>
                 </widget>
                </item>
+               <item row="0" column="2">
+                <widget class="QLabel" name="label_22">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>JCPDS, ptn</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QComboBox" name="comboBox_WaterfallLineThickness">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="layoutDirection">
+                  <enum>Qt::RightToLeft</enum>
+                 </property>
+                </widget>
+               </item>
                <item row="0" column="1">
                 <widget class="QComboBox" name="comboBox_BasePtnLineThickness">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="layoutDirection">
                   <enum>Qt::RightToLeft</enum>
                  </property>
@@ -3653,8 +3660,27 @@
                  </property>
                 </widget>
                </item>
-               <item row="2" column="1">
-                <widget class="QComboBox" name="comboBox_WaterfallLineThickness">
+               <item row="2" column="0">
+                <widget class="QLabel" name="label_25">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Waterfall</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QComboBox" name="comboBox_BkgnLineThickness">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="layoutDirection">
                   <enum>Qt::RightToLeft</enum>
                  </property>
@@ -3662,55 +3688,14 @@
                </item>
                <item row="1" column="0">
                 <widget class="QLabel" name="label_24">
-                 <property name="text">
-                  <string>Bkgn</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="3">
-                <widget class="QComboBox" name="comboBox_PtnJCPDSBarThickness">
-                 <property name="layoutDirection">
-                  <enum>Qt::RightToLeft</enum>
-                 </property>
-                 <property name="maxCount">
-                  <number>10</number>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="2">
-                <widget class="QLabel" name="label_23">
-                 <property name="text">
-                  <string>JCPDS, cake</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="3">
-                <widget class="QComboBox" name="comboBox_CakeJCPDSBarThickness">
-                 <property name="layoutDirection">
-                  <enum>Qt::RightToLeft</enum>
-                 </property>
-                 <property name="maxCount">
-                  <number>10</number>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="2">
-                <widget class="QLabel" name="label_26">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
                  <property name="text">
-                  <string>Vert. cursor</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="3">
-                <widget class="QComboBox" name="comboBox_VertCursorThickness">
-                 <property name="layoutDirection">
-                  <enum>Qt::RightToLeft</enum>
+                  <string>Bkgn</string>
                  </property>
                 </widget>
                </item>
@@ -3722,6 +3707,47 @@
               <property name="text">
                <string>Short title (file name only)</string>
               </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QGroupBox" name="groupBox_13">
+              <property name="title">
+               <string>Font size</string>
+              </property>
+              <property name="flat">
+               <bool>true</bool>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_4">
+               <property name="topMargin">
+                <number>3</number>
+               </property>
+               <property name="bottomMargin">
+                <number>3</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="label_3">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Miller indices</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="comboBox_HKLFontSize">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </widget>
             </item>
            </layout>
