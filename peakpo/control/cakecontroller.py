@@ -34,6 +34,46 @@ class CakeController(object):
             self._clear_azilist)
         self.widget.pushButton_InvertCakeBoxes.clicked.connect(
             self._invert_cake_selections)
+        self.widget.pushButton_SaveCakeMarkerFile.clicked.connect(
+            self._save_cake_marker_file)
+        self.widget.pushButton_LoadCakeMarkerFile.clicked.connect(
+            self._load_cake_marker_file)
+        self.widget.pushButton_HighlightSelectedMarker.clicked.connect(
+            self._apply_changes_to_graph)
+
+    def _save_cake_marker_file(self):
+        azi_list = self._read_azilist()
+        if azi_list is None:
+            return
+        ext = "cake.marker"
+        filen_t = self.model.make_filename(ext)
+        filen = dialog_savefile(self.widget, filen_t)
+        if str(filen) == '':
+            return
+        with open(filen, "w") as f:
+            for s in azi_list:
+                f.write(s[0] + ',' + str(s[1]) + ',' +
+                        str(s[2]) + ',' + str(s[3]) + ',' +
+                        str(s[4]) + '\n')
+
+    def _load_cake_marker_file(self):
+        # get filename
+        filen = QtWidgets.QFileDialog.getOpenFileName(
+            self.widget, "Open a marker File", self.model.chi_path,
+            "Data files (*.marker)")[0]
+        if filen == '':
+            return
+        temp_markers = []
+        with open(filen, "r") as f:
+            for line in f:
+                temp_markers.append([x.strip() for x in line.split(',')])
+        new_markers = []
+        for line in temp_markers:
+            new_markers.append([line[0], float(line[1]), float(line[2]),
+                                float(line[3]), float(line[4])])
+        self._clear_azilist()
+        self._post_to_table(new_markers)
+        self._apply_changes_to_graph()
 
     def _invert_cake_selections(self):
         azi_list = self._read_azilist()
@@ -77,9 +117,11 @@ class CakeController(object):
         i = 0
         for azi in azi_list:
             self.widget.tableWidget_DiffImgAzi.insertRow(i)
-            for j in range(4):
+            for j in (1, 2, 3, 4):
                 self.widget.tableWidget_DiffImgAzi.setItem(
-                    i, j, QtWidgets.QTableWidgetItem(str(azi[j])))
+                    i, j, QtWidgets.QTableWidgetItem("{:.3f}".format(azi[j])))
+            self.widget.tableWidget_DiffImgAzi.setItem(
+                i, 0, QtWidgets.QTableWidgetItem(azi[0]))
 
     def _add_azi_to_list(self):
         # read azimuth_range
@@ -89,13 +131,20 @@ class CakeController(object):
         rowPosition = self.widget.tableWidget_DiffImgAzi.rowCount()
         self.widget.tableWidget_DiffImgAzi.insertRow(rowPosition)
         self.widget.tableWidget_DiffImgAzi.setItem(
-            rowPosition, 0, QtWidgets.QTableWidgetItem(str(tth_range[0])))
+            rowPosition, 1, QtWidgets.QTableWidgetItem(
+                "{:.3f}".format(tth_range[0])))
         self.widget.tableWidget_DiffImgAzi.setItem(
-            rowPosition, 2, QtWidgets.QTableWidgetItem(str(tth_range[1])))
+            rowPosition, 3, QtWidgets.QTableWidgetItem(
+                "{:.3f}".format(tth_range[1])))
         self.widget.tableWidget_DiffImgAzi.setItem(
-            rowPosition, 1, QtWidgets.QTableWidgetItem(str(azi_range[0])))
+            rowPosition, 2, QtWidgets.QTableWidgetItem(
+                "{:.3f}".format(azi_range[0])))
         self.widget.tableWidget_DiffImgAzi.setItem(
-            rowPosition, 3, QtWidgets.QTableWidgetItem(str(azi_range[1])))
+            rowPosition, 4, QtWidgets.QTableWidgetItem(
+                "{:.3f}".format(azi_range[1])))
+        self.widget.tableWidget_DiffImgAzi.setItem(
+            rowPosition, 0, QtWidgets.QTableWidgetItem(
+                " "))
         self._apply_changes_to_graph()
 
     def _remove_azi_from_list(self):
@@ -127,14 +176,15 @@ class CakeController(object):
         azi_list = []
         for i in range(n_row):
             tth_min = float(
-                self.widget.tableWidget_DiffImgAzi.item(i, 0).text())
-            azi_min = float(
                 self.widget.tableWidget_DiffImgAzi.item(i, 1).text())
-            tth_max = float(
+            azi_min = float(
                 self.widget.tableWidget_DiffImgAzi.item(i, 2).text())
-            azi_max = float(
+            tth_max = float(
                 self.widget.tableWidget_DiffImgAzi.item(i, 3).text())
-            azi_list.append([tth_min, azi_min, tth_max, azi_max])
+            azi_max = float(
+                self.widget.tableWidget_DiffImgAzi.item(i, 4).text())
+            comment = self.widget.tableWidget_DiffImgAzi.item(i, 0).text()
+            azi_list.append([comment, tth_min, azi_min, tth_max, azi_max])
         return azi_list
 
     def _clear_azilist(self):
@@ -160,7 +210,7 @@ class CakeController(object):
         intensity = []
         for azi_i in azi_list:
             tth_i, intensity_i = self.model.diff_img.integrate_to_1d(
-                azimuth_range=(azi_i[1], azi_i[3]))
+                azimuth_range=(azi_i[2], azi_i[4]))
             tth.append(tth_i)
             intensity.append(intensity_i)
         intensity_merged = np.zeros_like(intensity[0])
@@ -174,19 +224,20 @@ class CakeController(object):
         first_azi = azi_list[0]
         intensity_output = intensity_merged
         ext = "{0:d}_{1:d}_{2:d}.chi".format(
-            n_azi, int(first_azi[1]), int(first_azi[3]))
+            n_azi, int(first_azi[2]), int(first_azi[4]))
         filen_chi_t = self.model.make_filename(ext)
         filen_chi = dialog_savefile(self.widget, filen_chi_t)
         if str(filen_chi) == '':
             return
         azi_text = '# azi. angles: '
         for azi_i in azi_list:
-            azi_text += "({0:.5e}, {1:.5e})".format(azi_i[1], azi_i[3])
+            azi_text += "({0:.5e}, {1:.5e})".format(azi_i[2], azi_i[4])
         preheader_line0 = azi_text + ' \n'
-        preheader_line1 = '\n'
+        preheader_line1 = '2-theta\n'
         preheader_line2 = '\n'
         writechi(filen_chi, tth[0], intensity_output,
-                 preheader=preheader_line0 + preheader_line1 + preheader_line2)
+                 preheader=preheader_line0 + preheader_line1 +
+                 preheader_line2)
     """
     def integrate_to_1d(self):
         azi_range = self._read_azi_from_plot()

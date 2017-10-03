@@ -63,7 +63,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_HKLFontSize.addItems(fontsizes)
         self.comboBox_HKLFontSize.setCurrentText('8')
         self.tableWidget_DiffImgAzi.\
-            setHorizontalHeaderLabels(['2Theta', 'Azi', '2Theta', 'Azi'])
+            setHorizontalHeaderLabels(['Notes', '2th', 'Azi', '2th', 'Azi'])
         # navigation toolbar modification
         self.ntb_WholePtn = QtWidgets.QPushButton()
         self.ntb_WholePtn.setText("Z")

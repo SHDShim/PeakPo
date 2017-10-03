@@ -9,7 +9,7 @@ def writechi(filen, x, y, preheader=None):
     header should be string list.  Only first three will be used
     """
     if preheader is None:
-        preheader = "\n\n\n"
+        preheader = "\n 2-theta\n\n"
     header = str(x.__len__())
     np.savetxt(filen, np.asarray([x, y]).T,
                fmt='%1.7e', header=header, comments=preheader)
@@ -109,6 +109,7 @@ def make_filename(filename, ext, temp_dir=None, original=False):
     else:
         new_filename = os.path.join(path, temp_dir, new_filen)
     return new_filename
+
 
 def change_file_path(filename, new_path):
     path, filen_ext = os.path.split(filename)

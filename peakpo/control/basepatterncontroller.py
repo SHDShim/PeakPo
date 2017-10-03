@@ -137,13 +137,17 @@ class BasePatternController(object):
                     temp_dir=temp_dir)
                 if success:
                     self._update_bg_params_in_widget()
+                    print('Read temp chi successfully.')
                 else:
                     self._update_bgsub_from_current_values()
+                    print('No temp chi file found. Force new bgsub fit.')
             else:
                 os.makedirs(temp_dir)
                 self._update_bgsub_from_current_values()
+                print('No temp chi file found. Force new bgsub fit.')
         else:
             self._update_bgsub_from_current_values()
+            print('Temp chi ignored. Force new bgsub fit.')
         filen_tif = self.model.make_filename('tif', original=True)
         filen_mar3450 = self.model.make_filename('mar3450', original=True)
         if not (os.path.exists(filen_tif) or os.path.exists(filen_mar3450)):

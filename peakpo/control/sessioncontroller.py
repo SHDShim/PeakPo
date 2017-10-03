@@ -99,7 +99,7 @@ class SessionController(object):
                 self.widget, "Warning",
                 "The base pattern file in the PPSS cannot be found.")
         else:
-            #self.widget.textEdit_DiffractionPatternFileName.setText(
+            # self.widget.textEdit_DiffractionPatternFileName.setText(
             #    '1D pattern: ' + str(self.model.base_ptn.fname))
             self.widget.lineEdit_DiffractionPatternFileName.setText(
                 str(self.model.base_ptn.fname))
@@ -449,12 +449,18 @@ class SessionController(object):
         '''
         this is to read from session file and put to the table
         '''
-        bg_params = [self.widget.spinBox_BGParam0.value(),
-                     self.widget.spinBox_BGParam1.value(),
-                     self.widget.spinBox_BGParam2.value()]
-        bg_roi = [self.widget.doubleSpinBox_Background_ROI_min.value(),
-                  self.widget.doubleSpinBox_Background_ROI_max.value()]
-        self.model.base_ptn.subtract_bg(bg_roi, bg_params, yshift=0)
-        if self.model.waterfall_exist():
-            for pattern in self.model.waterfall_ptn:
-                pattern.get_chbg(bg_roi, bg_params, yshift=0)
+        self.widget.spinBox_BGParam0.setValue(
+            self.model.base_ptn.params_chbg[0])
+        self.widget.spinBox_BGParam1.setValue(
+            self.model.base_ptn.params_chbg[1])
+        self.widget.spinBox_BGParam2.setValue(
+            self.model.base_ptn.params_chbg[2])
+        self.widget.doubleSpinBox_Background_ROI_min.setValue(
+            self.model.base_ptn.x_bg[0])
+        self.widget.doubleSpinBox_Background_ROI_max.setValue(
+            self.model.base_ptn.x_bg[-1])
+        # the line below seems to be unnecessary, as there should be bgsub
+        # self.model.base_ptn.subtract_bg(bg_roi, bg_params, yshift=0)
+        # if self.model.waterfall_exist():
+        #    for pattern in self.model.waterfall_ptn:
+        #        pattern.get_chbg(bg_roi, bg_params, yshift=0)

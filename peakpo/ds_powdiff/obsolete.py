@@ -410,13 +410,13 @@ class Pattern(object):
         if chiout:
             # write background file
             f_bg = os.path.splitext(self.fname)[0] + '.bg.chi'
-            text = "Background\n" + "CHEB BG:" + \
+            text = "Background\n" + "2-theta, CHEB BG:" + \
                 ' '.join(map(str, self.params_chbg)) + "\n\n"
             writechi(f_bg, self.x_bgsub, self.y_bg, preheader=text)
             # write background subtracted file
             f_bgsub = os.path.splitext(self.fname)[0] + '.bgsub.chi'
             text = "Background subtracted diffraction pattern\n" + \
-                "CHEB BG:" + ' '.join(map(str, self.params_chbg)) + "\n\n"
+                "2-theta, CHEB BG:" + ' '.join(map(str, self.params_chbg)) + "\n\n"
             writechi(f_bgsub, self.x_bgsub, self.y_bgsub, preheader=text)
 
 

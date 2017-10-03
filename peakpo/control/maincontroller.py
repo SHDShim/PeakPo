@@ -73,7 +73,7 @@ class MainController(object):
             self.export_to_ucfit)
         self.widget.pushButton_ImportJlist.clicked.connect(
             self.load_jlist_from_session)
-        self.widget.pushButton_UpdatePlots_tab2.clicked.connect(
+        self.widget.pushButton_UpdateBackground.clicked.connect(
             self.update_bgsub)
         self.widget.checkBox_LongCursor.clicked.connect(
             self.apply_changes_to_graph)
@@ -92,6 +92,8 @@ class MainController(object):
         self.widget.comboBox_HKLFontSize.currentIndexChanged.connect(
             self.apply_changes_to_graph)
         self.widget.checkBox_ShortPlotTitle.clicked.connect(
+            self.apply_changes_to_graph)
+        self.widget.checkBox_ShowCakeLabels.clicked.connect(
             self.apply_changes_to_graph)
 
         # navigation toolbar modification.  Do not move the followings to
@@ -244,11 +246,11 @@ class MainController(object):
             return
         x, y = self.model.base_ptn.get_bgsub()
         preheader_line0 = \
-            '# BG ROI: {0: .5e}, {1: .5e} \n'.format(
+            '2-theta # BG ROI: {0: .5e}, {1: .5e} \n'.format(
                 self.widget.doubleSpinBox_Background_ROI_min.value(),
                 self.widget.doubleSpinBox_Background_ROI_max.value())
         preheader_line1 = \
-            '# BG Params: {0: d}, {1: d}, {2: d} \n'.format(
+            '2-theta # BG Params: {0: d}, {1: d}, {2: d} \n'.format(
                 self.widget.spinBox_BGParam0.value(),
                 self.widget.spinBox_BGParam1.value(),
                 self.widget.spinBox_BGParam2.value())
@@ -390,7 +392,14 @@ class MainController(object):
                      self.widget.spinBox_BGParam2.value()]
         bg_roi = [self.widget.doubleSpinBox_Background_ROI_min.value(),
                   self.widget.doubleSpinBox_Background_ROI_max.value()]
+        if (bg_roi[0] <= self.model.base_ptn.x_raw.min()):
+            bg_roi[0] = self.model.base_ptn.x_raw.min()
+            self.widget.doubleSpinBox_Background_ROI_min.setValue(bg_roi[0])
+        if (bg_roi[1] >= self.model.base_ptn.x_raw.max()):
+            bg_roi[1] = self.model.base_ptn.x_raw.max()
+            self.widget.doubleSpinBox_Background_ROI_max.setValue(bg_roi[1])
         self.model.base_ptn.subtract_bg(bg_roi, bg_params, yshift=0)
+        self.model.base_ptn.write_temporary_bgfiles()
         if self.model.waterfall_exist():
             for pattern in self.model.waterfall_ptn:
                 pattern.subtract_bg(bg_roi, bg_params, yshift=0)

@@ -4,6 +4,7 @@ import datetime
 import numpy as np
 import numpy.ma as ma
 from matplotlib.widgets import MultiCursor
+import matplotlib.colors as colors
 import matplotlib.patches as patches
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
@@ -49,21 +50,24 @@ class MplController(object):
     def _read_azilist(self):
         n_row = self.widget.tableWidget_DiffImgAzi.rowCount()
         if n_row == 0:
-            return None, None
+            return None, None, None
         azi_list = []
         tth_list = []
+        note_list = []
         for i in range(n_row):
             azi_min = float(
-                self.widget.tableWidget_DiffImgAzi.item(i, 1).text())
-            azi_max = float(
-                self.widget.tableWidget_DiffImgAzi.item(i, 3).text())
-            tth_min = float(
-                self.widget.tableWidget_DiffImgAzi.item(i, 0).text())
-            tth_max = float(
                 self.widget.tableWidget_DiffImgAzi.item(i, 2).text())
+            azi_max = float(
+                self.widget.tableWidget_DiffImgAzi.item(i, 4).text())
+            tth_min = float(
+                self.widget.tableWidget_DiffImgAzi.item(i, 1).text())
+            tth_max = float(
+                self.widget.tableWidget_DiffImgAzi.item(i, 3).text())
+            note_i = self.widget.tableWidget_DiffImgAzi.item(i, 0).text()
             tth_list.append([tth_min, tth_max])
             azi_list.append([azi_min, azi_max])
-        return tth_list, azi_list
+            note_list.append(note_i)
+        return tth_list, azi_list, note_list
 
     def zoom_out_graph(self):
         if not self.model.base_ptn_exist():
@@ -221,12 +225,14 @@ class MplController(object):
         if (max_slider_pos <= min_slider_pos):
             self.widget.horizontalSlider_VMin.setValue(1)
             self.widget.horizontalSlider_VMax.setValue(99)
-        prefactor = self.widget.horizontalSlider_MaxScaleBars.value() / 100. * \
-            intensity_cake.max() / 100.
         intensity_cake_plot = ma.masked_values(intensity_cake, 0.)
-        climits =  \
-            (prefactor * self.widget.horizontalSlider_VMin.value(),
-             prefactor * self.widget.horizontalSlider_VMax.value())
+        prefactor = \
+            intensity_cake_plot.max() / \
+            (10. ** self.widget.horizontalSlider_MaxScaleBars.value())
+        climits = np.asarray([
+            self.widget.horizontalSlider_VMin.value(),
+            self.widget.horizontalSlider_VMax.value()]) / \
+            1000. * prefactor
         if self.widget.checkBox_WhiteForPeak.isChecked():
             cmap = 'gray'
         else:
@@ -236,11 +242,11 @@ class MplController(object):
             extent=[tth_cake.min(), tth_cake.max(),
                     chi_cake.min(), chi_cake.max()],
             aspect="auto", cmap=cmap, clim=climits)  # gray_r
-        tth_list, azi_list = self._read_azilist()
+        tth_list, azi_list, note_list = self._read_azilist()
         tth_min = tth_cake.min()
         tth_max = tth_cake.max()
         if azi_list is not None:
-            for tth, azi in zip(tth_list, azi_list):
+            for tth, azi, note in zip(tth_list, azi_list, note_list):
                 rect = patches.Rectangle(
                     (tth_min, azi[0]), (tth_max - tth_min), (azi[1] - azi[0]),
                     linewidth=0, edgecolor='b', facecolor='b', alpha=0.2)
@@ -249,14 +255,17 @@ class MplController(object):
                     linewidth=1, edgecolor='b', facecolor='None')
                 self.widget.mpl.canvas.ax_cake.add_patch(rect)
                 self.widget.mpl.canvas.ax_cake.add_patch(rect1)
+                if self.widget.checkBox_ShowCakeLabels.isChecked():
+                    self.widget.mpl.canvas.ax_cake.text(
+                        tth[1], azi[1], note, color=self.obj_color)
         rows = self.widget.tableWidget_DiffImgAzi.selectionModel().\
             selectedRows()
         if rows != []:
             for r in rows:
                 azi_min = float(
-                    self.widget.tableWidget_DiffImgAzi.item(r.row(), 1).text())
+                    self.widget.tableWidget_DiffImgAzi.item(r.row(), 2).text())
                 azi_max = float(
-                    self.widget.tableWidget_DiffImgAzi.item(r.row(), 3).text())
+                    self.widget.tableWidget_DiffImgAzi.item(r.row(), 4).text())
                 rect = patches.Rectangle(
                     (tth_min, azi_min), (tth_max - tth_min),
                     (azi_max - azi_min),
@@ -301,8 +310,7 @@ class MplController(object):
                         bar_max = intensity * bar_scale + bar_min
                     else:
                         data_limits = self._get_data_limits()
-                        starting_intensity = \
-                            np.ones(tth.shape) * data_limits[2] + \
+                        starting_intensity = np.ones(tth.shape) * data_limits[2] + \
                             self.widget.horizontalSlider_JCPDSBarPosition.\
                             value() / 100. * axisrange[3]
                         bar_max = starting_intensity - \
