@@ -4,7 +4,7 @@ import datetime
 import numpy as np
 import numpy.ma as ma
 from matplotlib.widgets import MultiCursor
-import matplotlib.colors as colors
+#import matplotlib.colors as colors
 import matplotlib.patches as patches
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
@@ -17,6 +17,7 @@ class MplController(object):
 
         self.model = model
         self.widget = widget
+        self.obj_color = 'k'
 
     def _set_nightday_view(self):
         if not self.widget.checkBox_NightView.isChecked():
@@ -73,21 +74,33 @@ class MplController(object):
         if not self.model.base_ptn_exist():
             return
         data_limits = self._get_data_limits()
-        self.update(limits=data_limits)
+        self.update(limits=data_limits,
+                    cake_ylimits=(-180, 180))
 
-    def _get_data_limits(self):
+    def update_to_gsas_style(self):
+        if not self.model.base_ptn_exist():
+            return
+        data_limits = self._get_data_limits(y_margin=0.10)
+        self.update(limits=data_limits, gsas_style=True)
+
+    def _get_data_limits(self, y_margin=0.):
         if self.widget.checkBox_BgSub.isChecked():
             x, y = self.model.base_ptn.get_bgsub()
         else:
             x, y = self.model.base_ptn.get_raw()
-        return (x.min(), x.max(), y.min(), y.max())
+        return (x.min(), x.max(),
+                y.min() - (y.max() - y.min()) * y_margin,
+                y.max() + (y.max() - y.min()) * y_margin)
 
-    def update(self, limits=None):
+    def update(self, limits=None, gsas_style=False, cake_ylimits=None):
         """Updates the graph"""
         t_start = time.time()
         self.widget.setCursor(QtCore.Qt.WaitCursor)
         if limits is None:
             limits = self.widget.mpl.canvas.ax_pattern.axis()
+        if cake_ylimits is None:
+            c_limits = self.widget.mpl.canvas.ax_cake.axis()
+            cake_ylimits = c_limits[2:4]
         if (not self.model.base_ptn_exist()) and \
                 (not self.model.jcpds_exist()):
             return
@@ -106,7 +119,7 @@ class MplController(object):
                 title = self.model.base_ptn.fname
             self.widget.mpl.canvas.fig.suptitle(
                 title, color=self.obj_color)
-            self._plot_diffpattern()
+            self._plot_diffpattern(gsas_style)
             if self.model.waterfall_exist():
                 self._plot_waterfallpatterns()
         # if self.model.jcpds_exist():
@@ -114,10 +127,14 @@ class MplController(object):
         if self.model.ucfit_exist():
             self._plot_ucfit()
         if (self.widget.tabWidget.currentIndex() == 8):
-            self._plot_peakfit()
+            if gsas_style:
+                self._plot_peakfit_in_gsas_style()
+            else:
+                self._plot_peakfit()
         self.widget.mpl.canvas.ax_pattern.set_xlim(limits[0], limits[1])
         if not self.widget.checkBox_AutoY.isChecked():
             self.widget.mpl.canvas.ax_pattern.set_ylim(limits[2], limits[3])
+        self.widget.mpl.canvas.ax_cake.set_ylim(cake_ylimits)
         if self.model.jcpds_exist():
             self._plot_jcpds(limits)
             if not self.widget.checkBox_Intensity.isChecked():
@@ -155,7 +172,7 @@ class MplController(object):
         self.widget.mpl.canvas.ax_cake.format_coord = lambda x, y: \
             "{0:.2f},{1:.2e},dsp={2:.3f}".\
             format(x, y, self.widget.doubleSpinBox_SetWavelength.value() / 2. /
-                   np.sin(np.radians(x / 2.)))
+                   np.sin(np.deg2rad(x / 2.)))
         self.widget.mpl.canvas.draw()
         print("Plot takes {0:.2f}s at".format(time.time() - t_start),
               str(datetime.datetime.now())[:-7])
@@ -237,8 +254,15 @@ class MplController(object):
             cmap = 'gray'
         else:
             cmap = 'gray_r'
+        mid_angle = self.widget.spinBox_AziShift.value()
+        if mid_angle != 0:
+            int_new = np.array(intensity_cake_plot)
+            int_new[0:mid_angle] = intensity_cake[360 - mid_angle:361]
+            int_new[mid_angle:361] = intensity_cake[0:360 - mid_angle]
+        else:
+            int_new = np.array(intensity_cake_plot)
         self.widget.mpl.canvas.ax_cake.imshow(
-            intensity_cake_plot, origin="lower",
+            int_new, origin="lower",
             extent=[tth_cake.min(), tth_cake.max(),
                     chi_cake.min(), chi_cake.max()],
             aspect="auto", cmap=cmap, clim=climits)  # gray_r
@@ -420,21 +444,31 @@ class MplController(object):
             transform=self.widget.mpl.canvas.ax_pattern.transAxes,
             color=self.model.base_ptn.color)
 
-    def _plot_diffpattern(self):
+    def _plot_diffpattern(self, gsas_style=False):
         if self.widget.checkBox_BgSub.isChecked():
             x, y = self.model.base_ptn.get_bgsub()
-            self.widget.mpl.canvas.ax_pattern.plot(
-                x, y, c=self.model.base_ptn.color,
-                lw=float(
-                    self.widget.comboBox_BasePtnLineThickness.
-                    currentText()))
+            if gsas_style:
+                self.widget.mpl.canvas.ax_pattern.plot(
+                    x, y, c=self.model.base_ptn.color, marker='o',
+                    linestyle='None', ms=3)
+            else:
+                self.widget.mpl.canvas.ax_pattern.plot(
+                    x, y, c=self.model.base_ptn.color,
+                    lw=float(
+                        self.widget.comboBox_BasePtnLineThickness.
+                        currentText()))
         else:
             x, y = self.model.base_ptn.get_raw()
-            self.widget.mpl.canvas.ax_pattern.plot(
-                x, y, c=self.model.base_ptn.color,
-                lw=float(
-                    self.widget.comboBox_BasePtnLineThickness.
-                    currentText()))
+            if gsas_style:
+                self.widget.mpl.canvas.ax_pattern.plot(
+                    x, y, c=self.model.base_ptn.color, marker='o',
+                    linestyle='None', ms=3)
+            else:
+                self.widget.mpl.canvas.ax_pattern.plot(
+                    x, y, c=self.model.base_ptn.color,
+                    lw=float(
+                        self.widget.comboBox_BasePtnLineThickness.
+                        currentText()))
             x_bg, y_bg = self.model.base_ptn.get_background()
             self.widget.mpl.canvas.ax_pattern.plot(
                 x_bg, y_bg, c=self.model.base_ptn.color, ls='--',
@@ -467,7 +501,8 @@ class MplController(object):
                     self.widget.comboBox_BasePtnLineThickness.
                     currentText()))
             y_range = self.model.current_section.get_yrange(bgsub=bgsub)
-            y_shift = (y_range[1] - y_range[0]) * 1.05
+            y_shift = y_range[0] - (y_range[1] - y_range[0]) * 0.05
+            #(y_range[1] - y_range[0]) * 1.05
             self.widget.mpl.canvas.ax_pattern.fill_between(
                 x_plot, self.model.current_section.get_fit_residue_baseline(
                     bgsub=bgsub) + y_shift, residue + y_shift, facecolor='r')
@@ -480,3 +515,30 @@ class MplController(object):
             """
         else:
             pass
+
+    def _plot_peakfit_in_gsas_style(self):
+        # get all the highlights
+        # iteratively run plot
+        rows = self.widget.tableWidget_PkFtSections.selectionModel().\
+            selectedRows()
+        if rows == []:
+            return
+        else:
+            selected_rows = [r.row() for r in rows]
+        bgsub = self.widget.checkBox_BgSub.isChecked()
+        data_limits = self._get_data_limits()
+        y_shift = data_limits[2] - (data_limits[3] - data_limits[2]) * 0.05
+        i = 0
+        for section in self.model.section_lst:
+            if i in selected_rows:
+                x_plot = section.x
+                total_profile = section.get_fit_profile(bgsub=bgsub)
+                residue = section.get_fit_residue(bgsub=bgsub)
+                self.widget.mpl.canvas.ax_pattern.plot(
+                    x_plot, total_profile, 'r-', lw=float(
+                        self.widget.comboBox_BasePtnLineThickness.
+                        currentText()))
+                self.widget.mpl.canvas.ax_pattern.fill_between(
+                    x_plot, section.get_fit_residue_baseline(bgsub=bgsub) +
+                    y_shift, residue + y_shift, facecolor='r')
+            i += 1

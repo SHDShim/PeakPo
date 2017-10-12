@@ -26,8 +26,6 @@ class PeakFitController(object):
             self.clear_this_section)
         self.widget.pushButton_PkFtSectionRemove.clicked.connect(
             self.remove_section)
-        self.widget.pushButton_PkFtSectionClear.clicked.connect(
-            self.clear_section_list)
         self.widget.pushButton_PkFtSectionSetToCurrent.clicked.\
             connect(self.set_section_to_current)
         self.widget.pushButton_AddRemoveFromJlist.clicked.connect(
@@ -38,8 +36,13 @@ class PeakFitController(object):
             connect(self.save_to_xls)
         self.widget.pushButton_PkFtSectionImport.clicked.connect(
             self.import_section_from_dpp)
+        self.widget.pushButton_PlotSelectedPkFtResults.clicked.connect(
+            self._plot_selected_fitting)
         # The line below exist in session_ctrl
         # self.widget.pushButton_PkFtSectionSavetoDPP.clicked.coonect
+
+    def _plot_selected_fitting(self):
+        self.plot_ctrl.update_to_gsas_style()
 
     def import_section_from_dpp(self):
         fn = QtWidgets.QFileDialog.getOpenFileName(
@@ -302,26 +305,10 @@ class PeakFitController(object):
             self.widget.mpl.ntb.zoom()
         self.widget.pushButton_AddRemoveFromMouse.setChecked(False)
         return
-
+    '''
     def pick_peak(self, mouse_button, xdata, ydata):
         """
         """
-        if not self.model.current_section_exist():
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning", "Set section first.")
-            return
-        if not self.widget.pushButton_AddRemoveFromMouse.isChecked():
-            return
-        if self.model.current_section.fitted():
-            reply = QtWidgets.QMessageBox.question(
-                self.widget, 'Message',
-                'Do you want to add to the last fitting result without save?',
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                QtWidgets.QMessageBox.Yes)
-            if reply == QtWidgets.QMessageBox.No:
-                return
-            else:
-                self.model.current_section.invalidate_fit_result()
         if mouse_button == 'left':  # left click
             success = self.model.current_section.set_single_peak(
                 float(xdata),
@@ -341,6 +328,7 @@ class PeakFitController(object):
         self.peakfit_table_ctrl.update_peak_parameters()
         self.peakfit_table_ctrl.update_peak_constraints()
         self.plot_ctrl.update()
+    '''
 
     def conduct_fitting(self):
         if not self.model.current_section_exist():

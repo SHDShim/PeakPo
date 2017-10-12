@@ -45,8 +45,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.doubleSpinBox_Background_ROI_min.setStyle(SpinBoxFixStyle())
         self.doubleSpinBox_SetWavelength.setKeyboardTracking(False)
         self.doubleSpinBox_SetWavelength.setStyle(SpinBoxFixStyle())
-        linethicknesses = ['0', '0.1', '0.5', '0.75', '1', '1.5', '2', '3',
-                           '4', '5']
+        linethicknesses = ['0', '0.1', '0.2', '0.5', '0.75',
+                           '1', '1.5', '2', '3', '4', '5']
         self.comboBox_BasePtnLineThickness.addItems(linethicknesses)
         self.comboBox_PtnJCPDSBarThickness.addItems(linethicknesses)
         self.comboBox_CakeJCPDSBarThickness.addItems(linethicknesses)

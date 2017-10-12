@@ -32,8 +32,6 @@ class SessionController(object):
         self.widget.pushButton_LoadDPP.clicked.connect(self.load_dpp)
         self.widget.pushButton_ZipSession.clicked.connect(self.zip_ppss)
         self.widget.pushButton_SaveJlist.clicked.connect(self.save_dpp)
-        self.widget.pushButton_PkFtSectionSavetoDPP.clicked.connect(
-            self.save_dpp)
         self.widget.pushButton_SaveDPPandPPSS.clicked.connect(
             self.save_dpp_ppss)
         self.widget.ntb_SaveSession.clicked.connect(self.save_dpp_ppss)

@@ -19,6 +19,7 @@ from .jcpdstablecontroller import JcpdsTableController
 from .ucfittablecontroller import UcfitTableController
 from .sessioncontroller import SessionController
 from .peakfitcontroller import PeakFitController
+from .peakfittablecontroller import PeakfitTableController
 from utils import dialog_savefile, writechi, extract_extension, \
     convert_wl_to_energy
 # do not change the module structure for ds_jcpds and ds_powdiff for
@@ -47,6 +48,7 @@ class MainController(object):
         self.jcpdstable_ctrl = JcpdsTableController(self.model, self.widget)
         self.session_ctrl = SessionController(self.model, self.widget)
         self.peakfit_ctrl = PeakFitController(self.model, self.widget)
+        self.peakfit_table_ctrl = PeakfitTableController(self.model, self.widget)
         self.read_setting()
         self.connect_channel()
         #
@@ -62,6 +64,8 @@ class MainController(object):
             'button_press_event', self.deliver_mouse_signal)
         self.widget.mpl.canvas.mpl_connect(
             'key_press_event', self.on_key_press)
+        self.widget.spinBox_AziShift.valueChanged.connect(
+            self.apply_changes_to_graph)
         self.widget.doubleSpinBox_Pressure.valueChanged.connect(
             self.apply_pt_to_graph)
         self.widget.doubleSpinBox_Temperature.valueChanged.connect(
@@ -346,9 +350,50 @@ class MainController(object):
             mouse_button = 'right'
         if (self.widget.tabWidget.currentIndex() == 8) and \
                 (self.widget.pushButton_AddRemoveFromMouse.isChecked()):
-            self.peakfit_ctrl.pick_peak(mouse_button, event.xdata, event.ydata)
+            if not self.model.current_section_exist():
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning", "Set section first.")
+                return
+            """ lines below causes issues
+            if self.model.current_section.fitted():
+                reply = QtWidgets.QMessageBox.question(
+                    self.widget, 'Message',
+                    'Do you want to add to the last fitting result without save?',
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                    QtWidgets.QMessageBox.Yes)
+                if reply == QtWidgets.QMessageBox.No:
+                    return
+                else:
+                    self.model.current_section.invalidate_fit_result()
+            """
+            if self.model.current_section.fitted():
+                self.model.current_section.invalidate_fit_result()
+            self.pick_peak(mouse_button, event.xdata, event.ydata)
         else:
             self.read_plot(mouse_button, event.xdata, event.ydata)
+
+    def pick_peak(self, mouse_button, xdata, ydata):
+        """
+        """
+        if mouse_button == 'left':  # left click
+            success = self.model.current_section.set_single_peak(
+                float(xdata),
+                self.widget.doubleSpinBox_InitialFWHM.value())
+            if not success:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning",
+                    "You picked outside of the current section.")
+                return
+        elif mouse_button == 'right':  # right button for removal
+            if not self.model.current_section.peaks_exist():
+                return
+            self.model.current_section.remove_single_peak_nearby(xdata)
+        else:
+            return
+        self.peakfit_ctrl.set_tableWidget_PkParams_unsaved()
+        self.peakfit_table_ctrl.update_peak_parameters()
+        self.peakfit_table_ctrl.update_peak_constraints()
+        self.plot_ctrl.update()
 
     def read_plot(self, mouse_button, xdata, ydata):
         if mouse_button == 'right':

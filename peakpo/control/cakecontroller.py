@@ -208,9 +208,25 @@ class CakeController(object):
         self.cakemake_ctrl.read_settings()
         tth = []
         intensity = []
+        mid_angle = self.widget.spinBox_AziShift.value()
         for azi_i in azi_list:
+            azi_conv = []
+            if mid_angle <= 180:
+                azi_conv.append(azi_i[2] - mid_angle)
+                azi_conv.append(azi_i[4] - mid_angle)
+            else:
+                azi_conv.append(azi_i[2] + 360 - mid_angle)
+                azi_conv.append(azi_i[4] + 360 - mid_angle)
+            azi_real = []
+            for azi_conv_i in azi_conv:
+                if azi_conv_i < -180:
+                    azi_real.append(360 + azi_conv_i)
+                elif azi_conv_i > 180:
+                    azi_real.append(azi_conv_i - 360)
+                else:
+                    azi_real.append(azi_conv_i)
             tth_i, intensity_i = self.model.diff_img.integrate_to_1d(
-                azimuth_range=(azi_i[2], azi_i[4]))
+                azimuth_range=(azi_real[0], azi_real[1]))
             tth.append(tth_i)
             intensity.append(intensity_i)
         intensity_merged = np.zeros_like(intensity[0])
