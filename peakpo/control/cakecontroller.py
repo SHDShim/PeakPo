@@ -77,6 +77,7 @@ class CakeController(object):
 
     def _invert_cake_selections(self):
         azi_list = self._read_azilist()
+        # [comment, tth_min, azi_min, tth_max, azi_max]
         if azi_list is None:
             return
         __, __, azi_whole = self.model.diff_img.get_cake()
@@ -84,30 +85,30 @@ class CakeController(object):
         epsilon = 0.01
         if azi_list.__len__() == 1:
             azi = azi_list[0]
-            if (np.abs(azi[1] - azi_whole.min()) < epsilon) and \
-                    (np.abs(azi[3] - azi_whole.max()) < epsilon):
+            if (np.abs(azi[2] - azi_whole.min()) < epsilon) and \
+                    (np.abs(azi[4] - azi_whole.max()) < epsilon):
                 self._clear_azilist()
-            elif np.abs(azi[1] - azi_whole.min()) < epsilon:
-                new_azi_list.append([azi[0], azi[3], azi[2], azi_whole.max()])
-            elif np.abs(azi[3] - azi_whole.max()) < epsilon:
-                new_azi_list.append([azi[0], azi_whole.min(), azi[2], azi[1]])
+            elif np.abs(azi[2] - azi_whole.min()) < epsilon:
+                new_azi_list.append([azi[0], azi[1], azi[4], azi[3], azi_whole.max()])
+            elif np.abs(azi[4] - azi_whole.max()) < epsilon:
+                new_azi_list.append([azi[0], azi[1], azi_whole.min(), azi[3], azi[2]])
             else:
-                new_azi_list.append([azi[0], azi_whole.min(), azi[2], azi[1]])
-                new_azi_list.append([azi[0], azi[3], azi[2], azi_whole.max()])
+                new_azi_list.append([azi[0], azi[1], azi_whole.min(), azi[3], azi[2]])
+                new_azi_list.append([azi[0], azi[1], azi[4], azi[3], azi_whole.max()])
         else:
             sorted_azi_list = sorted(azi_list,
                                      key=lambda azi_list: azi_list[1])
             lower_azi = azi_whole.min()
             for azi in sorted_azi_list:
-                if np.abs(lower_azi - azi[1]) > epsilon:
-                    new_azi_list.append([azi[0], lower_azi, azi[2], azi[1]])
+                if np.abs(lower_azi - azi[2]) > epsilon:
+                    new_azi_list.append([azi[0], azi[1], lower_azi, azi[3], azi[2]])
                 else:
                     pass
-                lower_azi = azi[3]
+                lower_azi = azi[4]
             last_azi = sorted_azi_list[-1]
-            if np.abs(last_azi[3] - azi_whole.max()) > epsilon:
+            if np.abs(last_azi[4] - azi_whole.max()) > epsilon:
                 new_azi_list.append(
-                    [azi[0], last_azi[3], azi[2], azi_whole.max()])
+                    [azi[0], azi[1], last_azi[4], azi[3], azi_whole.max()])
         if new_azi_list != []:
             self._clear_azilist()
             self._post_to_table(new_azi_list)

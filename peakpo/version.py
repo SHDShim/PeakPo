@@ -3,9 +3,10 @@ PeakPo version
 
 Todo: better system should be implemented, such as pbr.
 """
-__version__ = "7.7.10"
+__version__ = "7.7.11"
 
 """
+7.7.11: fix bug with cake azimuthal integration
 7.7.10: add cake azimuthal angle shift
 7.7.9: fix issues in peakfit.  add GSAS style view.
 7.7.8: fix issues with bgsub behavior.  now PeakPo will not overwrite previous
