@@ -414,6 +414,9 @@
                 <height>35</height>
                </size>
               </property>
+              <property name="toolTip">
+               <string>Session file (read-only box, use the buttons)</string>
+              </property>
               <property name="readOnly">
                <bool>true</bool>
               </property>
@@ -528,7 +531,7 @@
              <number>3</number>
             </property>
             <property name="topMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <property name="rightMargin">
              <number>3</number>
@@ -1261,6 +1264,9 @@
                 <height>60</height>
                </size>
               </property>
+              <property name="toolTip">
+               <string>Pressure steps</string>
+              </property>
               <property name="layoutDirection">
                <enum>Qt::LeftToRight</enum>
               </property>
@@ -1357,6 +1363,9 @@
                 <width>0</width>
                 <height>60</height>
                </size>
+              </property>
+              <property name="toolTip">
+               <string>Temperature steps</string>
               </property>
               <property name="frameShape">
                <enum>QFrame::StyledPanel</enum>
@@ -1476,7 +1485,7 @@
          <item>
           <widget class="QPushButton" name="pushButton_ApplyWaterfallChange">
            <property name="toolTip">
-            <string>Force update plot</string>
+            <string>Force update graph</string>
            </property>
            <property name="text">
             <string>Update plot</string>
@@ -1518,6 +1527,9 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
+              <property name="toolTip">
+               <string>Convert two theta angles of waterfall patterns to match the wavelength of base pattern</string>
+              </property>
               <property name="text">
                <string>Convert to base ptn wavelength</string>
               </property>
@@ -1528,6 +1540,9 @@
             </item>
             <item>
              <widget class="QCheckBox" name="checkBox_IntNorm">
+              <property name="toolTip">
+               <string>Normalize intensities of waterfall pattern with respect to their max. intensities</string>
+              </property>
               <property name="text">
                <string>Intensity nomalization</string>
               </property>
@@ -1554,6 +1569,9 @@
             </item>
             <item>
              <widget class="QSlider" name="horizontalSlider_WaterfallGaps">
+              <property name="toolTip">
+               <string>Change size of vertical gaps between waterfall patterns</string>
+              </property>
               <property name="maximum">
                <number>100</number>
               </property>
@@ -1586,7 +1604,7 @@
             <item row="0" column="1">
              <widget class="QPushButton" name="pushButton_UncheckAllWaterfall">
               <property name="toolTip">
-               <string>Uncheck all the boxes in the waterfall list</string>
+               <string>Hide all the patterns in waterfall list from graph</string>
               </property>
               <property name="text">
                <string>Uncheck</string>
@@ -1611,7 +1629,7 @@
                </font>
               </property>
               <property name="toolTip">
-               <string>Clean up the waterfall list</string>
+               <string>Clean up waterfall list</string>
               </property>
               <property name="text">
                <string>Clean up</string>
@@ -1621,7 +1639,7 @@
             <item row="0" column="0">
              <widget class="QPushButton" name="pushButton_CheckAllWaterfall">
               <property name="toolTip">
-               <string>Check all the boxes in the waterfall list</string>
+               <string>Show all the patterns in waterfall list in graph</string>
               </property>
               <property name="text">
                <string>Check</string>
@@ -1655,7 +1673,7 @@
                </sizepolicy>
               </property>
               <property name="toolTip">
-               <string>Set the highlighted pattern in the waterfall list as a base pattern</string>
+               <string>Set highlighted pattern in the waterfall list as a base pattern</string>
               </property>
               <property name="text">
                <string>Set as Base Ptn</string>
@@ -1869,6 +1887,9 @@
                 <width>16777215</width>
                 <height>35</height>
                </size>
+              </property>
+              <property name="toolTip">
+               <string>File name and path of PONI (read-only box, use buttons to change)</string>
               </property>
               <property name="readOnly">
                <bool>true</bool>
@@ -2279,7 +2300,7 @@
                </sizepolicy>
               </property>
               <property name="toolTip">
-               <string>Add a marker for currently plotted cake range</string>
+               <string>Add a marker from currently plotted cake range</string>
               </property>
               <property name="text">
                <string>Add</string>
@@ -2373,7 +2394,7 @@
             <item row="0" column="5">
              <widget class="QPushButton" name="pushButton_HighlightSelectedMarker">
               <property name="toolTip">
-               <string>Highlight selected marker item in the plot</string>
+               <string>Highlight selected marker in the list</string>
               </property>
               <property name="text">
                <string>Highlight</string>
@@ -2517,6 +2538,9 @@
             </item>
             <item>
              <widget class="QSlider" name="horizontalSlider_JCPDSBarPosition">
+              <property name="minimum">
+               <number>-50</number>
+              </property>
               <property name="maximum">
                <number>100</number>
               </property>
@@ -3537,7 +3561,7 @@
        </widget>
        <widget class="QWidget" name="tab_Process">
         <attribute name="title">
-         <string>Utils</string>
+         <string>Config</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_7">
          <property name="leftMargin">
@@ -3740,6 +3764,13 @@
             <property name="verticalSpacing">
              <number>0</number>
             </property>
+            <item row="0" column="0">
+             <widget class="QCheckBox" name="checkBox_ShortPlotTitle">
+              <property name="text">
+               <string>Short title (file name only)</string>
+              </property>
+             </widget>
+            </item>
             <item row="1" column="0">
              <widget class="QGroupBox" name="groupBox_7">
               <property name="title">
@@ -3750,7 +3781,7 @@
               </property>
               <layout class="QGridLayout" name="gridLayout_15">
                <property name="topMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="bottomMargin">
                 <number>3</number>
@@ -3926,13 +3957,6 @@
               </layout>
              </widget>
             </item>
-            <item row="0" column="0">
-             <widget class="QCheckBox" name="checkBox_ShortPlotTitle">
-              <property name="text">
-               <string>Short title (file name only)</string>
-              </property>
-             </widget>
-            </item>
             <item row="2" column="0">
              <widget class="QGroupBox" name="groupBox_13">
               <property name="title">
@@ -3943,7 +3967,7 @@
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_4">
                <property name="topMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="bottomMargin">
                 <number>3</number>
@@ -3968,6 +3992,56 @@
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QGroupBox" name="groupBox_23">
+              <property name="title">
+               <string>Cake</string>
+              </property>
+              <property name="flat">
+               <bool>true</bool>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_5">
+               <item>
+                <widget class="QLabel" name="label_7">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Azimuthal angle shift</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QSpinBox" name="spinBox_AziShift">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>80</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                 <property name="maximum">
+                  <number>359</number>
+                 </property>
+                 <property name="singleStep">
+                  <number>5</number>
                  </property>
                 </widget>
                </item>
@@ -4027,8 +4101,8 @@
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
-               <layout class="QHBoxLayout" name="horizontalLayout_8">
-                <item>
+               <layout class="QGridLayout" name="gridLayout_20">
+                <item row="0" column="0">
                  <widget class="QPushButton" name="pushButton_PkFtSectionRemove">
                   <property name="toolTip">
                    <string>Remove highlighted section</string>
@@ -4038,23 +4112,50 @@
                   </property>
                  </widget>
                 </item>
-                <item>
-                 <widget class="QPushButton" name="pushButton_PkFtSectionClear">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="text">
-                   <string>Clear</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
+                <item row="0" column="1">
                  <widget class="QPushButton" name="pushButton_PkFtSectionSetToCurrent">
                   <property name="toolTip">
                    <string>Set highlighted section as current for fit or plot</string>
                   </property>
                   <property name="text">
                    <string>Set to current</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="2">
+                 <widget class="QPushButton" name="pushButton_PlotSelectedPkFtResults">
+                  <property name="toolTip">
+                   <string>Plot highlighted fit sections</string>
+                  </property>
+                  <property name="text">
+                   <string>Plot GSAS style</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QPushButton" name="pushButton_PkFtSectionClear">
+                  <property name="text">
+                   <string>Clear</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QPushButton" name="pushButton_PkFtSectionImport">
+                  <property name="toolTip">
+                   <string>Import peak fitting results from dpp</string>
+                  </property>
+                  <property name="text">
+                   <string>Import</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="2">
+                 <widget class="QPushButton" name="pushButton_PkFtSectionSavetoXLS">
+                  <property name="toolTip">
+                   <string>Save all fitting results in an excel file</string>
+                  </property>
+                  <property name="text">
+                   <string>Save to XLS</string>
                   </property>
                  </widget>
                 </item>
@@ -4069,42 +4170,6 @@
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QFrame" name="frame_33">
-               <layout class="QHBoxLayout" name="horizontalLayout_7">
-                <item>
-                 <widget class="QPushButton" name="pushButton_PkFtSectionImport">
-                  <property name="toolTip">
-                   <string>Import peak fitting results from dpp</string>
-                  </property>
-                  <property name="text">
-                   <string>Import</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="pushButton_PkFtSectionSavetoDPP">
-                  <property name="toolTip">
-                   <string>Save fitting results in a dpp file</string>
-                  </property>
-                  <property name="text">
-                   <string>Save dpp</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="pushButton_PkFtSectionSavetoXLS">
-                  <property name="toolTip">
-                   <string>Save fitting results in an excel file</string>
-                  </property>
-                  <property name="text">
-                   <string>Save to XLS</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
               </widget>
              </item>
             </layout>
