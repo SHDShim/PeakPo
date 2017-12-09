@@ -102,6 +102,7 @@ def make_filename(filename, ext, temp_dir=None, original=False):
     path, filen = os.path.split(filename)
     if original:
         new_filen = filen.split(os.extsep)[0] + '.' + ext
+        # new_filen = (os.extsep).join(filen.split(os.extsep)[0:-1]) + '.' + ext
     else:
         new_filen = os.path.splitext(filen)[0] + '.' + ext
     if temp_dir is None:
