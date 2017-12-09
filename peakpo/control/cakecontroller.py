@@ -40,6 +40,8 @@ class CakeController(object):
             self._load_cake_marker_file)
         self.widget.pushButton_HighlightSelectedMarker.clicked.connect(
             self._apply_changes_to_graph)
+        self.widget.lineEdit_PONI.editingFinished.connect(
+            self.load_new_poni_from_name)
 
     def _save_cake_marker_file(self):
         azi_list = self._read_azilist()
@@ -383,7 +385,20 @@ class CakeController(object):
         filename = str(filen)
         if os.path.exists(filename):
             self.model.poni = filename
-            self.widget.textEdit_PONI.setText(self.model.poni)
+            self.widget.lineEdit_PONI.setText(self.model.poni)
             if self.model.diff_img_exist():
                 self.produce_cake()
             self._apply_changes_to_graph()
+
+    def load_new_poni_from_name(self):
+        if self.widget.lineEdit_PONI.isModified():
+            filen = self.widget.lineEdit_PONI.text()
+            if os.path.exists(filen):
+                self.model.poni = filen
+                self.widget.lineEdit_PONI.setText(self.model.poni)
+                if self.model.diff_img_exist():
+                    self.produce_cake()
+                self._apply_changes_to_graph()
+            else:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, 'Warning', 'The PONI file does not exist.')

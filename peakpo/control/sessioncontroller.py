@@ -172,9 +172,9 @@ class SessionController(object):
             str(self.model.base_ptn.fname))
         self.widget.textEdit_SessionFileName.setText(str(filen_dpp))
         if self.model.poni_exist():
-            self.widget.textEdit_PONI.setText(self.model.poni)
+            self.widget.lineEdit_PONI.setText(self.model.poni)
         else:
-            self.widget.textEdit_PONI.setText('')
+            self.widget.lineEdit_PONI.setText('')
         if self.model.diff_img_exist():
             self.widget.textEdit_DiffractionImageFilename.setText(
                 self.model.diff_img.img_filename)
