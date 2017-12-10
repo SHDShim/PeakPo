@@ -70,8 +70,9 @@ class DiffImg(object):
     def calculate_max_twotheta(self):
         d = self.poni.dist
         r = self.calculate_n_azi_pnts() * \
-            np.max([self.poni.pixel1, self.poni.pixel2]) / 2.
-        tth_max = np.rad2deg(np.arctan(r / d))
+            np.max([self.poni.pixel1, self.poni.pixel2]) # / 2.
+        tth_max = np.rad2deg(np.arctan(r / d)) # * 10.
+        print(tth_max)
         return tth_max
 
     def integrate_to_1d(self, **kwargs):
