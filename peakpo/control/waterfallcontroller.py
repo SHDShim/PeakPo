@@ -7,6 +7,7 @@ from .mplcontroller import MplController
 from .waterfalltablecontroller import WaterfallTableController
 from utils import convert_wl_to_energy
 
+
 class WaterfallController(object):
 
     def __init__(self, model, widget):
@@ -38,6 +39,8 @@ class WaterfallController(object):
             self.check_all_waterfall)
         self.widget.pushButton_UncheckAllWaterfall.clicked.connect(
             self.uncheck_all_waterfall)
+        self.widget.pushButton_AddBasePtn.clicked.connect(
+            self.add_base_pattern_to_waterfall)
 
     def make_base_ptn(self):
         # read selected from the table.  It should be single item
@@ -149,6 +152,28 @@ class WaterfallController(object):
             self.waterfall_table_ctrl.update()
             self._apply_changes_to_graph()
         return
+
+    def add_base_pattern_to_waterfall(self):
+        if not self.model.base_ptn_exist():
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Pick a base pattern first.")
+            return
+        filename = self.model.get_base_ptn_filename()
+        wavelength = self.widget.doubleSpinBox_SetWavelength.value()
+        bg_roi = [self.widget.doubleSpinBox_Background_ROI_min.value(),
+                  self.widget.doubleSpinBox_Background_ROI_max.value()]
+        bg_params = [self.widget.spinBox_BGParam0.value(),
+                     self.widget.spinBox_BGParam1.value(),
+                     self.widget.spinBox_BGParam2.value()]
+        if self.widget.checkBox_UseTempBGSub.isChecked():
+            temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
+        else:
+            temp_dir = None
+        self.model.append_a_waterfall_ptn(
+            filename, wavelength, bg_roi, bg_params, temp_dir=temp_dir)
+        self.waterfall_table_ctrl.update()
+        self._apply_changes_to_graph()
 
     def move_up_waterfall(self):
         # get selected cell number

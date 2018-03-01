@@ -3,9 +3,11 @@ PeakPo version
 
 Todo: better system should be implemented, such as pbr.
 """
-__version__ = "7.7.12"
+__version__ = "7.7.14"
 
 """
+7.7.14: change cake scale adjustment option.  I have some weird unsaved message to peakfitcontroller.
+    In case we found bug, go back to peakfitcontroller for 7.7.12
 7.7.12: change PONI input method
 7.7.11: fix bug with cake azimuthal integration
 7.7.10: add cake azimuthal angle shift

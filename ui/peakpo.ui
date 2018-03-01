@@ -537,7 +537,7 @@
              <number>3</number>
             </property>
             <property name="bottomMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <item>
              <widget class="QFrame" name="frame">
@@ -1759,6 +1759,22 @@
               </property>
              </widget>
             </item>
+            <item row="1" column="2">
+             <widget class="QPushButton" name="pushButton_AddBasePtn">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="toolTip">
+               <string>Add current base pattern to waterfall list</string>
+              </property>
+              <property name="text">
+               <string>Add Base Ptn</string>
+              </property>
+             </widget>
+            </item>
            </layout>
           </widget>
          </item>
@@ -1844,13 +1860,13 @@
              <number>3</number>
             </property>
             <property name="topMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <property name="rightMargin">
              <number>3</number>
             </property>
             <property name="bottomMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <item row="1" column="1">
              <widget class="QLineEdit" name="lineEdit_PONI"/>
@@ -1893,13 +1909,13 @@
              <number>3</number>
             </property>
             <property name="topMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <property name="rightMargin">
              <number>3</number>
             </property>
             <property name="bottomMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <item>
              <widget class="QTextEdit" name="textEdit_DiffractionImageFilename">
@@ -1924,6 +1940,55 @@
           </widget>
          </item>
          <item>
+          <widget class="QGroupBox" name="groupBox_5">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="title">
+            <string>Vertical size</string>
+           </property>
+           <property name="flat">
+            <bool>true</bool>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_21">
+            <property name="spacing">
+             <number>0</number>
+            </property>
+            <property name="leftMargin">
+             <number>3</number>
+            </property>
+            <property name="topMargin">
+             <number>12</number>
+            </property>
+            <property name="rightMargin">
+             <number>3</number>
+            </property>
+            <property name="bottomMargin">
+             <number>12</number>
+            </property>
+            <item>
+             <widget class="QSlider" name="horizontalSlider_CakeAxisSize">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="pageStep">
+               <number>1</number>
+              </property>
+              <property name="value">
+               <number>50</number>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
           <widget class="QGroupBox" name="groupBox_29">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -1932,12 +1997,12 @@
             </sizepolicy>
            </property>
            <property name="title">
-            <string>View</string>
+            <string>Gray scale</string>
            </property>
            <property name="flat">
             <bool>true</bool>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_19">
+           <layout class="QHBoxLayout" name="horizontalLayout_7">
             <property name="spacing">
              <number>-1</number>
             </property>
@@ -1945,174 +2010,186 @@
              <number>3</number>
             </property>
             <property name="topMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <property name="rightMargin">
              <number>3</number>
             </property>
             <property name="bottomMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <item>
-             <widget class="QFrame" name="frame_3">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
+             <widget class="QFrame" name="frame_8">
               <property name="frameShape">
-               <enum>QFrame::StyledPanel</enum>
+               <enum>QFrame::NoFrame</enum>
               </property>
               <property name="frameShadow">
-               <enum>QFrame::Raised</enum>
+               <enum>QFrame::Plain</enum>
               </property>
-              <layout class="QVBoxLayout" name="verticalLayout_20">
-               <property name="spacing">
-                <number>0</number>
-               </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_8">
                <property name="topMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="bottomMargin">
                 <number>3</number>
                </property>
                <item>
-                <widget class="QLabel" name="label_8">
-                 <property name="text">
-                  <string>Min. value of gray scale</string>
+                <widget class="QFrame" name="frame_3">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
                  </property>
-                 <property name="alignment">
-                  <set>Qt::AlignCenter</set>
+                 <property name="frameShape">
+                  <enum>QFrame::NoFrame</enum>
                  </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSlider" name="horizontalSlider_VMin">
-                 <property name="minimum">
-                  <number>1</number>
+                 <property name="frameShadow">
+                  <enum>QFrame::Plain</enum>
                  </property>
-                 <property name="maximum">
-                  <number>1000</number>
-                 </property>
-                 <property name="pageStep">
-                  <number>1000</number>
-                 </property>
-                 <property name="value">
-                  <number>1</number>
-                 </property>
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="invertedAppearance">
-                  <bool>false</bool>
-                 </property>
-                 <property name="invertedControls">
-                  <bool>false</bool>
-                 </property>
-                 <property name="tickPosition">
-                  <enum>QSlider::NoTicks</enum>
-                 </property>
-                 <property name="tickInterval">
-                  <number>1</number>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_9">
-                 <property name="text">
-                  <string>Fine gray scale</string>
-                 </property>
-                 <property name="alignment">
-                  <set>Qt::AlignCenter</set>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSlider" name="horizontalSlider_VMax">
-                 <property name="minimum">
-                  <number>1</number>
-                 </property>
-                 <property name="maximum">
-                  <number>1000</number>
-                 </property>
-                 <property name="pageStep">
-                  <number>1000</number>
-                 </property>
-                 <property name="value">
-                  <number>1000</number>
-                 </property>
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="tickPosition">
-                  <enum>QSlider::NoTicks</enum>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_19">
-                 <property name="text">
-                  <string>Coarse gray scale</string>
-                 </property>
-                 <property name="alignment">
-                  <set>Qt::AlignCenter</set>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSlider" name="horizontalSlider_MaxScaleBars">
-                 <property name="minimum">
-                  <number>0</number>
-                 </property>
-                 <property name="maximum">
-                  <number>5</number>
-                 </property>
-                 <property name="pageStep">
-                  <number>5</number>
-                 </property>
-                 <property name="value">
-                  <number>1</number>
-                 </property>
-                 <property name="sliderPosition">
-                  <number>1</number>
-                 </property>
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="invertedAppearance">
-                  <bool>true</bool>
-                 </property>
-                 <property name="tickPosition">
-                  <enum>QSlider::TicksBothSides</enum>
-                 </property>
-                 <property name="tickInterval">
-                  <number>1</number>
-                 </property>
+                 <layout class="QGridLayout" name="gridLayout_22">
+                  <property name="leftMargin">
+                   <number>3</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>3</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>3</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>3</number>
+                  </property>
+                  <item row="3" column="1">
+                   <widget class="QSlider" name="horizontalSlider_VMax">
+                    <property name="minimum">
+                     <number>1</number>
+                    </property>
+                    <property name="maximum">
+                     <number>1000</number>
+                    </property>
+                    <property name="pageStep">
+                     <number>1000</number>
+                    </property>
+                    <property name="value">
+                     <number>1000</number>
+                    </property>
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="tickPosition">
+                     <enum>QSlider::NoTicks</enum>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="1">
+                   <widget class="QSlider" name="horizontalSlider_VMin">
+                    <property name="minimum">
+                     <number>1</number>
+                    </property>
+                    <property name="maximum">
+                     <number>1000</number>
+                    </property>
+                    <property name="pageStep">
+                     <number>1000</number>
+                    </property>
+                    <property name="value">
+                     <number>1</number>
+                    </property>
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="invertedAppearance">
+                     <bool>false</bool>
+                    </property>
+                    <property name="invertedControls">
+                     <bool>false</bool>
+                    </property>
+                    <property name="tickPosition">
+                     <enum>QSlider::NoTicks</enum>
+                    </property>
+                    <property name="tickInterval">
+                     <number>1</number>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="5" column="1">
+                   <widget class="QSlider" name="horizontalSlider_MaxScaleBars">
+                    <property name="minimum">
+                     <number>0</number>
+                    </property>
+                    <property name="maximum">
+                     <number>5</number>
+                    </property>
+                    <property name="pageStep">
+                     <number>5</number>
+                    </property>
+                    <property name="value">
+                     <number>1</number>
+                    </property>
+                    <property name="sliderPosition">
+                     <number>1</number>
+                    </property>
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="invertedAppearance">
+                     <bool>true</bool>
+                    </property>
+                    <property name="tickPosition">
+                     <enum>QSlider::TicksBothSides</enum>
+                    </property>
+                    <property name="tickInterval">
+                     <number>1</number>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="0">
+                   <widget class="QLabel" name="label_8">
+                    <property name="text">
+                     <string>Min</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="0">
+                   <widget class="QLabel" name="label_9">
+                    <property name="text">
+                     <string>Max</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="5" column="0">
+                   <widget class="QLabel" name="label_19">
+                    <property name="text">
+                     <string>Scale</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
                 </widget>
                </item>
               </layout>
              </widget>
             </item>
             <item>
-             <widget class="QFrame" name="frame_5">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="frameShape">
-               <enum>QFrame::StyledPanel</enum>
-              </property>
-              <property name="frameShadow">
-               <enum>QFrame::Raised</enum>
-              </property>
-              <layout class="QVBoxLayout" name="verticalLayout_21">
-               <property name="spacing">
-                <number>0</number>
+             <widget class="QFrame" name="frame_7">
+              <layout class="QVBoxLayout" name="verticalLayout_20">
+               <property name="leftMargin">
+                <number>3</number>
                </property>
                <property name="topMargin">
+                <number>3</number>
+               </property>
+               <property name="rightMargin">
                 <number>3</number>
                </property>
                <property name="bottomMargin">
@@ -2121,26 +2198,54 @@
                <item>
                 <widget class="QLabel" name="label_12">
                  <property name="text">
-                  <string>Cake vertical size</string>
-                 </property>
-                 <property name="alignment">
-                  <set>Qt::AlignCenter</set>
+                  <string>Max. value</string>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QSlider" name="horizontalSlider_CakeAxisSize">
-                 <property name="minimum">
-                  <number>1</number>
+                <widget class="QSpinBox" name="spinBox_MaxCakeScale">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
                  </property>
-                 <property name="pageStep">
-                  <number>1</number>
+                 <property name="focusPolicy">
+                  <enum>Qt::StrongFocus</enum>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                 <property name="maximum">
+                  <number>10000000</number>
                  </property>
                  <property name="value">
-                  <number>50</number>
+                  <number>100000</number>
                  </property>
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pushButton_ResetCakeScale">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="toolTip">
+                  <string>Reset full scale</string>
+                 </property>
+                 <property name="text">
+                  <string>Reset</string>
+                 </property>
+                 <property name="autoDefault">
+                  <bool>false</bool>
+                 </property>
+                 <property name="default">
+                  <bool>false</bool>
+                 </property>
+                 <property name="flat">
+                  <bool>false</bool>
                  </property>
                 </widget>
                </item>
@@ -2169,13 +2274,13 @@
              <number>12</number>
             </property>
             <property name="topMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <property name="rightMargin">
              <number>12</number>
             </property>
             <property name="bottomMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <item>
              <widget class="QLabel" name="label_11">
@@ -2186,7 +2291,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Max</string>
+               <string>Min</string>
               </property>
              </widget>
             </item>
@@ -2212,7 +2317,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Min</string>
+               <string>Max</string>
               </property>
              </widget>
             </item>
@@ -2433,10 +2538,10 @@
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_12">
             <property name="topMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <property name="bottomMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <item>
              <widget class="QTextEdit" name="textEdit_Jlist">

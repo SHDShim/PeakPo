@@ -71,7 +71,7 @@ class DiffImg(object):
         d = self.poni.dist
         r = self.calculate_n_azi_pnts() * \
             np.max([self.poni.pixel1, self.poni.pixel2]) # / 2.
-        tth_max = np.rad2deg(np.arctan(r / d)) # * 10.
+        tth_max = np.rad2deg(np.arctan(r / d)) * 2. # * 10.
         print(tth_max)
         return tth_max
 

@@ -42,6 +42,13 @@ class CakeController(object):
             self._apply_changes_to_graph)
         self.widget.lineEdit_PONI.editingFinished.connect(
             self.load_new_poni_from_name)
+        self.widget.pushButton_ResetCakeScale.clicked.connect(
+            self.reset_max_cake_scale)
+
+    def reset_max_cake_scale(self):
+        intensity_cake, _, _ = self.model.diff_img.get_cake()
+        self.widget.spinBox_MaxCakeScale.setValue(intensity_cake.max())
+        self._apply_changes_to_graph()
 
     def _save_cake_marker_file(self):
         azi_list = self._read_azilist()
@@ -312,7 +319,7 @@ class CakeController(object):
         filen_mar3450 = self.model.make_filename('mar3450', original=True)
         if not (os.path.exists(filen_tif) or os.path.exists(filen_mar3450)):
             QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning', 'Cannot find image file: %s or %s.' % \
+                self.widget, 'Warning', 'Cannot find image file: %s or %s.' %
                 (filen_tif, filen_mar3450))
             self.widget.checkBox_ShowCake.setChecked(False)
             return False

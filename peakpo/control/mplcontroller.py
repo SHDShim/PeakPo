@@ -244,8 +244,9 @@ class MplController(object):
             self.widget.horizontalSlider_VMax.setValue(99)
         intensity_cake_plot = ma.masked_values(intensity_cake, 0.)
         prefactor = \
-            intensity_cake_plot.max() / \
+            self.widget.spinBox_MaxCakeScale.value() / \
             (10. ** self.widget.horizontalSlider_MaxScaleBars.value())
+        # intensity_cake_plot.max() / \
         climits = np.asarray([
             self.widget.horizontalSlider_VMin.value(),
             self.widget.horizontalSlider_VMax.value()]) / \
