@@ -3,9 +3,10 @@ PeakPo version
 
 Todo: better system should be implemented, such as pbr.
 """
-__version__ = "7.7.14"
+__version__ = "7.7.15"
 
 """
+7.7.15: Change inner working of Cake JCPDS.  I changed from for loop to array operation for fast plot.  
 7.7.14: change cake scale adjustment option.  I have some weird unsaved message to peakfitcontroller.
     In case we found bug, go back to peakfitcontroller for 7.7.12
 7.7.12: change PONI input method

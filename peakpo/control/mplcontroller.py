@@ -375,12 +375,19 @@ class MplController(object):
                     # phase.name, phase.v.item()))
                 if self.widget.checkBox_ShowCake.isChecked() and \
                         self.widget.checkBox_JCPDSinCake.isChecked():
+                    """
                     for tth_i in tth:
                         self.widget.mpl.canvas.ax_cake.axvline(
                             x=tth_i, color=phase.color,
                             lw=float(
                                 self.widget.comboBox_CakeJCPDSBarThickness.
                                 currentText()))
+                    """
+                    axvlines(self.widget.mpl.canvas.ax_cake, tth,
+                             color=phase.color,
+                             lw=float(
+                                 self.widget.comboBox_CakeJCPDSBarThickness.
+                                 currentText()))
             else:
                 pass
         if self.widget.checkBox_JCPDSinPattern.isChecked():
@@ -543,3 +550,17 @@ class MplController(object):
                     x_plot, section.get_fit_residue_baseline(bgsub=bgsub) +
                     y_shift, residue + y_shift, facecolor='r')
             i += 1
+
+
+def axvlines(ax, xs, **kwargs):
+    """
+    Draw vertical lines on plot
+    :param xs: A scalar, list, or 1D array of horizontal offsets
+    :param plot_kwargs: Keyword arguments to be passed to plot
+    :return: The plot object corresponding to the lines.
+    """
+    xs = np.array((xs, ) if np.isscalar(xs) else xs, copy=False)
+    ylims = ax.get_ylim()
+    x_points = np.repeat(xs[:, None], repeats=3, axis=1).flatten()
+    y_points = np.repeat(np.array(ylims + (np.nan, ))[None, :], repeats=len(xs), axis=0).flatten()
+    ax.plot(x_points, y_points, **kwargs)
