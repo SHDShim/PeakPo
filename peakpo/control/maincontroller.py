@@ -135,6 +135,12 @@ class MainController(object):
             self.apply_changes_to_graph)
         self.widget.horizontalSlider_WaterfallGaps.valueChanged.connect(
             self.apply_changes_to_graph)
+        self.widget.pushButton_UpdateJCPDSSteps.clicked.connect(
+            self.update_jcpds_table)
+
+    def update_jcpds_table(self):
+        step = self.widget.doubleSpinBox_JCPDSStep.value()
+        self.jcpdstable_ctrl.update_steps_only(step)
 
     def del_temp_chi(self):
         reply = QtWidgets.QMessageBox.question(
@@ -452,6 +458,7 @@ class MainController(object):
 
     def apply_pt_to_graph(self):
         if self.model.jcpds_exist():
+            # self.plot_ctrl.update_jcpds_only()
             self.plot_ctrl.update()
 
     def _find_closestjcpds(self, x):

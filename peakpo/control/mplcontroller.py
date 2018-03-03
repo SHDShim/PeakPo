@@ -298,6 +298,7 @@ class MplController(object):
                 self.widget.mpl.canvas.ax_cake.add_patch(rect)
 
     def _plot_jcpds(self, axisrange):
+        #t_start = time.time()
         if (not self.widget.checkBox_JCPDSinPattern.isChecked()) and \
                 (not self.widget.checkBox_JCPDSinCake.isChecked()):
             return
@@ -395,6 +396,8 @@ class MplController(object):
                 loc=1, prop={'size': 10}, framealpha=0., handlelength=1)
             for line, txt in zip(leg_jcpds.get_lines(), leg_jcpds.get_texts()):
                 txt.set_color(line.get_color())
+        # print("JCPDS update takes {0:.2f}s at".format(time.time() - t_start),
+        #      str(datetime.datetime.now())[:-7])
 
     def _plot_waterfallpatterns(self):
         if not self.widget.checkBox_ShowWaterfall.isChecked():

@@ -4,8 +4,8 @@ from .qtd import Ui_MainWindow
 from utils import SpinBoxFixStyle
 from version import __version__
 from citation import __citation__
-#exec(open(os.path.join(os.path.curdir, 'version.py')).read())
-#exec(open(os.path.join(os.path.curdir, 'citation.py')).read())
+# exec(open(os.path.join(os.path.curdir, 'version.py')).read())
+# exec(open(os.path.join(os.path.curdir, 'citation.py')).read())
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -106,14 +106,35 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             lambda: self.set_temperature(300))
         self.pushButton_1bar.clicked.connect(
             lambda: self.set_pressure(0.01))
-        self.radioButton_P01.clicked.connect(self.set_pstep)
-        self.radioButton_P1.clicked.connect(self.set_pstep)
-        self.radioButton_P10.clicked.connect(self.set_pstep)
-        self.radioButton_P100.clicked.connect(self.set_pstep)
-        self.radioButton_T1.clicked.connect(self.set_tstep)
-        self.radioButton_T10.clicked.connect(self.set_tstep)
-        self.radioButton_T100.clicked.connect(self.set_tstep)
-        self.radioButton_T1000.clicked.connect(self.set_tstep)
+        self.pushButton_SetPStepTo1.clicked.connect(self.set_pstep1)
+        self.pushButton_SetPStepTo10.clicked.connect(self.set_pstep10)
+        self.pushButton_SetTStepTo100.clicked.connect(self.set_tstep100)
+        self.pushButton_SetTStepTo1000.clicked.connect(self.set_tstep1000)
+        self.doubleSpinBox_PStep.valueChanged.connect(self.set_pstep)
+        self.spinBox_TStep.valueChanged.connect(self.set_tstep)
+        self.pushButton_SetJCPDSStepTo0001.clicked.connect(self.set_jstep0001)
+        self.pushButton_SetJCPDSStepTo001.clicked.connect(self.set_jstep001)
+        self.pushButton_SetJCPDSStepTo01.clicked.connect(self.set_jstep01)
+
+    def set_jstep0001(self):
+        value = 0.001
+        self.doubleSpinBox_JCPDSStep.setValue(value)
+
+    def set_jstep001(self):
+        value = 0.01
+        self.doubleSpinBox_JCPDSStep.setValue(value)
+
+    def set_jstep01(self):
+        value = 0.1
+        self.doubleSpinBox_JCPDSStep.setValue(value)
+
+    def set_pstep(self):
+        self.doubleSpinBox_Pressure.setSingleStep(
+            self.doubleSpinBox_PStep.value())
+
+    def set_tstep(self):
+        self.doubleSpinBox_Temperature.setSingleStep(
+            self.spinBox_TStep.value())
 
     def set_temperature(self, temperature):
         self.doubleSpinBox_Temperature.setValue(temperature)
@@ -121,26 +142,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def set_pressure(self, pressure):
         self.doubleSpinBox_Pressure.setValue(pressure)
 
-    def set_pstep(self, value):
-        if self.radioButton_P01.isChecked():
-            value = 0.1
-        elif self.radioButton_P10.isChecked():
-            value = 10.
-        elif self.radioButton_P100.isChecked():
-            value = 100.
-        else:
-            value = 1.
+    def set_pstep1(self):
+        value = 1.
+        self.doubleSpinBox_PStep.setValue(value)
         self.doubleSpinBox_Pressure.setSingleStep(value)
 
-    def set_tstep(self, value):
-        if self.radioButton_T1.isChecked():
-            value = 1.
-        elif self.radioButton_T10.isChecked():
-            value = 10.
-        elif self.radioButton_T1000.isChecked():
-            value = 1000.
-        else:
-            value = 100.
+    def set_pstep10(self):
+        value = 10.
+        self.doubleSpinBox_PStep.setValue(value)
+        self.doubleSpinBox_Pressure.setSingleStep(value)
+
+    def set_tstep100(self):
+        value = 100.
+        self.spinBox_TStep.setValue(value)
+        self.doubleSpinBox_Temperature.setSingleStep(value)
+
+    def set_tstep1000(self):
+        value = 1000.
+        self.spinBox_TStep.setValue(value)
         self.doubleSpinBox_Temperature.setSingleStep(value)
 
     def about(self):

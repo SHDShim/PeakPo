@@ -103,8 +103,8 @@ class JcpdsController(object):
         i = idx_selected
         if i == 0:
             return
-        self.model.jcpds_lst[i -
-                             1], self.model.jcpds_lst[i] = self.model.jcpds_lst[i], self.model.jcpds_lst[i - 1]
+        self.model.jcpds_lst[i - 1], self.model.jcpds_lst[i] = \
+            self.model.jcpds_lst[i], self.model.jcpds_lst[i - 1]
         self.widget.tableWidget_JCPDS.selectRow(i - 1)
         self.jcpdstable_ctrl.update()
 
@@ -118,8 +118,8 @@ class JcpdsController(object):
         i = idx_selected
         if i >= self.model.jcpds_lst.__len__() - 1:
             return
-        self.model.jcpds_lst[i +
-                             1], self.model.jcpds_lst[i] = self.model.jcpds_lst[i], self.model.jcpds_lst[i + 1]
+        self.model.jcpds_lst[i + 1], self.model.jcpds_lst[i] = \
+            self.model.jcpds_lst[i], self.model.jcpds_lst[i + 1]
         self.widget.tableWidget_JCPDS.selectRow(i + 1)
         """
         self.widget.tableWidget_JCPDS.setCurrentItem(

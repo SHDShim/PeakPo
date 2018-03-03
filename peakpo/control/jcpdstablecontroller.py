@@ -15,7 +15,7 @@ class JcpdsTableController(object):
     def _apply_changes_to_graph(self, limits=None):
         self.plot_ctrl.update(limits=limits)
 
-    def update(self):
+    def update(self, step=0.001):
         """
         show jcpds cards in the QTableWidget
         """
@@ -68,7 +68,7 @@ class JcpdsTableController(object):
                 QtCore.Qt.AlignVCenter)
             self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setMaximum(2.0)
             self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setSingleStep(
-                0.001)
+                step)
             self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setDecimals(3)
             self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setProperty(
                 "value", self.model.jcpds_lst[row].twk_v0)
@@ -97,7 +97,7 @@ class JcpdsTableController(object):
                 self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.setMaximum(
                     2.0)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.\
-                    setSingleStep(0.001)
+                    setSingleStep(step)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.setDecimals(
                     3)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.setProperty(
@@ -130,7 +130,7 @@ class JcpdsTableController(object):
                 self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.setMaximum(
                     2.0)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.\
-                    setSingleStep(0.001)
+                    setSingleStep(step)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.setDecimals(
                     3)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.setProperty(
@@ -154,7 +154,7 @@ class JcpdsTableController(object):
                 QtCore.Qt.AlignVCenter)
             self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setMaximum(2.0)
             self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setSingleStep(
-                0.01)
+                step)
             self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setDecimals(2)
             self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setProperty(
                 "value", self.model.jcpds_lst[row].twk_k0)
@@ -174,7 +174,7 @@ class JcpdsTableController(object):
                 QtCore.Qt.AlignVCenter)
             self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setMaximum(2.0)
             self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setSingleStep(
-                0.01)
+                step)
             self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setDecimals(2)
             self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setProperty(
                 "value", self.model.jcpds_lst[row].twk_k0p)
@@ -195,7 +195,7 @@ class JcpdsTableController(object):
             self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setMaximum(
                 2.0)
             self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
-                setSingleStep(0.01)
+                setSingleStep(step)
             self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setDecimals(
                 2)
             self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setProperty(
@@ -216,7 +216,7 @@ class JcpdsTableController(object):
                 QtCore.Qt.AlignVCenter)
             self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setMaximum(1.0)
             self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setSingleStep(
-                0.05)
+                step)
             self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setDecimals(2)
             self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setProperty(
                 "value", self.model.jcpds_lst[row].twk_int)
@@ -291,3 +291,10 @@ class JcpdsTableController(object):
             self._apply_changes_to_graph()
         else:
             return
+
+    def update_steps_only(self, step):
+        """
+        show jcpds cards in the QTableWidget
+        """
+        self.widget.tableWidget_JCPDS.clear()
+        self.update(step=step)
