@@ -34,7 +34,7 @@ class SessionController(object):
         self.widget.pushButton_SaveJlist.clicked.connect(self.save_dpp)
         self.widget.pushButton_SaveDPPandPPSS.clicked.connect(
             self.save_dpp_ppss)
-        self.widget.ntb_SaveSession.clicked.connect(self.save_dpp_ppss)
+        self.widget.pushButton_S_SaveSession.clicked.connect(self.save_dpp_ppss)
 
     def load_ppss(self):
         """
@@ -62,6 +62,10 @@ class SessionController(object):
             return
         success = self._load_dpp(fn, jlistonly=False)
         if success:
+            if self.model.exist_in_waterfall(self.model.base_ptn.fname):
+                self.widget.pushButton_AddBasePtn.setChecked(True)
+            else:
+                self.widget.pushButton_AddBasePtn.setChecked(False)
             self.plot_ctrl.zoom_out_graph()
             self.update_inputs()
         else:

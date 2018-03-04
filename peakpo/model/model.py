@@ -33,6 +33,14 @@ class PeakPoModel(object):
         self.saved_pressure = 10.
         self.saved_temperature = 300.
 
+    def exist_in_waterfall(self, filename):
+        if not self.waterfall_exist():
+            return False
+        for f in self.waterfall_ptn:
+            if filename == f.fname:
+                return True
+        return False
+
     def get_saved_pressure(self):
         return self.saved_pressure
 

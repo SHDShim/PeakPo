@@ -160,6 +160,9 @@ class WaterfallController(object):
                 "Pick a base pattern first.")
             return
         filename = self.model.get_base_ptn_filename()
+        if self.model.exist_in_waterfall(filename):
+            self.widget.pushButton_AddBasePtn.setChecked()
+            return
         wavelength = self.widget.doubleSpinBox_SetWavelength.value()
         bg_roi = [self.widget.doubleSpinBox_Background_ROI_min.value(),
                   self.widget.doubleSpinBox_Background_ROI_max.value()]

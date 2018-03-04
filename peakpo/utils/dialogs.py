@@ -35,9 +35,37 @@ def dialog_savefile(obj, default_filename):
 
 
 class ErrorMessageBox(QtWidgets.QDialog):
+    """
+    If possible merge with InformationBox below
+    """
+
     def __init__(self, *args, **kwargs):
         super(ErrorMessageBox, self).__init__(*args, **kwargs)
         self.setWindowTitle("Error report")
+
+        self.text_lbl = QtWidgets.QLabel()
+        self.text_lbl.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        self.scroll_area = QtWidgets.QScrollArea()
+
+        self.scroll_area.setWidget(self.text_lbl)
+        self.scroll_area.setWidgetResizable(True)
+        self.ok_btn = QtWidgets.QPushButton('OK')
+
+        _layout = QtWidgets.QGridLayout()
+        _layout.addWidget(self.scroll_area, 0, 0, 1, 10)
+        _layout.addWidget(self.ok_btn, 1, 9)
+
+        self.setLayout(_layout)
+        self.ok_btn.clicked.connect(self.close)
+
+    def setText(self, text_str):
+        self.text_lbl.setText(text_str)
+
+
+class InformationBox(QtWidgets.QDialog):
+    def __init__(self, title="Information", *args, **kwargs):
+        super(InformationBox, self).__init__(*args, **kwargs)
+        self.setWindowTitle(title)
 
         self.text_lbl = QtWidgets.QLabel()
         self.text_lbl.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)

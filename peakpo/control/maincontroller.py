@@ -68,6 +68,14 @@ class MainController(object):
             self.apply_changes_to_graph)
         self.widget.doubleSpinBox_Pressure.valueChanged.connect(
             self.apply_pt_to_graph)
+        self.widget.pushButton_S_PIncrease.clicked.connect(
+            lambda: self.quick_p_change(1))
+        self.widget.pushButton_S_PDecrease.clicked.connect(
+            lambda: self.quick_p_change(-1))
+        self.widget.pushButton_S_TIncrease.clicked.connect(
+            lambda: self.quick_temp_change(1))
+        self.widget.pushButton_S_TDecrease.clicked.connect(
+            lambda: self.quick_temp_change(-1))
         self.widget.doubleSpinBox_Temperature.valueChanged.connect(
             self.apply_pt_to_graph)
         self.widget.doubleSpinBox_SetWavelength.valueChanged.connect(
@@ -102,15 +110,10 @@ class MainController(object):
 
         # navigation toolbar modification.  Do not move the followings to
         # other controller files.
-        """
-        self.widget.ntb_toPkFt.clicked.connect(self.to_PkFt)
-        self.widget.ntb_fromPkFt.clicked.connect(self.from_PkFt)
-        self.widget.ntb_NightView.clicked.connect(self.set_nightday_view)
-        """
         self.widget.pushButton_toPkFt.clicked.connect(self.to_PkFt)
         self.widget.pushButton_fromPkFt.clicked.connect(self.from_PkFt)
         self.widget.checkBox_NightView.clicked.connect(self.set_nightday_view)
-        self.widget.ntb_WholePtn.clicked.connect(self.plot_new_graph)
+        self.widget.pushButton_S_Zoom.clicked.connect(self.plot_new_graph)
         self.widget.checkBox_AutoY.clicked.connect(self.apply_changes_to_graph)
         self.widget.checkBox_BgSub.clicked.connect(self.apply_changes_to_graph)
         # self.widget.actionClose.triggered.connect(self.closeEvent)
@@ -137,6 +140,17 @@ class MainController(object):
             self.apply_changes_to_graph)
         self.widget.pushButton_UpdateJCPDSSteps.clicked.connect(
             self.update_jcpds_table)
+
+    def quick_p_change(self, direction):
+        step = self.widget.doubleSpinBox_PStep.value()
+        p_value = self.widget.doubleSpinBox_Pressure.value()
+        self.widget.doubleSpinBox_Pressure.setValue(p_value + step * direction)
+
+    def quick_temp_change(self, direction):
+        step = self.widget.spinBox_TStep.value()
+        temp_value = self.widget.doubleSpinBox_Temperature.value()
+        self.widget.doubleSpinBox_Temperature.setValue(
+            temp_value + step * direction)
 
     def update_jcpds_table(self):
         step = self.widget.doubleSpinBox_JCPDSStep.value()

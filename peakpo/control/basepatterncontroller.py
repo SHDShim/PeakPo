@@ -23,6 +23,10 @@ class BasePatternController(object):
             lambda: self.goto_next_file('previous'))
         self.widget.pushButton_NextBasePtn.clicked.connect(
             lambda: self.goto_next_file('next'))
+        self.widget.pushButton_S_PrevBasePtn.clicked.connect(
+            lambda: self.goto_next_file('previous'))
+        self.widget.pushButton_S_NextBasePtn.clicked.connect(
+            lambda: self.goto_next_file('next'))
         self.widget.pushButton_LastBasePtn.clicked.connect(
             lambda: self.goto_next_file('last'))
         self.widget.pushButton_FirstBasePtn.clicked.connect(
