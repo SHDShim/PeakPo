@@ -6,7 +6,7 @@ from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
 
 
-class CakeController(object):
+class CakeAziController(object):
 
     def __init__(self, model, widget):
         self.model = model
@@ -16,18 +16,6 @@ class CakeController(object):
         self.connect_channel()
 
     def connect_channel(self):
-        self.widget.checkBox_ShowCake.clicked.connect(
-            self.addremove_cake)
-        self.widget.pushButton_GetPONI.clicked.connect(self.get_poni)
-        self.widget.pushButton_ApplyCakeView.clicked.connect(
-            self._apply_changes_to_graph)
-        self.widget.pushButton_ApplyMask.clicked.connect(self.apply_mask)
-        self.widget.lineEdit_PONI.editingFinished.connect(
-            self.load_new_poni_from_name)
-        self.widget.pushButton_ResetCakeScale.clicked.connect(
-            self.reset_max_cake_scale)
-        self.widget.checkBox_WhiteForPeak.clicked.connect(
-            self._apply_changes_to_graph)
         """
         self.widget.pushButton_IntegrateCake.clicked.connect(
             self.integrate_to_1d)
@@ -46,11 +34,6 @@ class CakeController(object):
             self._load_cake_marker_file)
         self.widget.pushButton_HighlightSelectedMarker.clicked.connect(
             self._apply_changes_to_graph)
-
-    def reset_max_cake_scale(self):
-        intensity_cake, _, _ = self.model.diff_img.get_cake()
-        self.widget.spinBox_MaxCakeScale.setValue(intensity_cake.max())
-        self._apply_changes_to_graph()
 
     def _save_cake_marker_file(self):
         azi_list = self._read_azilist()
@@ -157,7 +140,8 @@ class CakeController(object):
         self.widget.tableWidget_DiffImgAzi.setItem(
             rowPosition, 0, QtWidgets.QTableWidgetItem(
                 " "))
-        self._apply_changes_to_graph()
+        # self._apply_changes_to_graph()
+        self._zoom_out_graph()
 
     def _remove_azi_from_list(self):
         # get higtlighted row, if not return
@@ -293,122 +277,5 @@ class CakeController(object):
     def _apply_changes_to_graph(self):
         self.plot_ctrl.update()
 
-    def addremove_cake(self):
-        """
-        add / remove cake to the graph
-        """
-        update = self._addremove_cake()
-        if update:
-            self._apply_changes_to_graph()
-
-    def _addremove_cake(self):
-        """
-        add / remove cake
-        no signal to update_graph
-        """
-        if not self.widget.checkBox_ShowCake.isChecked():
-            return True
-        if not self.model.poni_exist():
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning', 'Choose PONI file first.')
-            self.widget.checkBox_ShowCake.setChecked(False),
-            return False
-        if not self.model.base_ptn_exist():
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning', 'Choose CHI file first.')
-            self.widget.checkBox_ShowCake.setChecked(False)
-            return False
-        filen_tif = self.model.make_filename('tif', original=True)
-        filen_mar3450 = self.model.make_filename('mar3450', original=True)
-        if not (os.path.exists(filen_tif) or os.path.exists(filen_mar3450)):
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning', 'Cannot find image file: %s or %s.' %
-                (filen_tif, filen_mar3450))
-            self.widget.checkBox_ShowCake.setChecked(False)
-            return False
-        if self.model.diff_img_exist() and \
-                self.model.same_filename_as_base_ptn(
-                self.model.diff_img.img_filename):
-            return True
-        self.process_temp_cake()
-        return True
-
-    def _load_new_image(self):
-        """
-        Load new image for cake view.  Cake should be the same as base pattern.
-        no signal to update_graph
-        """
-        self.model.reset_diff_img()
-        self.model.load_associated_img()
-        self.widget.textEdit_DiffractionImageFilename.setText(
-            self.model.diff_img.img_filename)
-
-    def apply_mask(self):
-        self.produce_cake()
-        self._apply_changes_to_graph()
-
-    def produce_cake(self):
-        """
-        Reprocess to get cake.  Slower re - processing
-        does not signal to update_graph
-        """
-        self._load_new_image()
-        self.cakemake_ctrl.cook()
-
-    def process_temp_cake(self):
-        """
-        load cake through either temporary file or make a new cake
-        """
-        if not self.model.associated_image_exists():
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning",
-                "Image file for the base pattern does not exist.")
-            return
-        temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
-        if self.widget.checkBox_UseTempCake.isChecked():
-            if os.path.exists(temp_dir):
-                self._load_new_image()
-                success = self.model.diff_img.read_cake_from_tempfile(
-                    temp_dir=temp_dir)
-                if success:
-                    pass
-                else:
-                    self._update_temp_cake_files(temp_dir)
-            else:
-                os.makedirs(temp_dir)
-                self._update_temp_cake_files(temp_dir)
-        else:
-            self._update_temp_cake_files(temp_dir)
-
-    def _update_temp_cake_files(self, temp_dir):
-        self.produce_cake()
-        self.model.diff_img.write_temp_cakefiles(temp_dir=temp_dir)
-
-    def get_poni(self):
-        """
-        Opens a pyFAI calibration file
-        signal to update_graph
-        """
-        filen = QtWidgets.QFileDialog.getOpenFileName(
-            self.widget, "Open a PONI File",
-            self.model.chi_path, "PONI files (*.poni)")[0]
-        filename = str(filen)
-        if os.path.exists(filename):
-            self.model.poni = filename
-            self.widget.lineEdit_PONI.setText(self.model.poni)
-            if self.model.diff_img_exist():
-                self.produce_cake()
-            self._apply_changes_to_graph()
-
-    def load_new_poni_from_name(self):
-        if self.widget.lineEdit_PONI.isModified():
-            filen = self.widget.lineEdit_PONI.text()
-            if os.path.exists(filen):
-                self.model.poni = filen
-                self.widget.lineEdit_PONI.setText(self.model.poni)
-                if self.model.diff_img_exist():
-                    self.produce_cake()
-                self._apply_changes_to_graph()
-            else:
-                QtWidgets.QMessageBox.warning(
-                    self.widget, 'Warning', 'The PONI file does not exist.')
+    def _zoom_out_graph(self):
+        self.plot_ctrl.zoom_out_graph()

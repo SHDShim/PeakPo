@@ -20,7 +20,7 @@ from .ucfittablecontroller import UcfitTableController
 from .sessioncontroller import SessionController
 from .peakfitcontroller import PeakFitController
 from .peakfittablecontroller import PeakfitTableController
-from .cakecontroller import CakeController
+from .cakeazicontroller import CakeAziController
 from utils import dialog_savefile, writechi, extract_extension, \
     convert_wl_to_energy
 # do not change the module structure for ds_jcpds and ds_powdiff for
@@ -38,7 +38,7 @@ class MainController(object):
         # self.obj_color = 'white'
         self.base_ptn_ctrl = BasePatternController(self.model, self.widget)
         self.plot_ctrl = MplController(self.model, self.widget)
-        self.cake_ctrl = CakeController(self.model, self.widget)
+        self.cakeazi_ctrl = CakeAziController(self.model, self.widget)
         # self.cake_ctrl = CakeController(self.model, self.widget)
         self.waterfall_ctrl = \
             WaterfallController(self.model, self.widget)
@@ -155,7 +155,7 @@ class MainController(object):
             self.integrate_to_1d)
 
     def integrate_to_1d(self):
-        filen = self.cake_ctrl.integrate_to_1d()
+        filen = self.cakeazi_ctrl.integrate_to_1d()
         if filen is None:
             return
         else:

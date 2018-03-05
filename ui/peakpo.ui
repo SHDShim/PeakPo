@@ -142,13 +142,13 @@
             <number>1</number>
            </property>
            <property name="topMargin">
-            <number>3</number>
+            <number>1</number>
            </property>
            <property name="rightMargin">
             <number>1</number>
            </property>
            <property name="bottomMargin">
-            <number>3</number>
+            <number>1</number>
            </property>
            <item>
             <widget class="QPushButton" name="pushButton_S_Zoom">
@@ -312,6 +312,9 @@
                <width>25</width>
                <height>25</height>
               </size>
+             </property>
+             <property name="toolTip">
+              <string>Set temperture to 300 K</string>
              </property>
              <property name="text">
               <string>T0</string>
@@ -501,7 +504,7 @@
                   </sizepolicy>
                  </property>
                  <property name="toolTip">
-                  <string>Show JCPDS bars in cake image</string>
+                  <string>Show JCPDS in cake image</string>
                  </property>
                  <property name="text">
                   <string>jcpds in cake</string>
@@ -520,7 +523,7 @@
                   </sizepolicy>
                  </property>
                  <property name="toolTip">
-                  <string>Show JCPDS together with a base pattern</string>
+                  <string>Show JCPDS in 1D pattern</string>
                  </property>
                  <property name="text">
                   <string>jcpds in ptn</string>
@@ -587,7 +590,7 @@
                   </sizepolicy>
                  </property>
                  <property name="toolTip">
-                  <string>Subtract background from base pattern</string>
+                  <string>Subtract background from 1D pattern</string>
                  </property>
                  <property name="text">
                   <string>Bg sub</string>
@@ -621,6 +624,9 @@
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
+                 <property name="toolTip">
+                  <string>Show filenames in waterfall</string>
+                 </property>
                  <property name="text">
                   <string>Waterfall labels</string>
                  </property>
@@ -632,7 +638,7 @@
                <item row="3" column="1">
                 <widget class="QCheckBox" name="checkBox_ShowMillerIndices">
                  <property name="toolTip">
-                  <string>Show Miller indices</string>
+                  <string>Show Miller indices in 1D pattern</string>
                  </property>
                  <property name="text">
                   <string>hkl in ptn</string>
@@ -647,6 +653,9 @@
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
+                 <property name="toolTip">
+                  <string>Show Miller indices in cake</string>
+                 </property>
                  <property name="text">
                   <string>hkl in cake</string>
                  </property>
@@ -659,6 +668,9 @@
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
+                 </property>
+                 <property name="toolTip">
+                  <string>Show large P &amp; T label</string>
                  </property>
                  <property name="text">
                   <string>P, T label</string>
@@ -802,6 +814,9 @@
                       <verstretch>0</verstretch>
                      </sizepolicy>
                     </property>
+                    <property name="toolTip">
+                     <string>Overwrite DPP and PPSS with default name</string>
+                    </property>
                     <property name="text">
                      <string>Overwrite with default name</string>
                     </property>
@@ -923,6 +938,9 @@
                       <horstretch>0</horstretch>
                       <verstretch>0</verstretch>
                      </sizepolicy>
+                    </property>
+                    <property name="toolTip">
+                     <string>Name and path of base 1D diffraction pattern</string>
                     </property>
                     <property name="cursorPosition">
                      <number>0</number>
@@ -1447,6 +1465,9 @@
                     <property name="focusPolicy">
                      <enum>Qt::StrongFocus</enum>
                     </property>
+                    <property name="toolTip">
+                     <string>Step size for pressure</string>
+                    </property>
                     <property name="alignment">
                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                     </property>
@@ -1481,6 +1502,9 @@
                       <height>16777215</height>
                      </size>
                     </property>
+                    <property name="toolTip">
+                     <string>Set pressure step size to 1</string>
+                    </property>
                     <property name="text">
                      <string>1</string>
                     </property>
@@ -1499,6 +1523,9 @@
                       <width>50</width>
                       <height>16777215</height>
                      </size>
+                    </property>
+                    <property name="toolTip">
+                     <string>Set pressure step size to 10</string>
                     </property>
                     <property name="text">
                      <string>10</string>
@@ -1564,6 +1591,9 @@
                     <property name="focusPolicy">
                      <enum>Qt::StrongFocus</enum>
                     </property>
+                    <property name="toolTip">
+                     <string>Step size for temperature</string>
+                    </property>
                     <property name="alignment">
                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                     </property>
@@ -1581,7 +1611,7 @@
                   <item>
                    <widget class="QPushButton" name="pushButton_SetTStepTo100">
                     <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                       <horstretch>0</horstretch>
                       <verstretch>0</verstretch>
                      </sizepolicy>
@@ -1591,6 +1621,9 @@
                       <width>50</width>
                       <height>16777215</height>
                      </size>
+                    </property>
+                    <property name="toolTip">
+                     <string>Set temperature step size to 100</string>
                     </property>
                     <property name="text">
                      <string>100</string>
@@ -1600,7 +1633,7 @@
                   <item>
                    <widget class="QPushButton" name="pushButton_SetTStepTo1000">
                     <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                       <horstretch>0</horstretch>
                       <verstretch>0</verstretch>
                      </sizepolicy>
@@ -1610,6 +1643,9 @@
                       <width>50</width>
                       <height>16777215</height>
                      </size>
+                    </property>
+                    <property name="toolTip">
+                     <string>Set temperature step size to 1000</string>
                     </property>
                     <property name="text">
                      <string>1000</string>
@@ -1698,6 +1734,9 @@
                  <property name="focusPolicy">
                   <enum>Qt::StrongFocus</enum>
                  </property>
+                 <property name="toolTip">
+                  <string>Pressure in GPa</string>
+                 </property>
                  <property name="styleSheet">
                   <string notr="true">font: 75 24pt &quot;Helvetica&quot;;</string>
                  </property>
@@ -1752,6 +1791,9 @@
                  </property>
                  <property name="focusPolicy">
                   <enum>Qt::StrongFocus</enum>
+                 </property>
+                 <property name="toolTip">
+                  <string>Temperature in kelvins</string>
                  </property>
                  <property name="layoutDirection">
                   <enum>Qt::LeftToRight</enum>
@@ -1974,7 +2016,7 @@
                   </font>
                  </property>
                  <property name="toolTip">
-                  <string>Add a CHI for waterfall</string>
+                  <string>Add CHI files to waterfall list</string>
                  </property>
                  <property name="text">
                   <string>+</string>
@@ -2199,6 +2241,9 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
+              <property name="toolTip">
+               <string>Force update plot</string>
+              </property>
               <property name="text">
                <string>Update plot</string>
               </property>
@@ -2226,7 +2271,11 @@
                 <number>12</number>
                </property>
                <item row="1" column="1">
-                <widget class="QLineEdit" name="lineEdit_PONI"/>
+                <widget class="QLineEdit" name="lineEdit_PONI">
+                 <property name="toolTip">
+                  <string>PONI file name and location</string>
+                 </property>
+                </widget>
                </item>
                <item row="1" column="0">
                 <widget class="QPushButton" name="pushButton_GetPONI">
@@ -2288,6 +2337,9 @@
                    <height>35</height>
                   </size>
                  </property>
+                 <property name="toolTip">
+                  <string>Diffraction image files (e.g., *.tif) should be in the same folder as CHI</string>
+                 </property>
                  <property name="readOnly">
                   <bool>true</bool>
                  </property>
@@ -2328,6 +2380,9 @@
                </property>
                <item>
                 <widget class="QSlider" name="horizontalSlider_CakeAxisSize">
+                 <property name="toolTip">
+                  <string>Vertical size of cake image</string>
+                 </property>
                  <property name="minimum">
                   <number>1</number>
                  </property>
@@ -2380,6 +2435,9 @@
                    <width>80</width>
                    <height>0</height>
                   </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>Azimuthal angle shift in degrees</string>
                  </property>
                  <property name="alignment">
                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -2440,6 +2498,9 @@
                  <property name="focusPolicy">
                   <enum>Qt::StrongFocus</enum>
                  </property>
+                 <property name="toolTip">
+                  <string>Values lower than this will be masked</string>
+                 </property>
                  <property name="alignment">
                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                  </property>
@@ -2466,6 +2527,9 @@
                  <property name="focusPolicy">
                   <enum>Qt::StrongFocus</enum>
                  </property>
+                 <property name="toolTip">
+                  <string>Values higher than this will be masked</string>
+                 </property>
                  <property name="alignment">
                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                  </property>
@@ -2484,6 +2548,9 @@
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
+                 </property>
+                 <property name="toolTip">
+                  <string>Apply mask out intensities</string>
                  </property>
                  <property name="text">
                   <string>Apply</string>
@@ -2599,6 +2666,9 @@
                      </property>
                      <item row="3" column="1">
                       <widget class="QSlider" name="horizontalSlider_VMax">
+                       <property name="toolTip">
+                        <string>Change max value of gray scale</string>
+                       </property>
                        <property name="minimum">
                         <number>1</number>
                        </property>
@@ -2621,6 +2691,9 @@
                      </item>
                      <item row="1" column="1">
                       <widget class="QSlider" name="horizontalSlider_VMin">
+                       <property name="toolTip">
+                        <string>Change min value of gray scale</string>
+                       </property>
                        <property name="minimum">
                         <number>1</number>
                        </property>
@@ -2652,6 +2725,9 @@
                      </item>
                      <item row="5" column="1">
                       <widget class="QSlider" name="horizontalSlider_MaxScaleBars">
+                       <property name="toolTip">
+                        <string>Coarse adjustment of the gray scale</string>
+                       </property>
                        <property name="minimum">
                         <number>0</number>
                        </property>
@@ -2750,6 +2826,9 @@
                     <property name="focusPolicy">
                      <enum>Qt::StrongFocus</enum>
                     </property>
+                    <property name="toolTip">
+                     <string>Max value of the gray scale</string>
+                    </property>
                     <property name="alignment">
                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                     </property>
@@ -2773,7 +2852,7 @@
                      </sizepolicy>
                     </property>
                     <property name="toolTip">
-                     <string>Reset full scale</string>
+                     <string>Reset to the max value of the scale to the max value of image</string>
                     </property>
                     <property name="text">
                      <string>Reset</string>
@@ -2962,6 +3041,9 @@
             </property>
             <item>
              <widget class="QPushButton" name="pushButton_ForceUpdatePlot">
+              <property name="toolTip">
+               <string>Force update plot</string>
+              </property>
               <property name="text">
                <string>Update plot</string>
               </property>
@@ -3001,6 +3083,9 @@
                    <width>16777215</width>
                    <height>35</height>
                   </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>Source file for current JCPDS list</string>
                  </property>
                  <property name="readOnly">
                   <bool>true</bool>
@@ -3046,6 +3131,9 @@
                </item>
                <item>
                 <widget class="QSlider" name="horizontalSlider_JCPDSBarScale">
+                 <property name="toolTip">
+                  <string>Change height of the JCPDS bars</string>
+                 </property>
                  <property name="maximum">
                   <number>100</number>
                  </property>
@@ -3069,6 +3157,9 @@
                </item>
                <item>
                 <widget class="QSlider" name="horizontalSlider_JCPDSBarPosition">
+                 <property name="toolTip">
+                  <string>Change position of the JCPDS bars</string>
+                 </property>
                  <property name="minimum">
                   <number>-50</number>
                  </property>
@@ -3604,6 +3695,9 @@
                </property>
                <item>
                 <widget class="QPushButton" name="pushButton_UpdateJCPDSSteps">
+                 <property name="toolTip">
+                  <string>Update step size for tweak</string>
+                 </property>
                  <property name="text">
                   <string>Update step</string>
                  </property>
@@ -3619,6 +3713,9 @@
                  </property>
                  <property name="focusPolicy">
                   <enum>Qt::StrongFocus</enum>
+                 </property>
+                 <property name="toolTip">
+                  <string>Step size of JCPDS tweak</string>
                  </property>
                  <property name="alignment">
                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -3660,6 +3757,9 @@
                    <height>16777215</height>
                   </size>
                  </property>
+                 <property name="toolTip">
+                  <string>Set step size to 0.001</string>
+                 </property>
                  <property name="text">
                   <string>0.001</string>
                  </property>
@@ -3679,6 +3779,9 @@
                    <height>16777215</height>
                   </size>
                  </property>
+                 <property name="toolTip">
+                  <string>Set step size to 0.01</string>
+                 </property>
                  <property name="text">
                   <string>0.01</string>
                  </property>
@@ -3697,6 +3800,9 @@
                    <width>60</width>
                    <height>16777215</height>
                   </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>Set step size to 0.1</string>
                  </property>
                  <property name="text">
                   <string>0.1</string>
@@ -3875,6 +3981,9 @@
                </property>
                <item>
                 <widget class="QPushButton" name="pushButton_UpdateUCFitSteps">
+                 <property name="toolTip">
+                  <string>Update step size for UCFit</string>
+                 </property>
                  <property name="text">
                   <string>Update step</string>
                  </property>
@@ -3890,6 +3999,9 @@
                  </property>
                  <property name="focusPolicy">
                   <enum>Qt::StrongFocus</enum>
+                 </property>
+                 <property name="toolTip">
+                  <string>Step size of UCFit</string>
                  </property>
                  <property name="alignment">
                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -3931,6 +4043,9 @@
                    <height>16777215</height>
                   </size>
                  </property>
+                 <property name="toolTip">
+                  <string>Set step size to 0.0001</string>
+                 </property>
                  <property name="text">
                   <string>0.0001</string>
                  </property>
@@ -3950,6 +4065,9 @@
                    <height>16777215</height>
                   </size>
                  </property>
+                 <property name="toolTip">
+                  <string>Set step size to 0.001</string>
+                 </property>
                  <property name="text">
                   <string>0.001</string>
                  </property>
@@ -3968,6 +4086,9 @@
                    <width>60</width>
                    <height>16777215</height>
                   </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>Set step size to 0.01</string>
                  </property>
                  <property name="text">
                   <string>0.01</string>
@@ -4511,6 +4632,9 @@
                  <property name="focusPolicy">
                   <enum>Qt::StrongFocus</enum>
                  </property>
+                 <property name="toolTip">
+                  <string>Number of points for smoothing</string>
+                 </property>
                  <property name="alignment">
                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                  </property>
@@ -4561,6 +4685,9 @@
                  <property name="focusPolicy">
                   <enum>Qt::StrongFocus</enum>
                  </property>
+                 <property name="toolTip">
+                  <string>Number of order for fit function</string>
+                 </property>
                  <property name="alignment">
                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                  </property>
@@ -4610,6 +4737,9 @@
                  </property>
                  <property name="focusPolicy">
                   <enum>Qt::StrongFocus</enum>
+                 </property>
+                 <property name="toolTip">
+                  <string>Number of iterations</string>
                  </property>
                  <property name="alignment">
                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -4670,6 +4800,9 @@
                  <property name="focusPolicy">
                   <enum>Qt::StrongFocus</enum>
                  </property>
+                 <property name="toolTip">
+                  <string>Min two theta angle for background fit</string>
+                 </property>
                  <property name="alignment">
                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                  </property>
@@ -4719,6 +4852,9 @@
                  </property>
                  <property name="focusPolicy">
                   <enum>Qt::StrongFocus</enum>
+                 </property>
+                 <property name="toolTip">
+                  <string>Max two theta angle for background fit</string>
                  </property>
                  <property name="alignment">
                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -4812,6 +4948,9 @@
                 <italic>false</italic>
                 <bold>false</bold>
                </font>
+              </property>
+              <property name="toolTip">
+               <string>Update background parameters</string>
               </property>
               <property name="text">
                <string>Update background</string>
@@ -4934,6 +5073,9 @@
               <layout class="QHBoxLayout" name="horizontalLayout">
                <item>
                 <widget class="QPushButton" name="pushButton_toPkFt">
+                 <property name="toolTip">
+                  <string>Send information to PkFt</string>
+                 </property>
                  <property name="text">
                   <string>to PkFt</string>
                  </property>
@@ -4941,6 +5083,9 @@
                </item>
                <item>
                 <widget class="QPushButton" name="pushButton_fromPkFt">
+                 <property name="toolTip">
+                  <string>Receive information from PkFt</string>
+                 </property>
                  <property name="text">
                   <string>from PkFt</string>
                  </property>
@@ -4953,6 +5098,9 @@
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
+                 </property>
+                 <property name="toolTip">
+                  <string>Save background subtracted 1D pattern</string>
                  </property>
                  <property name="text">
                   <string>Save BgSub.CHI</string>
@@ -4985,6 +5133,9 @@
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
+                 <property name="toolTip">
+                  <string>Load PPSS file</string>
+                 </property>
                  <property name="text">
                   <string>Load ppss</string>
                  </property>
@@ -4997,6 +5148,9 @@
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
+                 </property>
+                 <property name="toolTip">
+                  <string>Save PPSS file</string>
                  </property>
                  <property name="text">
                   <string>Save ppss</string>
@@ -5011,6 +5165,9 @@
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
+                 <property name="toolTip">
+                  <string>Package diffraction files, images, and DPP</string>
+                 </property>
                  <property name="text">
                   <string>Package</string>
                  </property>
@@ -5023,6 +5180,9 @@
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
+                 </property>
+                 <property name="toolTip">
+                  <string>Save both DPP and PPSS</string>
                  </property>
                  <property name="text">
                   <string>Save dpp,ppss</string>
@@ -5058,6 +5218,9 @@
                </property>
                <item row="0" column="0">
                 <widget class="QCheckBox" name="checkBox_ShortPlotTitle">
+                 <property name="toolTip">
+                  <string>Make the title in 1D pattern short</string>
+                 </property>
                  <property name="text">
                   <string>Short title (file name only)</string>
                  </property>
@@ -5355,6 +5518,9 @@
                </property>
                <item>
                 <widget class="QPushButton" name="pushButton_AboutPeakpo">
+                 <property name="toolTip">
+                  <string>Information on PeakPo</string>
+                 </property>
                  <property name="text">
                   <string>About PeakPo</string>
                  </property>
@@ -5362,6 +5528,9 @@
                </item>
                <item>
                 <widget class="QPushButton" name="pushButton_Help">
+                 <property name="toolTip">
+                  <string>Help on PeakPo</string>
+                 </property>
                  <property name="text">
                   <string>Help</string>
                  </property>

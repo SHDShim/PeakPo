@@ -79,7 +79,7 @@ class Ui_MainWindow(object):
         self.frame_9.setLineWidth(0)
         self.frame_9.setObjectName("frame_9")
         self.horizontalLayout_21 = QtWidgets.QHBoxLayout(self.frame_9)
-        self.horizontalLayout_21.setContentsMargins(1, 3, 1, 3)
+        self.horizontalLayout_21.setContentsMargins(1, 1, 1, 1)
         self.horizontalLayout_21.setObjectName("horizontalLayout_21")
         self.pushButton_S_Zoom = QtWidgets.QPushButton(self.frame_9)
         self.pushButton_S_Zoom.setMaximumSize(QtCore.QSize(25, 25))
@@ -698,8 +698,7 @@ class Ui_MainWindow(object):
         self.spinBox_TStep.setObjectName("spinBox_TStep")
         self.horizontalLayout_17.addWidget(self.spinBox_TStep)
         self.pushButton_SetTStepTo100 = QtWidgets.QPushButton(self.frame_17)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pushButton_SetTStepTo100.sizePolicy().hasHeightForWidth())
@@ -708,8 +707,7 @@ class Ui_MainWindow(object):
         self.pushButton_SetTStepTo100.setObjectName("pushButton_SetTStepTo100")
         self.horizontalLayout_17.addWidget(self.pushButton_SetTStepTo100)
         self.pushButton_SetTStepTo1000 = QtWidgets.QPushButton(self.frame_17)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
@@ -2728,6 +2726,7 @@ class Ui_MainWindow(object):
         self.pushButton_S_PDecrease.setText(_translate("MainWindow", "P−"))
         self.pushButton_S_TIncrease.setToolTip(_translate("MainWindow", "Increase temperature"))
         self.pushButton_S_TIncrease.setText(_translate("MainWindow", "T+"))
+        self.pushButton_S_RoomT.setToolTip(_translate("MainWindow", "Set temperture to 300 K"))
         self.pushButton_S_RoomT.setText(_translate("MainWindow", "T0"))
         self.pushButton_S_TDecrease.setToolTip(_translate("MainWindow", "Decrease temperature"))
         self.pushButton_S_TDecrease.setText(_translate("MainWindow", "T−"))
@@ -2741,11 +2740,10 @@ class Ui_MainWindow(object):
         self.checkBox_LongCursor.setToolTip(_translate(
             "MainWindow", "Change cursor to a vertical bar"))
         self.checkBox_LongCursor.setText(_translate("MainWindow", "Vert. cursor"))
-        self.checkBox_JCPDSinCake.setToolTip(_translate(
-            "MainWindow", "Show JCPDS bars in cake image"))
+        self.checkBox_JCPDSinCake.setToolTip(_translate("MainWindow", "Show JCPDS in cake image"))
         self.checkBox_JCPDSinCake.setText(_translate("MainWindow", "jcpds in cake"))
-        self.checkBox_JCPDSinPattern.setToolTip(_translate(
-            "MainWindow", "Show JCPDS together with a base pattern"))
+        self.checkBox_JCPDSinPattern.setToolTip(
+            _translate("MainWindow", "Show JCPDS in 1D pattern"))
         self.checkBox_JCPDSinPattern.setText(_translate("MainWindow", "jcpds in ptn"))
         self.checkBox_Intensity.setToolTip(_translate(
             "MainWindow", "Plot JCPDS bar height proportional to intensity"))
@@ -2756,15 +2754,21 @@ class Ui_MainWindow(object):
             "MainWindow", "Make white for peak intensity"))
         self.checkBox_WhiteForPeak.setText(_translate("MainWindow", "Night, cake"))
         self.checkBox_BgSub.setToolTip(_translate(
-            "MainWindow", "Subtract background from base pattern"))
+            "MainWindow", "Subtract background from 1D pattern"))
         self.checkBox_BgSub.setText(_translate("MainWindow", "Bg sub"))
         self.checkBox_AutoY.setToolTip(_translate(
             "MainWindow", "Automatic adjustment of y axis range"))
         self.checkBox_AutoY.setText(_translate("MainWindow", "Auto y scale"))
+        self.checkBox_ShowWaterfallLabels.setToolTip(
+            _translate("MainWindow", "Show filenames in waterfall"))
         self.checkBox_ShowWaterfallLabels.setText(_translate("MainWindow", "Waterfall labels"))
-        self.checkBox_ShowMillerIndices.setToolTip(_translate("MainWindow", "Show Miller indices"))
+        self.checkBox_ShowMillerIndices.setToolTip(_translate(
+            "MainWindow", "Show Miller indices in 1D pattern"))
         self.checkBox_ShowMillerIndices.setText(_translate("MainWindow", "hkl in ptn"))
+        self.checkBox_ShowMillerIndices_Cake.setToolTip(
+            _translate("MainWindow", "Show Miller indices in cake"))
         self.checkBox_ShowMillerIndices_Cake.setText(_translate("MainWindow", "hkl in cake"))
+        self.checkBox_ShowLargePnT.setToolTip(_translate("MainWindow", "Show large P & T label"))
         self.checkBox_ShowLargePnT.setText(_translate("MainWindow", "P, T label"))
         self.groupBox_2.setTitle(_translate("MainWindow", "Session (dpp only)"))
         self.textEdit_SessionFileName.setToolTip(_translate(
@@ -2773,10 +2777,14 @@ class Ui_MainWindow(object):
         self.pushButton_LoadDPP.setText(_translate("MainWindow", "Load"))
         self.pushButton_SaveDPP.setToolTip(_translate("MainWindow", "Save session to a dpp file"))
         self.pushButton_SaveDPP.setText(_translate("MainWindow", "Save"))
+        self.checkBox_ForceOverwite.setToolTip(_translate(
+            "MainWindow", "Overwrite DPP and PPSS with default name"))
         self.checkBox_ForceOverwite.setText(_translate("MainWindow", "Overwrite with default name"))
         self.groupBox_3.setTitle(_translate("MainWindow", "Base pattern"))
         self.pushButton_NewBasePtn.setToolTip(_translate("MainWindow", "Open base pattern in chi"))
         self.pushButton_NewBasePtn.setText(_translate("MainWindow", "Open"))
+        self.lineEdit_DiffractionPatternFileName.setToolTip(_translate(
+            "MainWindow", "Name and path of base 1D diffraction pattern"))
         self.pushButton_FirstBasePtn.setToolTip(_translate("MainWindow", "Open the first CHI file"))
         self.pushButton_FirstBasePtn.setText(_translate("MainWindow", "|<"))
         self.pushButton_PrevBasePtn.setToolTip(_translate("MainWindow", "Open previous CHI file"))
@@ -2800,15 +2808,28 @@ class Ui_MainWindow(object):
         self.label_XRayEnergy.setText(_translate("MainWindow", "(37.077 keV)"))
         self.groupBox.setTitle(_translate("MainWindow", "Pressure (GPa) and Temeprature (K)"))
         self.frame_16.setToolTip(_translate("MainWindow", "Pressure steps"))
+        self.doubleSpinBox_PStep.setToolTip(_translate("MainWindow", "Step size for pressure"))
+        self.pushButton_SetPStepTo1.setToolTip(
+            _translate("MainWindow", "Set pressure step size to 1"))
         self.pushButton_SetPStepTo1.setText(_translate("MainWindow", "1"))
+        self.pushButton_SetPStepTo10.setToolTip(
+            _translate("MainWindow", "Set pressure step size to 10"))
         self.pushButton_SetPStepTo10.setText(_translate("MainWindow", "10"))
         self.frame_17.setToolTip(_translate("MainWindow", "Temperature steps"))
+        self.spinBox_TStep.setToolTip(_translate("MainWindow", "Step size for temperature"))
+        self.pushButton_SetTStepTo100.setToolTip(_translate(
+            "MainWindow", "Set temperature step size to 100"))
         self.pushButton_SetTStepTo100.setText(_translate("MainWindow", "100"))
+        self.pushButton_SetTStepTo1000.setToolTip(_translate(
+            "MainWindow", "Set temperature step size to 1000"))
         self.pushButton_SetTStepTo1000.setText(_translate("MainWindow", "1000"))
         self.pushButton_RoomT.setToolTip(_translate("MainWindow", "Set temperature to 300 K"))
         self.pushButton_RoomT.setText(_translate("MainWindow", "300 K"))
         self.pushButton_1bar.setToolTip(_translate("MainWindow", "Set pressure to 1 bar"))
         self.pushButton_1bar.setText(_translate("MainWindow", "1 bar"))
+        self.doubleSpinBox_Pressure.setToolTip(_translate("MainWindow", "Pressure in GPa"))
+        self.doubleSpinBox_Temperature.setToolTip(
+            _translate("MainWindow", "Temperature in kelvins"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(
             self.tab_Main), _translate("MainWindow", "Main"))
         self.pushButton_ApplyWaterfallChange.setToolTip(
@@ -2825,7 +2846,8 @@ class Ui_MainWindow(object):
         self.label_18.setText(_translate("MainWindow", "Waterfall gap"))
         self.horizontalSlider_WaterfallGaps.setToolTip(_translate(
             "MainWindow", "Change size of vertical gaps between waterfall patterns"))
-        self.pushButton_AddPatterns.setToolTip(_translate("MainWindow", "Add a CHI for waterfall"))
+        self.pushButton_AddPatterns.setToolTip(_translate(
+            "MainWindow", "Add CHI files to waterfall list"))
         self.pushButton_AddPatterns.setText(_translate("MainWindow", "+"))
         self.pushButton_DownPattern.setToolTip(_translate(
             "MainWindow", "Move down highlighted pattern in the waterfall list"))
@@ -2850,26 +2872,48 @@ class Ui_MainWindow(object):
         self.pushButton_UncheckAllWaterfall.setText(_translate("MainWindow", "[  ]"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(
             self.tab_Waterfall), _translate("MainWindow", "Waterfall"))
+        self.pushButton_ApplyCakeView.setToolTip(_translate("MainWindow", "Force update plot"))
         self.pushButton_ApplyCakeView.setText(_translate("MainWindow", "Update plot"))
         self.groupBox_11.setTitle(_translate("MainWindow", "PONI file"))
+        self.lineEdit_PONI.setToolTip(_translate("MainWindow", "PONI file name and location"))
         self.pushButton_GetPONI.setToolTip(_translate("MainWindow", "Open a PONI file"))
         self.pushButton_GetPONI.setText(_translate("MainWindow", "Open"))
         self.groupBox_14.setTitle(_translate("MainWindow", "Diffraction image file (read only)"))
+        self.textEdit_DiffractionImageFilename.setToolTip(_translate(
+            "MainWindow", "Diffraction image files (e.g., *.tif) should be in the same folder as CHI"))
         self.groupBox_5.setTitle(_translate("MainWindow", "Vertical size"))
+        self.horizontalSlider_CakeAxisSize.setToolTip(
+            _translate("MainWindow", "Vertical size of cake image"))
         self.groupBox_23.setTitle(_translate("MainWindow", "Cake"))
         self.label_7.setText(_translate("MainWindow", "Azimuthal angle shift"))
+        self.spinBox_AziShift.setToolTip(_translate(
+            "MainWindow", "Azimuthal angle shift in degrees"))
         self.groupBox_30.setTitle(_translate("MainWindow", "Mask out intensities"))
         self.label_11.setText(_translate("MainWindow", "Min"))
+        self.spinBox_MaskMin.setToolTip(_translate(
+            "MainWindow", "Values lower than this will be masked"))
         self.label_10.setText(_translate("MainWindow", "Max"))
+        self.spinBox_MaskMax.setToolTip(_translate(
+            "MainWindow", "Values higher than this will be masked"))
+        self.pushButton_ApplyMask.setToolTip(_translate("MainWindow", "Apply mask out intensities"))
         self.pushButton_ApplyMask.setText(_translate("MainWindow", "Apply"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_Cake1),
                                   _translate("MainWindow", "Cake1"))
         self.groupBox_29.setTitle(_translate("MainWindow", "Gray scale"))
+        self.horizontalSlider_VMax.setToolTip(_translate(
+            "MainWindow", "Change max value of gray scale"))
+        self.horizontalSlider_VMin.setToolTip(_translate(
+            "MainWindow", "Change min value of gray scale"))
+        self.horizontalSlider_MaxScaleBars.setToolTip(_translate(
+            "MainWindow", "Coarse adjustment of the gray scale"))
         self.label_8.setText(_translate("MainWindow", "Min"))
         self.label_9.setText(_translate("MainWindow", "Max"))
         self.label_19.setText(_translate("MainWindow", "Scale"))
         self.label_12.setText(_translate("MainWindow", "Max. value"))
-        self.pushButton_ResetCakeScale.setToolTip(_translate("MainWindow", "Reset full scale"))
+        self.spinBox_MaxCakeScale.setToolTip(_translate(
+            "MainWindow", "Max value of the gray scale"))
+        self.pushButton_ResetCakeScale.setToolTip(_translate(
+            "MainWindow", "Reset to the max value of the scale to the max value of image"))
         self.pushButton_ResetCakeScale.setText(_translate("MainWindow", "Reset"))
         self.groupBox_19.setTitle(_translate("MainWindow", "Selective integration"))
         self.pushButton_AddAzi.setToolTip(_translate(
@@ -2896,11 +2940,18 @@ class Ui_MainWindow(object):
         self.pushButton_HighlightSelectedMarker.setText(_translate("MainWindow", "Highlight"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_Cake2),
                                   _translate("MainWindow", "Cake2"))
+        self.pushButton_ForceUpdatePlot.setToolTip(_translate("MainWindow", "Force update plot"))
         self.pushButton_ForceUpdatePlot.setText(_translate("MainWindow", "Update plot"))
         self.groupBox_18.setTitle(_translate("MainWindow", "JCPDS list source"))
+        self.textEdit_Jlist.setToolTip(_translate(
+            "MainWindow", "Source file for current JCPDS list"))
         self.groupBox_20.setTitle(_translate("MainWindow", "JCPDS bars"))
         self.label_27.setText(_translate("MainWindow", "Height"))
+        self.horizontalSlider_JCPDSBarScale.setToolTip(
+            _translate("MainWindow", "Change height of the JCPDS bars"))
         self.label_28.setText(_translate("MainWindow", "Position"))
+        self.horizontalSlider_JCPDSBarPosition.setToolTip(
+            _translate("MainWindow", "Change position of the JCPDS bars"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(
             self.tab_JCPDSList1), _translate("MainWindow", "JCPDS1"))
         self.groupBox_9.setTitle(_translate("MainWindow", "List"))
@@ -2940,9 +2991,19 @@ class Ui_MainWindow(object):
         self.pushButton_UncheckAllJCPDS.setToolTip(
             _translate("MainWindow", "Hide all the JCPDSs in the list"))
         self.pushButton_UncheckAllJCPDS.setText(_translate("MainWindow", "[  ]"))
+        self.pushButton_UpdateJCPDSSteps.setToolTip(
+            _translate("MainWindow", "Update step size for tweak"))
         self.pushButton_UpdateJCPDSSteps.setText(_translate("MainWindow", "Update step"))
+        self.doubleSpinBox_JCPDSStep.setToolTip(
+            _translate("MainWindow", "Step size of JCPDS tweak"))
+        self.pushButton_SetJCPDSStepTo0001.setToolTip(
+            _translate("MainWindow", "Set step size to 0.001"))
         self.pushButton_SetJCPDSStepTo0001.setText(_translate("MainWindow", "0.001"))
+        self.pushButton_SetJCPDSStepTo001.setToolTip(
+            _translate("MainWindow", "Set step size to 0.01"))
         self.pushButton_SetJCPDSStepTo001.setText(_translate("MainWindow", "0.01"))
+        self.pushButton_SetJCPDSStepTo01.setToolTip(
+            _translate("MainWindow", "Set step size to 0.1"))
         self.pushButton_SetJCPDSStepTo01.setText(_translate("MainWindow", "0.1"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(
             self.tab_JCPDSList2), _translate("MainWindow", "JCPDS2"))
@@ -2956,9 +3017,18 @@ class Ui_MainWindow(object):
         self.pushButton_ExportXLS_2.setToolTip(_translate(
             "MainWindow", "Save highlighted UCFit to an excel file"))
         self.pushButton_ExportXLS_2.setText(_translate("MainWindow", "Save to XLS"))
+        self.pushButton_UpdateUCFitSteps.setToolTip(
+            _translate("MainWindow", "Update step size for UCFit"))
         self.pushButton_UpdateUCFitSteps.setText(_translate("MainWindow", "Update step"))
+        self.doubleSpinBox_UCFitStep.setToolTip(_translate("MainWindow", "Step size of UCFit"))
+        self.pushButton_SetUCFitStepTo0_0001.setToolTip(
+            _translate("MainWindow", "Set step size to 0.0001"))
         self.pushButton_SetUCFitStepTo0_0001.setText(_translate("MainWindow", "0.0001"))
+        self.pushButton_SetUCFitStepTo0_001.setToolTip(
+            _translate("MainWindow", "Set step size to 0.001"))
         self.pushButton_SetUCFitStepTo0_001.setText(_translate("MainWindow", "0.001"))
+        self.pushButton_SetUCFitStepTo0_01.setToolTip(
+            _translate("MainWindow", "Set step size to 0.01"))
         self.pushButton_SetUCFitStepTo0_01.setText(_translate("MainWindow", "0.01"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(
             self.tab_UnitCellFit), _translate("MainWindow", "UCFit"))
@@ -3019,16 +3089,26 @@ class Ui_MainWindow(object):
                                   _translate("MainWindow", "PeakFit"))
         self.groupBox_7.setTitle(_translate("MainWindow", "Parameters"))
         self.label_4.setText(_translate("MainWindow", "N Points (20):"))
+        self.spinBox_BGParam0.setToolTip(_translate("MainWindow", "Number of points for smoothing"))
         self.label_6.setText(_translate("MainWindow", "N Order (10):"))
+        self.spinBox_BGParam1.setToolTip(_translate(
+            "MainWindow", "Number of order for fit function"))
         self.label_5.setText(_translate("MainWindow", "N Iteration (20):"))
+        self.spinBox_BGParam2.setToolTip(_translate("MainWindow", "Number of iterations"))
         self.groupBox_4.setTitle(_translate("MainWindow", "Range for background fit"))
         self.label_2.setText(_translate("MainWindow", "Min. two theta"))
+        self.doubleSpinBox_Background_ROI_min.setToolTip(_translate(
+            "MainWindow", "Min two theta angle for background fit"))
         self.label.setText(_translate("MainWindow", "Max. two theta"))
+        self.doubleSpinBox_Background_ROI_max.setToolTip(_translate(
+            "MainWindow", "Max two theta angle for background fit"))
         self.groupBox_26.setTitle(_translate("MainWindow", "Background file"))
         self.pushButton_GetBackgroundPattern.setToolTip(
             _translate("MainWindow", "Open a PONI file"))
         self.pushButton_GetBackgroundPattern.setText(_translate("MainWindow", "Open"))
         self.checkBox_UseBackgroundPattern.setText(_translate("MainWindow", "Use"))
+        self.pushButton_UpdateBackground.setToolTip(
+            _translate("MainWindow", "Update background parameters"))
         self.pushButton_UpdateBackground.setText(_translate("MainWindow", "Update background"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(
             self.tab_Bkgn), _translate("MainWindow", "Bkgn"))
@@ -3042,15 +3122,28 @@ class Ui_MainWindow(object):
         self.pushButton_DelTempCHI.setText(_translate("MainWindow", "Del temp chi"))
         self.checkBox_UseTempBGSub.setText(_translate("MainWindow", "Use for bgsub"))
         self.groupBox_21.setTitle(_translate("MainWindow", "Tools"))
+        self.pushButton_toPkFt.setToolTip(_translate("MainWindow", "Send information to PkFt"))
         self.pushButton_toPkFt.setText(_translate("MainWindow", "to PkFt"))
+        self.pushButton_fromPkFt.setToolTip(_translate(
+            "MainWindow", "Receive information from PkFt"))
         self.pushButton_fromPkFt.setText(_translate("MainWindow", "from PkFt"))
+        self.pushButton_SaveBgSubCHI.setToolTip(_translate(
+            "MainWindow", "Save background subtracted 1D pattern"))
         self.pushButton_SaveBgSubCHI.setText(_translate("MainWindow", "Save BgSub.CHI"))
         self.groupBox_12.setTitle(_translate("MainWindow", "Session (backward compatibility)"))
+        self.pushButton_LoadPPSS.setToolTip(_translate("MainWindow", "Load PPSS file"))
         self.pushButton_LoadPPSS.setText(_translate("MainWindow", "Load ppss"))
+        self.pushButton_SavePPSS.setToolTip(_translate("MainWindow", "Save PPSS file"))
         self.pushButton_SavePPSS.setText(_translate("MainWindow", "Save ppss"))
+        self.pushButton_ZipSession.setToolTip(_translate(
+            "MainWindow", "Package diffraction files, images, and DPP"))
         self.pushButton_ZipSession.setText(_translate("MainWindow", "Package"))
+        self.pushButton_SaveDPPandPPSS.setToolTip(
+            _translate("MainWindow", "Save both DPP and PPSS"))
         self.pushButton_SaveDPPandPPSS.setText(_translate("MainWindow", "Save dpp,ppss"))
         self.groupBox_16.setTitle(_translate("MainWindow", "Plot setup"))
+        self.checkBox_ShortPlotTitle.setToolTip(_translate(
+            "MainWindow", "Make the title in 1D pattern short"))
         self.checkBox_ShortPlotTitle.setText(_translate(
             "MainWindow", "Short title (file name only)"))
         self.groupBox_24.setTitle(_translate("MainWindow", "Line thickness"))
@@ -3063,7 +3156,9 @@ class Ui_MainWindow(object):
         self.groupBox_13.setTitle(_translate("MainWindow", "Font size"))
         self.label_15.setText(_translate("MainWindow", "PT label"))
         self.label_3.setText(_translate("MainWindow", "Miller indices"))
+        self.pushButton_AboutPeakpo.setToolTip(_translate("MainWindow", "Information on PeakPo"))
         self.pushButton_AboutPeakpo.setText(_translate("MainWindow", "About PeakPo"))
+        self.pushButton_Help.setToolTip(_translate("MainWindow", "Help on PeakPo"))
         self.pushButton_Help.setText(_translate("MainWindow", "Help"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(
             self.tab_Process), _translate("MainWindow", "Config"))

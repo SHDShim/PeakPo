@@ -1,13 +1,24 @@
 """
 PeakPo version
 
-Todo: better system should be implemented, such as pbr.
+Todo:
+    Add option to use diffraction file for background subtraction
+    Better system should be implemented, such as pbr.
 """
 __version__ = "7.7.16"
-
 """
-7.7.16: Change the step mechanism for P and T.
-        Add step size control for the JCPDS tweaks.
+7.7.16: Add shortcut icons for frequently used functions.
+        Improve icons.
+        Add bookmarking function for diffraction files.
+        Add more tabs to distribute functions better.
+        Change the step size mechanism for P and T.
+        Change Waterfall label style changes and match with table.
+        Restore large pressure-temperature values at the top left corner.
+        Option to add hkl indices to the cake view.
+        Option to add/remove waterfall file name labels.
+        Add option to add azimuthal integration directly to waterfall.
+        Add step size control for the JCPDS tweaks and UCFit.
+        Remove separate tab for information and help.  They are now popups.
 7.7.15: Change inner working of Cake JCPDS.
         I changed from for loop to array operation for fast plot.
 7.7.14: change cake scale adjustment option.
