@@ -4,6 +4,7 @@ import datetime
 import numpy as np
 import numpy.ma as ma
 from matplotlib.widgets import MultiCursor
+import matplotlib.transforms as transforms
 #import matplotlib.colors as colors
 import matplotlib.patches as patches
 from PyQt5 import QtWidgets
@@ -142,11 +143,24 @@ class MplController(object):
                     self.widget.horizontalSlider_JCPDSBarScale.value() / 100.
                 self.widget.mpl.canvas.ax_pattern.set_ylim(
                     new_low_limit, limits[3])
-        xlabel = 'Two Theta (degrees), ' + \
-            "{0: 5.1f} GPa, {1: 4.0f} K, {2: 6.4f} A".\
-            format(self.widget.doubleSpinBox_Pressure.value(),
-                   self.widget.doubleSpinBox_Temperature.value(),
-                   self.widget.doubleSpinBox_SetWavelength.value())
+        if self.widget.checkBox_ShowLargePnT.isChecked():
+            xlabel = "Two Theta (degrees), {: 6.4f} A".\
+                format(self.widget.doubleSpinBox_SetWavelength.value())
+            label_p_t = "{0: 5.1f} GPa\n{1: 4.0f} K".\
+                format(self.widget.doubleSpinBox_Pressure.value(),
+                       self.widget.doubleSpinBox_Temperature.value())
+            self.widget.mpl.canvas.ax_pattern.text(
+                0.01, 0.98, label_p_t, horizontalalignment='left',
+                verticalalignment='top',
+                transform=self.widget.mpl.canvas.ax_pattern.transAxes,
+                fontsize=int(
+                    self.widget.comboBox_PnTFontSize.currentText()))
+        else:
+            xlabel = 'Two Theta (degrees), ' + \
+                "{0: 5.1f} GPa, {1: 4.0f} K, {2: 6.4f} A".\
+                format(self.widget.doubleSpinBox_Pressure.value(),
+                       self.widget.doubleSpinBox_Temperature.value(),
+                       self.widget.doubleSpinBox_SetWavelength.value())
         self.widget.mpl.canvas.ax_pattern.set_xlabel(xlabel)
         # if I move the line below to elsewhere I cannot get ylim or axis
         # self.widget.mpl.canvas.ax_pattern.autoscale(
@@ -389,6 +403,20 @@ class MplController(object):
                              lw=float(
                                  self.widget.comboBox_CakeJCPDSBarThickness.
                                  currentText()))
+                    if self.widget.checkBox_ShowMillerIndices_Cake.isChecked():
+                        hkl_list = phase.get_hkl_in_text()
+                        trans = transforms.blended_transform_factory(
+                            self.widget.mpl.canvas.ax_cake.transData,
+                            self.widget.mpl.canvas.ax_cake.transAxes)
+                        j = 0
+                        for hkl in hkl_list:
+                            self.widget.mpl.canvas.ax_cake.text(
+                                tth[j], 0.99, hkl, color=phase.color,
+                                rotation=90, verticalalignment='top',
+                                transform=trans, horizontalalignment='right',
+                                fontsize=int(
+                                    self.widget.comboBox_HKLFontSize.currentText()))
+                            j += 1
             else:
                 pass
         if self.widget.checkBox_JCPDSinPattern.isChecked():
@@ -413,14 +441,16 @@ class MplController(object):
         n_display = i
         j = 0  # this is needed for waterfall gaps
         # get y_max
-        for pattern in self.model.waterfall_ptn:
+        for pattern in self.model.waterfall_ptn[::-1]:
             if pattern.display:
                 j += 1
+                """
                 self.widget.mpl.canvas.ax_pattern.text(
                     0.01, 0.97 - n_display * 0.05 + j * 0.05,
                     os.path.basename(pattern.fname),
                     transform=self.widget.mpl.canvas.ax_pattern.transAxes,
                     color=pattern.color)
+                """
                 if self.widget.checkBox_BgSub.isChecked():
                     ygap = self.widget.horizontalSlider_WaterfallGaps.value() * \
                         self.model.base_ptn.y_bgsub.max() * float(j) / 100.
@@ -449,11 +479,19 @@ class MplController(object):
                     x, y + ygap, c=pattern.color, lw=float(
                         self.widget.comboBox_WaterfallLineThickness.
                         currentText()))
+                if self.widget.checkBox_ShowWaterfallLabels.isChecked():
+                    self.widget.mpl.canvas.ax_pattern.text(
+                        (x[-1] - x[0]) * 0.01 + x[0], y[0] + ygap,
+                        os.path.basename(pattern.fname),
+                        verticalalignment='bottom', horizontalalignment='left',
+                        color=pattern.color)
+        """
         self.widget.mpl.canvas.ax_pattern.text(
             0.01, 0.97 - n_display * 0.05,
             os.path.basename(self.model.base_ptn.fname),
             transform=self.widget.mpl.canvas.ax_pattern.transAxes,
             color=self.model.base_ptn.color)
+        """
 
     def _plot_diffpattern(self, gsas_style=False):
         if self.widget.checkBox_BgSub.isChecked():

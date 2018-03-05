@@ -134,6 +134,9 @@ class WaterfallController(object):
             self.widget, "Choose additional data files", self.model.chi_path,
             "Data files (*.chi)")
         files = f_input[0]
+        self._add_patterns(files)
+
+    def _add_patterns(self, files):
         if files is not None:
             for f in files:
                 filename = str(f)
@@ -161,7 +164,7 @@ class WaterfallController(object):
             return
         filename = self.model.get_base_ptn_filename()
         if self.model.exist_in_waterfall(filename):
-            self.widget.pushButton_AddBasePtn.setChecked()
+            self.widget.pushButton_AddBasePtn.setChecked(True)
             return
         wavelength = self.widget.doubleSpinBox_SetWavelength.value()
         bg_roi = [self.widget.doubleSpinBox_Background_ROI_min.value(),

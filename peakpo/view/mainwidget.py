@@ -58,9 +58,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_BkgnLineThickness.setCurrentText('0.5')
         self.comboBox_WaterfallLineThickness.setCurrentText('0.5')
         self.comboBox_VertCursorThickness.setCurrentText('1')
-        fontsizes = ['4', '6', '8', '10', '12', '14', '16', '18', '20']
+        fontsizes = ['4', '6', '8', '10', '12', '14', '16', '18', '20', '24',
+                     '28', '36', '42']
         self.comboBox_HKLFontSize.addItems(fontsizes)
         self.comboBox_HKLFontSize.setCurrentText('8')
+        self.comboBox_PnTFontSize.addItems(fontsizes)
+        self.comboBox_PnTFontSize.setCurrentText('16')
         self.tableWidget_DiffImgAzi.\
             setHorizontalHeaderLabels(['Notes', '2th', 'Azi', '2th', 'Azi'])
         # navigation toolbar modification
@@ -107,28 +110,35 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             lambda: self.set_temperature(300))
         self.pushButton_1bar.clicked.connect(
             lambda: self.set_pressure(0.01))
-        self.pushButton_SetPStepTo1.clicked.connect(self.set_pstep1)
-        self.pushButton_SetPStepTo10.clicked.connect(self.set_pstep10)
-        self.pushButton_SetTStepTo100.clicked.connect(self.set_tstep100)
-        self.pushButton_SetTStepTo1000.clicked.connect(self.set_tstep1000)
+        self.pushButton_SetPStepTo1.clicked.connect(
+            lambda: self.set_q_pstep(1.))
+        self.pushButton_SetPStepTo10.clicked.connect(
+            lambda: self.set_q_pstep(10.))
+        self.pushButton_SetTStepTo100.clicked.connect(
+            lambda: self.set_q_tstep(100.))
+        self.pushButton_SetTStepTo1000.clicked.connect(
+            lambda: self.set_q_tstep(1000.))
         self.doubleSpinBox_PStep.valueChanged.connect(self.set_pstep)
         self.spinBox_TStep.valueChanged.connect(self.set_tstep)
-        self.pushButton_SetJCPDSStepTo0001.clicked.connect(self.set_jstep0001)
-        self.pushButton_SetJCPDSStepTo001.clicked.connect(self.set_jstep001)
-        self.pushButton_SetJCPDSStepTo01.clicked.connect(self.set_jstep01)
+        self.pushButton_SetUCFitStepTo0_01.clicked.connect(
+            lambda: self.set_ustep(0.01))
+        self.pushButton_SetUCFitStepTo0_001.clicked.connect(
+            lambda: self.set_ustep(0.001))
+        self.pushButton_SetUCFitStepTo0_0001.clicked.connect(
+            lambda: self.set_ustep(0.0001))
+        self.pushButton_SetJCPDSStepTo0001.clicked.connect(
+            lambda: self.set_jstep(0.001))
+        self.pushButton_SetJCPDSStepTo001.clicked.connect(
+            lambda: self.set_jstep(0.01))
+        self.pushButton_SetJCPDSStepTo01.clicked.connect(
+            lambda: self.set_jstep(0.1))
         self.pushButton_AboutPeakpo.clicked.connect(self.about)
         self.pushButton_Help.clicked.connect(self.shortcutkeys)
 
-    def set_jstep0001(self):
-        value = 0.001
-        self.doubleSpinBox_JCPDSStep.setValue(value)
+    def set_ustep(self, value):
+        self.doubleSpinBox_UCFitStep.setValue(value)
 
-    def set_jstep001(self):
-        value = 0.01
-        self.doubleSpinBox_JCPDSStep.setValue(value)
-
-    def set_jstep01(self):
-        value = 0.1
+    def set_jstep(self, value):
         self.doubleSpinBox_JCPDSStep.setValue(value)
 
     def set_pstep(self):
@@ -145,25 +155,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def set_pressure(self, pressure):
         self.doubleSpinBox_Pressure.setValue(pressure)
 
-    def set_pstep1(self):
-        value = 1.
+    def set_q_pstep(self, value=1.):
         self.doubleSpinBox_PStep.setValue(value)
-        self.doubleSpinBox_Pressure.setSingleStep(value)
 
-    def set_pstep10(self):
-        value = 10.
-        self.doubleSpinBox_PStep.setValue(value)
-        self.doubleSpinBox_Pressure.setSingleStep(value)
-
-    def set_tstep100(self):
-        value = 100.
+    def set_q_tstep(self, value=100.):
         self.spinBox_TStep.setValue(value)
-        self.doubleSpinBox_Temperature.setSingleStep(value)
-
-    def set_tstep1000(self):
-        value = 1000.
-        self.spinBox_TStep.setValue(value)
-        self.doubleSpinBox_Temperature.setSingleStep(value)
 
     def about(self):
         information = 'PeakPo ver.' + __version__ + '<br>' + \

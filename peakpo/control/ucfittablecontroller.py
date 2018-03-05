@@ -16,7 +16,7 @@ class UcfitTableController(object):
     def _apply_changes_to_graph(self):
         self.plot_ctrl.update()
 
-    def update(self):
+    def update(self, step=0.0001):
         """
         Show ucfit in the QTableWidget
         """
@@ -67,8 +67,7 @@ class UcfitTableController(object):
                 QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                 QtCore.Qt.AlignVCenter)
             self.widget.tableWidget_UnitCell_doubleSpinBox_a.setMaximum(50.0)
-            self.widget.tableWidget_UnitCell_doubleSpinBox_a.setSingleStep(
-                0.001)
+            self.widget.tableWidget_UnitCell_doubleSpinBox_a.setSingleStep(step)
             self.widget.tableWidget_UnitCell_doubleSpinBox_a.setDecimals(4)
             self.widget.tableWidget_UnitCell_doubleSpinBox_a.setProperty(
                 "value", float(self.model.ucfit_lst[row].a))
@@ -98,7 +97,7 @@ class UcfitTableController(object):
                 self.widget.tableWidget_UnitCell_doubleSpinBox_b.setMaximum(
                     50.0)
                 self.widget.tableWidget_UnitCell_doubleSpinBox_b.setSingleStep(
-                    0.001)
+                    step)
                 self.widget.tableWidget_UnitCell_doubleSpinBox_b.setDecimals(4)
                 self.widget.tableWidget_UnitCell_doubleSpinBox_b.setProperty(
                     "value", float(self.model.ucfit_lst[row].b))
@@ -127,7 +126,7 @@ class UcfitTableController(object):
                 self.widget.tableWidget_UnitCell_doubleSpinBox_c.setMaximum(
                     50.0)
                 self.widget.tableWidget_UnitCell_doubleSpinBox_c.setSingleStep(
-                    0.001)
+                    step)
                 self.widget.tableWidget_UnitCell_doubleSpinBox_c.setDecimals(4)
                 self.widget.tableWidget_UnitCell_doubleSpinBox_c.setProperty(
                     "value", float(self.model.ucfit_lst[row].c))
@@ -156,7 +155,7 @@ class UcfitTableController(object):
                 self.widget.tableWidget_UnitCell_doubleSpinBox_alpha.\
                     setMaximum(179.0)
                 self.widget.tableWidget_UnitCell_doubleSpinBox_alpha.\
-                    setSingleStep(0.1)
+                    setSingleStep(step)
                 self.widget.tableWidget_UnitCell_doubleSpinBox_alpha.\
                     setDecimals(1)
                 self.widget.tableWidget_UnitCell_doubleSpinBox_alpha.\
@@ -192,7 +191,7 @@ class UcfitTableController(object):
                 self.widget.tableWidget_UnitCell_doubleSpinBox_beta.setMaximum(
                     179.0)
                 self.widget.tableWidget_UnitCell_doubleSpinBox_beta.\
-                    setSingleStep(0.1)
+                    setSingleStep(step)
                 self.widget.tableWidget_UnitCell_doubleSpinBox_beta.\
                     setDecimals(1)
                 self.widget.tableWidget_UnitCell_doubleSpinBox_beta.\
@@ -227,7 +226,7 @@ class UcfitTableController(object):
                 self.widget.tableWidget_UnitCell_doubleSpinBox_gamma.\
                     setMaximum(179.0)
                 self.widget.tableWidget_UnitCell_doubleSpinBox_gamma.\
-                    setSingleStep(0.1)
+                    setSingleStep(step)
                 self.widget.tableWidget_UnitCell_doubleSpinBox_gamma.\
                     setDecimals(1)
                 self.widget.tableWidget_UnitCell_doubleSpinBox_gamma.\
@@ -302,3 +301,7 @@ class UcfitTableController(object):
             elif item.checkState() == QtCore.Qt.Unchecked:
                 self.model.ucfit_lst[idx].display = False
             self._apply_changes_to_graph()
+
+    def update_steps_only(self, step):
+        self.widget.tableWidget_UnitCell.clear()
+        self.update(step=step)

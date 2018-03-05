@@ -422,6 +422,9 @@
                <bool>true</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_11">
+               <property name="verticalSpacing">
+                <number>-1</number>
+               </property>
                <item row="0" column="0">
                 <widget class="QCheckBox" name="checkBox_ShowCake">
                  <property name="sizePolicy">
@@ -476,7 +479,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="3" column="0">
+               <item row="4" column="0">
                 <widget class="QCheckBox" name="checkBox_LongCursor">
                  <property name="toolTip">
                   <string>Change cursor to a vertical bar</string>
@@ -546,16 +549,6 @@
                  </property>
                 </widget>
                </item>
-               <item row="3" column="1">
-                <widget class="QCheckBox" name="checkBox_ShowMillerIndices">
-                 <property name="toolTip">
-                  <string>Show Miller indices</string>
-                 </property>
-                 <property name="text">
-                  <string>hkl indices</string>
-                 </property>
-                </widget>
-               </item>
                <item row="0" column="2">
                 <widget class="QCheckBox" name="checkBox_NightView">
                  <property name="sizePolicy">
@@ -604,7 +597,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="3" column="2">
+               <item row="4" column="2">
                 <widget class="QCheckBox" name="checkBox_AutoY">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -617,6 +610,61 @@
                  </property>
                  <property name="text">
                   <string>Auto y scale</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QCheckBox" name="checkBox_ShowWaterfallLabels">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Waterfall labels</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <widget class="QCheckBox" name="checkBox_ShowMillerIndices">
+                 <property name="toolTip">
+                  <string>Show Miller indices</string>
+                 </property>
+                 <property name="text">
+                  <string>hkl in ptn</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="1">
+                <widget class="QCheckBox" name="checkBox_ShowMillerIndices_Cake">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>hkl in cake</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="2">
+                <widget class="QCheckBox" name="checkBox_ShowLargePnT">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>P, T label</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
                  </property>
                 </widget>
                </item>
@@ -3036,53 +3084,6 @@
              </widget>
             </item>
             <item>
-             <widget class="QGroupBox" name="groupBox_13">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="title">
-               <string>Font size</string>
-              </property>
-              <property name="flat">
-               <bool>true</bool>
-              </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_4">
-               <property name="topMargin">
-                <number>12</number>
-               </property>
-               <property name="bottomMargin">
-                <number>12</number>
-               </property>
-               <item>
-                <widget class="QLabel" name="label_3">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="text">
-                  <string>Miller indices</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QComboBox" name="comboBox_HKLFontSize">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
              <spacer name="verticalSpacer_4">
               <property name="orientation">
                <enum>Qt::Vertical</enum>
@@ -4844,7 +4845,7 @@
              <number>3</number>
             </property>
             <property name="bottomMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <item>
              <widget class="QGroupBox" name="groupBox_10">
@@ -5251,6 +5252,64 @@
                  </property>
                  <property name="text">
                   <string>Bkgn</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="groupBox_13">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="title">
+               <string>Font size</string>
+              </property>
+              <property name="flat">
+               <bool>true</bool>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_4">
+               <item>
+                <widget class="QLabel" name="label_15">
+                 <property name="text">
+                  <string>PT label</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="comboBox_PnTFontSize">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_3">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Miller indices</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="comboBox_HKLFontSize">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
                  </property>
                 </widget>
                </item>

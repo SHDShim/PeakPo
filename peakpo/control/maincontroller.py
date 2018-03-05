@@ -20,6 +20,7 @@ from .ucfittablecontroller import UcfitTableController
 from .sessioncontroller import SessionController
 from .peakfitcontroller import PeakFitController
 from .peakfittablecontroller import PeakfitTableController
+from .cakecontroller import CakeController
 from utils import dialog_savefile, writechi, extract_extension, \
     convert_wl_to_energy
 # do not change the module structure for ds_jcpds and ds_powdiff for
@@ -37,6 +38,7 @@ class MainController(object):
         # self.obj_color = 'white'
         self.base_ptn_ctrl = BasePatternController(self.model, self.widget)
         self.plot_ctrl = MplController(self.model, self.widget)
+        self.cake_ctrl = CakeController(self.model, self.widget)
         # self.cake_ctrl = CakeController(self.model, self.widget)
         self.waterfall_ctrl = \
             WaterfallController(self.model, self.widget)
@@ -103,11 +105,14 @@ class MainController(object):
             self.apply_changes_to_graph)
         self.widget.comboBox_HKLFontSize.currentIndexChanged.connect(
             self.apply_changes_to_graph)
+        self.widget.comboBox_PnTFontSize.currentIndexChanged.connect(
+            self.apply_changes_to_graph)
         self.widget.checkBox_ShortPlotTitle.clicked.connect(
             self.apply_changes_to_graph)
         self.widget.checkBox_ShowCakeLabels.clicked.connect(
             self.apply_changes_to_graph)
-
+        self.widget.checkBox_ShowLargePnT.clicked.connect(
+            self.apply_changes_to_graph)
         # navigation toolbar modification.  Do not move the followings to
         # other controller files.
         self.widget.pushButton_toPkFt.clicked.connect(self.to_PkFt)
@@ -116,6 +121,10 @@ class MainController(object):
         self.widget.pushButton_S_Zoom.clicked.connect(self.plot_new_graph)
         self.widget.checkBox_AutoY.clicked.connect(self.apply_changes_to_graph)
         self.widget.checkBox_BgSub.clicked.connect(self.apply_changes_to_graph)
+        self.widget.checkBox_ShowWaterfallLabels.clicked.connect(
+            self.apply_changes_to_graph)
+        self.widget.checkBox_ShowMillerIndices_Cake.clicked.connect(
+            self.apply_changes_to_graph)
         # self.widget.actionClose.triggered.connect(self.closeEvent)
         self.widget.tabWidget.currentChanged.connect(self.check_for_peakfit)
         # self.widget.tabWidget.setTabEnabled(8, False)
@@ -140,6 +149,27 @@ class MainController(object):
             self.apply_changes_to_graph)
         self.widget.pushButton_UpdateJCPDSSteps.clicked.connect(
             self.update_jcpds_table)
+        self.widget.pushButton_UpdateUCFitSteps.clicked.connect(
+            self.update_ucfit_table)
+        self.widget.pushButton_IntegrateCake.clicked.connect(
+            self.integrate_to_1d)
+
+    def integrate_to_1d(self):
+        filen = self.cake_ctrl.integrate_to_1d()
+        if filen is None:
+            return
+        else:
+            reply = QtWidgets.QMessageBox.question(
+                self.widget, 'Message',
+                'Do you want to add this file ({:s}) to the waterfall list?'.
+                format(filen),
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.Yes)
+            if reply == QtWidgets.QMessageBox.No:
+                return
+            else:
+                # add to waterfall
+                self.waterfall_ctrl._add_patterns([filen])
 
     def quick_p_change(self, direction):
         step = self.widget.doubleSpinBox_PStep.value()
@@ -155,6 +185,10 @@ class MainController(object):
     def update_jcpds_table(self):
         step = self.widget.doubleSpinBox_JCPDSStep.value()
         self.jcpdstable_ctrl.update_steps_only(step)
+
+    def update_ucfit_table(self):
+        step = self.widget.doubleSpinBox_UCFitStep.value()
+        self.ucfittable_ctrl.update_steps_only(step)
 
     def del_temp_chi(self):
         reply = QtWidgets.QMessageBox.question(
