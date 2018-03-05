@@ -8,10 +8,10 @@ Todo:
 __version__ = "7.7.16"
 """
 7.7.16: Add shortcut icons for frequently used functions.
-        Improve icons.
+        Improve icons using Unicode.
         Add bookmarking function for diffraction files.
         Add more tabs to distribute functions better.
-        Change the step size mechanism for P and T.
+        Change the step size mechanism for pressure and temperature.
         Change Waterfall label style changes and match with table.
         Restore large pressure-temperature values at the top left corner.
         Option to add hkl indices to the cake view.
