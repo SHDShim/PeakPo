@@ -5,9 +5,8 @@ Todo:
     Add option to use diffraction file for background subtraction
     Better system should be implemented, such as pbr.
 """
-__version__ = "7.7.17a"
+__version__ = "7.7.16"
 """
-7.7.17a: Test version for speed improvement.
 7.7.16: Add shortcut icons for frequently used functions.
         Improve icons using Unicode.
         Add bookmarking function for diffraction files.
