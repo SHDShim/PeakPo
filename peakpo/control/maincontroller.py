@@ -506,7 +506,8 @@ class MainController(object):
 
     def apply_pt_to_graph(self):
         if self.model.jcpds_exist():
-            # self.plot_ctrl.update_jcpds_only()
+            self.plot_ctrl.update_jcpds_only()
+        else:
             self.plot_ctrl.update()
 
     def _find_closestjcpds(self, x):
