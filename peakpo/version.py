@@ -5,8 +5,9 @@ Todo:
     Add option to use diffraction file for background subtraction
     Better system should be implemented, such as pbr.
 """
-__version__ = "7.7.16"
+__version__ = "7.7.17"
 """
+7.7.17: Add options to save cake formats into .cakeformat file.
 7.7.16: Add shortcut icons for frequently used functions.
         Improve icons using Unicode.
         Add bookmarking function for diffraction files.

@@ -28,6 +28,48 @@ class CakeController(object):
             self.reset_max_cake_scale)
         self.widget.checkBox_WhiteForPeak.clicked.connect(
             self._apply_changes_to_graph)
+        self.widget.pushButton_Load_CakeFormatFile.clicked.connect(
+            self.load_cake_format_file)
+        self.widget.pushButton_Save_CakeFormatFile.clicked.connect(
+            self.save_cake_format_file)
+
+    def load_cake_format_file(self):
+        # get filename
+        filen = QtWidgets.QFileDialog.getOpenFileName(
+            self.widget, "Open a cake format File", self.model.chi_path,
+            "Data files (*.cakeformat)")[0]
+        if filen == '':
+            return
+        temp_values = []
+        with open(filen, "r") as f:
+            for line in f:
+                temp_values.append(float(line.split(':')[1]))
+        self.widget.spinBox_AziShift.setValue(temp_values[0])
+        self.widget.spinBox_MaxCakeScale.setValue(temp_values[1])
+        self.widget.horizontalSlider_VMin.setValue(temp_values[2])
+        self.widget.horizontalSlider_VMax.setValue(temp_values[3])
+        self.widget.horizontalSlider_MaxScaleBars.setValue(temp_values[4])
+        self._apply_changes_to_graph()
+
+    def save_cake_format_file(self):
+        # make filename
+        ext = "cakeformat"
+        filen_t = self.model.make_filename(ext)
+        print('please be here')
+        filen = dialog_savefile(self.widget, filen_t)
+        if str(filen) == '':
+            return
+        # save cake related Values
+        names = ['azi_shift', 'int_max', 'min_bar', 'max_bar', 'scale_bar']
+        values = [self.widget.spinBox_AziShift.value(),
+                  self.widget.spinBox_MaxCakeScale.value(),
+                  self.widget.horizontalSlider_VMin.value(),
+                  self.widget.horizontalSlider_VMax.value(),
+                  self.widget.horizontalSlider_MaxScaleBars.value()]
+
+        with open(filen, "w") as f:
+            for n, v in zip(names, values):
+                f.write(n + ' : ' + str(v)+ '\n')
 
     def reset_max_cake_scale(self):
         intensity_cake, _, _ = self.model.diff_img.get_cake()

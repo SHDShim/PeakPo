@@ -5,7 +5,7 @@ import numpy as np
 import numpy.ma as ma
 from matplotlib.widgets import MultiCursor
 import matplotlib.transforms as transforms
-#import matplotlib.colors as colors
+# import matplotlib.colors as colors
 import matplotlib.patches as patches
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
@@ -144,8 +144,6 @@ class MplController(object):
                 self.widget.mpl.canvas.ax_pattern.set_ylim(
                     new_low_limit, limits[3])
         if self.widget.checkBox_ShowLargePnT.isChecked():
-            xlabel = "Two Theta (degrees), {: 6.4f} A".\
-                format(self.widget.doubleSpinBox_SetWavelength.value())
             label_p_t = "{0: 5.1f} GPa\n{1: 4.0f} K".\
                 format(self.widget.doubleSpinBox_Pressure.value(),
                        self.widget.doubleSpinBox_Temperature.value())
@@ -155,12 +153,8 @@ class MplController(object):
                 transform=self.widget.mpl.canvas.ax_pattern.transAxes,
                 fontsize=int(
                     self.widget.comboBox_PnTFontSize.currentText()))
-        else:
-            xlabel = 'Two Theta (degrees), ' + \
-                "{0: 5.1f} GPa, {1: 4.0f} K, {2: 6.4f} A".\
-                format(self.widget.doubleSpinBox_Pressure.value(),
-                       self.widget.doubleSpinBox_Temperature.value(),
-                       self.widget.doubleSpinBox_SetWavelength.value())
+        xlabel = "Two Theta (degrees), {: 6.4f} A".\
+            format(self.widget.doubleSpinBox_SetWavelength.value())
         self.widget.mpl.canvas.ax_pattern.set_xlabel(xlabel)
         # if I move the line below to elsewhere I cannot get ylim or axis
         # self.widget.mpl.canvas.ax_pattern.autoscale(
@@ -179,14 +173,20 @@ class MplController(object):
         self.widget.mpl.canvas.ax_pattern.xaxis.set_major_locator(majorLocator)
         self.widget.mpl.canvas.ax_pattern.xaxis.set_minor_locator(minorLocator)
         """
-        self.widget.mpl.canvas.ax_pattern.format_coord = lambda x, y: \
-            "{0:.2f},{1:.2e},dsp={2:.3f}".\
-            format(x, y, self.widget.doubleSpinBox_SetWavelength.value() / 2. /
+        self.widget.mpl.canvas.ax_pattern.format_coord = \
+            lambda x, y: "{0:.2f},{1:.2e},{2:.3f}A,{3:.3f}A-1".\
+            format(x, y,
+                   self.widget.doubleSpinBox_SetWavelength.value()
+                   / 2. / np.sin(np.radians(x / 2.)),
+                   4. * np.pi / self.widget.doubleSpinBox_SetWavelength.value() *
                    np.sin(np.radians(x / 2.)))
-        self.widget.mpl.canvas.ax_cake.format_coord = lambda x, y: \
-            "{0:.2f},{1:.2e},dsp={2:.3f}".\
-            format(x, y, self.widget.doubleSpinBox_SetWavelength.value() / 2. /
-                   np.sin(np.deg2rad(x / 2.)))
+        self.widget.mpl.canvas.ax_cake.format_coord = \
+            lambda x, y: "{0:.2f},{1:.2e},{2:.3f}A,{3:.3f}A-1".\
+            format(x, y,
+                   self.widget.doubleSpinBox_SetWavelength.value()
+                   / 2. / np.sin(np.radians(x / 2.)),
+                   4. * np.pi / self.widget.doubleSpinBox_SetWavelength.value() *
+                   np.sin(np.radians(x / 2.)))
         self.widget.mpl.canvas.draw()
         print("Plot takes {0:.2f}s at".format(time.time() - t_start),
               str(datetime.datetime.now())[:-7])
@@ -257,8 +257,7 @@ class MplController(object):
             self.widget.horizontalSlider_VMin.setValue(1)
             self.widget.horizontalSlider_VMax.setValue(99)
         intensity_cake_plot = ma.masked_values(intensity_cake, 0.)
-        prefactor = \
-            self.widget.spinBox_MaxCakeScale.value() / \
+        prefactor = self.widget.spinBox_MaxCakeScale.value() / \
             (10. ** self.widget.horizontalSlider_MaxScaleBars.value())
         # intensity_cake_plot.max() / \
         climits = np.asarray([
@@ -312,113 +311,88 @@ class MplController(object):
                 self.widget.mpl.canvas.ax_cake.add_patch(rect)
 
     def _plot_jcpds(self, axisrange):
-        #t_start = time.time()
+        # t_start = time.time()
         if (not self.widget.checkBox_JCPDSinPattern.isChecked()) and \
                 (not self.widget.checkBox_JCPDSinCake.isChecked()):
             return
-        i = 0
+        selected_phases = []
         for phase in self.model.jcpds_lst:
             if phase.display:
-                i += 1
-        if i == 0:
+                selected_phases.append(phase)
+        if selected_phases == []:
             return
-        else:
-            n_displayed_jcpds = i
+        n_displayed_jcpds = len(selected_phases)
         # axisrange = self.widget.mpl.canvas.ax_pattern.axis()
+        cakerange = self.widget.mpl.canvas.ax_cake.axis()
         bar_scale = 1. / 100. * axisrange[3] * \
             self.widget.horizontalSlider_JCPDSBarScale.value() / 100.
-        i = 0
-        for phase in self.model.jcpds_lst:
-            if phase.display:
-                phase.cal_dsp(self.widget.doubleSpinBox_Pressure.value(),
-                              self.widget.doubleSpinBox_Temperature.value())
-                tth, inten = phase.get_tthVSint(
-                    self.widget.doubleSpinBox_SetWavelength.value())
-                """
-                if self.widget.tabWidget.currentIndex() == 8:
-                    bar_min = 90. * bar_scale
-                    bar_max = 100. * bar_scale
-                    self.widget.mpl.canvas.ax_pattern.set_ylim(
-                        axisrange[2], axisrange[3])
-                """
-                if self.widget.checkBox_JCPDSinPattern.isChecked():
-                    intensity = inten * phase.twk_int
-                    if self.widget.checkBox_Intensity.isChecked():
-                        bar_min = np.ones(tth.shape) * axisrange[2] + \
-                            self.widget.horizontalSlider_JCPDSBarPosition.\
-                            value() / 100. * axisrange[3]
-                        bar_max = intensity * bar_scale + bar_min
-                    else:
-                        data_limits = self._get_data_limits()
-                        starting_intensity = np.ones(tth.shape) * data_limits[2] + \
-                            self.widget.horizontalSlider_JCPDSBarPosition.\
-                            value() / 100. * axisrange[3]
-                        bar_max = starting_intensity - \
-                            i * 100. * bar_scale / n_displayed_jcpds
-                        i += 1
-                        bar_min = starting_intensity - \
-                            i * 100. * bar_scale / n_displayed_jcpds
-                    pressure = self.widget.doubleSpinBox_Pressure.value()
-                    if pressure == 0.:
-                        self.widget.mpl.canvas.ax_pattern.vlines(
-                            tth, bar_min, bar_max, colors=phase.color,
-                            label="{0:}, {1:.3f} A^3".format(
-                                phase.name, phase.v),
-                            lw=float(
-                                self.widget.comboBox_PtnJCPDSBarThickness.
-                                currentText()))
-                    else:
-                        self.widget.mpl.canvas.ax_pattern.vlines(
-                            tth, bar_min, bar_max, colors=phase.color,
-                            label="{0:}, {1:.3f} A^3".format(
-                                phase.name, phase.v.item()),
-                            lw=float(
-                                self.widget.comboBox_PtnJCPDSBarThickness.
-                                currentText()))
-                    # hkl
-                    if self.widget.checkBox_ShowMillerIndices.isChecked():
-                        hkl_list = phase.get_hkl_in_text()
-                        j = 0
-                        for hkl in hkl_list:
-                            self.widget.mpl.canvas.ax_pattern.text(
-                                tth[j], bar_max[j], hkl, color=phase.color,
-                                rotation=90, verticalalignment='bottom',
-                                horizontalalignment='center',
-                                fontsize=int(
-                                    self.widget.comboBox_HKLFontSize.currentText()))
-                            j += 1
-                    # phase.name, phase.v.item()))
-                if self.widget.checkBox_ShowCake.isChecked() and \
-                        self.widget.checkBox_JCPDSinCake.isChecked():
-                    """
-                    for tth_i in tth:
-                        self.widget.mpl.canvas.ax_cake.axvline(
-                            x=tth_i, color=phase.color,
-                            lw=float(
-                                self.widget.comboBox_CakeJCPDSBarThickness.
-                                currentText()))
-                    """
-                    axvlines(self.widget.mpl.canvas.ax_cake, tth,
-                             color=phase.color,
-                             lw=float(
-                                 self.widget.comboBox_CakeJCPDSBarThickness.
-                                 currentText()))
-                    if self.widget.checkBox_ShowMillerIndices_Cake.isChecked():
-                        hkl_list = phase.get_hkl_in_text()
-                        trans = transforms.blended_transform_factory(
-                            self.widget.mpl.canvas.ax_cake.transData,
-                            self.widget.mpl.canvas.ax_cake.transAxes)
-                        j = 0
-                        for hkl in hkl_list:
-                            self.widget.mpl.canvas.ax_cake.text(
-                                tth[j], 0.99, hkl, color=phase.color,
-                                rotation=90, verticalalignment='top',
-                                transform=trans, horizontalalignment='right',
-                                fontsize=int(
-                                    self.widget.comboBox_HKLFontSize.currentText()))
-                            j += 1
-            else:
-                pass
+        pressure = self.widget.doubleSpinBox_Pressure.value()
+        for i, phase in enumerate(selected_phases):
+            phase.cal_dsp(pressure,
+                          self.widget.doubleSpinBox_Temperature.value())
+            tth, inten = phase.get_tthVSint(
+                self.widget.doubleSpinBox_SetWavelength.value())
+            if self.widget.checkBox_JCPDSinPattern.isChecked():
+                intensity = inten * phase.twk_int
+                if self.widget.checkBox_Intensity.isChecked():
+                    bar_min = np.ones_like(tth) * axisrange[2] + \
+                        self.widget.horizontalSlider_JCPDSBarPosition.\
+                        value() / 100. * axisrange[3]
+                    bar_max = intensity * bar_scale + bar_min
+                else:
+                    data_limits = self._get_data_limits()
+                    starting_intensity = np.ones_like(tth) * data_limits[2] + \
+                        self.widget.horizontalSlider_JCPDSBarPosition.\
+                        value() / 100. * axisrange[3]
+                    bar_max = starting_intensity - \
+                        i * 100. * bar_scale / n_displayed_jcpds
+                    bar_min = starting_intensity - \
+                        i * 100. * bar_scale / n_displayed_jcpds
+                if pressure == 0.:
+                    volume = phase.v
+                else:
+                    volume = phase.v.item()
+                self.widget.mpl.canvas.ax_pattern.vlines(
+                    tth, bar_min, bar_max, colors=phase.color,
+                    label="{0:}, {1:.3f} A^3".format(
+                        phase.name, volume),
+                    lw=float(
+                        self.widget.comboBox_PtnJCPDSBarThickness.
+                        currentText()),
+                    alpha=self.widget.doubleSpinBox_JCPDS_ptn_Alpha.value())
+                # hkl
+                if self.widget.checkBox_ShowMillerIndices.isChecked():
+                    hkl_list = phase.get_hkl_in_text()
+                    for j, hkl in enumerate(hkl_list):
+                        self.widget.mpl.canvas.ax_pattern.text(
+                            tth[j], bar_max[j], hkl, color=phase.color,
+                            rotation=90, verticalalignment='bottom',
+                            horizontalalignment='center',
+                            fontsize=int(
+                                self.widget.comboBox_HKLFontSize.currentText()),
+                            alpha=self.widget.doubleSpinBox_JCPDS_ptn_Alpha.value())
+                # phase.name, phase.v.item()))
+            if self.widget.checkBox_ShowCake.isChecked() and \
+                    self.widget.checkBox_JCPDSinCake.isChecked():
+                self.widget.mpl.canvas.ax_cake.vlines(
+                    tth, np.ones_like(tth) * cakerange[2],
+                    np.ones_like(tth) * cakerange[3], colors=phase.color,
+                    lw=float(
+                        self.widget.comboBox_CakeJCPDSBarThickness.currentText()),
+                    alpha=self.widget.doubleSpinBox_JCPDS_cake_Alpha.value())
+                if self.widget.checkBox_ShowMillerIndices_Cake.isChecked():
+                    hkl_list = phase.get_hkl_in_text()
+                    trans = transforms.blended_transform_factory(
+                        self.widget.mpl.canvas.ax_cake.transData,
+                        self.widget.mpl.canvas.ax_cake.transAxes)
+                    for j, hkl in enumerate(hkl_list):
+                        self.widget.mpl.canvas.ax_cake.text(
+                            tth[j], 0.99, hkl, color=phase.color,
+                            rotation=90, verticalalignment='top',
+                            transform=trans, horizontalalignment='right',
+                            fontsize=int(
+                                self.widget.comboBox_HKLFontSize.currentText()),
+                            alpha=self.widget.doubleSpinBox_JCPDS_cake_Alpha.value())
         if self.widget.checkBox_JCPDSinPattern.isChecked():
             leg_jcpds = self.widget.mpl.canvas.ax_pattern.legend(
                 loc=1, prop={'size': 10}, framealpha=0., handlelength=1)
@@ -591,17 +565,3 @@ class MplController(object):
                     x_plot, section.get_fit_residue_baseline(bgsub=bgsub) +
                     y_shift, residue + y_shift, facecolor='r')
             i += 1
-
-
-def axvlines(ax, xs, **kwargs):
-    """
-    Draw vertical lines on plot
-    :param xs: A scalar, list, or 1D array of horizontal offsets
-    :param plot_kwargs: Keyword arguments to be passed to plot
-    :return: The plot object corresponding to the lines.
-    """
-    xs = np.array((xs, ) if np.isscalar(xs) else xs, copy=False)
-    ylims = ax.get_ylim()
-    x_points = np.repeat(xs[:, None], repeats=3, axis=1).flatten()
-    y_points = np.repeat(np.array(ylims + (np.nan, ))[None, :], repeats=len(xs), axis=0).flatten()
-    ax.plot(x_points, y_points, **kwargs)

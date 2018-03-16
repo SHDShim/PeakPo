@@ -147,6 +147,10 @@ class MainController(object):
             self.apply_changes_to_graph)
         self.widget.horizontalSlider_WaterfallGaps.valueChanged.connect(
             self.apply_changes_to_graph)
+        self.widget.doubleSpinBox_JCPDS_cake_Alpha.valueChanged.connect(
+            self.apply_changes_to_graph)
+        self.widget.doubleSpinBox_JCPDS_ptn_Alpha.valueChanged.connect(
+            self.apply_changes_to_graph)
         self.widget.pushButton_UpdateJCPDSSteps.clicked.connect(
             self.update_jcpds_table)
         self.widget.pushButton_UpdateUCFitSteps.clicked.connect(
