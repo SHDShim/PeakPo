@@ -158,7 +158,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def set_q_pstep(self, value=1.):
         self.doubleSpinBox_PStep.setValue(value)
 
-    def set_q_tstep(self, value=100.):
+    def set_q_tstep(self, value=1000.):
         self.spinBox_TStep.setValue(value)
 
     def about(self):

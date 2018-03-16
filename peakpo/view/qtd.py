@@ -790,7 +790,7 @@ class Ui_MainWindow(object):
         self.doubleSpinBox_Temperature.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
         self.doubleSpinBox_Temperature.setDecimals(0)
         self.doubleSpinBox_Temperature.setMaximum(10000.0)
-        self.doubleSpinBox_Temperature.setSingleStep(100.0)
+        self.doubleSpinBox_Temperature.setSingleStep(1000.0)
         self.doubleSpinBox_Temperature.setProperty("value", 300.0)
         self.doubleSpinBox_Temperature.setObjectName("doubleSpinBox_Temperature")
         self.gridLayout_10.addWidget(self.doubleSpinBox_Temperature, 1, 1, 1, 1)
