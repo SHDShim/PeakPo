@@ -82,10 +82,14 @@ class JcpdsController(object):
             i = 0
         for f in files:
             color = colors.rgb2hex(scalarMap.to_rgba(c_value[i]))
-            self.model.append_a_jcpds(str(f), color)
-            i += 1
-            if i >= n_color - 1:
-                i = 0
+            if self.model.append_a_jcpds(str(f), color):
+                i += 1
+                if i >= n_color - 1:
+                    i = 0
+            else:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning",
+                    f+" seems to have errors in its.")
         # display on the QTableWidget
         self.jcpdstable_ctrl.update()
         if self.model.base_ptn_exist():

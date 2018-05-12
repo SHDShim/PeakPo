@@ -280,10 +280,14 @@ class PeakPoModel(object):
         self.waterfall_ptn = new_waterfall_ptn
 
     def append_a_jcpds(self, filen, color):
-        phase = JCPDSplt()
-        phase.read_file(filen)  # phase.file = f
-        phase.color = color
+        try:
+            phase = JCPDSplt()
+            phase.read_file(filen)  # phase.file = f
+            phase.color = color
+        except:
+            return False
         self.jcpds_lst.append(phase)
+        return True
 
     def write_as_ppss(self,
                       fname, pressure, temperature):

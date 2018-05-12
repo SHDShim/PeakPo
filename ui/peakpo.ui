@@ -373,7 +373,7 @@
            <enum>QTabWidget::Rounded</enum>
           </property>
           <property name="currentIndex">
-           <number>0</number>
+           <number>4</number>
           </property>
           <property name="iconSize">
            <size>
@@ -3164,6 +3164,28 @@
              </widget>
             </item>
             <item>
+             <widget class="QGroupBox" name="groupBox_26">
+              <property name="title">
+               <string>Setup</string>
+              </property>
+              <property name="flat">
+               <bool>true</bool>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_20">
+               <item>
+                <widget class="QCheckBox" name="checkBox_UseJCPDSTable0GPa">
+                 <property name="toolTip">
+                  <string>Force to use table d-spacing values in JCPDS for 0 GPa</string>
+                 </property>
+                 <property name="text">
+                  <string>Force table value for 0 GPa</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
              <spacer name="verticalSpacer_4">
               <property name="orientation">
                <enum>Qt::Vertical</enum>
@@ -3309,6 +3331,22 @@
                  </property>
                  <property name="text">
                   <string>Save</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pushButton_SaveTwkSet">
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>25</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>Save Twk'ed JCPDSs for the checked items</string>
+                 </property>
+                 <property name="text">
+                  <string>Save Twk</string>
                  </property>
                 </widget>
                </item>

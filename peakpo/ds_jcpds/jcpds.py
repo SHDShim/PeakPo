@@ -308,11 +308,14 @@ class JCPDS(object):
                 self.v = bm3_v(pressure_st, self.v0, self.k0, self.k0p,
                                min_strain=0.3)
 
-    def cal_dsp(self, pressure=0., temperature=300., b_a=None, c_a=None):
+    def cal_dsp(self, pressure=0., temperature=300.,
+                b_a=None, c_a=None, use_table_for_0GPa=True):
         """
         b_a and c_a are newly included for adjusting axial ratios.
         For cubic structure, these two inputs are ignored.
         For tetragonal and hexagonal, only c_a will be used.
+
+        recalculate_zero = False: use the table d-spacing value for 0 GPa
         """
         self._cal_v(pressure, temperature)
         if b_a is None:
@@ -324,7 +327,8 @@ class JCPDS(object):
         # self.alpha = self.alpha0;
         # self.beta = self.beta0; self.gamma = self.gamma0
 
-        if ((pressure == 0.0) or (self.symmetry == 'manual')):
+        if (((pressure == 0.0) and (use_table_for_0GPa))
+                or (self.symmetry == 'manual')):
             # p = 0 GPa, resetting to uc0 is necessary
             self.a = self.a0
             self.b = self.b0
