@@ -1,4 +1,4 @@
-"""A setuptools based setup module.
+y"""A setuptools based setup module.
 
 See:
 https://packaging.python.org/en/latest/distributing.html

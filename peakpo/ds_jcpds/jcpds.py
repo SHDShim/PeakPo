@@ -264,6 +264,8 @@ class JCPDS(object):
 
         for line in inp[6:]:
             item = str.split(line)
+            if len(item) != 5:
+                break
             DiffLine = DiffractionLine()
             DiffLine.dsp0 = float(item[0])
             DiffLine.intensity = float(item[1])
