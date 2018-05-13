@@ -673,46 +673,41 @@ class JCPDSplt(JCPDS):
         textout += self.symmetry + '\n'
         textout += '******************\n'
         textout += 'Values in original JCPDS file\n'
-        textout += 'K0 = ' + str(self.k0_org) + ' GPa, K0p = ' + \
-            str(self.k0p_org) + '\n'
-        textout += 'Thermal expansion = ' + str(self.thermal_expansion_org) +\
-            '\n'
-        textout += 'a0 = ' + str(self.a0) + \
-            ' A, b0 = ' + str(self.b0) + ' A, c0 = ' + str(self.c0) + ' A\n'
-        textout += 'alpha0 = ' + str(self.alpha0) + \
-            ', beta0 = ' + str(self.beta0) + ', gamma0 = ' + \
-            str(self.gamma0) + '\n'
-        textout += 'b0/a0 = {0: .5f}, c0/a0 = {1: .5f}\n'.\
+        textout += ' K0 = {0:.1f} GPa, K0p = {1:.2f}, alpha = {2:.2e}\n'.\
+            format(self.k0_org, self.k0p_org, self.thermal_expansion_org)
+        textout += ' a0 = {0:.5f} A, b0 = {1:.5f} A, c0 = {2:.5f} A\n'.\
+            format(self.a0, self.b0, self.c0)
+        textout += ' alpha0 = {0:.2f}, beta0 = {1:.2f}, gamma0 = {2:.2f}\n'.\
+            format(self.alpha0, self.beta0, self.gamma0)
+        textout += ' b0/a0 = {0:.5f}, c0/a0 = {1:.5f}\n'.\
             format(self.b0 / self.a0, self.c0 / self.a0)
-        textout += 'V0 = {0: 12.5f} A^3\n'.format(self.v0_org)
+        textout += ' V0 = {0:.5f} A^3\n'.format(self.v0_org)
         textout += '******************\n'
         textout += \
             'Values after tweak \n'
-        textout += 'K0 = ' + str(self.k0) + ' GPa, K0p = ' + \
-            str(self.k0p) + '\n'
-        textout += 'Thermal expansion = ' + str(self.thermal_expansion) + '\n'
-        textout += 'V0 = {0: 12.5f} A^3\n'.format(self.v0)  # v0 is tweaked value
+        textout += ' K0 = {0:.1f} GPa, K0p = {1:.2f}, alpha = {2:.2e}\n'.\
+            format(self.k0, self.k0p, self.thermal_expansion)
         a0_twk, b0_twk, c0_twk = get_cell_prm_twk(
             self.symmetry, self.v0, self.a0, self.b0, self.c0,
             self.alpha0, self.beta0, self.gamma0, self.twk_b_a, self.twk_c_a)
-        textout += 'a0 = {0: 10.5f} A, b0 = {1: 10.5f} A, c0 = {2: 10.5f} A\n'.\
+        textout += ' a0 = {0:.5f} A, b0 = {1:.5f} A, c0 = {2:.5f} A\n'.\
             format(float(a0_twk), float(b0_twk), float(c0_twk))
-        textout += 'a = {0: 10.5f} A, b = {1: 10.5f} A, c = {2: 10.5f} A\n'.\
+        textout += ' V0 = {0:.5f} A^3\n'.format(self.v0)  # v0 is tweaked value
+        textout += ' a = {0:.5f} A, b = {1:.5f} A, c = {2:.5f} A\n'.\
             format(float(self.a), float(self.b), float(self.c))
-        textout += 'alpha = ' + str(self.alpha) + \
-            ', beta = ' + str(self.beta) + ', gamma = ' + \
-            str(self.gamma) + '\n'
-        textout += 'b/a = {0: .5f}, c/a = {1: .5f}\n'.\
+        textout += ' alpha = {0:.2f}, beta = {1:.2f}, gamma = {2:.2f}\n'.\
+            format(self.alpha, self.beta, self.gamma)
+        textout += ' b/a = {0:.5f}, c/a = {1:.5f}\n'.\
             format(self.b / self.a, self.c / self.a)
-        textout += 'Tweak for b/a = {0: .5f}, Tweak for c/a = {1: .5f}\n'.\
+        textout += ' V = {0:.5f} A^3\n\n'.format(float(self.v))
+        textout += ' Tweak for b/a = {0:.5f}, Tweak for c/a = {1:.5f}\n'.\
             format(self.twk_b_a, self.twk_c_a)
-        textout += 'V = {0: 12.5f} A^3\n\n'.format(float(self.v))
-        textout += 'Below are the peaks at {0: 6.1f} GPa, {1: 5.0f} K\n'.\
+        textout += ' Below are the peaks at {0:6.2f} GPa, {1:5.0f} K\n'.\
             format(pressure, temperature)
-        textout += 'd-spacing (A), intensity (%), h, k, l\n'
+        textout += ' d-spacing (A), intensity (%), h, k, l\n'
         for dl in self.DiffLines:
             textout += \
-                "{0: 10.5f}, {1: 10.1f}, {2: 5.0f}, {3: 5.0f}, {4: 5.0f}\n".\
+                " {0:10.5f}, {1:10.1f}, {2:5.0f}, {3:5.0f}, {4:5.0f}\n".\
                 format(float(dl.dsp), dl.intensity, dl.h, dl.k, dl.l)
         return textout
 

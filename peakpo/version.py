@@ -5,8 +5,12 @@ Todo:
     Add option to use diffraction file for background subtraction
     Better system should be implemented, such as pbr.
 """
-__version__ = "7.7.19"
+__version__ = "7.7.20a"
 """
+7.7.20a: Matplotlib 2.2 compatible.  But incompatible with Matplotlib 2.1
+    For matplotlib 2.1 you may delete the existing mplwidget.py file and rename
+    the mplwidget-matplotlib_2_1.py to mplwidget.py
+    This version needs to beta test.
 7.7.19: Add warning message for bad jcpds files and ignore them.
 	Add "save twk jcpds" function.
 	Improve output information, adding tweak v0, unit cell parameter information.
