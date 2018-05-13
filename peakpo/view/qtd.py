@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '../ui/peakpo.ui'
+# Form implementation generated from reading ui file './ui/peakpo.ui'
 #
 # Created by: PyQt5 UI code generator 5.6
 #
@@ -1399,6 +1399,15 @@ class Ui_MainWindow(object):
         self.horizontalSlider_JCPDSBarPosition.setObjectName("horizontalSlider_JCPDSBarPosition")
         self.verticalLayout_6.addWidget(self.horizontalSlider_JCPDSBarPosition)
         self.verticalLayout_4.addWidget(self.groupBox_20)
+        self.groupBox_26 = QtWidgets.QGroupBox(self.tab_JCPDSList1)
+        self.groupBox_26.setFlat(True)
+        self.groupBox_26.setObjectName("groupBox_26")
+        self.verticalLayout_20 = QtWidgets.QVBoxLayout(self.groupBox_26)
+        self.verticalLayout_20.setObjectName("verticalLayout_20")
+        self.checkBox_UseJCPDSTable1bar = QtWidgets.QCheckBox(self.groupBox_26)
+        self.checkBox_UseJCPDSTable1bar.setObjectName("checkBox_UseJCPDSTable1bar")
+        self.verticalLayout_20.addWidget(self.checkBox_UseJCPDSTable1bar)
+        self.verticalLayout_4.addWidget(self.groupBox_26)
         spacerItem1 = QtWidgets.QSpacerItem(
             20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_4.addItem(spacerItem1)
@@ -1493,8 +1502,21 @@ class Ui_MainWindow(object):
         self.groupBox_8.setFlat(True)
         self.groupBox_8.setObjectName("groupBox_8")
         self.gridLayout_2 = QtWidgets.QGridLayout(self.groupBox_8)
+        self.gridLayout_2.setVerticalSpacing(3)
         self.gridLayout_2.setObjectName("gridLayout_2")
-        self.pushButton_ExportToUCFit = QtWidgets.QPushButton(self.groupBox_8)
+        self.frame_7 = QtWidgets.QFrame(self.groupBox_8)
+        self.frame_7.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.frame_7.setFrameShadow(QtWidgets.QFrame.Plain)
+        self.frame_7.setLineWidth(0)
+        self.frame_7.setObjectName("frame_7")
+        self.horizontalLayout_24 = QtWidgets.QHBoxLayout(self.frame_7)
+        self.horizontalLayout_24.setContentsMargins(3, 3, 3, 3)
+        self.horizontalLayout_24.setObjectName("horizontalLayout_24")
+        self.pushButton_SaveTwkJCPDS = QtWidgets.QPushButton(self.frame_7)
+        self.pushButton_SaveTwkJCPDS.setMaximumSize(QtCore.QSize(120, 25))
+        self.pushButton_SaveTwkJCPDS.setObjectName("pushButton_SaveTwkJCPDS")
+        self.horizontalLayout_24.addWidget(self.pushButton_SaveTwkJCPDS)
+        self.pushButton_ExportToUCFit = QtWidgets.QPushButton(self.frame_7)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -1504,26 +1526,34 @@ class Ui_MainWindow(object):
         self.pushButton_ExportToUCFit.setMinimumSize(QtCore.QSize(0, 0))
         self.pushButton_ExportToUCFit.setMaximumSize(QtCore.QSize(70, 25))
         self.pushButton_ExportToUCFit.setObjectName("pushButton_ExportToUCFit")
-        self.gridLayout_2.addWidget(self.pushButton_ExportToUCFit, 2, 6, 1, 1)
-        self.pushButton_MoveUp = QtWidgets.QPushButton(self.groupBox_8)
+        self.horizontalLayout_24.addWidget(self.pushButton_ExportToUCFit)
+        self.pushButton_ViewJCPDS = QtWidgets.QPushButton(self.frame_7)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pushButton_MoveUp.sizePolicy().hasHeightForWidth())
-        self.pushButton_MoveUp.setSizePolicy(sizePolicy)
-        self.pushButton_MoveUp.setMinimumSize(QtCore.QSize(0, 0))
-        self.pushButton_MoveUp.setMaximumSize(QtCore.QSize(32, 25))
+        sizePolicy.setHeightForWidth(self.pushButton_ViewJCPDS.sizePolicy().hasHeightForWidth())
+        self.pushButton_ViewJCPDS.setSizePolicy(sizePolicy)
+        self.pushButton_ViewJCPDS.setMaximumSize(QtCore.QSize(70, 25))
         font = QtGui.QFont()
         font.setFamily("Helvetica")
         font.setPointSize(12)
         font.setBold(False)
         font.setItalic(False)
         font.setWeight(50)
-        self.pushButton_MoveUp.setFont(font)
-        self.pushButton_MoveUp.setObjectName("pushButton_MoveUp")
-        self.gridLayout_2.addWidget(self.pushButton_MoveUp, 2, 2, 1, 1)
-        self.pushButton_AddToJlist = QtWidgets.QPushButton(self.groupBox_8)
+        self.pushButton_ViewJCPDS.setFont(font)
+        self.pushButton_ViewJCPDS.setObjectName("pushButton_ViewJCPDS")
+        self.horizontalLayout_24.addWidget(self.pushButton_ViewJCPDS)
+        self.gridLayout_2.addWidget(self.frame_7, 3, 5, 1, 1)
+        self.frame_3 = QtWidgets.QFrame(self.groupBox_8)
+        self.frame_3.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.frame_3.setFrameShadow(QtWidgets.QFrame.Plain)
+        self.frame_3.setLineWidth(0)
+        self.frame_3.setObjectName("frame_3")
+        self.horizontalLayout_7 = QtWidgets.QHBoxLayout(self.frame_3)
+        self.horizontalLayout_7.setContentsMargins(3, 3, 3, 3)
+        self.horizontalLayout_7.setObjectName("horizontalLayout_7")
+        self.pushButton_AddToJlist = QtWidgets.QPushButton(self.frame_3)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -1540,8 +1570,8 @@ class Ui_MainWindow(object):
         font.setWeight(50)
         self.pushButton_AddToJlist.setFont(font)
         self.pushButton_AddToJlist.setObjectName("pushButton_AddToJlist")
-        self.gridLayout_2.addWidget(self.pushButton_AddToJlist, 2, 0, 1, 1)
-        self.pushButton_RemoveJCPDS = QtWidgets.QPushButton(self.groupBox_8)
+        self.horizontalLayout_7.addWidget(self.pushButton_AddToJlist)
+        self.pushButton_RemoveJCPDS = QtWidgets.QPushButton(self.frame_3)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -1558,8 +1588,26 @@ class Ui_MainWindow(object):
         font.setWeight(50)
         self.pushButton_RemoveJCPDS.setFont(font)
         self.pushButton_RemoveJCPDS.setObjectName("pushButton_RemoveJCPDS")
-        self.gridLayout_2.addWidget(self.pushButton_RemoveJCPDS, 2, 1, 1, 1)
-        self.pushButton_MoveDown = QtWidgets.QPushButton(self.groupBox_8)
+        self.horizontalLayout_7.addWidget(self.pushButton_RemoveJCPDS)
+        self.pushButton_MoveUp = QtWidgets.QPushButton(self.frame_3)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushButton_MoveUp.sizePolicy().hasHeightForWidth())
+        self.pushButton_MoveUp.setSizePolicy(sizePolicy)
+        self.pushButton_MoveUp.setMinimumSize(QtCore.QSize(0, 0))
+        self.pushButton_MoveUp.setMaximumSize(QtCore.QSize(32, 25))
+        font = QtGui.QFont()
+        font.setFamily("Helvetica")
+        font.setPointSize(12)
+        font.setBold(False)
+        font.setItalic(False)
+        font.setWeight(50)
+        self.pushButton_MoveUp.setFont(font)
+        self.pushButton_MoveUp.setObjectName("pushButton_MoveUp")
+        self.horizontalLayout_7.addWidget(self.pushButton_MoveUp)
+        self.pushButton_MoveDown = QtWidgets.QPushButton(self.frame_3)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -1576,25 +1624,8 @@ class Ui_MainWindow(object):
         font.setWeight(50)
         self.pushButton_MoveDown.setFont(font)
         self.pushButton_MoveDown.setObjectName("pushButton_MoveDown")
-        self.gridLayout_2.addWidget(self.pushButton_MoveDown, 2, 3, 1, 1)
-        self.pushButton_ViewJCPDS = QtWidgets.QPushButton(self.groupBox_8)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pushButton_ViewJCPDS.sizePolicy().hasHeightForWidth())
-        self.pushButton_ViewJCPDS.setSizePolicy(sizePolicy)
-        self.pushButton_ViewJCPDS.setMaximumSize(QtCore.QSize(70, 25))
-        font = QtGui.QFont()
-        font.setFamily("Helvetica")
-        font.setPointSize(12)
-        font.setBold(False)
-        font.setItalic(False)
-        font.setWeight(50)
-        self.pushButton_ViewJCPDS.setFont(font)
-        self.pushButton_ViewJCPDS.setObjectName("pushButton_ViewJCPDS")
-        self.gridLayout_2.addWidget(self.pushButton_ViewJCPDS, 2, 7, 1, 1)
-        self.pushButton_CheckAllJCPDS = QtWidgets.QPushButton(self.groupBox_8)
+        self.horizontalLayout_7.addWidget(self.pushButton_MoveDown)
+        self.pushButton_CheckAllJCPDS = QtWidgets.QPushButton(self.frame_3)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -1610,8 +1641,8 @@ class Ui_MainWindow(object):
         font.setWeight(50)
         self.pushButton_CheckAllJCPDS.setFont(font)
         self.pushButton_CheckAllJCPDS.setObjectName("pushButton_CheckAllJCPDS")
-        self.gridLayout_2.addWidget(self.pushButton_CheckAllJCPDS, 2, 4, 1, 1)
-        self.pushButton_UncheckAllJCPDS = QtWidgets.QPushButton(self.groupBox_8)
+        self.horizontalLayout_7.addWidget(self.pushButton_CheckAllJCPDS)
+        self.pushButton_UncheckAllJCPDS = QtWidgets.QPushButton(self.frame_3)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -1628,7 +1659,8 @@ class Ui_MainWindow(object):
         font.setWeight(50)
         self.pushButton_UncheckAllJCPDS.setFont(font)
         self.pushButton_UncheckAllJCPDS.setObjectName("pushButton_UncheckAllJCPDS")
-        self.gridLayout_2.addWidget(self.pushButton_UncheckAllJCPDS, 2, 5, 1, 1)
+        self.horizontalLayout_7.addWidget(self.pushButton_UncheckAllJCPDS)
+        self.gridLayout_2.addWidget(self.frame_3, 2, 5, 1, 1)
         self.verticalLayout_23.addWidget(self.groupBox_8)
         self.tableWidget_JCPDS = QtWidgets.QTableWidget(self.tab_JCPDSList2)
         sizePolicy = QtWidgets.QSizePolicy(
@@ -1727,6 +1759,9 @@ class Ui_MainWindow(object):
         self.horizontalLayout_18 = QtWidgets.QHBoxLayout(self.groupBox_15)
         self.horizontalLayout_18.setContentsMargins(12, 12, 12, 12)
         self.horizontalLayout_18.setObjectName("horizontalLayout_18")
+        self.pushButton_RefreshUCfitTable = QtWidgets.QPushButton(self.groupBox_15)
+        self.pushButton_RefreshUCfitTable.setObjectName("pushButton_RefreshUCfitTable")
+        self.horizontalLayout_18.addWidget(self.pushButton_RefreshUCfitTable)
         self.pushButton_RemoveUClist = QtWidgets.QPushButton(self.groupBox_15)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
@@ -2741,15 +2776,15 @@ class Ui_MainWindow(object):
             "MainWindow", "Change cursor to a vertical bar"))
         self.checkBox_LongCursor.setText(_translate("MainWindow", "Vert. cursor"))
         self.checkBox_JCPDSinCake.setToolTip(_translate("MainWindow", "Show JCPDS in cake image"))
-        self.checkBox_JCPDSinCake.setText(_translate("MainWindow", "jcpds in cake"))
+        self.checkBox_JCPDSinCake.setText(_translate("MainWindow", "jcpds, cake"))
         self.checkBox_JCPDSinPattern.setToolTip(
             _translate("MainWindow", "Show JCPDS in 1D pattern"))
-        self.checkBox_JCPDSinPattern.setText(_translate("MainWindow", "jcpds in ptn"))
+        self.checkBox_JCPDSinPattern.setText(_translate("MainWindow", "jcpds, ptn"))
         self.checkBox_Intensity.setToolTip(_translate(
             "MainWindow", "Plot JCPDS bar height proportional to intensity"))
         self.checkBox_Intensity.setText(_translate("MainWindow", "jcpd by int."))
         self.checkBox_NightView.setToolTip(_translate("MainWindow", "Show in black background"))
-        self.checkBox_NightView.setText(_translate("MainWindow", "Night view"))
+        self.checkBox_NightView.setText(_translate("MainWindow", "Night, ptn"))
         self.checkBox_WhiteForPeak.setToolTip(_translate(
             "MainWindow", "Make white for peak intensity"))
         self.checkBox_WhiteForPeak.setText(_translate("MainWindow", "Night, cake"))
@@ -2764,10 +2799,10 @@ class Ui_MainWindow(object):
         self.checkBox_ShowWaterfallLabels.setText(_translate("MainWindow", "Waterfall labels"))
         self.checkBox_ShowMillerIndices.setToolTip(_translate(
             "MainWindow", "Show Miller indices in 1D pattern"))
-        self.checkBox_ShowMillerIndices.setText(_translate("MainWindow", "hkl in ptn"))
+        self.checkBox_ShowMillerIndices.setText(_translate("MainWindow", "hkl, ptn"))
         self.checkBox_ShowMillerIndices_Cake.setToolTip(
             _translate("MainWindow", "Show Miller indices in cake"))
-        self.checkBox_ShowMillerIndices_Cake.setText(_translate("MainWindow", "hkl in cake"))
+        self.checkBox_ShowMillerIndices_Cake.setText(_translate("MainWindow", "hkl, cake"))
         self.checkBox_ShowLargePnT.setToolTip(_translate("MainWindow", "Show large P & T label"))
         self.checkBox_ShowLargePnT.setText(_translate("MainWindow", "P, T label"))
         self.groupBox_2.setTitle(_translate("MainWindow", "Session (dpp only)"))
@@ -2953,6 +2988,11 @@ class Ui_MainWindow(object):
         self.label_28.setText(_translate("MainWindow", "Position"))
         self.horizontalSlider_JCPDSBarPosition.setToolTip(
             _translate("MainWindow", "Change position of the JCPDS bars"))
+        self.groupBox_26.setTitle(_translate("MainWindow", "Setup"))
+        self.checkBox_UseJCPDSTable1bar.setToolTip(_translate(
+            "MainWindow", "Force to use table d-spacing values in JCPDS for 0 GPa"))
+        self.checkBox_UseJCPDSTable1bar.setText(
+            _translate("MainWindow", "Show table value at 1 bar"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(
             self.tab_JCPDSList1), _translate("MainWindow", "JCPDS1"))
         self.groupBox_9.setTitle(_translate("MainWindow", "List"))
@@ -2968,24 +3008,27 @@ class Ui_MainWindow(object):
             "MainWindow", "Save JCPDSs to an excel file"))
         self.pushButton_ExportXLS.setText(_translate("MainWindow", "Save XLS"))
         self.groupBox_8.setTitle(_translate("MainWindow", "Selected"))
+        self.pushButton_SaveTwkJCPDS.setToolTip(_translate(
+            "MainWindow", "Save Twk\'ed JCPDSs for the checked items"))
+        self.pushButton_SaveTwkJCPDS.setText(_translate("MainWindow", "Save as JCPDS"))
         self.pushButton_ExportToUCFit.setToolTip(_translate(
             "MainWindow", "Send highlighted JCPDS to the UCFit tab"))
         self.pushButton_ExportToUCFit.setText(_translate("MainWindow", "UCFit"))
-        self.pushButton_MoveUp.setToolTip(_translate(
-            "MainWindow", "Move up highlighted row in the list"))
-        self.pushButton_MoveUp.setText(_translate("MainWindow", "↑"))
+        self.pushButton_ViewJCPDS.setToolTip(_translate(
+            "MainWindow", "Show calculation result for highlighted JCPDS in the Output tab"))
+        self.pushButton_ViewJCPDS.setText(_translate("MainWindow", "Output"))
         self.pushButton_AddToJlist.setToolTip(_translate(
             "MainWindow", "Add a JCPDS file to the list"))
         self.pushButton_AddToJlist.setText(_translate("MainWindow", "+"))
         self.pushButton_RemoveJCPDS.setToolTip(_translate(
             "MainWindow", "Remove highlighted JCPDS from the list"))
         self.pushButton_RemoveJCPDS.setText(_translate("MainWindow", "−"))
+        self.pushButton_MoveUp.setToolTip(_translate(
+            "MainWindow", "Move up highlighted row in the list"))
+        self.pushButton_MoveUp.setText(_translate("MainWindow", "↑"))
         self.pushButton_MoveDown.setToolTip(_translate(
             "MainWindow", "Move down highlighted row in the list"))
         self.pushButton_MoveDown.setText(_translate("MainWindow", "↓"))
-        self.pushButton_ViewJCPDS.setToolTip(_translate(
-            "MainWindow", "Show calculation result for highlighted JCPDS in the Output tab"))
-        self.pushButton_ViewJCPDS.setText(_translate("MainWindow", "Output"))
         self.pushButton_CheckAllJCPDS.setToolTip(_translate(
             "MainWindow", "Show all the JCPDSs in the list"))
         self.pushButton_CheckAllJCPDS.setText(_translate("MainWindow", "[X]"))
@@ -3009,6 +3052,9 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(
             self.tab_JCPDSList2), _translate("MainWindow", "JCPDS2"))
         self.groupBox_15.setTitle(_translate("MainWindow", "Selected"))
+        self.pushButton_RefreshUCfitTable.setToolTip(
+            _translate("MainWindow", "Refresh UCfit Table"))
+        self.pushButton_RefreshUCfitTable.setText(_translate("MainWindow", "Refresh"))
         self.pushButton_RemoveUClist.setToolTip(_translate(
             "MainWindow", "Remove highlighted UCFit item from the UCFit list"))
         self.pushButton_RemoveUClist.setText(_translate("MainWindow", "Remove"))

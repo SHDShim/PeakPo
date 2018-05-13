@@ -221,7 +221,13 @@ class MplController(object):
         i = 0
         for phase in self.model.ucfit_lst:
             if phase.display:
-                phase.cal_dsp()
+                try:
+                    phase.cal_dsp()
+                except:
+                    QtWidgets.QMessageBox.warning(
+                        self.widget, "Warning",
+                        phase.name+" created issues with pressure calculation.")
+                    break
                 tth, inten = phase.get_tthVSint(
                     self.widget.doubleSpinBox_SetWavelength.value())
                 bar_min = np.ones(tth.shape) * axisrange[2]
@@ -328,8 +334,15 @@ class MplController(object):
             self.widget.horizontalSlider_JCPDSBarScale.value() / 100.
         pressure = self.widget.doubleSpinBox_Pressure.value()
         for i, phase in enumerate(selected_phases):
-            phase.cal_dsp(pressure,
-                          self.widget.doubleSpinBox_Temperature.value())
+            try:
+                phase.cal_dsp(pressure,
+                              self.widget.doubleSpinBox_Temperature.value(),
+                              use_table_for_0GPa=self.widget.checkBox_UseJCPDSTable1bar.isChecked())
+            except:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning",
+                    phase.name+" created issues with pressure calculation.")
+                break
             tth, inten = phase.get_tthVSint(
                 self.widget.doubleSpinBox_SetWavelength.value())
             if self.widget.checkBox_JCPDSinPattern.isChecked():

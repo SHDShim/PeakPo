@@ -13,12 +13,18 @@ class UcfitController(object):
         self.model = model
         self.widget = widget
         self.plot_ctrl = MplController(self.model, self.widget)
+        self.ucfittable_ctrl = UcfitTableController(self.model, self.widget)
         self.connect_channel()
 
     def connect_channel(self):
         self.widget.pushButton_RemoveUClist.clicked.connect(self.remove_ucfit)
         self.widget.pushButton_ExportXLS_2.clicked.connect(self.export_to_xls)
         self.widget.pushButton_ViewUcfit.clicked.connect(self.view_ucfit)
+        self.widget.pushButton_RefreshUCfitTable.clicked.connect(
+            self.update_ucfittable)
+
+    def update_ucfittable(self):
+        self.ucfittable_ctrl.update()
 
     def _apply_changes_to_graph(self):
         self.plot_ctrl.update()
@@ -69,6 +75,7 @@ class UcfitController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning',
                 'In order to remove, highlight the names.')
+        self.ucfittable_ctrl.update()
 
     def export_to_xls(self):
         """

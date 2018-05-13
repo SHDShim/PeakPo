@@ -8,6 +8,11 @@ Todo:
 __version__ = "7.7.19"
 """
 7.7.19: Add warning message for bad jcpds files and ignore them.
+	Add "save twk jcpds" function.
+	Improve output information, adding tweak v0, unit cell parameter information.
+	Add checkbox to control the behavior of 1 bar calculation.
+	Change default behavior for 1 bar to calculation rather than table viewing.
+	This version is still limited to matplotlib 2.1.
 7.7.18: Bug fix for empty last line jcpds problem.
 7.7.17: Add options to save cake formats into .cakeformat file.
 7.7.16: Add shortcut icons for frequently used functions.

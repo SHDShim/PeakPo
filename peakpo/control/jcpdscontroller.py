@@ -40,6 +40,8 @@ class JcpdsController(object):
             lambda: self._apply_changes_to_graph(limits=None))
         self.widget.pushButton_ForceUpdatePlot.clicked.connect(
             lambda: self._apply_changes_to_graph(limits=None))
+        self.widget.pushButton_SaveTwkJCPDS.clicked.connect(
+            self.write_twk_jcpds)
 
     def _apply_changes_to_graph(self, limits=None):
         self.plot_ctrl.update(limits=limits)
@@ -210,3 +212,35 @@ class JcpdsController(object):
                 self.widget.doubleSpinBox_Pressure.value(),
                 self.widget.doubleSpinBox_Temperature.value())
             self.widget.plainTextEdit_ViewJCPDS.setPlainText(textoutput)
+
+    def write_twk_jcpds(self):
+        if not self.model.jcpds_exist():
+            return
+        idx_checked = [
+            s.row() for s in
+            self.widget.tableWidget_JCPDS.selectionModel().selectedRows()]
+
+        if idx_checked == []:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning", "Highlight the name of JCPDS to write twk jcpds.")
+            return
+        if idx_checked.__len__() != 1:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Only one JCPDS card can be written at a time.")
+            return
+        # get filename to write
+        path, __ = os.path.split(self.model.get_base_ptn_filename())
+        suggested_filen = os.path.join(
+            path,
+            self.model.jcpds_lst[idx_checked[0]].name + '-twk.jcpds')
+        filen_twk_jcpds = dialog_savefile(self.widget, suggested_filen)
+        if filen_twk_jcpds == '':
+            return
+        # make comments
+        comments = "modified from " + \
+            self.model.jcpds_lst[idx_checked[0]].file + \
+            ", twk for " + \
+            self.model.base_ptn.fname
+        self.model.jcpds_lst[idx_checked[0]].write_to_twk_jcpds(
+            filen_twk_jcpds, comments=comments)

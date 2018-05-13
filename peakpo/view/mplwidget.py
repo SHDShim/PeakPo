@@ -18,7 +18,7 @@ DEBUG = False
 
 class FigureCanvas(FigureCanvasQTAgg):
     # class FigureCanvas(FigureCanvasQTAgg):
-    # the code below works only with matplotlib 2.1
+    # the code below works only with matplotlib 2.1 but not in 2.2
     def __draw_idle_agg(self, *args):
         if not self._agg_draw_pending:
             return
@@ -41,6 +41,7 @@ class FigureCanvas(FigureCanvasQTAgg):
         # if there is a pending draw, run it now as we need the updated render
         # to paint the widget
         thickness = 5
+        # the line below does not work in matplotlib 2.2
         if self._agg_draw_pending:
             self.__draw_idle_agg()
         # As described in __init__ above, we need to be careful in cases with
@@ -94,6 +95,7 @@ class FigureCanvas(FigureCanvasQTAgg):
                 ctypes.c_long.from_address(id(buf)).value = 1
             """
         # draw the zoom rectangle to the QPainter
+        # the lines below does not work in matplotlib 2.2
         if self._drawRect is not None:
             pen = QtGui.QPen(QtCore.Qt.red, thickness / self._dpi_ratio,
                              QtCore.Qt.DotLine)

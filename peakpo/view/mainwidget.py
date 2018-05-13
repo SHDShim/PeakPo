@@ -109,7 +109,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_S_RoomT.clicked.connect(
             lambda: self.set_temperature(300))
         self.pushButton_1bar.clicked.connect(
-            lambda: self.set_pressure(0.01))
+            lambda: self.set_pressure(0.0))
         self.pushButton_SetPStepTo1.clicked.connect(
             lambda: self.set_q_pstep(1.))
         self.pushButton_SetPStepTo10.clicked.connect(

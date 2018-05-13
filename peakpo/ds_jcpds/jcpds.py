@@ -642,7 +642,8 @@ class JCPDSplt(JCPDS):
         self.v0_org = self.v0
         self.thermal_expansion_org = self.thermal_expansion
 
-    def cal_dsp(self, pressure, temperature, b_a=None, c_a=None):
+    def cal_dsp(self, pressure, temperature, b_a=None, c_a=None,
+                use_table_for_0GPa=True):
         '''DiffLines are tweaked one unlike other notations'''
         # set tweaked parameters
         self.k0 = self.k0_org * self.twk_k0
@@ -654,7 +655,8 @@ class JCPDSplt(JCPDS):
         self.c_a = (self.c0 / self.a0) * self.twk_c_a
         # get DiffLines
         super(JCPDSplt, self).cal_dsp(pressure, temperature,
-                                      self.b_a, self.c_a)
+                                      self.b_a, self.c_a,
+                                      use_table_for_0GPa=use_table_for_0GPa)
 
     def get_dsp(self):
         dsp = []
@@ -685,11 +687,16 @@ class JCPDSplt(JCPDS):
         textout += 'V0 = {0: 12.5f} A^3\n'.format(self.v0_org)
         textout += '******************\n'
         textout += \
-            'Values after tweak (tweak is only reflected in the d-spacing, not unit cell parameters)\n'
+            'Values after tweak \n'
         textout += 'K0 = ' + str(self.k0) + ' GPa, K0p = ' + \
             str(self.k0p) + '\n'
         textout += 'Thermal expansion = ' + str(self.thermal_expansion) + '\n'
-        textout += 'V0 = {0: 12.5f} A^3\n'.format(self.v0)
+        textout += 'V0 = {0: 12.5f} A^3\n'.format(self.v0)  # v0 is tweaked value
+        a0_twk, b0_twk, c0_twk = get_cell_prm_twk(
+            self.symmetry, self.v0, self.a0, self.b0, self.c0,
+            self.alpha0, self.beta0, self.gamma0, self.twk_b_a, self.twk_c_a)
+        textout += 'a0 = {0: 10.5f} A, b0 = {1: 10.5f} A, c0 = {2: 10.5f} A\n'.\
+            format(float(a0_twk), float(b0_twk), float(c0_twk))
         textout += 'a = {0: 10.5f} A, b = {1: 10.5f} A, c = {2: 10.5f} A\n'.\
             format(float(self.a), float(self.b), float(self.c))
         textout += 'alpha = ' + str(self.alpha) + \
@@ -708,3 +715,107 @@ class JCPDSplt(JCPDS):
                 "{0: 10.5f}, {1: 10.1f}, {2: 5.0f}, {3: 5.0f}, {4: 5.0f}\n".\
                 format(float(dl.dsp), dl.intensity, dl.h, dl.k, dl.l)
         return textout
+
+    def write_to_twk_jcpds(self, filename, comments=" "):
+        """
+        write a twk JCPDS file
+
+        Parameters
+        ----------
+        filename = path and name of file
+
+        Returns
+        -------
+
+        """
+        f = open(filename, 'w')
+        f.write("{:d}\n".format(self.version))
+        f.write(comments + "\n")
+
+        # 1 cubic, 2 hexagonal, 3 tetragonal, 4 orthorhombic
+        # 5 monoclinic, 6 triclinic, 7 manual P, d-sp input
+
+        str_el = "{0:.2f} {1:.2f}".format(self.k0, self.k0p)
+
+        a0_twk, b0_twk, c0_twk = get_cell_prm_twk(
+            self.symmetry, self.v0, self.a0, self.b0, self.c0,
+            self.alpha0, self.beta0, self.gamma0, self.twk_b_a, self.twk_c_a)
+
+        if self.symmetry == 'cubic':  # cubic
+            crystal_system = '1 '
+            str_uc = "{0:.5f}".format(a0_twk)
+        elif self.symmetry == 'manual':  # P, d-sp input
+            crystal_system = '7 '
+            str_uc = "{0:.5f}".format(a0_twk)
+        elif self.symmetry == 'hexagonal' or self.symmetry == 'trigonal':
+            crystal_system = '2 '
+            str_uc = "{0:.5f} {1:.5f}".format(a0_twk, c0_twk)
+        elif self.symmetry == 'tetragonal':  # tetragonal
+            crystal_system = '3 '
+            str_uc = "{0:.5f} {1:.5f}".format(a0_twk, c0_twk)
+        elif self.symmetry == 'orthorhombic':  # orthorhombic
+            crystal_system = '4 '
+            str_uc = "{0:.5f} {1:.5f} {2:.5f}".format(a0_twk,
+                                                      b0_twk, c0_twk)
+        elif self.symmetry == 'monoclinic':  # monoclinic
+            crystal_system = '5 '
+            str_uc = "{0:.5f} {1:.5f} {2:.5f} {3:.5f}".format(
+                a0_twk, b0_twk, c0_twk, self.beta0)
+        elif self.symmetry == 'triclinic':  # triclinic
+            crystal_system = '6 '
+            str_uc = "{0:.5f} {1:.5f} {2:.5f} {3:.5f} {4:.5f} \
+                {5:.5f}".format(
+                a0_twk, b0_twk, c0_twk,
+                self.alpha0, self.beta0, self.gamma0)
+
+        f.write(crystal_system + str_el + " \n")
+        f.write(str_uc + " \n")
+        f.write("{:.4e} \n".format(self.thermal_expansion))
+        f.write("d-spacing    I/I0     h   k   l \n")
+
+        self.cal_dsp(0., 300., use_table_for_0GPa=False)
+        for line in self.DiffLines:
+            f.write("{0:.6f} {1:.2f} {2:.1f} {3:.1f} {4:.1f} \n".format(
+                line.dsp0, line.intensity, line.h, line.k, line.l))
+        f.close()
+
+
+def get_cell_prm_twk(symmetry, v_twk, a0, b0, c0, alpha0, beta0, gamma0,
+                     twk_b_a, twk_c_a):
+    b_a_twk = b0 / a0 * twk_b_a
+    c_a_twk = c0 / a0 * twk_c_a
+    if symmetry == 'cubic':
+        a_twk = (v_twk)**(1. / 3.)
+        b_twk = a_twk
+        c_twk = a_twk
+    elif (symmetry == 'hexagonal') or (symmetry == 'trigonal'):
+        a_twk = (2. * v_twk / (np.sqrt(3.) * c_a_twk))**(1. / 3.)
+        b_twk = a_twk
+        c_twk = a_twk * c_a_twk
+    elif symmetry == 'tetragonal':
+        a_twk = (v_twk / (c_a_twk))**(1. / 3.)
+        b_twk = a_twk
+        c_twk = c_a_twk * a_twk
+    elif symmetry == 'orthorhombic':
+        a_twk = (v_twk / (b_a_twk * c_a_twk))**(1. / 3.)
+        c_twk = c_a_twk * a_twk
+        b_twk = b_a_twk * a_twk
+    elif symmetry == 'monoclinic':
+        a_twk = (v_twk / (b_a_twk * c_a_twk *
+                          np.sin(np.radians(beta0))))**(1. / 3.)
+        c_twk = c_a_twk * a_twk
+        b_twk = b_a_twk * a_twk
+    elif symmetry == 'triclinic':
+        a_term = np.sqrt(1. - (np.cos(np.radians(alpha0)))**2. -
+                         (np.cos(np.radians(beta0)))**2. -
+                         (np.cos(np.radians(gamma0)))**2. +
+                         2. * np.cos(np.radians(alpha0)) *
+                         np.cos(np.radians(beta0)) *
+                         np.cos(np.radians(gamma0)))
+        a_twk = (v_twk / (b_a_twk * c_a_twk * a_term))**(1. / 3.)
+        c_twk = c_a * a_twk
+        b_twk = b_a_twk * a_twk
+    else:
+        print('no symmetry is given')
+
+    return a_twk, b_twk, c_twk
