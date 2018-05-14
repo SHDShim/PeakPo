@@ -170,7 +170,7 @@ class MplController(object):
                        self.widget.doubleSpinBox_Temperature.value(),
                        self.widget.doubleSpinBox_SetWavelength.value())
         """
-        xlabel = "Two Theta (degrees), {: 6.4f} A".\
+        xlabel = "Two Theta (degrees), {:6.4f} \u212B".\
             format(self.widget.doubleSpinBox_SetWavelength.value())
         self.widget.mpl.canvas.ax_pattern.set_xlabel(xlabel)
         # if I move the line below to elsewhere I cannot get ylim or axis

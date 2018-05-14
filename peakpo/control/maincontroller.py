@@ -461,7 +461,7 @@ class MainController(object):
         x_click_dsp = self.widget.doubleSpinBox_SetWavelength.value() / 2. / \
             np.sin(np.radians(x_click / 2.))
         clicked_position = \
-            "Clicked position: {0: 10.4f}, {1: 7.1f}, \n dsp = {2: 10.4f} A".\
+            "Clicked position: {0:.4f}, {1:.1f}, \n d-sp = {2:.4f} \u212B".\
             format(x_click, y_click, x_click_dsp)
         if (not self.model.jcpds_exist()) and (not self.model.ucfit_exist()):
             QtWidgets.QMessageBox.warning(self.widget, "Information",
@@ -610,7 +610,7 @@ class MainController(object):
                 k_min = k_u[idx_min]
                 l_min = l_u[idx_min]
                 name_min = names_u[idx_min]
-        line1 = 'Two theta = {0: .4f}, d-spacing = {1: .4f} A'.format(
+        line1 = '2\u03B8 = {0:.4f} \u00B0, d-sp = {1:.4f} \u212B'.format(
             float(tth_min), float(dsp_min))
         line2 = 'intensity = {0: .0f}, hkl = {1: .0f} {2: .0f} {3: .0f}'.\
             format(int(int_min), int(h_min), int(k_min), int(l_min))
