@@ -516,18 +516,26 @@ class JCPDS(object):
                                      self.alpha0, self.beta0,
                                      self.gamma0)
         c = XRDCalculator(wavelength=0.3344)
+        """
         pattern = c.get_xrd_data(structure, two_theta_range=two_theta_range)
+        """
+        pattern = c.get_xrd_pattern(structure, two_theta_range=two_theta_range)
         DiffLines = []
-        for line in pattern:
-            hkl_key = line[2].keys()
-            hkl_txt = str(hkl_key)[12:-3].split(",")
+
+        for tth, inten, hkl, d_hkl in zip(pattern.x, pattern.y,
+                                          pattern.hkls,
+                                          pattern.d_hkls):
             d_line = DiffractionLine()
-            d_line.dsp0 = line[3]
-            d_line.dsp = line[3]
-            d_line.intensity = line[1]
-            d_line.h = int(hkl_txt[0])
-            d_line.k = int(hkl_txt[1])
-            d_line.l = int(hkl_txt[-1])
+            d_line.dsp0 = d_hkl
+            d_line.dsp = d_hkl
+            d_line.intensity = inten
+            for k, v in hkl.items():
+                key = str(k)
+            hkl_num_str = key.replace("(", "").replace(")", "")
+            hkl_num = hkl_num_str.split(',')
+            d_line.h = int(hkl_num[0])
+            d_line.k = int(hkl_num[1])
+            d_line.l = int(hkl_num[2])
             DiffLines.append(d_line)
         self.DiffLines = DiffLines
 

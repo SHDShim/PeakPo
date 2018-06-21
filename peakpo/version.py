@@ -5,8 +5,9 @@ Todo:
     Add option to use diffraction file for background subtraction
     Better system should be implemented, such as pbr.
 """
-__version__ = "7.7.20a"
+__version__ = "7.7.20"
 """
+7.7.20: Update ds_jcpds for new pymatgen update.
 7.7.20a: Matplotlib 2.2 compatible.  But incompatible with Matplotlib 2.1
     For matplotlib 2.1 you may delete the existing mplwidget.py file and rename
     the mplwidget-matplotlib_2_1.py to mplwidget.py
