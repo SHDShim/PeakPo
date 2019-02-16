@@ -12,9 +12,15 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(931, 750)
-        MainWindow.setMinimumSize(QtCore.QSize(0, 750))
-        MainWindow.setMaximumSize(QtCore.QSize(16777215, 16777215))
+        sizeObject = QtWidgets.QDesktopWidget().screenGeometry(-1)
+        print(" Screen size : "  + str(sizeObject.height()) + 
+        	"x" +str(sizeObject.width()))
+        #MainWindow.resize(QtCore.QSize(sizeObject.width()-50, 
+        #	sizeObject.height()-50)) #931, 750
+        MainWindow.setFixedSize(QtCore.QSize(sizeObject.width()-50, 
+        	sizeObject.height()-50)) #931, 750
+        #MainWindow.setMinimumSize(QtCore.QSize(10, 750)) #0, 750
+        #MainWindow.setMaximumSize(QtCore.QSize(16777215, 16777215))
         font = QtGui.QFont()
         font.setFamily("Helvetica")
         font.setPointSize(12)
