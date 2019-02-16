@@ -56,7 +56,7 @@ class SessionController(object):
         """
         fn = QtWidgets.QFileDialog.getOpenFileName(
             self.widget, "Choose A Session File",
-            self.model.chi_path, "(*.dpp)")[0]
+            self.model.chi_path, "(*.dpp)")[0]  # options=QtWidgets.QFileDialog.DontUseNativeDialog
 #       replaceing chi_path with '' does not work
         if fn == '':
             return

@@ -271,7 +271,7 @@ class JcpdsTableController(object):
         if index.isValid():
             idx = index.row()
             if index.column() == 2:
-                color = QtWidgets.QColorDialog.getColor()
+                color = QtWidgets.QColorDialog.getColor()  # options=QtWidgets.QColorDialog.DontUseNativeDialog
                 if color.isValid():
                     self.widget.tableWidget_JCPDS.item(idx, 1).\
                         setBackground(color)
