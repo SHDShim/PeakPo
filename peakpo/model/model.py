@@ -441,8 +441,11 @@ class PeakPoModel(object):
                             params[prefix + 'center'].vary)
                 sheet.write(lineno, 11, section.fit_result.
                             params[prefix + 'sigma'].value * 2.)
-                sheet.write(lineno, 12, section.fit_result.
-                            params[prefix + 'sigma'].stderr * 2.)
+                if section.fit_result.params[prefix + 'sigma'].stderr is None:
+                    sheet.write(lineno, 12, 'None')
+                else:
+                    sheet.write(lineno, 12, section.fit_result.
+                                params[prefix + 'sigma'].stderr * 2.)
                 sheet.write(lineno, 13, section.fit_result.
                             params[prefix + 'sigma'].vary)
                 sheet.write(lineno, 14, section.fit_result.
