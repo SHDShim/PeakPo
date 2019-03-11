@@ -5,8 +5,10 @@ Todo:
     Add option to use diffraction file for background subtraction
     Better system should be implemented, such as pbr.
 """
-__version__ = "7.7.21"
+__version__ = "7.7.22"
 """
+7.7.22: Bug fix for gsas style jpds bar plot.  Provide [environment].yml
+    for MacOS, Windows, and Ubuntu.  Add cbf support for cake.
 7.7.21: Update with large size window at start.  Provide [environment].yml
 7.7.20: Update ds_jcpds for new pymatgen update.
 7.7.20a: Matplotlib 2.2 compatible.  But incompatible with Matplotlib 2.1

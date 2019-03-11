@@ -69,7 +69,7 @@ class CakeController(object):
 
         with open(filen, "w") as f:
             for n, v in zip(names, values):
-                f.write(n + ' : ' + str(v)+ '\n')
+                f.write(n + ' : ' + str(v) + '\n')
 
     def reset_max_cake_scale(self):
         intensity_cake, _, _ = self.model.diff_img.get_cake()
@@ -106,10 +106,14 @@ class CakeController(object):
             return False
         filen_tif = self.model.make_filename('tif', original=True)
         filen_mar3450 = self.model.make_filename('mar3450', original=True)
-        if not (os.path.exists(filen_tif) or os.path.exists(filen_mar3450)):
+        filen_cbf = self.model.make_filename('cbf', original=True)
+        if not ((os.path.exists(filen_tif) or
+                 os.path.exists(filen_mar3450)) or
+                os.path.exists(filen_cbf)):
             QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning', 'Cannot find image file: %s or %s.' %
-                (filen_tif, filen_mar3450))
+                self.widget, 'Warning',
+                'Cannot find image file: %s or %s or %s.' %
+                (filen_tif, filen_mar3450, filen_cbf))
             self.widget.checkBox_ShowCake.setChecked(False)
             return False
         if self.model.diff_img_exist() and \

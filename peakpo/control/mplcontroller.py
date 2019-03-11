@@ -358,7 +358,7 @@ class MplController(object):
                     bar_max = starting_intensity - \
                         i * 100. * bar_scale / n_displayed_jcpds
                     bar_min = starting_intensity - \
-                        i * 100. * bar_scale / n_displayed_jcpds
+                        (i+0.7) * 100. * bar_scale / n_displayed_jcpds
                 if pressure == 0.:
                     volume = phase.v
                 else:

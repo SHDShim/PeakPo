@@ -4,9 +4,14 @@
 
 A python application for X-ray diffraction analysis for the samples at high pressure and high temperature.
 
+## Installation
+
+Check [Installation wiki page](https://github.com/SHDShim/PeakPo/wiki/Quick-Install)
+
 ## Manual
 
-Please check [the PeakPo wiki page](https://github.com/SHDShim/peakpo/wiki) in this repo for manual together with information on: how to install, how to setup, how to run and how to update.
+Check [the PeakPo wiki page](https://github.com/SHDShim/peakpo/wiki) in this repo for manual together with 
+information on: how to install, how to setup, how to run and how to update.
 
 ## Binary executables
 

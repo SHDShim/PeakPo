@@ -28,6 +28,11 @@ class DiffImg(object):
         elif extract_extension(self.img_filename) == 'mar3450':
             data_fabio = fabio.open(img_filename)
             data = data_fabio.data
+        elif extract_extension(self.img_filename) == 'cbf':
+            data_fabio = fabio.open(img_filename)
+            data = data_fabio.data
+            #print('cbf detected')
+            # print(data)
         self.img = np.array(data)[::-1]
 
     def histogram(self):
@@ -70,8 +75,8 @@ class DiffImg(object):
     def calculate_max_twotheta(self):
         d = self.poni.dist
         r = self.calculate_n_azi_pnts() * \
-            np.max([self.poni.pixel1, self.poni.pixel2]) # / 2.
-        tth_max = np.rad2deg(np.arctan(r / d)) * 2. # * 10.
+            np.max([self.poni.pixel1, self.poni.pixel2])  # / 2.
+        tth_max = np.rad2deg(np.arctan(r / d)) * 2.  # * 10.
         print(tth_max)
         return tth_max
 
