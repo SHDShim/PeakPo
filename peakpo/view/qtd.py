@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'peakpo.ui'
+# Form implementation generated from reading ui file '../ui/peakpo.ui'
 #
 # Created by: PyQt5 UI code generator 5.6
 #
@@ -983,6 +983,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_21.setObjectName("verticalLayout_21")
         self.horizontalSlider_CakeAxisSize = QtWidgets.QSlider(self.groupBox_5)
         self.horizontalSlider_CakeAxisSize.setMinimum(1)
+        self.horizontalSlider_CakeAxisSize.setMaximum(90)
         self.horizontalSlider_CakeAxisSize.setPageStep(1)
         self.horizontalSlider_CakeAxisSize.setProperty("value", 50)
         self.horizontalSlider_CakeAxisSize.setOrientation(QtCore.Qt.Horizontal)

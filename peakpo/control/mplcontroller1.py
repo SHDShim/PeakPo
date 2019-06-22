@@ -114,8 +114,10 @@ class MplController(object):
             return
         if self.widget.checkBox_ShowCake.isChecked() and \
                 self.model.diff_img_exist():
-            self.widget.mpl.canvas.resize_axes(
-                self.widget.horizontalSlider_CakeAxisSize.value())
+            new_height = self.widget.horizontalSlider_CakeAxisSize.value()
+            if new_height > 0.9:
+                new_height = 0.9
+            self.widget.mpl.canvas.resize_axes(new_height)
             self._plot_cake()
         else:
             self.widget.mpl.canvas.resize_axes(1)
