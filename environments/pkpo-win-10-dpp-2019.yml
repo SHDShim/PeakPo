@@ -1,4 +1,4 @@
-name: peakpo7722
+name: peakpo2019
 channels:
   - matsci
   - conda-forge
@@ -107,5 +107,3 @@ dependencies:
   - pip:
     - monty==1.0.5
     - pytheos==0.0.1.dev30
-prefix: C:\Users\sese-user\Anaconda3\envs\peakpo7722
-

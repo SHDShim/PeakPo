@@ -1,4 +1,4 @@
-name: py36peakpo
+name: peakpo2018
 channels:
   - defaults
   - gsecars
@@ -275,5 +275,3 @@ dependencies:
     - pytheos==0.0.1.dev30
     - qdarkstyle==2.6.5
     - silx==0.10.0
-prefix: C:\Python35\Anaconda\envs\py36peakpo
-

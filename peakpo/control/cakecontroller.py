@@ -19,8 +19,7 @@ class CakeController(object):
         self.widget.checkBox_ShowCake.clicked.connect(
             self.addremove_cake)
         self.widget.pushButton_GetPONI.clicked.connect(self.get_poni)
-        self.widget.pushButton_ApplyCakeView.clicked.connect(
-            self._apply_changes_to_graph)
+        self.widget.pushButton_ApplyCakeView.clicked.connect(self.update_cake)
         self.widget.pushButton_ApplyMask.clicked.connect(self.apply_mask)
         self.widget.lineEdit_PONI.editingFinished.connect(
             self.load_new_poni_from_name)
@@ -32,6 +31,13 @@ class CakeController(object):
             self.load_cake_format_file)
         self.widget.pushButton_Save_CakeFormatFile.clicked.connect(
             self.save_cake_format_file)
+
+    def update_cake(self):
+        if self.model.poni_exist():
+            self.produce_cake()
+            temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
+            self.model.diff_img.write_temp_cakefiles(temp_dir=temp_dir)
+            self._apply_changes_to_graph()
 
     def load_cake_format_file(self):
         # get filename

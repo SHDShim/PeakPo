@@ -1,4 +1,4 @@
-name: peakpo7722-old-dpp
+name: peakpo2019
 channels:
   - matsci
   - conda-forge
@@ -91,7 +91,7 @@ dependencies:
   - ptyprocess=0.6.0=py36_1000
   - pycparser=2.19=py_0
   - pydispatcher=2.0.5=py36h30c4b39_1
-  - pyfai=0.15
+  - pyfai=0.17.0=py36h637b7d7_1000
   - pygments=2.3.1=py_0
   - pymatgen=2018.2.13=py36_0
   - pyopencl=2018.2.3=py36h8619c78_0
@@ -131,5 +131,3 @@ dependencies:
   - xz=5.2.4=h14c3975_4
   - zeromq=4.2.5=hf484d3e_1006
   - zlib=1.2.11=h7b6447c_3
-prefix: /home/matres/miniconda3/envs/peakpo7722-old-dpp
-

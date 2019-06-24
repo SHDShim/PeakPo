@@ -502,7 +502,8 @@ class MainController(object):
             bg_roi[1] = self.model.base_ptn.x_raw.max()
             self.widget.doubleSpinBox_Background_ROI_max.setValue(bg_roi[1])
         self.model.base_ptn.subtract_bg(bg_roi, bg_params, yshift=0)
-        self.model.base_ptn.write_temporary_bgfiles()
+        temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
+        self.model.base_ptn.write_temporary_bgfiles(temp_dir=temp_dir)
         if self.model.waterfall_exist():
             for pattern in self.model.waterfall_ptn:
                 pattern.subtract_bg(bg_roi, bg_params, yshift=0)

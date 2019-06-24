@@ -73,11 +73,13 @@ class DiffImg(object):
         return int(max_dist * 2)
 
     def calculate_max_twotheta(self):
+        # 2019/06/20 decrease r by a factor of 2 and
+        # decrease tth_max by a factor of 2.
         d = self.poni.dist
         r = self.calculate_n_azi_pnts() * \
-            np.max([self.poni.pixel1, self.poni.pixel2])  # / 2.
-        tth_max = np.rad2deg(np.arctan(r / d)) * 2.  # * 10.
-        print(tth_max)
+            np.max([self.poni.pixel1, self.poni.pixel2]) / 2.  # / 2.
+        tth_max = np.rad2deg(np.arctan(r / d))  # * 2.  # * 10.
+        print("two theta max for integration = {:.3f} ".format(tth_max))
         return tth_max
 
     def integrate_to_1d(self, **kwargs):
@@ -146,6 +148,8 @@ class DiffImg(object):
             return False
 
     def make_temp_filenames(self, temp_dir=None):
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
         tth_filen = make_filename(self.img_filename, 'tth.cake.npy',
                                   temp_dir=temp_dir)
         azi_filen = make_filename(self.img_filename, 'azi.cake.npy',
@@ -155,6 +159,8 @@ class DiffImg(object):
         return tth_filen, azi_filen, int_filen
 
     def write_temp_cakefiles(self, temp_dir='temporary_pkpo'):
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
         tth_filen, azi_filen, int_filen = self.make_temp_filenames(
             temp_dir=temp_dir)
         np.save(tth_filen, self.tth_cake)

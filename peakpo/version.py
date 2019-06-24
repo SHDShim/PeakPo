@@ -7,7 +7,7 @@ Todo:
 """
 __version__ = "7.7.23"
 """
-7.7.23: UI change for the JCPDS setup.  
+7.7.23: UI change for the JCPDS setup. Fix bug for the max twotheta for cake. 
 7.7.22: Bug fix for gsas style jpds bar plot.  Provide [environment].yml
     for MacOS, Windows, and Ubuntu.  Add cbf support for cake.
 7.7.21: Update with large size window at start.  Provide [environment].yml

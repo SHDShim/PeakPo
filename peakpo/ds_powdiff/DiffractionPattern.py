@@ -130,6 +130,8 @@ class Pattern(object):
             return False
 
     def make_temp_filenames(self, temp_dir=None):
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
         bgsub_filen = make_filename(self.fname, 'bgsub.chi',
                                     temp_dir=temp_dir)
         bg_filen = make_filename(self.fname, 'bg.chi',
@@ -144,6 +146,8 @@ class Pattern(object):
             return False
 
     def write_temporary_bgfiles(self, temp_dir='temporary_pkpo'):
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
         bgsub_filen, bg_filen = self.make_temp_filenames(temp_dir=temp_dir)
         x_bgsub, y_bgsub = self.get_bgsub()
         x_bg, y_bg = self.get_bg()

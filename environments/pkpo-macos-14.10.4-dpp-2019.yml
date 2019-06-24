@@ -1,4 +1,4 @@
-name: peakpo7722-new-dpp
+name: peakpo2019
 channels:
   - matsci
   - default
@@ -275,5 +275,3 @@ dependencies:
     - tqdm==4.15.0
     - twine==1.9.1
     - uncertainties==3.0.1
-prefix: /Users/DanShim/anaconda/envs/peakpo7722-new-dpp
-
