@@ -118,8 +118,8 @@ class CakeController(object):
                 os.path.exists(filen_cbf)):
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning',
-                'Cannot find image file: %s or %s or %s.' %
-                (filen_tif, filen_mar3450, filen_cbf))
+                'Cannot find image file: %s or %s or %s or %s.' %
+                (filen_tif, filen_tif, filen_mar3450, filen_cbf))
             self.widget.checkBox_ShowCake.setChecked(False)
             return False
         if self.model.diff_img_exist() and \

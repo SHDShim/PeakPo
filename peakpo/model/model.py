@@ -340,7 +340,8 @@ class PeakPoModel(object):
         filen_tif = self.make_filename('tif', original=True)
         filen_mar3450 = self.make_filename('mar3450', original=True)
         filen_cbf = self.make_filename('cbf', original=True)
-        if os.path.exists(filen_tif) or os.path.exists(filen_mar3450) or \
+        if os.path.exists(filen_tif) or \
+                os.path.exists(filen_mar3450) or \
                 os.path.exists(filen_cbf):
             return True
         else:
