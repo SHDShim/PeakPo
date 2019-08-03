@@ -1,12 +1,15 @@
+import os
 import sys
 import time
 import numpy
 import traceback
 from io import StringIO
 from PyQt5 import QtWidgets
-import qdarkstyle
+from PyQt5 import QtCore
+from PyQt5.QtCore import Qt
 from control import MainController
 from utils import ErrorMessageBox
+import qdarkstyle
 
 
 def excepthook(exc_type, exc_value, traceback_obj):
@@ -42,7 +45,11 @@ def excepthook(exc_type, exc_value, traceback_obj):
     errorbox.exec_()
 
 
+#app = QtWidgets.QApplication(sys.argv)
+QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 app = QtWidgets.QApplication(sys.argv)
+# app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
 sys.excepthook = excepthook
 app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
 # app.setStyleSheet('fusion')

@@ -1,0 +1,22 @@
+JCDPS file format
+
+----------------------------
+line 1: version_number (should be 3)
+line 2: header
+line 3: symmetry_code, K0, K0p
+line 4: a, b, c, alpha, beta, gamma (this line is different depending on symmetry, see examples)
+line 5: (blankline for future use)
+line 6: column description (d  I/I0  h k l)
+line 7: d-spacing, I/I0, h, k, l
+.
+.
+.
+-----------------------------
+
+* symmetry code
+1	cubic
+2	hexagonal
+3	tetragonal
+4	orthorhombic
+5	monoclinic
+6	triclinic

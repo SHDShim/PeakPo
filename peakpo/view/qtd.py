@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '../ui/peakpo.ui'
 #
-# Created by: PyQt5 UI code generator 5.6
+# Created by: PyQt5 UI code generator 5.9.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -14,7 +14,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(931, 750)
-        MainWindow.setMinimumSize(QtCore.QSize(0, 750))
+        MainWindow.setMinimumSize(QtCore.QSize(931, 750))
         MainWindow.setMaximumSize(QtCore.QSize(16777215, 16777215))
         font = QtGui.QFont()
         font.setFamily("Helvetica")
@@ -983,7 +983,7 @@ class Ui_MainWindow(object):
         self.tab_Cake1 = QtWidgets.QWidget()
         self.tab_Cake1.setObjectName("tab_Cake1")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.tab_Cake1)
-        self.verticalLayout_3.setContentsMargins(3, 0, 3, 12)
+        self.verticalLayout_3.setContentsMargins(3, -1, 3, 12)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.pushButton_ApplyCakeView = QtWidgets.QPushButton(self.tab_Cake1)
         sizePolicy = QtWidgets.QSizePolicy(
@@ -1144,7 +1144,7 @@ class Ui_MainWindow(object):
         self.tab_Cake2 = QtWidgets.QWidget()
         self.tab_Cake2.setObjectName("tab_Cake2")
         self.verticalLayout_19 = QtWidgets.QVBoxLayout(self.tab_Cake2)
-        self.verticalLayout_19.setContentsMargins(3, 0, 3, 12)
+        self.verticalLayout_19.setContentsMargins(3, -1, 3, 12)
         self.verticalLayout_19.setObjectName("verticalLayout_19")
         self.groupBox_29 = QtWidgets.QGroupBox(self.tab_Cake2)
         sizePolicy = QtWidgets.QSizePolicy(
@@ -1334,7 +1334,7 @@ class Ui_MainWindow(object):
         self.tab_JCPDSList1 = QtWidgets.QWidget()
         self.tab_JCPDSList1.setObjectName("tab_JCPDSList1")
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.tab_JCPDSList1)
-        self.verticalLayout_4.setContentsMargins(12, 0, 12, 12)
+        self.verticalLayout_4.setContentsMargins(12, -1, 12, 12)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.pushButton_ForceUpdatePlot = QtWidgets.QPushButton(self.tab_JCPDSList1)
         self.pushButton_ForceUpdatePlot.setObjectName("pushButton_ForceUpdatePlot")
@@ -1551,7 +1551,7 @@ class Ui_MainWindow(object):
         self.tab_JCPDSList2 = QtWidgets.QWidget()
         self.tab_JCPDSList2.setObjectName("tab_JCPDSList2")
         self.verticalLayout_23 = QtWidgets.QVBoxLayout(self.tab_JCPDSList2)
-        self.verticalLayout_23.setContentsMargins(3, 0, 3, 12)
+        self.verticalLayout_23.setContentsMargins(3, -1, 3, 12)
         self.verticalLayout_23.setObjectName("verticalLayout_23")
         self.groupBox_9 = QtWidgets.QGroupBox(self.tab_JCPDSList2)
         sizePolicy = QtWidgets.QSizePolicy(
@@ -1881,7 +1881,7 @@ class Ui_MainWindow(object):
         self.tab_UnitCellFit = QtWidgets.QWidget()
         self.tab_UnitCellFit.setObjectName("tab_UnitCellFit")
         self.verticalLayout_5 = QtWidgets.QVBoxLayout(self.tab_UnitCellFit)
-        self.verticalLayout_5.setContentsMargins(3, 0, 3, 12)
+        self.verticalLayout_5.setContentsMargins(3, -1, 3, 12)
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.groupBox_15 = QtWidgets.QGroupBox(self.tab_UnitCellFit)
         sizePolicy = QtWidgets.QSizePolicy(
@@ -2013,7 +2013,7 @@ class Ui_MainWindow(object):
         self.tab_Output = QtWidgets.QWidget()
         self.tab_Output.setObjectName("tab_Output")
         self.verticalLayout_9 = QtWidgets.QVBoxLayout(self.tab_Output)
-        self.verticalLayout_9.setContentsMargins(3, 0, 3, 12)
+        self.verticalLayout_9.setContentsMargins(3, -1, 3, 12)
         self.verticalLayout_9.setObjectName("verticalLayout_9")
         self.groupBox_17 = QtWidgets.QGroupBox(self.tab_Output)
         self.groupBox_17.setFlat(True)
@@ -2046,14 +2046,13 @@ class Ui_MainWindow(object):
         self.tab_PkFt = QtWidgets.QWidget()
         self.tab_PkFt.setObjectName("tab_PkFt")
         self.verticalLayout_14 = QtWidgets.QVBoxLayout(self.tab_PkFt)
-        self.verticalLayout_14.setContentsMargins(3, 3, 3, 0)
+        self.verticalLayout_14.setContentsMargins(3, 3, 3, -1)
         self.verticalLayout_14.setObjectName("verticalLayout_14")
         self.tabWidget_PeakFit = QtWidgets.QTabWidget(self.tab_PkFt)
         self.tabWidget_PeakFit.setObjectName("tabWidget_PeakFit")
         self.tab_PeakFitSection = QtWidgets.QWidget()
         self.tab_PeakFitSection.setObjectName("tab_PeakFitSection")
         self.verticalLayout_15 = QtWidgets.QVBoxLayout(self.tab_PeakFitSection)
-        self.verticalLayout_15.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_15.setObjectName("verticalLayout_15")
         self.frame_28 = QtWidgets.QFrame(self.tab_PeakFitSection)
         sizePolicy = QtWidgets.QSizePolicy(
@@ -2099,7 +2098,6 @@ class Ui_MainWindow(object):
         self.tab_PeakFitPeaks = QtWidgets.QWidget()
         self.tab_PeakFitPeaks.setObjectName("tab_PeakFitPeaks")
         self.verticalLayout_16 = QtWidgets.QVBoxLayout(self.tab_PeakFitPeaks)
-        self.verticalLayout_16.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_16.setObjectName("verticalLayout_16")
         self.groupBox_35 = QtWidgets.QGroupBox(self.tab_PeakFitPeaks)
         sizePolicy = QtWidgets.QSizePolicy(
@@ -2189,7 +2187,6 @@ class Ui_MainWindow(object):
         self.tab_PeakFitConfig = QtWidgets.QWidget()
         self.tab_PeakFitConfig.setObjectName("tab_PeakFitConfig")
         self.verticalLayout_13 = QtWidgets.QVBoxLayout(self.tab_PeakFitConfig)
-        self.verticalLayout_13.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_13.setObjectName("verticalLayout_13")
         self.groupBox_25 = QtWidgets.QGroupBox(self.tab_PeakFitConfig)
         self.groupBox_25.setFlat(True)
@@ -2250,7 +2247,7 @@ class Ui_MainWindow(object):
         self.tab_Bkgn = QtWidgets.QWidget()
         self.tab_Bkgn.setObjectName("tab_Bkgn")
         self.verticalLayout_10 = QtWidgets.QVBoxLayout(self.tab_Bkgn)
-        self.verticalLayout_10.setContentsMargins(3, 0, 3, 12)
+        self.verticalLayout_10.setContentsMargins(3, -1, 3, 12)
         self.verticalLayout_10.setObjectName("verticalLayout_10")
         self.groupBox_7 = QtWidgets.QGroupBox(self.tab_Bkgn)
         sizePolicy = QtWidgets.QSizePolicy(
@@ -2452,7 +2449,7 @@ class Ui_MainWindow(object):
         self.tab_Process = QtWidgets.QWidget()
         self.tab_Process.setObjectName("tab_Process")
         self.verticalLayout_7 = QtWidgets.QVBoxLayout(self.tab_Process)
-        self.verticalLayout_7.setContentsMargins(3, 0, 3, 12)
+        self.verticalLayout_7.setContentsMargins(3, -1, 3, 12)
         self.verticalLayout_7.setObjectName("verticalLayout_7")
         self.groupBox_10 = QtWidgets.QGroupBox(self.tab_Process)
         sizePolicy = QtWidgets.QSizePolicy(
