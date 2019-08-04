@@ -2,20 +2,28 @@ import numpy as np
 from xrd_unitconv import *
 
 def plot_diffcake(ax_cake, model, xrange=[5,20], yrange=None, 
-                    no_yticks=True, dsp_ticks=False, 
-                  no_xlabel=False, dsp_step = 0.2):
+                  no_yticks=True, dsp_ticks=False, mid_angle = 0, 
+                  no_xlabel=False, no_ylabel=False, dsp_step = 0.2, 
+                  clim=(1.e2, 7.e3), 
+                  tick_decimals=2):
     """
     ax_pattern = axis of diffraction pattern
     model = PeakPo model
     
     """
     wavelength = model.base_ptn.wavelength
-    ax_cake.set_ylabel('Azimuthal angle (degrees)')
+    if not no_ylabel:
+        ax_cake.set_ylabel('Azimuthal angle (degrees)')
 
     if no_yticks:
         ax_cake.set_yticks([])
         
-    intensity_cake = model.__dict__['diff_img'].__dict__['intensity_cake']
+    int_cake = model.__dict__['diff_img'].__dict__['intensity_cake']
+    intensity_c = np.array(int_cake)
+    intensity_cake = np.ones_like(intensity_c)
+    intensity_cake[0:mid_angle] = intensity_c[360 - mid_angle:361]
+    intensity_cake[mid_angle:361] = intensity_c[0:360 - mid_angle]
+
     tth_cake = model.__dict__['diff_img'].__dict__['tth_cake']
     chi_cake = model.__dict__['diff_img'].__dict__['chi_cake']
     
@@ -28,29 +36,32 @@ def plot_diffcake(ax_cake, model, xrange=[5,20], yrange=None,
     if xrange is None:
         xrange = [tth_cake.min(), tth_cake.max()]
     if yrange is None:
-        yrange = [intensity_cake.min(), intensity_cake.max()]
+        yrange = [chi_cake.min(), chi_cake.max()]
     #x = np.ma.masked_where( (tth_cake <= xrange[0]) | (tth_cake >= xrange[1]), tth_cake )
     #y = np.ma.masked_where( (tth_cake <= xrange[0]) | (tth_cake >= xrange[1]), intensity_cake )
     x = tth_cake
     y = intensity_cake
     ax_cake.set_xlim(xrange)    
-    #ax_cake.set_ylim(yrange)        
+    ax_cake.set_ylim(yrange)        
     ax_cake.imshow(intensity_cake, origin="lower", 
                    extent=[tth_cake.min(), tth_cake.max(), chi_cake.min(), chi_cake.max()], 
-           aspect="auto", cmap="gray_r", clim=(1.e2, 7.e3))
+           aspect="auto", cmap="gray_r", clim=clim)
 
     #if xrange is not None:
     #    ax_pattern.set_xlim(x.min(),x.max())
     x_roi = np.ma.masked_outside(x, xrange[0], xrange[1]).compressed()
-    print(xrange)
 
     if dsp_ticks:
-        ticks = np.arange( np.floor( (tth2dsp(x_roi, wavelength)*10.).max())/10.,
-                          np.ceil( (tth2dsp(x_roi, wavelength)*10.).min())/10.,-dsp_step)
+        dsp_roi = tth2dsp(x_roi, wavelength)
+        ticks_min = np.floor( 
+            (dsp_roi.max()*np.power(10.,tick_decimals))) / np.power(10.,tick_decimals)
+        ticks_max = np.ceil( 
+            (dsp_roi.min()*np.power(10.,tick_decimals))) / np.power(10.,tick_decimals)
+        ticks = np.arange( ticks_min, ticks_max, -1.*dsp_step)
         if ticks.size <= 20.:
             ticks_in_tth = dsp2tth(ticks, wavelength)
             ax_cake.set_xticks(ticks_in_tth)
-            ax_cake.set_xticklabels(np.around(ticks, decimals=2))
+            ax_cake.set_xticklabels(np.around(ticks, decimals=tick_decimals))
         if not no_xlabel:
             ax_cake.set_xlabel('d-spacing ($\mathdefault{\AA}$)')
     else:
