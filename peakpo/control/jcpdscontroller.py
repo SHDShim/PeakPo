@@ -1,4 +1,5 @@
 import os
+import copy
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5 import QtGui
@@ -109,10 +110,15 @@ class JcpdsController(object):
         i = idx_selected
         if i == 0:
             return
+        former_below = copy.copy(self.model.jcpds_lst[i])
+        former_above = copy.copy(self.model.jcpds_lst[i-1])
         self.model.jcpds_lst[i - 1], self.model.jcpds_lst[i] = \
-            self.model.jcpds_lst[i], self.model.jcpds_lst[i - 1]
-        self.widget.tableWidget_JCPDS.selectRow(i - 1)
+            former_below, former_above
+        # self.model.jcpds_lst[i - 1], self.model.jcpds_lst[i] = \
+        #    self.model.jcpds_lst[i], self.model.jcpds_lst[i - 1]
+        self.widget.tableWidget_JCPDS.clearContents()
         self.jcpdstable_ctrl.update()
+        self.widget.tableWidget_JCPDS.selectRow(i - 1)
 
     def move_down_jcpds(self):
         # get selected cell number
@@ -124,8 +130,14 @@ class JcpdsController(object):
         i = idx_selected
         if i >= self.model.jcpds_lst.__len__() - 1:
             return
+        former_below = copy.copy(self.model.jcpds_lst[i+1])
+        former_above = copy.copy(self.model.jcpds_lst[i])
         self.model.jcpds_lst[i + 1], self.model.jcpds_lst[i] = \
-            self.model.jcpds_lst[i], self.model.jcpds_lst[i + 1]
+            former_above, former_below
+        # self.model.jcpds_lst[i + 1], self.model.jcpds_lst[i] = \
+        #    self.model.jcpds_lst[i], self.model.jcpds_lst[i + 1]
+        self.widget.tableWidget_JCPDS.clearContents()
+        self.jcpdstable_ctrl.update()
         self.widget.tableWidget_JCPDS.selectRow(i + 1)
         """
         self.widget.tableWidget_JCPDS.setCurrentItem(
@@ -135,7 +147,6 @@ class JcpdsController(object):
         self.widget.tableWidget_JCPDS.setItemSelected(
             self.widget.tableWidget_JCPDS.item(i, 1), False)
         """
-        self.jcpdstable_ctrl.update()
 
     def check_all_jcpds(self):
         if not self.model.jcpds_exist():

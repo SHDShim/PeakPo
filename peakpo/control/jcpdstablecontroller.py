@@ -84,9 +84,9 @@ class JcpdsTableController(object):
             if (self.model.jcpds_lst[row].symmetry == 'cubic') or \
                     (self.model.jcpds_lst[row].symmetry == 'tetragonal') or \
                     (self.model.jcpds_lst[row].symmetry == 'hexagonal'):
-                item_b_a = QtWidgets.QTableWidgetItem('')
+                item_b_a = QtWidgets.QTableWidgetItem(' ')
                 item_b_a.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.widget.tableWidget_JCPDS.setItem(row, 5, item_b_a)
+                self.widget.tableWidget_JCPDS.setItem(row, 4, item_b_a)
             else:
                 self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk = \
                     QtWidgets.QDoubleSpinBox()
@@ -117,9 +117,9 @@ class JcpdsTableController(object):
             if (self.model.jcpds_lst[row].symmetry == 'cubic'):
                 # I do not understand why this is the case, item9 is apparently
                 # intensity tweak nothing to do with symmetry.
-                item9 = QtWidgets.QTableWidgetItem('')
+                item9 = QtWidgets.QTableWidgetItem(' ')
                 item9.setFlags(QtCore.Qt.ItemIsEnabled)
-                self.widget.tableWidget_JCPDS.setItem(row, 9, item9)
+                self.widget.tableWidget_JCPDS.setItem(row, 5, item9)
             else:
                 self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk = \
                     QtWidgets.QDoubleSpinBox()
