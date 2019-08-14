@@ -44,12 +44,10 @@ def excepthook(exc_type, exc_value, traceback_obj):
     errorbox.setText(error_message)
     errorbox.exec_()
 
-
-#app = QtWidgets.QApplication(sys.argv)
 QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 app = QtWidgets.QApplication(sys.argv)
-# app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
+app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
 sys.excepthook = excepthook
 app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
 # app.setStyleSheet('fusion')

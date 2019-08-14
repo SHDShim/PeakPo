@@ -5,8 +5,9 @@ Todo:
     Add option to use diffraction file for background subtraction
     Better system should be implemented, such as pbr.
 """
-__version__ = "7.7.24"
+__version__ = "7.7.25"
 """
+7.7.25: Add HDPI display support, such as retina display
 7.7.24: Fix bug for the JCPDS table up/down move.
 7.7.23: UI change for the JCPDS setup. Fix bug for the max twotheta for cake.
 7.7.22: Bug fix for gsas style jpds bar plot.  Provide [environment].yml
