@@ -4,20 +4,24 @@
 
 A python application for X-ray diffraction analysis of the samples at high pressure and high temperature.
 
-## Installation
+Major functions include:
+
+- Pressure and temperature estimation  
+- Phase identification  
+- 2D analysis of data  
+- Visual equation of state fitting  
+- Peakfitting  
+- Visual unit cell fitting  
+- Excel output of all the calculation results  
+
+## How to install
 
 Check [Installation wiki page](https://github.com/SHDShim/PeakPo/wiki/Quick-Install)
 
-## Manual
+## How to get help
 
 Check [the PeakPo wiki page](https://github.com/SHDShim/peakpo/wiki) in this repo for manual together with 
 information on: how to install, how to setup, how to run and how to update.
-
-## Binary executables
-
-I also provide binary executables from [my google drive folder](https://drive.google.com/open?id=0B0kkQLbYpQDYfnlZZ09wcXltTjhRUDMydkx4R3o4TTUxcXlsTHJHOGlsNXo1ZkJUZ2JlWFk).  
-
-Instruction on the installation can be found in [the PeakPo wiki page](https://github.com/SHDShim/peakpo/wiki).
 
 ## How to cite
 
