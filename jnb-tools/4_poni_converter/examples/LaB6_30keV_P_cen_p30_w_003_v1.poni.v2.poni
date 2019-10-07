@@ -1,0 +1,12 @@
+# Nota: C-Order, 1 refers to the Y axis, 2 to the X axis 
+# Converted from ./examples/LaB6_30keV_P_cen_p30_w_003_v1.poni
+poni_version: 2
+Detector: detector unknown
+Detector_config: { "pixel1": 0.00017199999999999998, "pixel2": 0.00017199999999999998, "max_shape": null } 
+Distance: 0.2066452967230314
+Poni1: 0.08837240288345048
+Poni2: 0.08583602722262859
+Rot1: 0.007051430367455946
+Rot2: -0.0005294792690823279
+Rot3: -1.293806679871415e-09
+Wavelength: 4.133e-11
