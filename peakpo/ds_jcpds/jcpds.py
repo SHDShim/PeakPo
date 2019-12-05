@@ -523,7 +523,7 @@ class JCPDS(object):
         for i in range(pattern.hkls.__len__()):
             h.append(pattern.hkls[i][0]['hkl'][0])
             k.append(pattern.hkls[i][0]['hkl'][1])
-            l.append(pattern.hkls[i][0]['hkl'][2])
+            l.append(pattern.hkls[i][0]['hkl'][-1])
         d_lines = np.transpose([pattern.x, pattern.d_hkls, pattern.y, h, k, l])
         DiffLines = []
         for line in d_lines:
