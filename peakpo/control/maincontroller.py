@@ -22,11 +22,13 @@ from .peakfitcontroller import PeakFitController
 from .peakfittablecontroller import PeakfitTableController
 from .cakeazicontroller import CakeAziController
 from utils import dialog_savefile, writechi, extract_extension, \
-    convert_wl_to_energy
+    convert_wl_to_energy, get_sorted_filelist, find_from_filelist, \
+    make_filename
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
 from ds_jcpds import UnitCell
 from ds_powdiff import get_DataSection
+#from utils import readchi, make_filename, writechi
 
 
 class MainController(object):
@@ -157,6 +159,18 @@ class MainController(object):
             self.update_ucfit_table)
         self.widget.pushButton_IntegrateCake.clicked.connect(
             self.integrate_to_1d)
+        self.widget.pushButton_PrevBasePtn.clicked.connect(
+            lambda: self.goto_next_file('previous'))
+        self.widget.pushButton_NextBasePtn.clicked.connect(
+            lambda: self.goto_next_file('next'))
+        self.widget.pushButton_S_PrevBasePtn.clicked.connect(
+            lambda: self.goto_next_file('previous'))
+        self.widget.pushButton_S_NextBasePtn.clicked.connect(
+            lambda: self.goto_next_file('next'))
+        self.widget.pushButton_LastBasePtn.clicked.connect(
+            lambda: self.goto_next_file('last'))
+        self.widget.pushButton_FirstBasePtn.clicked.connect(
+            lambda: self.goto_next_file('first'))
 
     def integrate_to_1d(self):
         filen = self.cakeazi_ctrl.integrate_to_1d()
@@ -617,3 +631,184 @@ class MainController(object):
             format(int(int_min), int(h_min), int(k_min), int(l_min))
         textoutput = name_min + '\n' + line1 + '\n' + line2
         return textoutput
+
+    def goto_next_file(self, move):
+        """
+        quick move to the next base pattern file
+        """
+        if not self.model.base_ptn_exist():
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning", "Choose a base pattern first.")
+            return
+        if self.widget.radioButton_NavDPP.isChecked():
+            self._goto_dpp_next_file(move)
+        else:
+            self._goto_chi_next_file(move)
+        return
+
+    def _goto_chi_next_file(self, move):
+        filelist_chi = get_sorted_filelist(
+            self.model.chi_path,
+            sorted_by_name=self.widget.radioButton_SortbyNme.isChecked(),
+            search_ext='*.chi')
+
+        idx_chi = find_from_filelist(filelist_chi,
+                                     os.path.split(self.model.base_ptn.fname)[1])
+
+        if idx_chi == -1:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning", "Cannot find current file")
+            return  # added newly
+
+        step = self.widget.spinBox_FileStep.value()
+        if move == 'next':
+            idx_chi_new = idx_chi + step
+        elif move == 'previous':
+            idx_chi_new = idx_chi - step
+        elif move == 'last':
+            idx_chi_new = filelist_chi.__len__() - 1
+            if idx_chi == idx_chi_new:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning", "It is already the last file.")
+                return
+        elif move == 'first':
+            idx_chi_new = 0
+            if idx_chi == idx_chi_new:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning", "It is already the first file.")
+                return
+
+        if idx_chi_new > filelist_chi.__len__() - 1:
+            idx_chi_new = filelist_chi.__len__() - 1
+            if idx_chi == idx_chi_new:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning", "It is already the last file.")
+                return
+        if idx_chi_new < 0:
+            idx_chi_new = 0
+            if idx_chi == idx_chi_new:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning", "It is already the first file.")
+                return
+        new_filename_chi = filelist_chi[idx_chi_new]
+        if os.path.exists(new_filename_chi):
+            self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
+            # self.model.set_base_ptn_color(self.obj_color)
+            self.plot_ctrl.update()
+        else:
+            QtWidgets.QMessageBox.warning(self.widget, "Warning",
+                                          new_filename_chi + " does not exist.")
+
+    def _goto_dpp_next_file(self, move):
+
+        filelist_chi = get_sorted_filelist(
+            self.model.chi_path,
+            sorted_by_name=self.widget.radioButton_SortbyNme.isChecked(),
+            search_ext='*.chi')
+        filelist_dpp = get_sorted_filelist(
+            self.model.chi_path,
+            sorted_by_name=self.widget.radioButton_SortbyNme.isChecked(),
+            search_ext='*.dpp')
+
+        idx_chi = find_from_filelist(filelist_chi,
+                                     os.path.split(
+                                         self.model.base_ptn.fname)[1])
+        dpp_filen = make_filename(self.model.base_ptn.fname, 'dpp')
+        idx_dpp = find_from_filelist(filelist_dpp,
+                                     dpp_filen)
+
+        if idx_chi == -1:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning", "Cannot find current chi file")
+            return  # added newly
+
+        # for radioButton_NavDPP
+        if idx_dpp == -1:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Cannot find current dpp file, manually save one for current chi file first.")
+            return  # added newly
+
+        step = self.widget.spinBox_FileStep.value()
+        if move == 'next':
+            idx_chi_new = idx_chi + step
+        elif move == 'previous':
+            idx_chi_new = idx_chi - step
+        elif move == 'last':
+            idx_chi_new = filelist_chi.__len__() - 1
+            if idx_chi == idx_chi_new:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning", "It is already the last file.")
+                return
+        elif move == 'first':
+            idx_chi_new = 0
+            if idx_chi == idx_chi_new:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning", "It is already the first file.")
+                return
+        if idx_chi_new > filelist_chi.__len__() - 1:
+            idx_chi_new = filelist_chi.__len__() - 1
+            if idx_chi == idx_chi_new:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning", "It is already the last file.")
+                return
+        if idx_chi_new < 0:
+            idx_chi_new = 0
+            if idx_chi == idx_chi_new:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning", "It is already the first file.")
+                return
+
+        reply = QtWidgets.QMessageBox.question(
+            self.widget, 'Message',
+            'Do you want to save this to dpp before you move to the next?',
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.Yes)
+        if reply == QtWidgets.QMessageBox.Yes:
+            self.session_ctrl.save_dpp()
+
+        new_filename_chi = filelist_chi[idx_chi_new]
+        new_filename_dpp = make_filename(new_filename_chi, 'dpp')
+        print(new_filename_dpp)
+        idx = find_from_filelist(filelist_dpp,
+                                 new_filename_dpp)
+
+        if idx == -1:
+            # no pre-existing dpp
+            # check the checkbox for autogenerate
+            if self.widget.checkBox_AutoGenDPP.isChecked():
+                """
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning", "The next pattern does not have dpp.\nSo a new dpp will be generated from the dpp of the last pattern.")
+                """
+                self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
+                self.session_ctrl.save_dpp(quiet=True)
+                self.plot_ctrl.update()
+            else:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning", "Cannot find pre-existing dpp.")
+            # call autogenerate subroutine
+            # self._load_a_new_pattern(new_filename_chi)
+            # self.model.set_base_ptn_color(self.obj_color)
+            # self.plot_ctrl.update()
+        else:
+            # pre-existing dpp
+            # question if overwrite or not
+            reply = QtWidgets.QMessageBox.question(
+                self.widget, 'Message',
+                'The next pattern already has a dpp.\nDo you want to overwrite the existing one based on the dpp of the last pattern?\nIf you want to open the existing dpp, choose NO.',
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.No)
+            if reply == QtWidgets.QMessageBox.Yes:
+                self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
+                self.session_ctrl.save_dpp(quiet=True)
+            else:
+                # load the existing dpp
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning", "The existing dpp will be open.")
+                self.session_ctrl._load_dpp(new_filename_dpp)
+            self.plot_ctrl.update()
+        return
+
+        # QtWidgets.QMessageBox.warning(self.widget, "Warning",
+        #                              new_filename_chi + " does not exist.")

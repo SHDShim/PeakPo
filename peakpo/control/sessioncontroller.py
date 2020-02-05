@@ -142,8 +142,7 @@ class SessionController(object):
                 reply = QtWidgets.QMessageBox.question(
                     self.widget, "Question",
                     "DPP seems to be moved from the original folder. " +
-                    "I cannot find the files for this DPP. " +
-                    "Move related files to this DPP folder." +
+                    "Move related files to this DPP folder if they are not in the new folder." +
                     "If files have been moved, click Yes.",
                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                     QtWidgets.QMessageBox.Yes)
@@ -392,15 +391,16 @@ class SessionController(object):
         self.save_dpp()
         self.save_ppss()
 
-    def save_dpp(self):
+    def save_dpp(self, quiet=False):
         if not self.model.base_ptn_exist():
             fsession = os.path.join(self.model.chi_path, 'default.dpp')
         else:
             fsession = self.model.make_filename('dpp')
         if self.widget.checkBox_ForceOverwite.isChecked():
             new_filename = fsession
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning", "Overwritten with default name.")
+            if not quiet:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning", "Force overwrite is On, so existing dpp with default name will be overwritten.")
         else:
             new_filename = dialog_savefile(self.widget, fsession)
         if new_filename != '':
@@ -423,7 +423,7 @@ class SessionController(object):
         if self.widget.checkBox_ForceOverwite.isChecked():
             new_filename = fsession
             QtWidgets.QMessageBox.warning(
-                self.widget, "Warning", "Overwritten with default name.")
+                self.widget, "Warning", "Force overwrite is On, so existing ppss with default name will be overwritten.")
         else:
             new_filename = dialog_savefile(self.widget, fsession)
         if new_filename != '':

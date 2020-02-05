@@ -113,6 +113,13 @@ def make_filename(filename, ext, temp_dir=None, original=False):
 
 
 def change_file_path(filename, new_path):
-    path, filen_ext = os.path.split(filename)
+    path, filen_ext1 = os.path.split(filename)
+    # the if statement below is very rare case where path breakdown is incomplete
+    # when moving files from windows to osx
+    if filen_ext1.find("\\") != -1:
+        filen_ext = filen_ext1.split("\\")[-1]
+    else:
+        filen_ext = filen_ext1
     new_filename = os.path.join(new_path, filen_ext)
+    print(filename, ':', path, ':', filen_ext, ':', new_path)
     return new_filename

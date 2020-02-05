@@ -19,18 +19,6 @@ class BasePatternController(object):
     def connect_channel(self):
         self.widget.pushButton_NewBasePtn.clicked.connect(
             self.select_base_ptn)
-        self.widget.pushButton_PrevBasePtn.clicked.connect(
-            lambda: self.goto_next_file('previous'))
-        self.widget.pushButton_NextBasePtn.clicked.connect(
-            lambda: self.goto_next_file('next'))
-        self.widget.pushButton_S_PrevBasePtn.clicked.connect(
-            lambda: self.goto_next_file('previous'))
-        self.widget.pushButton_S_NextBasePtn.clicked.connect(
-            lambda: self.goto_next_file('next'))
-        self.widget.pushButton_LastBasePtn.clicked.connect(
-            lambda: self.goto_next_file('last'))
-        self.widget.pushButton_FirstBasePtn.clicked.connect(
-            lambda: self.goto_next_file('first'))
         self.widget.lineEdit_DiffractionPatternFileName.editingFinished.\
             connect(self.load_new_base_pattern_from_name)
 
@@ -42,60 +30,6 @@ class BasePatternController(object):
             self.widget, "Open a Chi File", self.model.chi_path,
             "Data files (*.chi)")[0]
         self._setshow_new_base_ptn(str(filen))
-
-    def goto_next_file(self, move):
-        """
-        quick move to the next base pattern file
-        """
-        if not self.model.base_ptn_exist():
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning", "Choose a base pattern first.")
-            return
-        filelist = get_sorted_filelist(
-            self.model.chi_path,
-            sorted_by_name=self.widget.radioButton_SortbyNme.isChecked())
-        idx = find_from_filelist(filelist,
-                                 os.path.split(self.model.base_ptn.fname)[1])
-        if idx == -1:
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning", "Cannot find current file")
-        step = self.widget.spinBox_FileStep.value()
-        if move == 'next':
-            idx_new = idx + step
-        elif move == 'previous':
-            idx_new = idx - step
-        elif move == 'last':
-            idx_new = filelist.__len__() - 1
-            if idx == idx_new:
-                QtWidgets.QMessageBox.warning(
-                    self.widget, "Warning", "It is already the last file.")
-                return
-        elif move == 'first':
-            idx_new = 0
-            if idx == idx_new:
-                QtWidgets.QMessageBox.warning(
-                    self.widget, "Warning", "It is already the first file.")
-                return
-        if idx_new > filelist.__len__() - 1:
-            idx_new = filelist.__len__() - 1
-            if idx == idx_new:
-                QtWidgets.QMessageBox.warning(
-                    self.widget, "Warning", "It is already the last file.")
-                return
-        if idx_new < 0:
-            idx_new = 0
-            if idx == idx_new:
-                QtWidgets.QMessageBox.warning(
-                    self.widget, "Warning", "It is already the first file.")
-                return
-        new_filename = filelist[idx_new]
-        if os.path.exists(new_filename):
-            self._load_a_new_pattern(new_filename)
-            # self.model.set_base_ptn_color(self.obj_color)
-            self.plot_ctrl.update()
-        else:
-            QtWidgets.QMessageBox.warning(self.widget, "Warning",
-                                          new_filename + " does not exist.")
 
     def load_new_base_pattern_from_name(self):
         if self.widget.lineEdit_DiffractionPatternFileName.isModified():
