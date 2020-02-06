@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file './ui/peakpo.ui'
+# Form implementation generated from reading ui file '../ui/peakpo.ui'
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #
@@ -2909,8 +2909,14 @@ class Ui_MainWindow(object):
         self.radioButton_SortbyTime.setToolTip(_translate(
             "MainWindow", "Sort files in current directory by time stamp"))
         self.radioButton_SortbyTime.setText(_translate("MainWindow", "Time"))
+        self.checkBox_NavDPP.setToolTip(_translate(
+            "MainWindow", "Navigate dpp files rather than chi files"))
         self.checkBox_NavDPP.setText(_translate("MainWindow", ".dpp"))
+        self.checkBox_AutoGenDPP.setToolTip(_translate(
+            "MainWindow", "Create a dpp file for the next data point from the current dpp file"))
         self.checkBox_AutoGenDPP.setText(_translate("MainWindow", "Create when move"))
+        self.checkBox_SaveDPPMove.setToolTip(_translate(
+            "MainWindow", "Save current dpp file before move to the next data file."))
         self.checkBox_SaveDPPMove.setText(_translate("MainWindow", "Save when move"))
         self.groupBox_2.setTitle(_translate("MainWindow", "Session (dpp only)"))
         self.textEdit_SessionFileName.setToolTip(_translate(

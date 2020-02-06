@@ -1095,6 +1095,9 @@
                       <height>16777215</height>
                      </size>
                     </property>
+                    <property name="toolTip">
+                     <string>Navigate dpp files rather than chi files</string>
+                    </property>
                     <property name="layoutDirection">
                      <enum>Qt::LeftToRight</enum>
                     </property>
@@ -1114,6 +1117,9 @@
                       <height>16777215</height>
                      </size>
                     </property>
+                    <property name="toolTip">
+                     <string>Create a dpp file for the next data point from the current dpp file</string>
+                    </property>
                     <property name="text">
                      <string>Create when move</string>
                     </property>
@@ -1129,6 +1135,9 @@
                       <width>130</width>
                       <height>16777215</height>
                      </size>
+                    </property>
+                    <property name="toolTip">
+                     <string>Save current dpp file before move to the next data file.</string>
                     </property>
                     <property name="text">
                      <string>Save when move</string>
