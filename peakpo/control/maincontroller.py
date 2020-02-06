@@ -640,7 +640,7 @@ class MainController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning", "Choose a base pattern first.")
             return
-        if self.widget.radioButton_NavDPP.isChecked():
+        if self.widget.checkBox_NavDPP.isChecked():
             self._goto_dpp_next_file(move)
         else:
             self._goto_chi_next_file(move)
@@ -653,7 +653,8 @@ class MainController(object):
             search_ext='*.chi')
 
         idx_chi = find_from_filelist(filelist_chi,
-                                     os.path.split(self.model.base_ptn.fname)[1])
+                                     os.path.split(
+                                         self.model.base_ptn.fname)[1])
 
         if idx_chi == -1:
             QtWidgets.QMessageBox.warning(
@@ -697,7 +698,8 @@ class MainController(object):
             self.plot_ctrl.update()
         else:
             QtWidgets.QMessageBox.warning(self.widget, "Warning",
-                                          new_filename_chi + " does not exist.")
+                                          new_filename_chi +
+                                          " does not exist.")
 
     def _goto_dpp_next_file(self, move):
 
@@ -726,7 +728,8 @@ class MainController(object):
         if idx_dpp == -1:
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning",
-                "Cannot find current dpp file, manually save one for current chi file first.")
+                "Cannot find current dpp file.\n" +
+                "Manually save one for current chi file first.")
             return  # added newly
 
         step = self.widget.spinBox_FileStep.value()
@@ -759,17 +762,19 @@ class MainController(object):
                     self.widget, "Warning", "It is already the first file.")
                 return
 
-        reply = QtWidgets.QMessageBox.question(
-            self.widget, 'Message',
-            'Do you want to save this to dpp before you move to the next?',
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.Yes)
-        if reply == QtWidgets.QMessageBox.Yes:
-            self.session_ctrl.save_dpp()
+        if self.widget.checkBox_SaveDPPMove.isChecked():
+            self.session_ctrl.save_dpp(quiet=True)
+        else:
+            reply = QtWidgets.QMessageBox.question(
+                self.widget, 'Message',
+                'Do you want to save this to dpp before you move to the next?',
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.Yes)
+            if reply == QtWidgets.QMessageBox.Yes:
+                self.session_ctrl.save_dpp()
 
         new_filename_chi = filelist_chi[idx_chi_new]
         new_filename_dpp = make_filename(new_filename_chi, 'dpp')
-        print(new_filename_dpp)
         idx = find_from_filelist(filelist_dpp,
                                  new_filename_dpp)
 
@@ -786,7 +791,9 @@ class MainController(object):
                 self.plot_ctrl.update()
             else:
                 QtWidgets.QMessageBox.warning(
-                    self.widget, "Warning", "Cannot find pre-existing dpp.")
+                    self.widget, "Warning",
+                    "Cannot find pre-existing dpp.\n" +
+                    "Consider Create with Move function.")
             # call autogenerate subroutine
             # self._load_a_new_pattern(new_filename_chi)
             # self.model.set_base_ptn_color(self.obj_color)
@@ -796,7 +803,10 @@ class MainController(object):
             # question if overwrite or not
             reply = QtWidgets.QMessageBox.question(
                 self.widget, 'Message',
-                'The next pattern already has a dpp.\nDo you want to overwrite the existing one based on the dpp of the last pattern?\nIf you want to open the existing dpp, choose NO.',
+                "The next pattern already has a dpp.\n" +
+                "If you want to overwrite the existing one based" +
+                " on the dpp of the last pattern, choose YES.\n" +
+                "If you want to keep and open the existing dpp, choose NO.",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                 QtWidgets.QMessageBox.No)
             if reply == QtWidgets.QMessageBox.Yes:
@@ -804,8 +814,8 @@ class MainController(object):
                 self.session_ctrl.save_dpp(quiet=True)
             else:
                 # load the existing dpp
-                QtWidgets.QMessageBox.warning(
-                    self.widget, "Warning", "The existing dpp will be open.")
+                # QtWidgets.QMessageBox.warning(
+                #    self.widget, "Warning", "The existing dpp will be open.")
                 self.session_ctrl._load_dpp(new_filename_dpp)
             self.plot_ctrl.update()
         return

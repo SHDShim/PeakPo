@@ -152,6 +152,12 @@
            </property>
            <item>
             <widget class="QPushButton" name="pushButton_S_Zoom">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
                <width>25</width>
@@ -168,6 +174,12 @@
            </item>
            <item>
             <widget class="QPushButton" name="pushButton_S_SaveSession">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
                <width>25</width>
@@ -253,6 +265,12 @@
            </item>
            <item>
             <widget class="QPushButton" name="pushButton_S_PIncrease">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
                <width>25</width>
@@ -291,6 +309,12 @@
            </item>
            <item>
             <widget class="QPushButton" name="pushButton_S_TIncrease">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
                <width>25</width>
@@ -307,6 +331,12 @@
            </item>
            <item>
             <widget class="QPushButton" name="pushButton_S_RoomT">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
                <width>25</width>
@@ -323,6 +353,12 @@
            </item>
            <item>
             <widget class="QPushButton" name="pushButton_S_TDecrease">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
                <width>25</width>
@@ -981,13 +1017,13 @@
                       <number>12</number>
                      </property>
                      <property name="bottomMargin">
-                      <number>3</number>
+                      <number>8</number>
                      </property>
                      <item>
                       <widget class="QRadioButton" name="radioButton_SortbyNme">
                        <property name="maximumSize">
                         <size>
-                         <width>16777215</width>
+                         <width>70</width>
                          <height>16777215</height>
                         </size>
                        </property>
@@ -1018,7 +1054,7 @@
                        </property>
                        <property name="maximumSize">
                         <size>
-                         <width>16777215</width>
+                         <width>70</width>
                          <height>16777215</height>
                         </size>
                        </property>
@@ -1039,7 +1075,7 @@
                <item>
                 <widget class="QFrame" name="frame_13">
                  <property name="frameShape">
-                  <enum>QFrame::StyledPanel</enum>
+                  <enum>QFrame::NoFrame</enum>
                  </property>
                  <property name="frameShadow">
                   <enum>QFrame::Raised</enum>
@@ -1052,56 +1088,50 @@
                    <number>3</number>
                   </property>
                   <item>
-                   <widget class="QFrame" name="frame_12">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
+                   <widget class="QCheckBox" name="checkBox_NavDPP">
+                    <property name="maximumSize">
+                     <size>
+                      <width>60</width>
+                      <height>16777215</height>
+                     </size>
                     </property>
-                    <property name="frameShape">
-                     <enum>QFrame::StyledPanel</enum>
+                    <property name="layoutDirection">
+                     <enum>Qt::LeftToRight</enum>
                     </property>
-                    <property name="frameShadow">
-                     <enum>QFrame::Raised</enum>
+                    <property name="text">
+                     <string>.dpp</string>
                     </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_14">
-                     <property name="topMargin">
-                      <number>3</number>
-                     </property>
-                     <property name="bottomMargin">
-                      <number>3</number>
-                     </property>
-                     <item>
-                      <widget class="QRadioButton" name="radioButton_NavDPP">
-                       <property name="text">
-                        <string>.dpp</string>
-                       </property>
-                       <property name="checked">
-                        <bool>true</bool>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QRadioButton" name="radioButton_NavCHI">
-                       <property name="text">
-                        <string>.chi</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
+                    <property name="checked">
+                     <bool>true</bool>
+                    </property>
                    </widget>
                   </item>
                   <item>
                    <widget class="QCheckBox" name="checkBox_AutoGenDPP">
                     <property name="maximumSize">
                      <size>
-                      <width>120</width>
+                      <width>130</width>
                       <height>16777215</height>
                      </size>
                     </property>
                     <property name="text">
-                     <string>Auto-gen. dpp</string>
+                     <string>Create when move</string>
+                    </property>
+                    <property name="checked">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QCheckBox" name="checkBox_SaveDPPMove">
+                    <property name="maximumSize">
+                     <size>
+                      <width>130</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>Save when move</string>
                     </property>
                     <property name="checked">
                      <bool>true</bool>
@@ -1155,7 +1185,7 @@
                  <property name="maximumSize">
                   <size>
                    <width>16777215</width>
-                   <height>35</height>
+                   <height>21</height>
                   </size>
                  </property>
                  <property name="toolTip">
