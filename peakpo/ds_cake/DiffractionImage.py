@@ -158,7 +158,7 @@ class DiffImg(object):
                                   temp_dir=temp_dir)
         return tth_filen, azi_filen, int_filen
 
-    def write_temp_cakefiles(self, temp_dir='temporary_pkpo'):
+    def write_temp_cakefiles(self, temp_dir):
         if not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
         tth_filen, azi_filen, int_filen = self.make_temp_filenames(

@@ -1,7 +1,7 @@
 import os
 from PyQt5 import QtWidgets
 from utils import get_sorted_filelist, find_from_filelist, readchi, \
-    make_filename, writechi
+    make_filename, writechi, get_directory
 from utils import undo_button_press
 from .mplcontroller import MplController
 from .cakecontroller import CakeController
@@ -68,7 +68,8 @@ class BasePatternController(object):
         #    '1D Pattern: ' + self.model.get_base_ptn_filename())
         self.widget.lineEdit_DiffractionPatternFileName.setText(
             str(self.model.get_base_ptn_filename()))
-        temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
+
+        temp_dir = get_directory(self.model.get_base_ptn_filename(), '-param')
         if self.widget.checkBox_UseTempBGSub.isChecked():
             if os.path.exists(temp_dir):
                 success = self.model.base_ptn.read_bg_from_tempfile(
@@ -121,7 +122,8 @@ class BasePatternController(object):
             [self.widget.spinBox_BGParam0.value(),
                 self.widget.spinBox_BGParam1.value(),
                 self.widget.spinBox_BGParam2.value()], yshift=0)
-        self.model.base_ptn.write_temporary_bgfiles()
+        temp_dir = get_directory(self.model.get_base_ptn_filename(), '-param')
+        self.model.base_ptn.write_temporary_bgfiles(temp_dir)
 
     def apply_changes_to_graph(self):
         self.plot_ctrl.update()

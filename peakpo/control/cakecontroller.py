@@ -1,7 +1,7 @@
 import os
 from PyQt5 import QtWidgets
 import numpy as np
-from utils import dialog_savefile, writechi
+from utils import dialog_savefile, writechi, get_directory
 from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
 
@@ -35,7 +35,7 @@ class CakeController(object):
     def update_cake(self):
         if self.model.poni_exist():
             self.produce_cake()
-            temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
+            temp_dir = get_directory(self.model.get_base_ptn_filename(), '-param')
             self.model.diff_img.write_temp_cakefiles(temp_dir=temp_dir)
             self._apply_changes_to_graph()
 

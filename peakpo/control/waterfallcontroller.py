@@ -5,7 +5,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtGui
 from .mplcontroller import MplController
 from .waterfalltablecontroller import WaterfallTableController
-from utils import convert_wl_to_energy
+from utils import convert_wl_to_energy, get_directory
 
 
 class WaterfallController(object):
@@ -147,7 +147,8 @@ class WaterfallController(object):
                              self.widget.spinBox_BGParam1.value(),
                              self.widget.spinBox_BGParam2.value()]
                 if self.widget.checkBox_UseTempBGSub.isChecked():
-                    temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
+                    temp_dir = get_directory(self.model.get_base_ptn_filename(),
+                                             '-param')
                 else:
                     temp_dir = None
                 self.model.append_a_waterfall_ptn(

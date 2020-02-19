@@ -80,6 +80,11 @@ def extract_filename(filen):
     return filen
 
 
+def get_directory(filen_path, branch):
+    path, filen, __ = breakdown_filename(filen_path)
+    return os.path.join(path, filen+branch)
+
+
 def extract_extension(filen):
     """
     extract extension without dot
@@ -121,5 +126,4 @@ def change_file_path(filename, new_path):
     else:
         filen_ext = filen_ext1
     new_filename = os.path.join(new_path, filen_ext)
-    print(filename, ':', path, ':', filen_ext, ':', new_path)
     return new_filename

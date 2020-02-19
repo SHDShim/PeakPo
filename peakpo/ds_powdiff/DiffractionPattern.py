@@ -145,7 +145,7 @@ class Pattern(object):
         else:
             return False
 
-    def write_temporary_bgfiles(self, temp_dir='temporary_pkpo'):
+    def write_temporary_bgfiles(self, temp_dir):
         if not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
         bgsub_filen, bg_filen = self.make_temp_filenames(temp_dir=temp_dir)

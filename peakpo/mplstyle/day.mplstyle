@@ -109,7 +109,7 @@ text.usetex         : False  # use latex for all text handling. The following fo
                              # If another font is desired which can loaded using the
                              # LaTeX \usepackage command, please inquire at the
                              # matplotlib mailing list
-text.latex.unicode : False # use "ucs" and "inputenc" LaTeX packages for handling
+# text.latex.unicode : False # use "ucs" and "inputenc" LaTeX packages for handling
                            # unicode strings.
 text.latex.preamble :  # IMPROPER USE OF THIS FEATURE WILL LEAD TO LATEX FAILURES
                            # AND IS THEREFORE UNSUPPORTED. PLEASE DO NOT ASK FOR HELP
@@ -124,7 +124,7 @@ text.latex.preamble :  # IMPROPER USE OF THIS FEATURE WILL LEAD TO LATEX FAILURE
                            # may also be loaded, depending on your font settings
 text.latex.preview : False
 
-text.dvipnghack : None      # some versions of dvipng don't handle alpha
+# text.dvipnghack : None      # some versions of dvipng don't handle alpha
                             # channel properly.  Use True to correct
                             # and flush ~/.matplotlib/tex.cache
                             # before testing and False to force
@@ -429,10 +429,10 @@ savefig.pad_inches  : 0.1      # Padding to be used when bbox is set to 'tight'
 savefig.jpeg_quality: 95       # when a jpeg is saved, the default quality parameter.
 savefig.transparent : False    # setting that controls whether figures are saved with a
                                # transparent background by default
-savefig.frameon : True
+#savefig.frameon : True
 savefig.orientation : portrait
 
-nbagg.transparent: True
+# nbagg.transparent: True
 
 # ps backend params
 ps.papersize      : letter   # auto, letter, legal, ledger, A0-A10, B0-B10
@@ -452,7 +452,7 @@ pdf.inheritcolor   : False
 pdf.use14corefonts : False
 
 # pgf backend params
-pgf.debug           : False
+# pgf.debug           : False
 pgf.texsystem       : xelatex
 pgf.rcfonts         : True
 pgf.preamble        :
@@ -483,8 +483,8 @@ svg.fonttype : path            # How to handle SVG fonts:
 #
 # You can access the verbose instance in your code
 #   from matplotlib import verbose.
-verbose.level  : silent      # one of silent, helpful, debug, debug-annoying
-verbose.fileo  : sys.stdout  # a log filename, sys.stdout or sys.stderr
+# verbose.level  : silent      # one of silent, helpful, debug, debug-annoying
+# verbose.fileo  : sys.stdout  # a log filename, sys.stdout or sys.stderr
 
 # Event keys to interact with figures/plots via keyboard.
 # Customize these settings according to your needs.
@@ -504,25 +504,25 @@ keymap.xscale : k, L                # toggle scaling of x-axes ('log'/'linear')
 keymap.all_axes : a                 # enable all axes
 
 ###ANIMATION settings
-animation.writer : ffmpeg         # MovieWriter 'backend' to use
-animation.codec : mpeg4           # Codec to use for writing movie
-animation.bitrate: -1             # Controls size/quality tradeoff for movie.
+#animation.writer : ffmpeg         # MovieWriter 'backend' to use
+#animation.codec : mpeg4           # Codec to use for writing movie
+#animation.bitrate: -1             # Controls size/quality tradeoff for movie.
                                   # -1 implies let utility auto-determine
-animation.frame_format: png       # Controls frame format used by temp files
-animation.ffmpeg_path: ffmpeg     # Path to ffmpeg binary. Without full path
+#animation.frame_format: png       # Controls frame format used by temp files
+#animation.ffmpeg_path: ffmpeg     # Path to ffmpeg binary. Without full path
                                   # $PATH is searched
-animation.ffmpeg_args:            # Additional arguments to pass to ffmpeg
-animation.avconv_path: avconv     # Path to avconv binary. Without full path
+#animation.ffmpeg_args:            # Additional arguments to pass to ffmpeg
+#animation.avconv_path: avconv     # Path to avconv binary. Without full path
                                   # $PATH is searched
-animation.avconv_args:            # Additional arguments to pass to avconv
-animation.mencoder_path: mencoder
+#animation.avconv_args:            # Additional arguments to pass to avconv
+#animation.mencoder_path: mencoder
                                   # Path to mencoder binary. Without full path
                                   # $PATH is searched
-animation.mencoder_args:          # Additional arguments to pass to mencoder
-animation.convert_path: convert   # Path to ImageMagick's convert binary.
+#animation.mencoder_args:          # Additional arguments to pass to mencoder
+#animation.convert_path: convert   # Path to ImageMagick's convert binary.
                                   # On Windows use the full path since convert
                                   # is also the name of a system tool.
-animation.convert_args:
-animation.html: none
+#animation.convert_args:
+#animation.html: none
 
 _internal.classic_mode: True

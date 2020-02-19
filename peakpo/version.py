@@ -5,8 +5,9 @@ Todo:
     Add option to use diffraction file for background subtraction
     Better system should be implemented, such as pbr.
 """
-__version__ = "7.7.27"
+__version__ = "7.7.28"
 """
+7.7.28: Bug fix in 7.7.27 for not updating the info when navigated
 7.7.27: Add new Navigation choices, dpp vs chi.  Also autogenerate dpp.
 7.7.26: Add conda environment to the title bar
 7.7.25: Add HDPI display support, such as retina display

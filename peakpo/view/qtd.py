@@ -2,9 +2,10 @@
 
 # Form implementation generated from reading ui file '../ui/peakpo.ui'
 #
-# Created by: PyQt5 UI code generator 5.9.2
+# Created by: PyQt5 UI code generator 5.12.3
 #
 # WARNING! All changes made in this file will be lost!
+
 
 from .mplwidget import MplWidget
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -70,7 +71,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_24.setObjectName("verticalLayout_24")
         self.frame_9 = QtWidgets.QFrame(self.frame_5)
         sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+            QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.frame_9.sizePolicy().hasHeightForWidth())
@@ -88,6 +89,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pushButton_S_Zoom.sizePolicy().hasHeightForWidth())
         self.pushButton_S_Zoom.setSizePolicy(sizePolicy)
+        self.pushButton_S_Zoom.setMinimumSize(QtCore.QSize(25, 25))
         self.pushButton_S_Zoom.setMaximumSize(QtCore.QSize(25, 25))
         self.pushButton_S_Zoom.setObjectName("pushButton_S_Zoom")
         self.horizontalLayout_21.addWidget(self.pushButton_S_Zoom)
@@ -97,6 +99,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pushButton_S_SaveSession.sizePolicy().hasHeightForWidth())
         self.pushButton_S_SaveSession.setSizePolicy(sizePolicy)
+        self.pushButton_S_SaveSession.setMinimumSize(QtCore.QSize(25, 25))
         self.pushButton_S_SaveSession.setMaximumSize(QtCore.QSize(25, 25))
         self.pushButton_S_SaveSession.setObjectName("pushButton_S_SaveSession")
         self.horizontalLayout_21.addWidget(self.pushButton_S_SaveSession)
@@ -106,6 +109,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pushButton_S_PrevBasePtn.sizePolicy().hasHeightForWidth())
         self.pushButton_S_PrevBasePtn.setSizePolicy(sizePolicy)
+        self.pushButton_S_PrevBasePtn.setMinimumSize(QtCore.QSize(25, 25))
         self.pushButton_S_PrevBasePtn.setMaximumSize(QtCore.QSize(25, 25))
         self.pushButton_S_PrevBasePtn.setObjectName("pushButton_S_PrevBasePtn")
         self.horizontalLayout_21.addWidget(self.pushButton_S_PrevBasePtn)
@@ -115,6 +119,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pushButton_AddBasePtn.sizePolicy().hasHeightForWidth())
         self.pushButton_AddBasePtn.setSizePolicy(sizePolicy)
+        self.pushButton_AddBasePtn.setMinimumSize(QtCore.QSize(25, 25))
         self.pushButton_AddBasePtn.setMaximumSize(QtCore.QSize(25, 25))
         self.pushButton_AddBasePtn.setCheckable(True)
         self.pushButton_AddBasePtn.setObjectName("pushButton_AddBasePtn")
@@ -125,6 +130,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pushButton_S_NextBasePtn.sizePolicy().hasHeightForWidth())
         self.pushButton_S_NextBasePtn.setSizePolicy(sizePolicy)
+        self.pushButton_S_NextBasePtn.setMinimumSize(QtCore.QSize(25, 25))
         self.pushButton_S_NextBasePtn.setMaximumSize(QtCore.QSize(25, 25))
         self.pushButton_S_NextBasePtn.setObjectName("pushButton_S_NextBasePtn")
         self.horizontalLayout_21.addWidget(self.pushButton_S_NextBasePtn)
@@ -134,6 +140,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pushButton_S_PIncrease.sizePolicy().hasHeightForWidth())
         self.pushButton_S_PIncrease.setSizePolicy(sizePolicy)
+        self.pushButton_S_PIncrease.setMinimumSize(QtCore.QSize(25, 25))
         self.pushButton_S_PIncrease.setMaximumSize(QtCore.QSize(25, 25))
         self.pushButton_S_PIncrease.setObjectName("pushButton_S_PIncrease")
         self.horizontalLayout_21.addWidget(self.pushButton_S_PIncrease)
@@ -143,6 +150,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pushButton_S_PDecrease.sizePolicy().hasHeightForWidth())
         self.pushButton_S_PDecrease.setSizePolicy(sizePolicy)
+        self.pushButton_S_PDecrease.setMinimumSize(QtCore.QSize(25, 25))
         self.pushButton_S_PDecrease.setMaximumSize(QtCore.QSize(25, 25))
         self.pushButton_S_PDecrease.setObjectName("pushButton_S_PDecrease")
         self.horizontalLayout_21.addWidget(self.pushButton_S_PDecrease)
@@ -152,7 +160,10 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pushButton_S_TIncrease.sizePolicy().hasHeightForWidth())
         self.pushButton_S_TIncrease.setSizePolicy(sizePolicy)
+        self.pushButton_S_TIncrease.setMinimumSize(QtCore.QSize(25, 25))
         self.pushButton_S_TIncrease.setMaximumSize(QtCore.QSize(25, 25))
+        self.pushButton_S_TIncrease.setIconSize(QtCore.QSize(16, 16))
+        self.pushButton_S_TIncrease.setFlat(False)
         self.pushButton_S_TIncrease.setObjectName("pushButton_S_TIncrease")
         self.horizontalLayout_21.addWidget(self.pushButton_S_TIncrease)
         self.pushButton_S_RoomT = QtWidgets.QPushButton(self.frame_9)
@@ -161,6 +172,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pushButton_S_RoomT.sizePolicy().hasHeightForWidth())
         self.pushButton_S_RoomT.setSizePolicy(sizePolicy)
+        self.pushButton_S_RoomT.setMinimumSize(QtCore.QSize(25, 25))
         self.pushButton_S_RoomT.setMaximumSize(QtCore.QSize(25, 25))
         self.pushButton_S_RoomT.setObjectName("pushButton_S_RoomT")
         self.horizontalLayout_21.addWidget(self.pushButton_S_RoomT)
@@ -170,6 +182,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pushButton_S_TDecrease.sizePolicy().hasHeightForWidth())
         self.pushButton_S_TDecrease.setSizePolicy(sizePolicy)
+        self.pushButton_S_TDecrease.setMinimumSize(QtCore.QSize(25, 25))
         self.pushButton_S_TDecrease.setMaximumSize(QtCore.QSize(25, 25))
         self.pushButton_S_TDecrease.setObjectName("pushButton_S_TDecrease")
         self.horizontalLayout_21.addWidget(self.pushButton_S_TDecrease)

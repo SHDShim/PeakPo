@@ -23,7 +23,7 @@ from .peakfittablecontroller import PeakfitTableController
 from .cakeazicontroller import CakeAziController
 from utils import dialog_savefile, writechi, extract_extension, \
     convert_wl_to_energy, get_sorted_filelist, find_from_filelist, \
-    make_filename
+    make_filename, get_directory
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
 from ds_jcpds import UnitCell
@@ -217,8 +217,9 @@ class MainController(object):
         if reply == QtWidgets.QMessageBox.No:
             return
         if self._temporary_pkpo_exists():
-            temp_chi = os.path.join(self.model.chi_path, 'temporary_pkpo',
-                                    '*.chi')
+            temp_dir = get_directory(self.model.get_base_ptn_filename(),
+                                     '-param')
+            temp_chi = os.path.join(temp_dir, '*.chi')
             for f in glob.glob(temp_chi):
                 os.remove(f)
 
@@ -231,13 +232,14 @@ class MainController(object):
         if reply == QtWidgets.QMessageBox.No:
             return
         if self._temporary_pkpo_exists():
-            temp_cake = os.path.join(self.model.chi_path, 'temporary_pkpo',
-                                     '*.npy')
+            temp_dir = get_directory(self.model.get_base_ptn_filename(),
+                                     '-param')
+            temp_cake = os.path.join(temp_dir, '*.npy')
             for f in glob.glob(temp_cake):
                 os.remove(f)
 
     def _temporary_pkpo_exists(self):
-        temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
+        temp_dir = get_directory(self.model.get_base_ptn_filename(), '-param')
         return os.path.exists(temp_dir)
 
     def check_for_peakfit(self, i):
@@ -516,7 +518,7 @@ class MainController(object):
             bg_roi[1] = self.model.base_ptn.x_raw.max()
             self.widget.doubleSpinBox_Background_ROI_max.setValue(bg_roi[1])
         self.model.base_ptn.subtract_bg(bg_roi, bg_params, yshift=0)
-        temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
+        temp_dir = get_directory(self.model.get_base_ptn_filename(), '-param')
         self.model.base_ptn.write_temporary_bgfiles(temp_dir=temp_dir)
         if self.model.waterfall_exist():
             for pattern in self.model.waterfall_ptn:
@@ -801,23 +803,47 @@ class MainController(object):
         else:
             # pre-existing dpp
             # question if overwrite or not
-            reply = QtWidgets.QMessageBox.question(
-                self.widget, 'Message',
-                "The next pattern already has a dpp.\n" +
-                "If you want to overwrite the existing one based" +
-                " on the dpp of the last pattern, choose YES.\n" +
-                "If you want to keep and open the existing dpp, choose NO.",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                QtWidgets.QMessageBox.No)
-            if reply == QtWidgets.QMessageBox.Yes:
-                self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
-                self.session_ctrl.save_dpp(quiet=True)
+            if self.widget.checkBox_AutoGenDPP.isChecked():
+                reply = QtWidgets.QMessageBox.question(
+                    self.widget, 'Message',
+                    "The next pattern already has a dpp.\n" +
+                    "If you want to overwrite the existing one based" +
+                    " on the dpp of the last pattern, choose YES.\n" +
+                    "If you want to keep and open the existing dpp, choose NO.",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                    QtWidgets.QMessageBox.No)
+                if reply == QtWidgets.QMessageBox.Yes:
+                    self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
+                    self.session_ctrl.save_dpp(quiet=True)
+                else:
+                    # load the existing dpp
+                    # QtWidgets.QMessageBox.warning(
+                    #    self.widget, "Warning", "The existing dpp will be open.")
+                    success = self.session_ctrl._load_dpp(new_filename_dpp)
+                    if success:
+                        if self.model.exist_in_waterfall(self.model.base_ptn.fname):
+                            self.widget.pushButton_AddBasePtn.setChecked(True)
+                        else:
+                            self.widget.pushButton_AddBasePtn.setChecked(False)
+                        self.plot_ctrl.zoom_out_graph()
+                        self.session_ctrl.update_inputs()
+                    else:
+                        QtWidgets.QMessageBox.warning(
+                            self.widget, "Warning", "DPP loading was not successful.")
+                self.plot_ctrl.update()
             else:
-                # load the existing dpp
-                # QtWidgets.QMessageBox.warning(
-                #    self.widget, "Warning", "The existing dpp will be open.")
-                self.session_ctrl._load_dpp(new_filename_dpp)
-            self.plot_ctrl.update()
+                success = self.session_ctrl._load_dpp(new_filename_dpp)
+                if success:
+                    if self.model.exist_in_waterfall(self.model.base_ptn.fname):
+                        self.widget.pushButton_AddBasePtn.setChecked(True)
+                    else:
+                        self.widget.pushButton_AddBasePtn.setChecked(False)
+                    self.plot_ctrl.zoom_out_graph()
+                    self.session_ctrl.update_inputs()
+                else:
+                    QtWidgets.QMessageBox.warning(
+                        self.widget, "Warning", "DPP loading was not successful.")
+                self.plot_ctrl.update()
         return
 
         # QtWidgets.QMessageBox.warning(self.widget, "Warning",
