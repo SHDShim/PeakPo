@@ -62,28 +62,34 @@ class JcpdsTableController(object):
             self.widget.tableWidget_JCPDS.setCellWidget(
                 row, 2, self.widget.tableWidget_JCPDS_pushButton_color)
             # column 3 - V0 tweak
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk = QtWidgets.QDoubleSpinBox()
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setAlignment(
-                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                QtCore.Qt.AlignVCenter)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setMaximum(2.0)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setSingleStep(
-                step)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setDecimals(3)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setProperty(
-                "value", self.model.jcpds_lst[row].twk_v0)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.valueChanged.\
-                connect(self._handle_doubleSpinBoxChanged)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setStyle(
-                SpinBoxFixStyle())
-            self.widget.tableWidget_JCPDS.setCellWidget(
-                row, 3, self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setFocusPolicy(
-                QtCore.Qt.StrongFocus)
+            if (self.model.jcpds_lst[row].symmetry == 'nosymmetry'):
+                item_v0 = QtWidgets.QTableWidgetItem(' ')
+                item_v0.setFlags(QtCore.Qt.ItemIsEnabled)
+                self.widget.tableWidget_JCPDS.setItem(row, 3, item_v0)
+            else:
+                self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk = QtWidgets.QDoubleSpinBox()
+                self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setAlignment(
+                    QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
+                    QtCore.Qt.AlignVCenter)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setMaximum(2.0)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setSingleStep(
+                    step)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setDecimals(3)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setProperty(
+                    "value", self.model.jcpds_lst[row].twk_v0)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.valueChanged.\
+                    connect(self._handle_doubleSpinBoxChanged)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setStyle(
+                    SpinBoxFixStyle())
+                self.widget.tableWidget_JCPDS.setCellWidget(
+                    row, 3, self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setFocusPolicy(
+                    QtCore.Qt.StrongFocus)
             # column 4 - b/a tweak
             if (self.model.jcpds_lst[row].symmetry == 'cubic') or \
                     (self.model.jcpds_lst[row].symmetry == 'tetragonal') or \
-                    (self.model.jcpds_lst[row].symmetry == 'hexagonal'):
+                    (self.model.jcpds_lst[row].symmetry == 'hexagonal') or \
+                    (self.model.jcpds_lst[row].symmetry == 'nosymmetry'):
                 item_b_a = QtWidgets.QTableWidgetItem(' ')
                 item_b_a.setFlags(QtCore.Qt.ItemIsEnabled)
                 self.widget.tableWidget_JCPDS.setItem(row, 4, item_b_a)
@@ -114,7 +120,8 @@ class JcpdsTableController(object):
                 self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.\
                     setFocusPolicy(QtCore.Qt.StrongFocus)
             # column 5 - c/a tweak
-            if (self.model.jcpds_lst[row].symmetry == 'cubic'):
+            if (self.model.jcpds_lst[row].symmetry == 'cubic') or \
+                    (self.model.jcpds_lst[row].symmetry == 'nosymmetry'):
                 # I do not understand why this is the case, item9 is apparently
                 # intensity tweak nothing to do with symmetry.
                 item9 = QtWidgets.QTableWidgetItem(' ')
@@ -147,67 +154,82 @@ class JcpdsTableController(object):
                 self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.\
                     setFocusPolicy(QtCore.Qt.StrongFocus)
             # column 6 - K0 tweak
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk = \
-                QtWidgets.QDoubleSpinBox()
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setAlignment(
-                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                QtCore.Qt.AlignVCenter)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setMaximum(2.0)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setSingleStep(
-                step)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setDecimals(2)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setProperty(
-                "value", self.model.jcpds_lst[row].twk_k0)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.valueChanged.\
-                connect(self._handle_doubleSpinBoxChanged)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setStyle(
-                SpinBoxFixStyle())
-            self.widget.tableWidget_JCPDS.setCellWidget(
-                row, 6, self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setFocusPolicy(
-                QtCore.Qt.StrongFocus)
-            # column 7 - K0p tweak
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk = \
-                QtWidgets.QDoubleSpinBox()
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setAlignment(
-                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                QtCore.Qt.AlignVCenter)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setMaximum(2.0)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setSingleStep(
-                step)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setDecimals(2)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setProperty(
-                "value", self.model.jcpds_lst[row].twk_k0p)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.valueChanged.\
-                connect(self._handle_doubleSpinBoxChanged)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setStyle(
-                SpinBoxFixStyle())
-            self.widget.tableWidget_JCPDS.setCellWidget(
-                row, 7, self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setFocusPolicy(
-                QtCore.Qt.StrongFocus)
+            if (self.model.jcpds_lst[row].symmetry == 'nosymmetry'):
+                item_k0 = QtWidgets.QTableWidgetItem(' ')
+                item_k0.setFlags(QtCore.Qt.ItemIsEnabled)
+                self.widget.tableWidget_JCPDS.setItem(row, 6, item_k0)
+            else:
+                self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk = \
+                    QtWidgets.QDoubleSpinBox()
+                self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setAlignment(
+                    QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
+                    QtCore.Qt.AlignVCenter)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setMaximum(2.0)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setSingleStep(
+                    step)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setDecimals(2)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setProperty(
+                    "value", self.model.jcpds_lst[row].twk_k0)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.valueChanged.\
+                    connect(self._handle_doubleSpinBoxChanged)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setStyle(
+                    SpinBoxFixStyle())
+                self.widget.tableWidget_JCPDS.setCellWidget(
+                    row, 6, self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setFocusPolicy(
+                    QtCore.Qt.StrongFocus)
+                # column 7 - K0p tweak
+                if (self.model.jcpds_lst[row].symmetry == 'nosymmetry'):
+                    item_k0p = QtWidgets.QTableWidgetItem(' ')
+                    item_k0p.setFlags(QtCore.Qt.ItemIsEnabled)
+                    self.widget.tableWidget_JCPDS.setItem(row, 7, item_k0p)
+                else:
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk = \
+                        QtWidgets.QDoubleSpinBox()
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setAlignment(
+                        QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
+                        QtCore.Qt.AlignVCenter)
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setMaximum(2.0)
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setSingleStep(
+                        step)
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setDecimals(2)
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setProperty(
+                        "value", self.model.jcpds_lst[row].twk_k0p)
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.valueChanged.\
+                        connect(self._handle_doubleSpinBoxChanged)
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setStyle(
+                        SpinBoxFixStyle())
+                    self.widget.tableWidget_JCPDS.setCellWidget(
+                        row, 7, self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk)
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setFocusPolicy(
+                        QtCore.Qt.StrongFocus)
             # column 8 - alpha0 tweak
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk = \
-                QtWidgets.QDoubleSpinBox()
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setAlignment(
-                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                QtCore.Qt.AlignVCenter)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setMaximum(
-                2.0)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
-                setSingleStep(step)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setDecimals(
-                2)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setProperty(
-                "value", self.model.jcpds_lst[row].twk_thermal_expansion)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
-                valueChanged.connect(self._handle_doubleSpinBoxChanged)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setStyle(
-                SpinBoxFixStyle())
-            self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
-                setFocusPolicy(QtCore.Qt.StrongFocus)
-            self.widget.tableWidget_JCPDS.setCellWidget(
-                row, 8, self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk)
+            if (self.model.jcpds_lst[row].symmetry == 'nosymmetry'):
+                item_alpha0 = QtWidgets.QTableWidgetItem(' ')
+                item_alpha0.setFlags(QtCore.Qt.ItemIsEnabled)
+                self.widget.tableWidget_JCPDS.setItem(row, 8, item_alpha0)
+            else:
+                self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk = \
+                    QtWidgets.QDoubleSpinBox()
+                self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setAlignment(
+                    QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
+                    QtCore.Qt.AlignVCenter)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setMaximum(
+                    2.0)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
+                    setSingleStep(step)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setDecimals(
+                    2)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setProperty(
+                    "value", self.model.jcpds_lst[row].twk_thermal_expansion)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
+                    valueChanged.connect(self._handle_doubleSpinBoxChanged)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setStyle(
+                    SpinBoxFixStyle())
+                self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
+                    setFocusPolicy(QtCore.Qt.StrongFocus)
+                self.widget.tableWidget_JCPDS.setCellWidget(
+                    row, 8, self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk)
             # column 9 - int tweak
             self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk = \
                 QtWidgets.QDoubleSpinBox()

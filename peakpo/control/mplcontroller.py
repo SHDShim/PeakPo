@@ -359,7 +359,7 @@ class MplController(object):
                         i * 100. * bar_scale / n_displayed_jcpds
                     bar_min = starting_intensity - \
                         (i+0.7) * 100. * bar_scale / n_displayed_jcpds
-                if pressure == 0.:
+                if (pressure == 0.) or (phase.symmetry == 'nosymmetry'):
                     volume = phase.v
                 else:
                     volume = phase.v.item()

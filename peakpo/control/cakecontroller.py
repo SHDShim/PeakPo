@@ -1,7 +1,7 @@
 import os
 from PyQt5 import QtWidgets
 import numpy as np
-from utils import dialog_savefile, writechi, get_directory
+from utils import dialog_savefile, writechi, get_directory, make_filename
 from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
 
@@ -41,8 +41,9 @@ class CakeController(object):
 
     def load_cake_format_file(self):
         # get filename
+        temp_dir = get_directory(self.model.get_base_ptn_filename(), '-param')
         filen = QtWidgets.QFileDialog.getOpenFileName(
-            self.widget, "Open a cake format File", self.model.chi_path,
+            self.widget, "Open a cake format File", temp_dir,  # self.model.chi_path,
             "Data files (*.cakeformat)")[0]
         if filen == '':
             return
@@ -59,9 +60,11 @@ class CakeController(object):
 
     def save_cake_format_file(self):
         # make filename
+        temp_dir = get_directory(self.model.get_base_ptn_filename(), '-param')
         ext = "cakeformat"
-        filen_t = self.model.make_filename(ext)
-        print('please be here')
+        #filen_t = self.model.make_filename(ext)
+        filen_t = make_filename(self.model.base_ptn.fname, ext,
+                                temp_dir=temp_dir)
         filen = dialog_savefile(self.widget, filen_t)
         if str(filen) == '':
             return
@@ -160,7 +163,8 @@ class CakeController(object):
                 self.widget, "Warning",
                 "Image file for the base pattern does not exist.")
             return
-        temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
+        temp_dir = get_directory(self.model.get_base_ptn_filename(), '-param')
+        #temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
         if self.widget.checkBox_UseTempCake.isChecked():
             if os.path.exists(temp_dir):
                 self._load_new_image()

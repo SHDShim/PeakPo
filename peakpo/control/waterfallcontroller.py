@@ -174,7 +174,9 @@ class WaterfallController(object):
                      self.widget.spinBox_BGParam1.value(),
                      self.widget.spinBox_BGParam2.value()]
         if self.widget.checkBox_UseTempBGSub.isChecked():
-            temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
+            temp_dir = get_directory(self.model.get_base_ptn_filename(),
+                                     '-param')
+            #temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
         else:
             temp_dir = None
         self.model.append_a_waterfall_ptn(

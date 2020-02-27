@@ -496,3 +496,16 @@ class PeakPoModel(object):
                     j += 1
                 lineno += 1
         workbook.save(xls_filen)
+
+
+class PeakPoModel707(PeakPoModel):
+    def __init__(self):
+        """
+        azisections: azimuthal section object. inherit base_ptn object
+            azimutal angles, and all pattern variables
+            wonder if I need to revise the fit sections to link to Azimuthal
+            sections
+
+
+        """
+        self.azisections = []

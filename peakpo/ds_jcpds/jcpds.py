@@ -186,9 +186,9 @@ class JCPDS(object):
         elif crystal_system == 6:
             self.symmetry = 'triclinic'
         elif crystal_system == 7:
-            self.symmetry = 'manual'
+            self.symmetry = 'nosymmetry'
         # 1 cubic, 2 hexagonal, 3 tetragonal, 4 orthorhombic
-        # 5 monoclinic, 6 triclinic, 7 manual P, d-sp input
+        # 5 monoclinic, 6 triclinic, 7 no nosymmetry P, d-sp input
 
         k0 = float(item[1])
         k0p = float(item[2])
@@ -275,13 +275,13 @@ class JCPDS(object):
             self.DiffLines.append(DiffLine)
 
         self._cal_v0()
+        self.v = self.v0
         self.a = self.a0
         self.b = self.b0
         self.c = self.c0
         self.alpha = self.alpha0
         self.beta = self.beta0
         self.gamma = self.gamma0
-        self.v = self.v0
 
     def _cal_v0(self):
         """
@@ -301,7 +301,7 @@ class JCPDS(object):
         if pressure == 0.0:  # p = 0 GPa
             self.v = self.v0
         else:
-            if self.symmetry == 'manual':
+            if self.symmetry == 'nosymmetry':
                 self.v = self.v0
             else:
                 # print(pressure_st, self.v0, self.k0, self.k0p)
@@ -317,19 +317,20 @@ class JCPDS(object):
 
         recalculate_zero = False: use the table d-spacing value for 0 GPa
         """
+
+        # angles are always set to original values, so no need to reset
+        # self.alpha = self.alpha0;
+        # self.beta = self.beta0; self.gamma = self.gamma0
         self._cal_v(pressure, temperature)
         if b_a is None:
             b_a = self.b0 / self.a0
         if c_a is None:
             c_a = self.c0 / self.a0
 
-        # angles are always set to original values, so no need to reset
-        # self.alpha = self.alpha0;
-        # self.beta = self.beta0; self.gamma = self.gamma0
-
         if (((pressure == 0.0) and (use_table_for_0GPa))
-                or (self.symmetry == 'manual')):
+                or (self.symmetry == 'nosymmetry')):
             # p = 0 GPa, resetting to uc0 is necessary
+            self.v = self.v0
             self.a = self.a0
             self.b = self.b0
             self.c = self.c0
@@ -554,14 +555,14 @@ class JCPDS(object):
         f.write(comments + "\n")
 
         # 1 cubic, 2 hexagonal, 3 tetragonal, 4 orthorhombic
-        # 5 monoclinic, 6 triclinic, 7 manual P, d-sp input
+        # 5 monoclinic, 6 triclinic, 7 nosymmetry P, d-sp input
 
         str_el = "{0:.2f} {1:.2f}".format(self.k0, self.k0p)
 
         if self.symmetry == 'cubic':  # cubic
             crystal_system = '1 '
             str_uc = "{0:.5f}".format(self.a0)
-        elif self.symmetry == 'manual':  # P, d-sp input
+        elif self.symmetry == 'nosymmetry':  # P, d-sp input
             crystal_system = '7 '
             str_uc = "{0:.5f}".format(self.a0)
         elif self.symmetry == 'hexagonal' or self.symmetry == 'trigonal':
@@ -734,7 +735,7 @@ class JCPDSplt(JCPDS):
         f.write(comments + "\n")
 
         # 1 cubic, 2 hexagonal, 3 tetragonal, 4 orthorhombic
-        # 5 monoclinic, 6 triclinic, 7 manual P, d-sp input
+        # 5 monoclinic, 6 triclinic, 7 nosymmetry P, d-sp input
 
         str_el = "{0:.2f} {1:.2f}".format(self.k0, self.k0p)
 
@@ -745,7 +746,7 @@ class JCPDSplt(JCPDS):
         if self.symmetry == 'cubic':  # cubic
             crystal_system = '1 '
             str_uc = "{0:.5f}".format(a0_twk)
-        elif self.symmetry == 'manual':  # P, d-sp input
+        elif self.symmetry == 'nosymmetry':  # P, d-sp input
             crystal_system = '7 '
             str_uc = "{0:.5f}".format(a0_twk)
         elif self.symmetry == 'hexagonal' or self.symmetry == 'trigonal':
@@ -817,6 +818,9 @@ def get_cell_prm_twk(symmetry, v_twk, a0, b0, c0, alpha0, beta0, gamma0,
         c_twk = c_a * a_twk
         b_twk = b_a_twk * a_twk
     else:
-        print('no symmetry is given')
+        #print('no symmetry is given')
+        a_twk = a0
+        b_twk = b0
+        c_twk = c0
 
     return a_twk, b_twk, c_twk

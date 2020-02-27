@@ -165,7 +165,7 @@ class Pattern(object):
 
 class PatternPeakPo(Pattern):
     '''
-    Do not update this, this is obsolte.
+    Do not update this.
     Exist only for reading old PPSS files.
     Do not delete this, if so old PPSS cannot be read.
     This is used only for old PPSS file.
@@ -181,3 +181,8 @@ class PatternPeakPo(Pattern):
             * 2. / self.wavelength
         self.invDsp_bgsub = np.sin(np.radians(self.x_bgsub / 2.)) \
             * 2. / self.wavelength
+
+
+class AziPatternPeakPo(PatternPeakPo):
+    def __init__(self):
+        self.azi_ranges = []

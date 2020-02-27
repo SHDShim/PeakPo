@@ -341,7 +341,10 @@ class PeakFitController(object):
             return
         width = self.widget.doubleSpinBox_InitialFWHM.value()
         order = self.widget.spinBox_BGPolyOrder.value()
-        self.model.current_section.prepare_for_fitting(order)
+        maxwidth = self.widget.doubleSpinBox_MaxFWHM.value()
+        centerrange = self.widget.doubleSpinBox_PeakCenterRange.value()
+        self.model.current_section.prepare_for_fitting(order,
+                                                       maxwidth, centerrange)
         success = self.model.current_section.conduct_fitting()
         if success:
             QtWidgets.QMessageBox.warning(self.widget, "Information",

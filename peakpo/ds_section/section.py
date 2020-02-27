@@ -57,7 +57,8 @@ class Section(object):
         self.y_bgsub = y_bgsub
         self.y_bg = y_bg
 
-    def set_single_peak(self, x_center, fwhm, hkl=[0, 0, 0], phase_name=''):
+    def set_single_peak(self, x_center, fwhm, hkl=[0, 0, 0],
+                        phase_name='unknown'):
         if (x_center > self.x.max()) or (x_center < self.x.min()):
             return False
         y_center = self.get_nearest_intensity(x_center)
@@ -111,7 +112,7 @@ class Section(object):
         index = (np.abs(np.asarray(x_c_lst) - x)).argmin()
         self.peaks_in_queue.pop(index)
 
-    def prepare_for_fitting(self, poly_order):
+    def prepare_for_fitting(self, poly_order, maxwidth, centerrange):
         """
         :param x_center: numpy array of initial x values at picked centers
         :param y_center: numpy array of initial y values at picked centers
@@ -133,10 +134,12 @@ class Section(object):
             peak_mod = PseudoVoigtModel(prefix=prefix, )
             pars.update(peak_mod.make_params())
             pars[prefix + 'center'].set(
-                value=peak['center'], min=self.x.min(), max=self.x.max(),
+                value=peak['center'], min=peak['center']-centerrange,
+                max=peak['center']+centerrange,
                 vary=peak['center_vary'])
             pars[prefix + 'sigma'].set(
-                value=peak['sigma'], min=0.0, vary=peak['sigma_vary'])
+                value=peak['sigma'], min=0.0, vary=peak['sigma_vary'],
+                max=maxwidth)
             pars[prefix + 'amplitude'].set(
                 value=peak['amplitude'], min=0, vary=peak['amplitude_vary'])
             pars[prefix + 'fraction'].set(

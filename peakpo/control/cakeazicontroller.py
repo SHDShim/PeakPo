@@ -250,6 +250,7 @@ class CakeAziController(object):
         writechi(filen_chi, tth[0], intensity_output,
                  preheader=preheader_line0 + preheader_line1 +
                  preheader_line2)
+        self._save_cake_marker_file()
         return filen_chi
     """
     def integrate_to_1d(self):

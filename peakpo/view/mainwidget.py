@@ -65,6 +65,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_HKLFontSize.setCurrentText('8')
         self.comboBox_PnTFontSize.addItems(fontsizes)
         self.comboBox_PnTFontSize.setCurrentText('16')
+        self.comboBox_Symmetry.addItems(['cubic', 'tetragonal',
+                                         'hexagonal', 'orthorhombic'])
+        self.comboBox_Symmetry.setCurrentText('cubic')
         self.tableWidget_DiffImgAzi.\
             setHorizontalHeaderLabels(['Notes', '2th', 'Azi', '2th', 'Azi'])
         # navigation toolbar modification
@@ -121,12 +124,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             lambda: self.set_q_tstep(1000.))
         self.doubleSpinBox_PStep.valueChanged.connect(self.set_pstep)
         self.spinBox_TStep.valueChanged.connect(self.set_tstep)
+        """
         self.pushButton_SetUCFitStepTo0_01.clicked.connect(
             lambda: self.set_ustep(0.01))
         self.pushButton_SetUCFitStepTo0_001.clicked.connect(
             lambda: self.set_ustep(0.001))
         self.pushButton_SetUCFitStepTo0_0001.clicked.connect(
             lambda: self.set_ustep(0.0001))
+        """
         self.pushButton_SetJCPDSStepTo0001.clicked.connect(
             lambda: self.set_jstep(0.001))
         self.pushButton_SetJCPDSStepTo001.clicked.connect(
@@ -136,8 +141,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_AboutPeakpo.clicked.connect(self.about)
         self.pushButton_Help.clicked.connect(self.shortcutkeys)
 
+    """
     def set_ustep(self, value):
         self.doubleSpinBox_UCFitStep.setValue(value)
+    """
 
     def set_jstep(self, value):
         self.doubleSpinBox_JCPDSStep.setValue(value)

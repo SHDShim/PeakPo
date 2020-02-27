@@ -16,7 +16,7 @@ from .jcpdscontroller import JcpdsController
 from .ucfitcontroller import UcfitController
 from .waterfalltablecontroller import WaterfallTableController
 from .jcpdstablecontroller import JcpdsTableController
-from .ucfittablecontroller import UcfitTableController
+#from .ucfittablecontroller import UcfitTableController
 from .sessioncontroller import SessionController
 from .peakfitcontroller import PeakFitController
 from .peakfittablecontroller import PeakfitTableController
@@ -48,7 +48,7 @@ class MainController(object):
         self.jcpds_ctrl = JcpdsController(self.model, self.widget)
         self.waterfalltable_ctrl = \
             WaterfallTableController(self.model, self.widget)
-        self.ucfittable_ctrl = UcfitTableController(self.model, self.widget)
+        #self.ucfittable_ctrl = UcfitTableController(self.model, self.widget)
         self.jcpdstable_ctrl = JcpdsTableController(self.model, self.widget)
         self.session_ctrl = SessionController(self.model, self.widget)
         self.peakfit_ctrl = PeakFitController(self.model, self.widget)
@@ -155,8 +155,10 @@ class MainController(object):
             self.apply_changes_to_graph)
         self.widget.pushButton_UpdateJCPDSSteps.clicked.connect(
             self.update_jcpds_table)
+        """
         self.widget.pushButton_UpdateUCFitSteps.clicked.connect(
             self.update_ucfit_table)
+        """
         self.widget.pushButton_IntegrateCake.clicked.connect(
             self.integrate_to_1d)
         self.widget.pushButton_PrevBasePtn.clicked.connect(
@@ -204,9 +206,11 @@ class MainController(object):
         step = self.widget.doubleSpinBox_JCPDSStep.value()
         self.jcpdstable_ctrl.update_steps_only(step)
 
+    """
     def update_ucfit_table(self):
         step = self.widget.doubleSpinBox_UCFitStep.value()
         self.ucfittable_ctrl.update_steps_only(step)
+    """
 
     def del_temp_chi(self):
         reply = QtWidgets.QMessageBox.question(
@@ -287,7 +291,7 @@ class MainController(object):
             return
         i = 0
         for j in range(idx_checked.__len__()):
-            if self.model.jcpds_lst[idx_checked[j]].symmetry != 'manual':
+            if self.model.jcpds_lst[idx_checked[j]].symmetry != 'nosymmetry':
                 phase = UnitCell()
                 phase.name = self.model.jcpds_lst[idx_checked[j]].name
                 phase.color = self.model.jcpds_lst[idx_checked[j]].color
@@ -307,7 +311,7 @@ class MainController(object):
                 QtWidgets.QMessageBox.warning(
                     self.widget, "Warning",
                     "You cannot send a jcpds without symmetry.")
-        self.ucfittable_ctrl.update()
+        # self.ucfittable_ctrl.update()
         self.jcpdstable_ctrl.update()
         self.plot_ctrl.update()
         return
