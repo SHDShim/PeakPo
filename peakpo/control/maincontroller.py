@@ -85,8 +85,10 @@ class MainController(object):
         self.widget.doubleSpinBox_SetWavelength.valueChanged.connect(
             self.apply_wavelength)
         self.widget.pushButton_SaveBgSubCHI.clicked.connect(self.save_bgsubchi)
+        """
         self.widget.pushButton_ExportToUCFit.clicked.connect(
             self.export_to_ucfit)
+        """
         self.widget.pushButton_ImportJlist.clicked.connect(
             self.load_jlist_from_session)
         self.widget.pushButton_UpdateBackground.clicked.connect(
@@ -274,10 +276,8 @@ class MainController(object):
         self.jcpdstable_ctrl.update()
         self.plot_ctrl.update()
 
+    """
     def export_to_ucfit(self):
-        """
-        Export an item from jlist to ucfitlist
-        """
         if not self.model.jcpds_exist():
             return
         idx_checked = [
@@ -315,6 +315,7 @@ class MainController(object):
         self.jcpdstable_ctrl.update()
         self.plot_ctrl.update()
         return
+    """
 
     def save_bgsubchi(self):
         """

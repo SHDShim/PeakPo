@@ -116,17 +116,21 @@ class MplController(object):
         if self.model.base_ptn_exist():
             if self.widget.checkBox_ShortPlotTitle.isChecked():
                 title = os.path.basename(self.model.base_ptn.fname)
+                fontsize = 12
             else:
                 title = self.model.base_ptn.fname
+                fontsize = 8
             self.widget.mpl.canvas.fig.suptitle(
-                title, color=self.obj_color)
+                title, color=self.obj_color, fontsize=fontsize)
             self._plot_diffpattern(gsas_style)
             if self.model.waterfall_exist():
                 self._plot_waterfallpatterns()
         # if self.model.jcpds_exist():
         #    self._plot_jcpds(limits)
+        """
         if self.model.ucfit_exist():
             self._plot_ucfit()
+        """
         if (self.widget.tabWidget.currentIndex() == 8):
             if gsas_style:
                 self._plot_peakfit_in_gsas_style()
@@ -206,7 +210,7 @@ class MplController(object):
                 self.widget.mpl.canvas.ax_cake, useblit=False, c= 'r',
                 lw = 1, ls=':')
             """
-
+    """
     def _plot_ucfit(self):
         i = 0
         for j in self.model.ucfit_lst:
@@ -252,6 +256,7 @@ class MplController(object):
                             self.widget.comboBox_PtnJCPDSBarThickness.
                             currentText()))
             i += 1
+    """
 
     def _plot_cake(self):
         intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()

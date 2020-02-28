@@ -27,10 +27,12 @@ class JcpdsController(object):
             lambda: self.make_jlist(append=True))
         self.widget.checkBox_Intensity.clicked.connect(
             lambda: self._apply_changes_to_graph(limits=None))
+        """
         self.widget.pushButton_CheckAllJCPDS.clicked.connect(
             self.check_all_jcpds)
         self.widget.pushButton_UncheckAllJCPDS.clicked.connect(
             self.uncheck_all_jcpds)
+        """
         self.widget.pushButton_MoveUp.clicked.connect(self.move_up_jcpds)
         self.widget.pushButton_MoveDown.clicked.connect(self.move_down_jcpds)
         self.widget.pushButton_ExportXLS.clicked.connect(self.save_xls)
@@ -147,7 +149,7 @@ class JcpdsController(object):
         self.widget.tableWidget_JCPDS.setItemSelected(
             self.widget.tableWidget_JCPDS.item(i, 1), False)
         """
-
+    """
     def check_all_jcpds(self):
         if not self.model.jcpds_exist():
             return
@@ -163,6 +165,7 @@ class JcpdsController(object):
             phase.display = False
         self.jcpdstable_ctrl.update()
         self._apply_changes_to_graph()
+    """
 
     def remove_a_jcpds(self):
         reply = QtWidgets.QMessageBox.question(

@@ -27,11 +27,9 @@ class UcfitTableController(object):
         {'h';'k';'l';'twoth';'display'}
         """
         self.phase = phase
-        print(self.phase, "please")
         if self.phase == None:
             return
         n_columns = 5
-        print()
         n_rows = len(self.ucfit_model[self.phase])  # count for number of jcpds
         self.widget.tableWidget_UnitCell.setColumnCount(n_columns)
         self.widget.tableWidget_UnitCell.setRowCount(n_rows)
