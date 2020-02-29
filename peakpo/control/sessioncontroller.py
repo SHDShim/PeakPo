@@ -1,5 +1,7 @@
 import os
+import sys
 import dill
+import pyFAI
 import zipfile
 import copy
 from PyQt5 import QtWidgets
@@ -8,7 +10,8 @@ from .waterfalltablecontroller import WaterfallTableController
 from .jcpdstablecontroller import JcpdsTableController
 from .peakfittablecontroller import PeakfitTableController
 from .cakemakecontroller import CakemakeController
-from utils import dialog_savefile, convert_wl_to_energy
+from utils import dialog_savefile, convert_wl_to_energy, get_temp_dir, \
+    make_filename
 
 
 class SessionController(object):
@@ -66,6 +69,8 @@ class SessionController(object):
                 self.widget.pushButton_AddBasePtn.setChecked(True)
             else:
                 self.widget.pushButton_AddBasePtn.setChecked(False)
+            if self.widget.checkBox_ShowCake.isChecked():
+                self._load_cake_format_file()
             self.plot_ctrl.zoom_out_graph()
             self.update_inputs()
         else:
@@ -157,6 +162,50 @@ class SessionController(object):
             return self._set_from_dpp(filen_dpp, model_dpp,
                                       jlistonly=jlistonly)
         #
+
+    def _load_cake_format_file(self):
+        # get filename
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
+        """
+        filen = QtWidgets.QFileDialog.getOpenFileName(
+            self.widget, "Open a cake format File", temp_dir,  # self.model.chi_path,
+            "Data files (*.cakeformat)")[0]
+        """
+        ext = "cakeformat"
+        #filen_t = self.model.make_filename(ext)
+        filen = make_filename(self.model.base_ptn.fname, ext,
+                                temp_dir=temp_dir)
+        if os.path.exists(filen):
+            temp_values = []
+            with open(filen, "r") as f:
+                for line in f:
+                    temp_values.append(float(line.split(':')[1]))
+            self.widget.spinBox_AziShift.setValue(temp_values[0])
+            self.widget.spinBox_MaxCakeScale.setValue(temp_values[1])
+            self.widget.horizontalSlider_VMin.setValue(temp_values[2])
+            self.widget.horizontalSlider_VMax.setValue(temp_values[3])
+            self.widget.horizontalSlider_MaxScaleBars.setValue(temp_values[4])
+
+    def _save_cake_format_file(self):
+        # make filename
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
+        ext = "cakeformat"
+        #filen_t = self.model.make_filename(ext)
+        filen = make_filename(self.model.base_ptn.fname, ext,
+                                temp_dir=temp_dir)
+        # save cake related Values
+        names = ['azi_shift', 'int_max', 'min_bar', 'max_bar', 'scale_bar']
+        values = [self.widget.spinBox_AziShift.value(),
+                  self.widget.spinBox_MaxCakeScale.value(),
+                  self.widget.horizontalSlider_VMin.value(),
+                  self.widget.horizontalSlider_VMax.value(),
+                  self.widget.horizontalSlider_MaxScaleBars.value()]
+
+        with open(filen, "w") as f:
+            for n, v in zip(names, values):
+                f.write(n + ' : ' + str(v) + '\n')
+
+
 
     def _set_from_dpp(self, filen_dpp, model_dpp, new_folder=None,
                       jlistonly=False):
@@ -408,6 +457,21 @@ class SessionController(object):
             self.model.save_temperature(
                 self.widget.doubleSpinBox_Temperature.value())
             self._dump_dpp(new_filename)
+            if self.widget.checkBox_ShowCake.isChecked():
+                self._save_cake_format_file()
+            # save version information for key modules
+            env = os.environ['CONDA_DEFAULT_ENV']
+            temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
+            ext = "sysinfo.txt"
+            #filen_t = self.model.make_filename(ext)
+            filen = make_filename(self.model.base_ptn.fname, ext,
+                                    temp_dir=temp_dir)
+            with open(filen, "w") as f:
+                f.write('OS: ' + os.name + '\n')
+                f.write('Python ver.: ' + sys.version + '\n')
+                f.write("Environment: " + env  + '\n')
+                f.write("dill ver.: " + dill.__version__  + '\n')
+                f.write("pyFAI ver.: " + pyFAI.version  + '\n')
             self.widget.textEdit_SessionFileName.setText(str(new_filename))
             self.widget.tableWidget_PkFtSections.setStyleSheet(
                 "Background-color:None;color:rgb(0,0,0);")

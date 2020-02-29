@@ -23,7 +23,7 @@ from .peakfittablecontroller import PeakfitTableController
 from .cakeazicontroller import CakeAziController
 from utils import dialog_savefile, writechi, extract_extension, \
     convert_wl_to_energy, get_sorted_filelist, find_from_filelist, \
-    make_filename, get_directory
+    make_filename, get_directory, get_temp_dir
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
 from ds_jcpds import UnitCell
@@ -223,8 +223,7 @@ class MainController(object):
         if reply == QtWidgets.QMessageBox.No:
             return
         if self._temporary_pkpo_exists():
-            temp_dir = get_directory(self.model.get_base_ptn_filename(),
-                                     '-param')
+            temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
             temp_chi = os.path.join(temp_dir, '*.chi')
             for f in glob.glob(temp_chi):
                 os.remove(f)
@@ -238,14 +237,13 @@ class MainController(object):
         if reply == QtWidgets.QMessageBox.No:
             return
         if self._temporary_pkpo_exists():
-            temp_dir = get_directory(self.model.get_base_ptn_filename(),
-                                     '-param')
+            temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
             temp_cake = os.path.join(temp_dir, '*.npy')
             for f in glob.glob(temp_cake):
                 os.remove(f)
 
     def _temporary_pkpo_exists(self):
-        temp_dir = get_directory(self.model.get_base_ptn_filename(), '-param')
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
         return os.path.exists(temp_dir)
 
     def check_for_peakfit(self, i):
@@ -523,7 +521,7 @@ class MainController(object):
             bg_roi[1] = self.model.base_ptn.x_raw.max()
             self.widget.doubleSpinBox_Background_ROI_max.setValue(bg_roi[1])
         self.model.base_ptn.subtract_bg(bg_roi, bg_params, yshift=0)
-        temp_dir = get_directory(self.model.get_base_ptn_filename(), '-param')
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
         self.model.base_ptn.write_temporary_bgfiles(temp_dir=temp_dir)
         if self.model.waterfall_exist():
             for pattern in self.model.waterfall_ptn:
@@ -795,6 +793,7 @@ class MainController(object):
                 """
                 self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
                 self.session_ctrl.save_dpp(quiet=True)
+                self.model.clear_section_list()
                 self.plot_ctrl.update()
             else:
                 QtWidgets.QMessageBox.warning(
@@ -820,6 +819,7 @@ class MainController(object):
                 if reply == QtWidgets.QMessageBox.Yes:
                     self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
                     self.session_ctrl.save_dpp(quiet=True)
+                    self.model.clear_section_list()
                 else:
                     # load the existing dpp
                     # QtWidgets.QMessageBox.warning(
@@ -830,12 +830,12 @@ class MainController(object):
                             self.widget.pushButton_AddBasePtn.setChecked(True)
                         else:
                             self.widget.pushButton_AddBasePtn.setChecked(False)
+                        if self.widget.checkBox_ShowCake.isChecked():
+                            self.session_ctrl._load_cake_format_file()
                         self.plot_ctrl.zoom_out_graph()
-                        self.session_ctrl.update_inputs()
                     else:
                         QtWidgets.QMessageBox.warning(
                             self.widget, "Warning", "DPP loading was not successful.")
-                self.plot_ctrl.update()
             else:
                 success = self.session_ctrl._load_dpp(new_filename_dpp)
                 if success:
@@ -843,12 +843,18 @@ class MainController(object):
                         self.widget.pushButton_AddBasePtn.setChecked(True)
                     else:
                         self.widget.pushButton_AddBasePtn.setChecked(False)
+                    if self.widget.checkBox_ShowCake.isChecked():
+                        self.session_ctrl._load_cake_format_file()
                     self.plot_ctrl.zoom_out_graph()
-                    self.session_ctrl.update_inputs()
                 else:
                     QtWidgets.QMessageBox.warning(
                         self.widget, "Warning", "DPP loading was not successful.")
-                self.plot_ctrl.update()
+        self.plot_ctrl.update()
+        self.jcpdstable_ctrl.update()
+        self.peakfit_table_ctrl.update_sections()
+        self.peakfit_table_ctrl.update_peak_parameters()
+        self.peakfit_table_ctrl.update_baseline_constraints()
+        self.peakfit_table_ctrl.update_peak_constraints()
         return
 
         # QtWidgets.QMessageBox.warning(self.widget, "Warning",

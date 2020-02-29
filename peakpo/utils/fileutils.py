@@ -127,3 +127,9 @@ def change_file_path(filename, new_path):
         filen_ext = filen_ext1
     new_filename = os.path.join(new_path, filen_ext)
     return new_filename
+
+def get_temp_dir(base_ptn_filename, branch='-param'):
+    temp_dir = get_directory(base_ptn_filename, branch)
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+    return temp_dir

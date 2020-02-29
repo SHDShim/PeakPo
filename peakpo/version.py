@@ -2,12 +2,12 @@
 PeakPo version
 
 Todo:
-    save azimuthal integration results in dpp, allowing for easy PeakFit
-    for azimuthal integration patterns.
+    - save azimuthal integration results in dpp, allowing for easy PeakFit
+    - for azimuthal integration patterns.
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.7.30b"
+__version__ = "7.7.30c"
 """
 7.7.30: Unit-cell fitting added for cubic, tetragonal, hexagonal, and orthorhombic
 7.7.29: Update for better handling nosymmetry case of jcpds.

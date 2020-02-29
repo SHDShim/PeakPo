@@ -9,7 +9,7 @@ from .ucfittablecontroller import UcfitTableController
 from utils import SpinBoxFixStyle
 from utils import xls_ucfitlist, dialog_savefile, fit_cubic_cell, \
     fit_hexagonal_cell, fit_tetragonal_cell, fit_orthorhombic_cell, \
-    make_output_table, get_directory, make_filename, cal_dspacing
+    make_output_table, get_directory, make_filename, cal_dspacing, get_temp_dir
 
 
 class UcfitController(object):
@@ -253,7 +253,7 @@ class UcfitController(object):
 
         # save jcpds and save output file automatically.
         # ask for filename.  at the moment, simply overwrite
-        temp_dir = get_directory(self.model.get_base_ptn_filename(), '-param')
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
         ext = "ucfit.jcpds"
         #filen_t = self.model.make_filename(ext)
         filen_t = make_filename(self.template_jcpds.file, ext,

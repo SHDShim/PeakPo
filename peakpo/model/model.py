@@ -58,7 +58,7 @@ class PeakPoModel(object):
         self.current_section = copy.deepcopy(self.section_lst[index])
 
     def clear_section_list(self):
-        self.section_list[:] = []
+        self.section_lst[:] = []
 
     def get_number_of_section(self):
         return self.section_lst.__len__()

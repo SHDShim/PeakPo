@@ -14,6 +14,7 @@ class PeakfitTableController(object):
         show a list of peaks in the list window of tab 2
         '''
         if not self.model.current_section_exist():
+            self.widget.tableWidget_PkParams.clearContents()
             return
         """
         if not self.model.current_section.fitted():
@@ -88,6 +89,7 @@ class PeakfitTableController(object):
         n_columns = 3
         n_rows = self.model.get_number_of_section()  # count for number of jcpds
         if n_rows == 0:
+            self.widget.tableWidget_PkFtSections.clearContents()
             return
         self.widget.tableWidget_PkFtSections.setColumnCount(n_columns)
         self.widget.tableWidget_PkFtSections.setRowCount(n_rows)
@@ -119,6 +121,7 @@ class PeakfitTableController(object):
     def update_baseline_constraints(self):
         '''show a list of local bg in a tab'''
         if not self.model.current_section_exist():
+            self.widget.tableWidget_BackgroundConstraints.clearContents()
             return
         self.widget.tableWidget_BackgroundConstraints.clearContents()
         n_columns = 2
@@ -187,6 +190,7 @@ class PeakfitTableController(object):
     def update_peak_constraints(self):
         '''show a list of peaks in the list window of tab 3 for config'''
         if not self.model.current_section_exist():
+            self.widget.tableWidget_PeakConstraints.clearContents()
             return
         self.widget.tableWidget_PeakConstraints.clearContents()
         n_columns = 8

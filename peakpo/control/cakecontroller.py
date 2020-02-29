@@ -1,7 +1,8 @@
 import os
 from PyQt5 import QtWidgets
 import numpy as np
-from utils import dialog_savefile, writechi, get_directory, make_filename
+from utils import dialog_savefile, writechi, get_directory, make_filename, \
+    get_temp_dir
 from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
 
@@ -27,21 +28,24 @@ class CakeController(object):
             self.reset_max_cake_scale)
         self.widget.checkBox_WhiteForPeak.clicked.connect(
             self._apply_changes_to_graph)
+        """
         self.widget.pushButton_Load_CakeFormatFile.clicked.connect(
             self.load_cake_format_file)
         self.widget.pushButton_Save_CakeFormatFile.clicked.connect(
             self.save_cake_format_file)
+        """
 
     def update_cake(self):
         if self.model.poni_exist():
             self.produce_cake()
-            temp_dir = get_directory(self.model.get_base_ptn_filename(), '-param')
+            temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
             self.model.diff_img.write_temp_cakefiles(temp_dir=temp_dir)
             self._apply_changes_to_graph()
 
+    """
     def load_cake_format_file(self):
         # get filename
-        temp_dir = get_directory(self.model.get_base_ptn_filename(), '-param')
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
         filen = QtWidgets.QFileDialog.getOpenFileName(
             self.widget, "Open a cake format File", temp_dir,  # self.model.chi_path,
             "Data files (*.cakeformat)")[0]
@@ -60,7 +64,7 @@ class CakeController(object):
 
     def save_cake_format_file(self):
         # make filename
-        temp_dir = get_directory(self.model.get_base_ptn_filename(), '-param')
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
         ext = "cakeformat"
         #filen_t = self.model.make_filename(ext)
         filen_t = make_filename(self.model.base_ptn.fname, ext,
@@ -79,6 +83,7 @@ class CakeController(object):
         with open(filen, "w") as f:
             for n, v in zip(names, values):
                 f.write(n + ' : ' + str(v) + '\n')
+    """
 
     def reset_max_cake_scale(self):
         intensity_cake, _, _ = self.model.diff_img.get_cake()
@@ -163,20 +168,20 @@ class CakeController(object):
                 self.widget, "Warning",
                 "Image file for the base pattern does not exist.")
             return
-        temp_dir = get_directory(self.model.get_base_ptn_filename(), '-param')
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
         #temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
         if self.widget.checkBox_UseTempCake.isChecked():
-            if os.path.exists(temp_dir):
-                self._load_new_image()
-                success = self.model.diff_img.read_cake_from_tempfile(
-                    temp_dir=temp_dir)
-                if success:
-                    pass
-                else:
-                    self._update_temp_cake_files(temp_dir)
+            #if os.path.exists(temp_dir):
+            self._load_new_image()
+            success = self.model.diff_img.read_cake_from_tempfile(
+                temp_dir=temp_dir)
+            if success:
+                pass
             else:
-                os.makedirs(temp_dir)
                 self._update_temp_cake_files(temp_dir)
+            #else:
+                #os.makedirs(temp_dir)
+                #self._update_temp_cake_files(temp_dir)
         else:
             self._update_temp_cake_files(temp_dir)
 
