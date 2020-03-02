@@ -8,7 +8,7 @@ from matplotlib import colors
 import matplotlib.cm as cmx
 from .mplcontroller import MplController
 from .jcpdstablecontroller import JcpdsTableController
-from utils import xls_jlist, dialog_savefile
+from utils import xls_jlist, dialog_savefile, make_filename, get_temp_dir
 
 
 class JcpdsController(object):
@@ -198,7 +198,9 @@ class JcpdsController(object):
         """
         if not self.model.jcpds_exist():
             return
-        filen_xls_t = self.model.make_filename('jlist.xls')
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
+        filen_xls_t = make_filename(self.model.get_base_ptn_filename(),
+                      'jlist.xls', temp_dir=temp_dir)
         filen_xls = dialog_savefile(self.widget, filen_xls_t)
         if str(filen_xls) == '':
             return

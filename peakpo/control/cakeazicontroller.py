@@ -229,7 +229,8 @@ class CakeAziController(object):
         for tth_i, intensity_i in zip(tth, intensity):
             if not np.array_equal(tth_i, tth[0]):
                 QtWidgets.QMessageBox.warning(
-                    self.widget, 'Warning', 'Error occured.  No output.')
+                    self.widget, 'Warning',
+                    'Error occured while preparing for azimuthal integration. No output.')
                 return None
             intensity_merged += intensity_i
         n_azi = azi_list.__len__()

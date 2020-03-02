@@ -3,6 +3,7 @@ import dill
 from PyQt5 import QtWidgets
 from .mplcontroller import MplController
 from .peakfittablecontroller import PeakfitTableController
+from utils import make_filename, get_temp_dir
 
 
 class PeakFitController(object):
@@ -359,7 +360,9 @@ class PeakFitController(object):
                                           'Fitting failed.')
 
     def save_to_xls(self):
-        filen_xls = self.model.make_filename('peakfit.xls')
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
+        filen_xls = make_filename(self.model.get_base_ptn_filename(),
+                      'peakfit.xls', temp_dir=temp_dir)
         reply = QtWidgets.QMessageBox.question(
             self.widget, 'Question',
             'Do you want to save in default filename, %s ?' % filen_xls,

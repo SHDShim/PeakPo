@@ -1,8 +1,9 @@
 import os
+import shutil
 from PyQt5 import QtWidgets
 import numpy as np
 from utils import dialog_savefile, writechi, get_directory, make_filename, \
-    get_temp_dir
+    get_temp_dir, extract_filename, extract_extension
 from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
 
@@ -113,11 +114,25 @@ class CakeController(object):
                 self.widget, 'Warning', 'Choose PONI file first.')
             self.widget.checkBox_ShowCake.setChecked(False),
             return False
+        # check if model.poni exist
+        if not os.path.exists(self.model.poni):
+            QtWidgets.QMessageBox.warning(
+                self.widget, 'Warning', 'The poni does not exist in the path.')
+            self.widget.checkBox_ShowCake.setChecked(False),
+            return False
         if not self.model.base_ptn_exist():
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'Choose CHI file first.')
             self.widget.checkBox_ShowCake.setChecked(False)
             return False
+        # check if model.poni is in temp_dir
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
+        poni_filen = extract_filename(self.model.poni) + '.' + \
+                     extract_extension(self.model.poni)
+        if self.model.poni != os.path.join(temp_dir, poni_filen):
+            shutil.copy(self.model.poni, os.path.join(temp_dir, poni_filen))
+            self.model.poni = os.path.join(temp_dir, poni_filen)
+            self.widget.lineEdit_PONI.setText(self.model.poni)
         filen_tif = self.model.make_filename('tif', original=True)
         filen_mar3450 = self.model.make_filename('mar3450', original=True)
         filen_cbf = self.model.make_filename('cbf', original=True)
@@ -199,7 +214,13 @@ class CakeController(object):
             self.model.chi_path, "PONI files (*.poni)")[0]
         filename = str(filen)
         if os.path.exists(filename):
-            self.model.poni = filename
+            # copy the chose file to temp_dir
+            temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
+            shutil.copy(filename, temp_dir)
+            filen = extract_filename(filename) + '.' + \
+                    extract_extension(filename)
+            # set filename to that exists in temp_dir
+            self.model.poni = os.path.join(temp_dir, filen)
             self.widget.lineEdit_PONI.setText(self.model.poni)
             if self.model.diff_img_exist():
                 self.produce_cake()
