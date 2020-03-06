@@ -52,26 +52,23 @@ class UcfitTableController(object):
             # column 1 - h
             Item1 = QtWidgets.QTableWidgetItem(
                 "{:.0f}".format(float(self.ucfit_model[self.phase][row]['h'])))
-            # Item1.setFlags(QtCore.Qt.ItemIsSelectable |
-            #               QtCore.Qt.ItemIsEnabled)
+            Item1.setFlags(QtCore.Qt.ItemIsEnabled)
             self.widget.tableWidget_UnitCell.setItem(row, 1, Item1)
             # column 2 - k
             Item2 = QtWidgets.QTableWidgetItem(
                 "{:.0f}".format(float(self.ucfit_model[self.phase][row]['k'])))
-            # Item1.setFlags(QtCore.Qt.ItemIsSelectable |
-            #               QtCore.Qt.ItemIsEnabled)
+            Item2.setFlags(QtCore.Qt.ItemIsEnabled)
             self.widget.tableWidget_UnitCell.setItem(row, 2, Item2)
             # column 3 - l
             Item3 = QtWidgets.QTableWidgetItem(
                 "{:.0f}".format(float(self.ucfit_model[self.phase][row]['l'])))
-            # Item1.setFlags(QtCore.Qt.ItemIsSelectable |
-            #               QtCore.Qt.ItemIsEnabled)
+            Item3.setFlags(QtCore.Qt.ItemIsEnabled)
             self.widget.tableWidget_UnitCell.setItem(row, 3, Item3)
             # column 4 - twoth
             Item4 = QtWidgets.QTableWidgetItem(
-                "{:.3f}".format(float(self.ucfit_model[self.phase][row]['twoth'])))
-            # Item1.setFlags(QtCore.Qt.ItemIsSelectable |
-            #               QtCore.Qt.ItemIsEnabled)
+                "{:.3f}".format(
+                    float(self.ucfit_model[self.phase][row]['twoth'])))
+            Item4.setFlags(QtCore.Qt.ItemIsEnabled)
             self.widget.tableWidget_UnitCell.setItem(row, 4, Item4)
         self.widget.tableWidget_UnitCell.resizeColumnsToContents()
 #        self.widget.tableWidget_UnitCell.resizeRowsToContents()

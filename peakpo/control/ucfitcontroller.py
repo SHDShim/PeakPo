@@ -39,6 +39,11 @@ class UcfitController(object):
         """
 
     def collect_peakfit(self):
+        if self.model.section_lst == []:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "There is no peak fitting results to collect.")
+            return
         # read data4ucfit
         self.ucfit_model = self._get_peaks_by_phase()
         # update comboBox_PeakFitLabels
@@ -54,7 +59,8 @@ class UcfitController(object):
         phase = self.widget.comboBox_PeakFitLabels.currentText()
         if (phase is None):
             QtWidgets.QMessageBox.warning(
-                self.widget, "Warning", "Select a phase from the comboBox first.")
+                self.widget, "Warning", "Select a phase from " +
+                " the comboBox first.")
             return
         self.phase = phase
         # display in table
@@ -76,8 +82,9 @@ class UcfitController(object):
                 self.widget.comboBox_Symmetry.setCurrentText(t_jcpds.symmetry)
             else:
                 QtWidgets.QMessageBox.warning(
-                    self.widget, "Warning", "The symmetry found in the related JCPDS file\n" +
-                    "is not currently supported by PeakPo for unit-cell fitting.")
+                    self.widget, "Warning",
+                    "The symmetry found in the related JCPDS file\n" +
+                    "is not currently supported by PeakPo.")
                 self.widget.comboBox_Symmetry.setCurrentText('cubic')
 
     def _get_peaks_by_phase(self):
@@ -108,13 +115,16 @@ class UcfitController(object):
         peaks = []
         n_peaks = int(len(section.peakinfo) / 4)
         if verbose:
-            print("twoth between {0:.4f} and {1:.4f} degrees created in {2:} has {3:d} peaks".format(
-                section.x.min(), section.x.max(), section.timestamp, n_peaks))
+            print("twoth between {0:.4f} and {1:.4f} degrees " +
+                  " created in {2:} has {3:d} peaks".format(
+                      section.x.min(), section.x.max(),
+                      section.timestamp, n_peaks))
         for i in range(int(n_peaks)):
             label = "p{:d}_".format(i)
             section.fit_result.params[label+'center'].value
             twoth = section.fit_result.params[label+'center'].value
-            dsp = self.model.get_base_ptn_wavelength() / 2. / np.sin(np.deg2rad(twoth / 2.))
+            dsp = self.model.get_base_ptn_wavelength() / 2. / \
+                np.sin(np.deg2rad(twoth / 2.))
             q = np.power((1./dsp), 2.)
             if verbose:
                 print(section.peakinfo[label+'phasename'],
@@ -143,9 +153,10 @@ class UcfitController(object):
         text_table = '\n'
         for peak in self.ucfit_model[self.phase]:
             if peak['display']:
-                text_table += '{0:s} {1:s} {2:.0f} {3:.0f} {4:.0f} {5:.4f} \n'.format(
-                    peak['phase'], str(peak['display']),
-                    peak['h'], peak['k'], peak['l'], peak['dsp'])
+                text_table += \
+                    '{0:s} {1:s} {2:.0f} {3:.0f} {4:.0f} {5:.4f} \n'.format(
+                        peak['phase'], str(peak['display']),
+                        peak['h'], peak['k'], peak['l'], peak['dsp'])
         return text_table
 
     def _get_all_peakfit_results_df(self):
@@ -163,6 +174,15 @@ class UcfitController(object):
 
     def perform_ucfit(self):
         # get jcpds data in df.  use display to choose data points
+        if self.model.section_lst == []:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "No peak fitting result exist for this file.")
+            return
+        if self.phase == None:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning", "No phase has been chosen for fitting")
+            return
         data_by_phase_df = self._get_all_peakfit_results_df()
         data_to_fit_df = data_by_phase_df[self.phase].loc[
             data_by_phase_df[self.phase]['display'] == True]
@@ -234,12 +254,15 @@ class UcfitController(object):
         text_output += '     1 ~ large influence, 0 ~ no influence.\n'
         text_output += output_df[['h', 'k', 'l', 'twoth', 'dsp',
                                   'hat']].to_string()
-        text_output += '\n\nRstudent: how much the parameter would change if deleted.\n'
+        text_output += '\n\nRstudent: how much the parameter would change' + \
+            ' if deleted.\n'
         text_output += output_df[['h', 'k', 'l', 'twoth', 'dsp',
                                   'Rstudent']].to_string()
-        text_output += '\n\ndfFits: deletion diagnostic giving the change in\n'
+        text_output += '\n\ndfFits: deletion diagnostic giving' + \
+            ' the change in\n'
         text_output += '        the predicted value twotheta.\n'
-        text_output += '        upon deletion of the data point as a multiple of\n'
+        text_output += '        upon deletion of the data point as a ' + \
+            'multiple of\n'
         text_output += '        the standard deviation for 1/d-spacing^2.\n'
         text_output += output_df[['h', 'k', 'l', 'twoth', 'dsp',
                                   'dfFits']].to_string()

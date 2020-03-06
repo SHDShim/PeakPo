@@ -5606,12 +5606,12 @@
             <item>
              <widget class="QGroupBox" name="groupBox_22">
               <property name="title">
-               <string>Dpp filename</string>
+               <string>Dpp files</string>
               </property>
               <property name="flat">
                <bool>true</bool>
               </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_18">
+              <layout class="QVBoxLayout" name="verticalLayout_27">
                <item>
                 <widget class="QCheckBox" name="checkBox_ForceOverwite">
                  <property name="sizePolicy">
@@ -5624,7 +5624,27 @@
                   <string>Overwrite DPP and PPSS with default name</string>
                  </property>
                  <property name="text">
-                  <string>Default name</string>
+                  <string>Default name for dpp</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBox_IgnoreDirChange">
+                 <property name="text">
+                  <string>Ignore directory change</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBox_AutogenMissing">
+                 <property name="text">
+                  <string>Autogen only for missing</string>
                  </property>
                  <property name="checked">
                   <bool>true</bool>

@@ -807,7 +807,8 @@ class MainController(object):
         else:
             # pre-existing dpp
             # question if overwrite or not
-            if self.widget.checkBox_AutoGenDPP.isChecked():
+            if self.widget.checkBox_AutoGenDPP.isChecked() and \
+                (not self.widget.checkBox_AutogenMissing.isChecked()):
                 reply = QtWidgets.QMessageBox.question(
                     self.widget, 'Message',
                     "The next pattern already has a dpp.\n" +
@@ -835,7 +836,8 @@ class MainController(object):
                         self.plot_ctrl.zoom_out_graph()
                     else:
                         QtWidgets.QMessageBox.warning(
-                            self.widget, "Warning", "DPP loading was not successful.")
+                            self.widget, "Warning",
+                            "DPP loading was not successful.")
             else:
                 success = self.session_ctrl._load_dpp(new_filename_dpp)
                 if success:
@@ -848,7 +850,8 @@ class MainController(object):
                     self.plot_ctrl.zoom_out_graph()
                 else:
                     QtWidgets.QMessageBox.warning(
-                        self.widget, "Warning", "DPP loading was not successful.")
+                        self.widget, "Warning",
+                        "DPP loading was not successful.")
         self.plot_ctrl.update()
         self.jcpdstable_ctrl.update()
         self.peakfit_table_ctrl.update_sections()

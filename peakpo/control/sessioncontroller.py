@@ -59,7 +59,8 @@ class SessionController(object):
         """
         fn = QtWidgets.QFileDialog.getOpenFileName(
             self.widget, "Choose A Session File",
-            self.model.chi_path, "(*.dpp)")[0]  # options=QtWidgets.QFileDialog.DontUseNativeDialog
+            self.model.chi_path, "(*.dpp)")[0]
+        # options=QtWidgets.QFileDialog.DontUseNativeDialog
 #       replaceing chi_path with '' does not work
         if fn == '':
             return
@@ -131,33 +132,44 @@ class SessionController(object):
         # inspect the paths of baseptn and update all file paths
         if (model_dpp.chi_path != os.path.dirname(filen_dpp)):
             if os.path.exists(model_dpp.chi_path):
-                reply = QtWidgets.QMessageBox.question(
-                    self.widget, "Question",
-                    "DPP seems to be moved from the original folder. \
-                    However, you seem to have files in the original folder.\
-                    OK to proceed?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                    QtWidgets.QMessageBox.Yes)
-                if reply == QtWidgets.QMessageBox.Yes:
+                if self.widget.checkBox_IgnoreDirChange.isChecked():
                     return self._set_from_dpp(filen_dpp, model_dpp,
                                               jlistonly=jlistonly)
                 else:
-                    return False
+                    reply = QtWidgets.QMessageBox.question(
+                        self.widget, "Question",
+                        "DPP seems to be moved from the original folder. \
+                        However, you seem to have files in the original folder.\
+                        OK to proceed?",
+                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                        QtWidgets.QMessageBox.Yes)
+                    if reply == QtWidgets.QMessageBox.Yes:
+                        return self._set_from_dpp(filen_dpp, model_dpp,
+                                                  jlistonly=jlistonly)
+                    else:
+                        return False
             else:  # file no longer exist in the original location
-                reply = QtWidgets.QMessageBox.question(
-                    self.widget, "Question",
-                    "DPP seems to be moved from the original folder. " +
-                    "Move related files to this DPP folder if they are not in the new folder." +
-                    "If files have been moved, click Yes.",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                    QtWidgets.QMessageBox.Yes)
-                if reply == QtWidgets.QMessageBox.Yes:
+                if self.widget.checkBox_IgnoreDirChange.isChecked():
                     return self._set_from_dpp(
                         filen_dpp, model_dpp,
                         new_folder=os.path.dirname(filen_dpp),
                         jlistonly=jlistonly)
                 else:
-                    return False
+                    reply = QtWidgets.QMessageBox.question(
+                        self.widget, "Question",
+                        "DPP seems to be moved from the original folder. " +
+                        "Move related files to this DPP folder " +
+                        " if they are not in the new folder." +
+                        "If files have been moved, click Yes.",
+                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                        QtWidgets.QMessageBox.Yes)
+                    if reply == QtWidgets.QMessageBox.Yes:
+                        return self._set_from_dpp(
+                            filen_dpp, model_dpp,
+                            new_folder=os.path.dirname(filen_dpp),
+                            jlistonly=jlistonly)
+                    else:
+                        return False
         else:
             return self._set_from_dpp(filen_dpp, model_dpp,
                                       jlistonly=jlistonly)
@@ -168,13 +180,14 @@ class SessionController(object):
         temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
         """
         filen = QtWidgets.QFileDialog.getOpenFileName(
-            self.widget, "Open a cake format File", temp_dir,  # self.model.chi_path,
+            self.widget, "Open a cake format File", temp_dir,
+            # self.model.chi_path,
             "Data files (*.cakeformat)")[0]
         """
         ext = "cakeformat"
         #filen_t = self.model.make_filename(ext)
         filen = make_filename(self.model.base_ptn.fname, ext,
-                                temp_dir=temp_dir)
+                              temp_dir=temp_dir)
         if os.path.exists(filen):
             temp_values = []
             with open(filen, "r") as f:
@@ -192,7 +205,7 @@ class SessionController(object):
         ext = "cakeformat"
         #filen_t = self.model.make_filename(ext)
         filen = make_filename(self.model.base_ptn.fname, ext,
-                                temp_dir=temp_dir)
+                              temp_dir=temp_dir)
         # save cake related Values
         names = ['azi_shift', 'int_max', 'min_bar', 'max_bar', 'scale_bar']
         values = [self.widget.spinBox_AziShift.value(),
@@ -204,8 +217,6 @@ class SessionController(object):
         with open(filen, "w") as f:
             for n, v in zip(names, values):
                 f.write(n + ' : ' + str(v) + '\n')
-
-
 
     def _set_from_dpp(self, filen_dpp, model_dpp, new_folder=None,
                       jlistonly=False):
@@ -232,7 +243,8 @@ class SessionController(object):
                 self.model.diff_img.img_filename)
         else:
             self.widget.textEdit_DiffractionImageFilename.setText(
-                'Image file must have the same name as base ptn in the same folder.')
+                'Image file must have the same name ' +
+                'as base ptn in the same folder.')
         self.widget.doubleSpinBox_Pressure.setValue(
             self.model.get_saved_pressure())
         self.widget.doubleSpinBox_Temperature.setValue(
@@ -293,7 +305,8 @@ class SessionController(object):
         self.widget.doubleSpinBox_SetWavelength.setValue(
             self.model.session.wavelength)
         xray_energy = convert_wl_to_energy(self.model.session.wavelength)
-        self.widget.label_XRayEnergy.setText("({:.3f} keV)".format(xray_energy))
+        self.widget.label_XRayEnergy.setText(
+            "({:.3f} keV)".format(xray_energy))
         self.widget.doubleSpinBox_Pressure.setValue(
             self.model.session.pressure)
         self.widget.doubleSpinBox_Temperature.setValue(
@@ -449,11 +462,14 @@ class SessionController(object):
             new_filename = fsession
             if not quiet:
                 QtWidgets.QMessageBox.warning(
-                    self.widget, "Warning", "Force overwrite is On, so existing dpp with default name will be overwritten.")
+                    self.widget, "Warning",
+                    "Force overwrite is On, so existing dpp " +
+                    "with default name will be overwritten.")
         else:
             new_filename = dialog_savefile(self.widget, fsession)
         if new_filename != '':
-            self.model.save_pressure(self.widget.doubleSpinBox_Pressure.value())
+            self.model.save_pressure(
+                self.widget.doubleSpinBox_Pressure.value())
             self.model.save_temperature(
                 self.widget.doubleSpinBox_Temperature.value())
             self._dump_dpp(new_filename)
@@ -465,13 +481,13 @@ class SessionController(object):
             ext = "sysinfo.txt"
             #filen_t = self.model.make_filename(ext)
             filen = make_filename(self.model.base_ptn.fname, ext,
-                                    temp_dir=temp_dir)
+                                  temp_dir=temp_dir)
             with open(filen, "w") as f:
                 f.write('OS: ' + os.name + '\n')
                 f.write('Python ver.: ' + sys.version + '\n')
-                f.write("Environment: " + env  + '\n')
-                f.write("dill ver.: " + dill.__version__  + '\n')
-                f.write("pyFAI ver.: " + pyFAI.version  + '\n')
+                f.write("Environment: " + env + '\n')
+                f.write("dill ver.: " + dill.__version__ + '\n')
+                f.write("pyFAI ver.: " + pyFAI.version + '\n')
             self.widget.textEdit_SessionFileName.setText(str(new_filename))
             self.widget.tableWidget_PkFtSections.setStyleSheet(
                 "Background-color:None;color:rgb(0,0,0);")
@@ -487,7 +503,9 @@ class SessionController(object):
         if self.widget.checkBox_ForceOverwite.isChecked():
             new_filename = fsession
             QtWidgets.QMessageBox.warning(
-                self.widget, "Warning", "Force overwrite is On, so existing ppss with default name will be overwritten.")
+                self.widget, "Warning",
+                "Force overwrite is On, so existing ppss with default name" +
+                " will be overwritten.")
         else:
             new_filename = dialog_savefile(self.widget, fsession)
         if new_filename != '':
