@@ -90,7 +90,8 @@ class BasePatternController(object):
         filen_tif = self.model.make_filename('tif', original=True)
         filen_mar3450 = self.model.make_filename('mar3450', original=True)
         filen_cbf = self.model.make_filename('cbf', original=True)
-        if not (os.path.exists(filen_tif) or os.path.exists(filen_mar3450)) or \
+        if not (os.path.exists(filen_tif) or \
+                os.path.exists(filen_mar3450)) or \
                 os.path.exists(filen_cbf):
             self.widget.checkBox_ShowCake.setChecked(False)
             return
@@ -102,11 +103,16 @@ class BasePatternController(object):
             # self.cake_ctrl.addremove_cake(update_plot=False)
 
     def _update_bg_params_in_widget(self):
-        self.widget.spinBox_BGParam0.setValue(self.model.base_ptn.params_chbg[0])
-        self.widget.spinBox_BGParam1.setValue(self.model.base_ptn.params_chbg[1])
-        self.widget.spinBox_BGParam2.setValue(self.model.base_ptn.params_chbg[2])
-        self.widget.doubleSpinBox_Background_ROI_min.setValue(self.model.base_ptn.roi[0])
-        self.widget.doubleSpinBox_Background_ROI_max.setValue(self.model.base_ptn.roi[1])
+        self.widget.spinBox_BGParam0.setValue(
+            self.model.base_ptn.params_chbg[0])
+        self.widget.spinBox_BGParam1.setValue(
+            self.model.base_ptn.params_chbg[1])
+        self.widget.spinBox_BGParam2.setValue(
+            self.model.base_ptn.params_chbg[2])
+        self.widget.doubleSpinBox_Background_ROI_min.setValue(
+            self.model.base_ptn.roi[0])
+        self.widget.doubleSpinBox_Background_ROI_max.setValue(
+            self.model.base_ptn.roi[1])
 
     def _update_bgsub_from_current_values(self):
         x_raw, y_raw = self.model.base_ptn.get_raw()

@@ -67,7 +67,8 @@ class JcpdsTableController(object):
                 item_v0.setFlags(QtCore.Qt.ItemIsEnabled)
                 self.widget.tableWidget_JCPDS.setItem(row, 3, item_v0)
             else:
-                self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk = QtWidgets.QDoubleSpinBox()
+                self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk = \
+                    QtWidgets.QDoubleSpinBox()
                 self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setAlignment(
                     QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                     QtCore.Qt.AlignVCenter)
@@ -164,7 +165,8 @@ class JcpdsTableController(object):
                 self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setAlignment(
                     QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                     QtCore.Qt.AlignVCenter)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setMaximum(2.0)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setMaximum(
+                    2.0)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setSingleStep(
                     step)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setDecimals(2)

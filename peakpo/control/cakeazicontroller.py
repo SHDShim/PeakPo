@@ -83,19 +83,24 @@ class CakeAziController(object):
                     (np.abs(azi[4] - azi_whole.max()) < epsilon):
                 self._clear_azilist()
             elif np.abs(azi[2] - azi_whole.min()) < epsilon:
-                new_azi_list.append([azi[0], azi[1], azi[4], azi[3], azi_whole.max()])
+                new_azi_list.append([azi[0], azi[1], azi[4], azi[3],
+                                     azi_whole.max()])
             elif np.abs(azi[4] - azi_whole.max()) < epsilon:
-                new_azi_list.append([azi[0], azi[1], azi_whole.min(), azi[3], azi[2]])
+                new_azi_list.append([azi[0], azi[1], azi_whole.min(),
+                                     azi[3], azi[2]])
             else:
-                new_azi_list.append([azi[0], azi[1], azi_whole.min(), azi[3], azi[2]])
-                new_azi_list.append([azi[0], azi[1], azi[4], azi[3], azi_whole.max()])
+                new_azi_list.append([azi[0], azi[1], azi_whole.min(),
+                                     azi[3], azi[2]])
+                new_azi_list.append([azi[0], azi[1], azi[4], azi[3],
+                                     azi_whole.max()])
         else:
             sorted_azi_list = sorted(azi_list,
                                      key=lambda azi_list: azi_list[1])
             lower_azi = azi_whole.min()
             for azi in sorted_azi_list:
                 if np.abs(lower_azi - azi[2]) > epsilon:
-                    new_azi_list.append([azi[0], azi[1], lower_azi, azi[3], azi[2]])
+                    new_azi_list.append([azi[0], azi[1], lower_azi,
+                                         azi[3], azi[2]])
                 else:
                     pass
                 lower_azi = azi[4]
@@ -230,7 +235,8 @@ class CakeAziController(object):
             if not np.array_equal(tth_i, tth[0]):
                 QtWidgets.QMessageBox.warning(
                     self.widget, 'Warning',
-                    'Error occured while preparing for azimuthal integration. No output.')
+                    'Error occured while preparing for azimuthal ' + \
+                    'integration. No output.')
                 return None
             intensity_merged += intensity_i
         n_azi = azi_list.__len__()

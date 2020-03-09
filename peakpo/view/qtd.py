@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '../ui/peakpo.ui'
+# Form implementation generated from reading ui file './ui/peakpo.ui'
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #
@@ -468,7 +468,7 @@ class Ui_MainWindow(object):
         self.checkBox_NavDPP = QtWidgets.QCheckBox(self.frame_13)
         self.checkBox_NavDPP.setMaximumSize(QtCore.QSize(60, 16777215))
         self.checkBox_NavDPP.setLayoutDirection(QtCore.Qt.LeftToRight)
-        self.checkBox_NavDPP.setChecked(True)
+        self.checkBox_NavDPP.setChecked(False)
         self.checkBox_NavDPP.setObjectName("checkBox_NavDPP")
         self.horizontalLayout_25.addWidget(self.checkBox_NavDPP)
         self.checkBox_AutoGenDPP = QtWidgets.QCheckBox(self.frame_13)
@@ -795,8 +795,8 @@ class Ui_MainWindow(object):
         self.spinBox_TStep.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.spinBox_TStep.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.spinBox_TStep.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
-        self.spinBox_TStep.setMaximum(5000)
-        self.spinBox_TStep.setProperty("value", 1000)
+        self.spinBox_TStep.setMaximum(8000)
+        self.spinBox_TStep.setProperty("value", 100)
         self.spinBox_TStep.setObjectName("spinBox_TStep")
         self.horizontalLayout_17.addWidget(self.spinBox_TStep)
         self.pushButton_SetTStepTo100 = QtWidgets.QPushButton(self.frame_17)
@@ -2658,9 +2658,9 @@ class Ui_MainWindow(object):
         self.checkBox_NavDPP.setToolTip(_translate("MainWindow", "Navigate dpp files rather than chi files"))
         self.checkBox_NavDPP.setText(_translate("MainWindow", ".dpp"))
         self.checkBox_AutoGenDPP.setToolTip(_translate("MainWindow", "Create a dpp file for the next data point from the current dpp file"))
-        self.checkBox_AutoGenDPP.setText(_translate("MainWindow", "Create when move"))
+        self.checkBox_AutoGenDPP.setText(_translate("MainWindow", "Auto Gen."))
         self.checkBox_SaveDPPMove.setToolTip(_translate("MainWindow", "Save current dpp file before move to the next data file."))
-        self.checkBox_SaveDPPMove.setText(_translate("MainWindow", "Save when move"))
+        self.checkBox_SaveDPPMove.setText(_translate("MainWindow", "Auto Save."))
         self.groupBox_2.setTitle(_translate("MainWindow", "Session (dpp only)"))
         self.textEdit_SessionFileName.setToolTip(_translate("MainWindow", "Session file (read-only box, use the buttons)"))
         self.pushButton_LoadDPP.setToolTip(_translate("MainWindow", "Load session from a dpp file"))

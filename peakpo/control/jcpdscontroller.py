@@ -238,7 +238,8 @@ class JcpdsController(object):
 
         if idx_checked == []:
             QtWidgets.QMessageBox.warning(
-                self.widget, "Warning", "Highlight the name of JCPDS to write twk jcpds.")
+                self.widget, "Warning",
+                "Highlight the name of JCPDS to write twk jcpds.")
             return
         if idx_checked.__len__() != 1:
             QtWidgets.QMessageBox.warning(

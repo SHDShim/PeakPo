@@ -52,7 +52,8 @@ class MainController(object):
         self.jcpdstable_ctrl = JcpdsTableController(self.model, self.widget)
         self.session_ctrl = SessionController(self.model, self.widget)
         self.peakfit_ctrl = PeakFitController(self.model, self.widget)
-        self.peakfit_table_ctrl = PeakfitTableController(self.model, self.widget)
+        self.peakfit_table_ctrl = PeakfitTableController(
+            self.model, self.widget)
         self.read_setting()
         self.connect_channel()
         #
@@ -497,7 +498,8 @@ class MainController(object):
         self.model.base_ptn.wavelength = \
             self.widget.doubleSpinBox_SetWavelength.value()
         xray_energy = convert_wl_to_energy(self.model.base_ptn.wavelength)
-        self.widget.label_XRayEnergy.setText("({:.3f} keV)".format(xray_energy))
+        self.widget.label_XRayEnergy.setText(
+            "({:.3f} keV)".format(xray_energy))
         self.plot_ctrl.update()
 
     def update_bgsub(self):
@@ -787,10 +789,6 @@ class MainController(object):
             # no pre-existing dpp
             # check the checkbox for autogenerate
             if self.widget.checkBox_AutoGenDPP.isChecked():
-                """
-                QtWidgets.QMessageBox.warning(
-                    self.widget, "Warning", "The next pattern does not have dpp.\nSo a new dpp will be generated from the dpp of the last pattern.")
-                """
                 self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
                 self.session_ctrl.save_dpp(quiet=True)
                 self.model.clear_section_list()
@@ -800,6 +798,7 @@ class MainController(object):
                     self.widget, "Warning",
                     "Cannot find pre-existing dpp.\n" +
                     "Consider Create with Move function.")
+                return
             # call autogenerate subroutine
             # self._load_a_new_pattern(new_filename_chi)
             # self.model.set_base_ptn_color(self.obj_color)
@@ -821,38 +820,43 @@ class MainController(object):
                     self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
                     self.session_ctrl.save_dpp(quiet=True)
                     self.model.clear_section_list()
+                    self.plot_ctrl.update()
                 else:
                     # load the existing dpp
                     # QtWidgets.QMessageBox.warning(
                     #    self.widget, "Warning", "The existing dpp will be open.")
                     success = self.session_ctrl._load_dpp(new_filename_dpp)
                     if success:
-                        if self.model.exist_in_waterfall(self.model.base_ptn.fname):
+                        if self.model.exist_in_waterfall(
+                            self.model.base_ptn.fname):
                             self.widget.pushButton_AddBasePtn.setChecked(True)
                         else:
                             self.widget.pushButton_AddBasePtn.setChecked(False)
                         if self.widget.checkBox_ShowCake.isChecked():
                             self.session_ctrl._load_cake_format_file()
-                        self.plot_ctrl.zoom_out_graph()
+                        self.plot_ctrl.update()
                     else:
                         QtWidgets.QMessageBox.warning(
                             self.widget, "Warning",
                             "DPP loading was not successful.")
+                        return
             else:
+                # simply open the next existing one
                 success = self.session_ctrl._load_dpp(new_filename_dpp)
                 if success:
-                    if self.model.exist_in_waterfall(self.model.base_ptn.fname):
+                    if self.model.exist_in_waterfall(
+                        self.model.base_ptn.fname):
                         self.widget.pushButton_AddBasePtn.setChecked(True)
                     else:
                         self.widget.pushButton_AddBasePtn.setChecked(False)
                     if self.widget.checkBox_ShowCake.isChecked():
                         self.session_ctrl._load_cake_format_file()
-                    self.plot_ctrl.zoom_out_graph()
+                    self.plot_ctrl.update()
                 else:
                     QtWidgets.QMessageBox.warning(
                         self.widget, "Warning",
                         "DPP loading was not successful.")
-        self.plot_ctrl.update()
+                    return
         self.jcpdstable_ctrl.update()
         self.peakfit_table_ctrl.update_sections()
         self.peakfit_table_ctrl.update_peak_parameters()
