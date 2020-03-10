@@ -54,7 +54,7 @@ app = QtWidgets.QApplication(sys.argv)
 # app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
 sys.excepthook = excepthook
 app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
-# app.setStyle('osx')
+#app.setStyle('osx')
 controller = MainController()
 controller.show_window()
 ret = app.exec_()

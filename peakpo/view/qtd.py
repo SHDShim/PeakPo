@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file './ui/peakpo.ui'
+# Form implementation generated from reading ui file '../ui/peakpo.ui'
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #
@@ -1782,25 +1782,6 @@ class Ui_MainWindow(object):
         self.pushButton_SetJCPDSStepTo01.setObjectName("pushButton_SetJCPDSStepTo01")
         self.horizontalLayout_19.addWidget(self.pushButton_SetJCPDSStepTo01)
         self.verticalLayout_19.addWidget(self.frame_25)
-        self.groupBox_17 = QtWidgets.QGroupBox(self.tab_JCPDSList2)
-        self.groupBox_17.setMaximumSize(QtCore.QSize(16777215, 250))
-        self.groupBox_17.setTitle("")
-        self.groupBox_17.setFlat(True)
-        self.groupBox_17.setObjectName("groupBox_17")
-        self.verticalLayout_8 = QtWidgets.QVBoxLayout(self.groupBox_17)
-        self.verticalLayout_8.setContentsMargins(3, 12, 3, 12)
-        self.verticalLayout_8.setObjectName("verticalLayout_8")
-        self.plainTextEdit_ViewJCPDS = QtWidgets.QPlainTextEdit(self.groupBox_17)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.plainTextEdit_ViewJCPDS.sizePolicy().hasHeightForWidth())
-        self.plainTextEdit_ViewJCPDS.setSizePolicy(sizePolicy)
-        self.plainTextEdit_ViewJCPDS.setMaximumSize(QtCore.QSize(16777215, 150))
-        self.plainTextEdit_ViewJCPDS.setFocusPolicy(QtCore.Qt.StrongFocus)
-        self.plainTextEdit_ViewJCPDS.setObjectName("plainTextEdit_ViewJCPDS")
-        self.verticalLayout_8.addWidget(self.plainTextEdit_ViewJCPDS)
-        self.verticalLayout_19.addWidget(self.groupBox_17)
         self.tabWidget.addTab(self.tab_JCPDSList2, "")
         self.tab_UnitCellFit = QtWidgets.QWidget()
         self.tab_UnitCellFit.setObjectName("tab_UnitCellFit")

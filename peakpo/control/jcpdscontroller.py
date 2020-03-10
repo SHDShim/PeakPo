@@ -8,7 +8,8 @@ from matplotlib import colors
 import matplotlib.cm as cmx
 from .mplcontroller import MplController
 from .jcpdstablecontroller import JcpdsTableController
-from utils import xls_jlist, dialog_savefile, make_filename, get_temp_dir
+from utils import xls_jlist, dialog_savefile, make_filename, get_temp_dir, \
+    InformationBox
 
 
 class JcpdsController(object):
@@ -227,7 +228,10 @@ class JcpdsController(object):
             textoutput = self.model.jcpds_lst[idx_checked[0]].make_TextOutput(
                 self.widget.doubleSpinBox_Pressure.value(),
                 self.widget.doubleSpinBox_Temperature.value())
-            self.widget.plainTextEdit_ViewJCPDS.setPlainText(textoutput)
+            infobox = InformationBox()
+            infobox.setText(textoutput)
+            infobox.exec_()
+            #self.widget.plainTextEdit_ViewJCPDS.setPlainText(textoutput)
 
     def write_twk_jcpds(self):
         if not self.model.jcpds_exist():

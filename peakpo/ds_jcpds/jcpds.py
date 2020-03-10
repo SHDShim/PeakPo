@@ -819,7 +819,7 @@ def get_cell_prm_twk(symmetry, v_twk, a0, b0, c0, alpha0, beta0, gamma0,
                          np.cos(np.radians(beta0)) *
                          np.cos(np.radians(gamma0)))
         a_twk = (v_twk / (b_a_twk * c_a_twk * a_term))**(1. / 3.)
-        c_twk = c_a * a_twk
+        c_twk = c_a_twk * a_twk
         b_twk = b_a_twk * a_twk
     else:
         #print('no symmetry is given')
