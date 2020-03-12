@@ -5,6 +5,7 @@ from .xrd import cal_UnitCellVolume, cal_dspacing
 import pymatgen as mg
 from pymatgen.analysis.diffraction.xrd import XRDCalculator
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from .jcpds_dioptas import jcpds
 
 # import numpy.ma as ma
 
@@ -150,6 +151,15 @@ class JCPDS(object):
         self.gamma = 0.
         self.v = 0.
 
+    def _check_dioptas_jcpds(self, file):
+        with open(file) as fp:
+            line = fp.readline()
+            if "VERSION:" in line:
+                return True
+            else:
+                return False
+
+
     def read_file(self, file):
         """
         read a jcpds file
@@ -163,116 +173,144 @@ class JCPDS(object):
         self.comments = []
         self.DiffLines = []
 
-        inp = open(file, 'r').readlines()
 #        my_list = [] # get all the text first and throw into my_list
 
-        version = int(inp[0])  # JCPDS version number
-        self.version = version
-        header = inp[1]  # header
-        self.comments = header
+        if self._check_dioptas_jcpds(file): # dioptas
+            jcpds_dioptas = jcpds()
+            jcpds_dioptas.load_file(file)
+            self.version = 4
+            self.comments = jcpds_dioptas.params['comments'][0] + \
+                ': This is from Dioptas style jcpds'
+            self.symmetry = jcpds_dioptas.params['symmetry'].lower()
+            self.k0 = jcpds_dioptas.params['k0']
+            self.k0p = jcpds_dioptas.params['k0p']
+            self.thermal_expansion = jcpds_dioptas.params['alpha_t0']
+            self.a0 = jcpds_dioptas.params['a0']
+            self.b0 = jcpds_dioptas.params['b0']
+            self.c0 = jcpds_dioptas.params['c0']
+            self.alpha0 = jcpds_dioptas.params['alpha0']
+            self.beta0 = jcpds_dioptas.params['beta0']
+            self.gamma0 = jcpds_dioptas.params['gamma0']
+            self.v0 = jcpds_dioptas.params['v0']
+            diff_lines = []
 
-        item = str.split(inp[2])
-        crystal_system = int(item[0])
-        if crystal_system == 1:
-            self.symmetry = 'cubic'
-        elif crystal_system == 2:
-            self.symmetry = 'hexagonal'
-        elif crystal_system == 3:
-            self.symmetry = 'tetragonal'
-        elif crystal_system == 4:
-            self.symmetry = 'orthorhombic'
-        elif crystal_system == 5:
-            self.symmetry = 'monoclinic'
-        elif crystal_system == 6:
-            self.symmetry = 'triclinic'
-        elif crystal_system == 7:
-            self.symmetry = 'nosymmetry'
-        # 1 cubic, 2 hexagonal, 3 tetragonal, 4 orthorhombic
-        # 5 monoclinic, 6 triclinic, 7 no nosymmetry P, d-sp input
-
-        k0 = float(item[1])
-        k0p = float(item[2])
-        self.k0 = k0
-        self.k0p = k0p
-
-        item = str.split(inp[3])  # line for unit-cell parameters
-
-        if crystal_system == 1:  # cubic
-            a = float(item[0])
-            b = a
-            c = a
-            alpha = 90.
-            beta = 90.
-            gamma = 90.
-        elif crystal_system == 7:  # P, d-sp input
-            a = float(item[0])
-            b = a
-            c = a
-            alpha = 90.
-            beta = 90.
-            gamma = 90.
-        elif crystal_system == 2:  # hexagonal
-            a = float(item[0])
-            c = float(item[1])
-            b = a
-            alpha = 90.
-            beta = 90.
-            gamma = 120.
-        elif crystal_system == 3:  # tetragonal
-            a = float(item[0])
-            c = float(item[1])
-            b = a
-            alpha = 90.
-            beta = 90.
-            gamma = 90.
-        elif crystal_system == 4:  # orthorhombic
-            a = float(item[0])
-            b = float(item[1])
-            c = float(item[2])
-            alpha = 90.
-            beta = 90.
-            gamma = 90.
-        elif crystal_system == 5:  # monoclinic
-            a = float(item[0])
-            b = float(item[1])
-            c = float(item[2])
-            beta = float(item[3])
-            alpha = 90.
-            gamma = 90.
-        elif crystal_system == 6:  # triclinic
-            a = float(item[0])
-            b = float(item[1])
-            c = float(item[2])
-            alpha = float(item[3])
-            beta = float(item[4])
-            gamma = float(item[5])
-
-        self.a0 = a
-        self.b0 = b
-        self.c0 = c
-        self.alpha0 = alpha
-        self.beta0 = beta
-        self.gamma0 = gamma
-
-        item = str.split(inp[4])
-
-        if self.version == 3:
-            thermal_expansion = 0.
+            for line in jcpds_dioptas.reflections:
+                DiffLine = DiffractionLine()
+                DiffLine.dsp0 = line.d0
+                DiffLine.intensity = line.intensity
+                DiffLine.h = line.h
+                DiffLine.k = line.k
+                DiffLine.l = line.l
+                self.DiffLines.append(DiffLine)
         else:
-            thermal_expansion = float(item[0])
-        self.thermal_expansion = thermal_expansion
+            inp = open(file, 'r').readlines()
+            version = int(inp[0])  # JCPDS version number
+            self.version = version
+            header = inp[1]  # header
+            self.comments = header
 
-        for line in inp[6:]:
-            item = str.split(line)
-            if len(item) != 5:
-                break
-            DiffLine = DiffractionLine()
-            DiffLine.dsp0 = float(item[0])
-            DiffLine.intensity = float(item[1])
-            DiffLine.h = float(item[2])
-            DiffLine.k = float(item[3])
-            DiffLine.l = float(item[4])
-            self.DiffLines.append(DiffLine)
+            item = str.split(inp[2])
+            crystal_system = int(item[0])
+            if crystal_system == 1:
+                self.symmetry = 'cubic'
+            elif crystal_system == 2:
+                self.symmetry = 'hexagonal'
+            elif crystal_system == 3:
+                self.symmetry = 'tetragonal'
+            elif crystal_system == 4:
+                self.symmetry = 'orthorhombic'
+            elif crystal_system == 5:
+                self.symmetry = 'monoclinic'
+            elif crystal_system == 6:
+                self.symmetry = 'triclinic'
+            elif crystal_system == 7:
+                self.symmetry = 'nosymmetry'
+            # 1 cubic, 2 hexagonal, 3 tetragonal, 4 orthorhombic
+            # 5 monoclinic, 6 triclinic, 7 no nosymmetry P, d-sp input
+
+            k0 = float(item[1])
+            k0p = float(item[2])
+            self.k0 = k0
+            self.k0p = k0p
+
+            item = str.split(inp[3])  # line for unit-cell parameters
+
+            if crystal_system == 1:  # cubic
+                a = float(item[0])
+                b = a
+                c = a
+                alpha = 90.
+                beta = 90.
+                gamma = 90.
+            elif crystal_system == 7:  # P, d-sp input
+                a = float(item[0])
+                b = a
+                c = a
+                alpha = 90.
+                beta = 90.
+                gamma = 90.
+            elif crystal_system == 2:  # hexagonal
+                a = float(item[0])
+                c = float(item[1])
+                b = a
+                alpha = 90.
+                beta = 90.
+                gamma = 120.
+            elif crystal_system == 3:  # tetragonal
+                a = float(item[0])
+                c = float(item[1])
+                b = a
+                alpha = 90.
+                beta = 90.
+                gamma = 90.
+            elif crystal_system == 4:  # orthorhombic
+                a = float(item[0])
+                b = float(item[1])
+                c = float(item[2])
+                alpha = 90.
+                beta = 90.
+                gamma = 90.
+            elif crystal_system == 5:  # monoclinic
+                a = float(item[0])
+                b = float(item[1])
+                c = float(item[2])
+                beta = float(item[3])
+                alpha = 90.
+                gamma = 90.
+            elif crystal_system == 6:  # triclinic
+                a = float(item[0])
+                b = float(item[1])
+                c = float(item[2])
+                alpha = float(item[3])
+                beta = float(item[4])
+                gamma = float(item[5])
+
+            self.a0 = a
+            self.b0 = b
+            self.c0 = c
+            self.alpha0 = alpha
+            self.beta0 = beta
+            self.gamma0 = gamma
+
+            item = str.split(inp[4])
+
+            if self.version == 3:
+                thermal_expansion = 0.
+            else:
+                thermal_expansion = float(item[0])
+            self.thermal_expansion = thermal_expansion
+
+            for line in inp[6:]:
+                item = str.split(line)
+                if len(item) != 5:
+                    break
+                DiffLine = DiffractionLine()
+                DiffLine.dsp0 = float(item[0])
+                DiffLine.intensity = float(item[1])
+                DiffLine.h = float(item[2])
+                DiffLine.k = float(item[3])
+                DiffLine.l = float(item[4])
+                self.DiffLines.append(DiffLine)
 
         self._cal_v0()
         self.v = self.v0
