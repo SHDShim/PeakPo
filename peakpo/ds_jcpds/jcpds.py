@@ -180,7 +180,7 @@ class JCPDS(object):
             jcpds_dioptas.load_file(file)
             self.version = 4
             self.comments = jcpds_dioptas.params['comments'][0] + \
-                ': This is from Dioptas style jcpds'
+                '/n : This is from Dioptas style jcpds'
             self.symmetry = jcpds_dioptas.params['symmetry'].lower()
             self.k0 = jcpds_dioptas.params['k0']
             self.k0p = jcpds_dioptas.params['k0p']
@@ -711,7 +711,11 @@ class JCPDSplt(JCPDS):
         return dsp
 
     def make_TextOutput(self, pressure, temperature):
-        textout = 'Name: ' + self.name +'\n'
+        textout = 'File from: ' + self.file + '\n'
+        textout += 'Version: ' + str(self.version) + '\n'
+        textout += 'Comment from original file: ' + self.comments + '\n'
+        textout += '\n'
+        textout += 'Name: ' + self.name +'\n'
         textout += 'Crystal system: ' + self.symmetry + '\n'
         textout += '\n'
         textout += 'Values at high P-T after tweak \n'
@@ -753,10 +757,6 @@ class JCPDSplt(JCPDS):
             textout += \
                 " {0:10.5f}, {1:10.1f}, {2:5.0f}, {3:5.0f}, {4:5.0f}\n".\
                 format(float(dl.dsp), dl.intensity, dl.h, dl.k, dl.l)
-        textout += '\n'
-        textout += 'File from: ' + self.file + '\n'
-        textout += 'Version: ' + str(self.version) + '\n'
-        textout += 'Comment from original file: ' + self.comments + '\n'
 
         return textout
 

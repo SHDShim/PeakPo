@@ -1,5 +1,5 @@
 VERSION: 4
-COMMENT:FeSi2(JCPDS 97-003-2401, Jade, k, k0 guessed)
+COMMENT: FeSi2(JCPDS 97-003-2401, Jade, k, k0 guessed)
 K0:       150.000
 K0P:       4.00000
 SYMMETRY: TETRAGONAL

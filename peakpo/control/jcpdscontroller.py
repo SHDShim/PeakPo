@@ -95,7 +95,7 @@ class JcpdsController(object):
             else:
                 QtWidgets.QMessageBox.warning(
                     self.widget, "Warning",
-                    f+" seems to have errors when appended to JCPDS list.")
+                    f+" seems to have errors in format.")
         # display on the QTableWidget
         self.jcpdstable_ctrl.update()
         if self.model.base_ptn_exist():
