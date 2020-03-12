@@ -53,8 +53,10 @@ app = QtWidgets.QApplication(sys.argv)
 # 2020/02/15 block below does not affect screen resolution
 # app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
 sys.excepthook = excepthook
-app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
-#app.setStyle('osx')
+if '-day' in sys.argv:
+    app.setStyle('default')
+else:
+    app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
 controller = MainController()
 controller.show_window()
 ret = app.exec_()
