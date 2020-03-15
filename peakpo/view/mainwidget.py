@@ -29,6 +29,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def build_ui(self):
         # self.pushButton_MakeBasePtn.setEnabled(False)
+        self.pushButton_SetJCPDSStepTo0001.setDisabled(True)
+        self.pushButton_SetJCPDSStepTo001.setDisabled(True)
+        self.pushButton_SetJCPDSStepTo01.setDisabled(True)
+        self.pushButton_UpdateJCPDSSteps.setDisabled(True)
+        self.doubleSpinBox_JCPDSStep.setDisabled(True)
+        self.doubleSpinBox_JCPDSStep.setKeyboardTracking(False)
+        self.doubleSpinBox_JCPDSStep.setStyle(SpinBoxFixStyle())
         self.doubleSpinBox_Pressure.setKeyboardTracking(False)
         self.doubleSpinBox_Pressure.setStyle(SpinBoxFixStyle())
         self.doubleSpinBox_Temperature.setKeyboardTracking(False)

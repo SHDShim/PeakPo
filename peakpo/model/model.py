@@ -8,7 +8,8 @@ from ds_cake import DiffImg
 from ds_jcpds import JCPDSplt, Session
 from ds_powdiff import PatternPeakPo, get_DataSection
 from ds_section import Section
-from utils import samefilename, make_filename, change_file_path
+from utils import samefilename, make_filename, change_file_path, \
+    cal_dspacing, extract_extension
 
 
 class PeakPoModel(object):
@@ -282,7 +283,14 @@ class PeakPoModel(object):
     def append_a_jcpds(self, filen, color):
         try:
             phase = JCPDSplt()
-            phase.read_file(filen)  # phase.file = f
+            ext = extract_extension(filen)
+            if ext == 'cif':
+                success = phase.set_from_cif(filen, 200., 4.,
+                                   comments='Created from '+filen)  # phase.file = f
+                if not success:
+                    return False
+            else:
+                phase.read_file(filen)
             phase.color = color
         except:
             return False

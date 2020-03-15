@@ -206,7 +206,7 @@ class MainController(object):
             temp_value + step * direction)
 
     def update_jcpds_table(self):
-        step = self.widget.doubleSpinBox_JCPDSStep.value()
+        step = float(self.widget.doubleSpinBox_JCPDSStep.value())
         self.jcpdstable_ctrl.update_steps_only(step)
 
     """

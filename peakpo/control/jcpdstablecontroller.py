@@ -169,7 +169,7 @@ class JcpdsTableController(object):
                     2.0)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setSingleStep(
                     step)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setDecimals(2)
+                self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setDecimals(3)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setProperty(
                     "value", self.model.jcpds_lst[row].twk_k0)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.valueChanged.\
@@ -194,7 +194,7 @@ class JcpdsTableController(object):
                     self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setMaximum(2.0)
                     self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setSingleStep(
                         step)
-                    self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setDecimals(2)
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setDecimals(3)
                     self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setProperty(
                         "value", self.model.jcpds_lst[row].twk_k0p)
                     self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.valueChanged.\
@@ -221,7 +221,7 @@ class JcpdsTableController(object):
                 self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
                     setSingleStep(step)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setDecimals(
-                    2)
+                    3)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setProperty(
                     "value", self.model.jcpds_lst[row].twk_thermal_expansion)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
@@ -241,7 +241,7 @@ class JcpdsTableController(object):
             self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setMaximum(1.0)
             self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setSingleStep(
                 step)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setDecimals(2)
+            self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setDecimals(3)
             self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setProperty(
                 "value", self.model.jcpds_lst[row].twk_int)
             self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.valueChanged.\

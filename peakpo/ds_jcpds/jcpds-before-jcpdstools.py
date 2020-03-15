@@ -5,7 +5,7 @@ from .xrd import cal_UnitCellVolume, cal_dspacing
 import pymatgen as mg
 from pymatgen.analysis.diffraction.xrd import XRDCalculator
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from .jcpds_dioptas import jcpds, jcpds_reflection
+from .jcpds_dioptas import jcpds
 import datetime
 
 # import numpy.ma as ma
@@ -366,7 +366,7 @@ class JCPDS(object):
         if c_a is None:
             c_a = self.c0 / self.a0
 
-        if (((pressure == 0.0) and (temperature == 300.) and (use_table_for_0GPa))
+        if (((pressure == 0.0) and (use_table_for_0GPa))
                 or (self.symmetry == 'nosymmetry')):
             # p = 0 GPa, resetting to uc0 is necessary
             self.v = self.v0
@@ -380,20 +380,6 @@ class JCPDS(object):
 #            for dl in DLines:
 #                dsp = dl.dsp0
 #                dl.dsp = dsp
-        elif ((pressure == 0.0) and (temperature == 300.) and
-              not (use_table_for_0GPa)):
-            self._cal_UCPatPT(b_a, c_a)
-            DLines = self.get_DiffractionLines()
-#            a = self.a; b = self.b; c = self.c;
-#            alpha = self.alpha; beta = self.beta; gamma = self.gamma
-            for dl in DLines:
-                dsp = cal_dspacing(self.symmetry, dl.h, dl.k, dl.l,
-                                   self.a0, self.b0, self.c0,
-                                   self.alpha0, self.beta0, self.gamma0)
-                dl.dsp = dsp
-            # the code worked without the following line, perhaps
-            # due to the referencing or copy issue in python list
-            self.DiffLines = DLines[:]
         else:
             self._cal_UCPatPT(b_a, c_a)
             DLines = self.get_DiffractionLines()
@@ -574,11 +560,7 @@ class JCPDS(object):
         self.alpha0 = float(lattice.alpha)
         self.beta0 = float(lattice.beta)
         self.gamma0 = float(lattice.gamma)
-        symm = str(SpacegroupAnalyzer(structure).get_crystal_system())
-        if symm == 'trigonal':
-            self.symmetry = 'hexagonal'
-        else:
-            self.symmetry = symm
+        self.symmetry = str(SpacegroupAnalyzer(structure).get_crystal_system())
         self.file = file
         self.name = name
         self.version = version
@@ -611,69 +593,7 @@ class JCPDS(object):
                 DiffLines.append(d_line)
         self.DiffLines = DiffLines
 
-    def write_to_string(self, comments=" ",
-                      calculate_1bar_table = False,
-                      int_min=0., dsp_min=0.):
-
-        textoutput = "{:d}\n".format(self.version)
-        textoutput += comments + "\n"
-
-        # 1 cubic, 2 hexagonal, 3 tetragonal, 4 orthorhombic
-        # 5 monoclinic, 6 triclinic, 7 nosymmetry P, d-sp input
-
-        str_el = "{0:.2f}   {1:.2f}".format(self.k0, self.k0p)
-
-        if self.symmetry == 'cubic':  # cubic
-            crystal_system = '1   '
-            str_uc = "{0:.5f}".format(self.a0)
-        elif self.symmetry == 'nosymmetry':  # P, d-sp input
-            crystal_system = '7   '
-            str_uc = "{0:.5f}".format(self.a0)
-        elif self.symmetry == 'hexagonal' or self.symmetry == 'trigonal':
-            crystal_system = '2   '
-            str_uc = "{0:.5f}   {1:.5f}".format(self.a0, self.c0)
-        elif self.symmetry == 'tetragonal':  # tetragonal
-            crystal_system = '3   '
-            str_uc = "{0:.5f}   {1:.5f}".format(self.a0, self.c0)
-        elif self.symmetry == 'orthorhombic':  # orthorhombic
-            crystal_system = '4   '
-            str_uc = "{0:.5f}   {1:.5f}   {2:.5f}".format(self.a0,
-                                                      self.b0, self.c0)
-        elif self.symmetry == 'monoclinic':  # monoclinic
-            crystal_system = '5   '
-            str_uc = "{0:.5f}   {1:.5f}   {2:.5f}   {3:.5f}".format(
-                self.a0, self.b0, self.c0, self.beta0)
-        elif self.symmetry == 'triclinic':  # triclinic
-            crystal_system = '6   '
-            str_uc = "{0:.5f}   {1:.5f}   {2:.5f}   {3:.5f}   {4:.5f} \
-                {5:.5f}".format(
-                self.a0, self.b0, self.c0,
-                self.alpha0, self.beta0, self.gamma0)
-
-        textoutput += (crystal_system + str_el + " \n")
-        textoutput += str_uc + " \n"
-        textoutput += "{:.4e} \n".format(self.thermal_expansion)
-        textoutput += "d-spacing    I/I0     h   k   l \n"
-
-        if calculate_1bar_table:
-            self.cal_dsp(use_table_for_0GPa=False)
-            for line in self.DiffLines:
-                if (line.dsp > dsp_min) and (line.intensity > int_min):
-                    textoutput += \
-                        "{0:.6f}   {1:.2f}   {2:.1f}   {3:.1f}   {4:.1f} \n".format(
-                        line.dsp, line.intensity, line.h, line.k, line.l)
-        else:
-            for line in self.DiffLines:
-                if (line.dsp0 > dsp_min) and (line.intensity > int_min):
-                    textoutput += \
-                        "{0:.6f}   {1:.2f}   {2:.1f}   {3:.1f}   {4:.1f} \n".format(
-                        line.dsp0, line.intensity, line.h, line.k, line.l)
-        return textoutput
-
-
-    def write_to_file(self, filename, comments=" ",
-                      calculate_1bar_table = False,
-                      int_min=0., dsp_min=0.):
+    def write_to_file(self, filename, comments=" "):
         """
         write a JCPDS file
 
@@ -685,42 +605,51 @@ class JCPDS(object):
         -------
 
         """
-        textoutput = self.write_to_string(comments=comments,
-                          calculate_1bar_table = calculate_1bar_table,
-                          int_min=int_min, dsp_min=dsp_min)
         f = open(filename, 'w')
-        f.write(textoutput)
-        f.close()
+        f.write("{:d}\n".format(self.version))
+        f.write(comments + "\n")
 
-    def write_to_dioptas_jcpds(self, filename, int_min=0., dsp_min=0.):
-        jcpds_dioptas = jcpds()
-        jcpds_dioptas.params['comments'].append(self.comments)
-        jcpds_dioptas.params['symmetry'] = self.symmetry
-        jcpds_dioptas.params['k0'] = self.k0
-        jcpds_dioptas.params['k0p0'] = self.k0p
-        jcpds_dioptas.params['alpha_t0'] = self.thermal_expansion
-        jcpds_dioptas.params['a0'] = self.a0
-        jcpds_dioptas.params['b0'] = self.b0
-        jcpds_dioptas.params['c0'] = self.c0
-        jcpds_dioptas.params['alpha0'] = self.alpha0
-        jcpds_dioptas.params['beta0'] = self.beta0
-        jcpds_dioptas.params['gamma0'] = self.gamma0
-        jcpds_dioptas.params['v0'] = self.v0
+        # 1 cubic, 2 hexagonal, 3 tetragonal, 4 orthorhombic
+        # 5 monoclinic, 6 triclinic, 7 nosymmetry P, d-sp input
 
-        reflections = []
+        str_el = "{0:.2f} {1:.2f}".format(self.k0, self.k0p)
+
+        if self.symmetry == 'cubic':  # cubic
+            crystal_system = '1 '
+            str_uc = "{0:.5f}".format(self.a0)
+        elif self.symmetry == 'nosymmetry':  # P, d-sp input
+            crystal_system = '7 '
+            str_uc = "{0:.5f}".format(self.a0)
+        elif self.symmetry == 'hexagonal' or self.symmetry == 'trigonal':
+            crystal_system = '2 '
+            str_uc = "{0:.5f} {1:.5f}".format(self.a0, self.c0)
+        elif self.symmetry == 'tetragonal':  # tetragonal
+            crystal_system = '3 '
+            str_uc = "{0:.5f} {1:.5f}".format(self.a0, self.c0)
+        elif self.symmetry == 'orthorhombic':  # orthorhombic
+            crystal_system = '4 '
+            str_uc = "{0:.5f} {1:.5f} {2:.5f}".format(self.a0,
+                                                      self.b0, self.c0)
+        elif self.symmetry == 'monoclinic':  # monoclinic
+            crystal_system = '5 '
+            str_uc = "{0:.5f} {1:.5f} {2:.5f} {3:.5f}".format(
+                self.a0, self.b0, self.c0, self.beta0)
+        elif self.symmetry == 'triclinic':  # triclinic
+            crystal_system = '6 '
+            str_uc = "{0:.5f} {1:.5f} {2:.5f} {3:.5f} {4:.5f} \
+                {5:.5f}".format(
+                self.a0, self.b0, self.c0,
+                self.alpha0, self.beta0, self.gamma0)
+
+        f.write(crystal_system + str_el + " \n")
+        f.write(str_uc + " \n")
+        f.write("{:.4e} \n".format(self.thermal_expansion))
+        f.write("d-spacing    I/I0     h   k   l \n")
 
         for line in self.DiffLines:
-            if (line.dsp0 > dsp_min) and (line.intensity > int_min):
-                reflection = jcpds_reflection()
-                reflection.d0 = line.dsp0
-                reflection.intensity = line.intensity
-                reflection.h = line.h
-                reflection.k = line.k
-                reflection.l = line.l
-                reflections.append(reflection)
-        jcpds_dioptas.reflections = reflections
-
-        jcpds_dioptas.save_file(filename)
+            f.write("{0:.6f} {1:.2f} {2:.1f} {3:.1f} {4:.1f} \n".format(
+                line.dsp0, line.intensity, line.h, line.k, line.l))
+        f.close()
 
 
 class Session(object):

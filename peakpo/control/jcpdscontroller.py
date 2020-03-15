@@ -9,8 +9,10 @@ import matplotlib.cm as cmx
 from .mplcontroller import MplController
 from .jcpdstablecontroller import JcpdsTableController
 from utils import xls_jlist, dialog_savefile, make_filename, get_temp_dir, \
-    InformationBox
-
+    InformationBox, extract_filename, extract_extension
+from ds_jcpds import JCPDS
+import pymatgen as mg
+import datetime
 
 class JcpdsController(object):
 
@@ -58,6 +60,8 @@ class JcpdsController(object):
         else:
             return idx_checked[0].row()
 
+
+
     def make_jlist(self, append=False):
         """
         collect files for jlist
@@ -68,14 +72,20 @@ class JcpdsController(object):
         if files == []:
             return
         self.model.set_jcpds_path(os.path.split(str(files[0]))[0])
-        n_color = 9
+        self._make_jlist(files, append=append)
+
+    def _make_jlist(self, files, append=False):
+        n_color = 20
         # jet = plt.get_cmap('gist_rainbow')
         jet = cmx.get_cmap('gist_rainbow')
         cNorm = colors.Normalize(vmin=0, vmax=n_color)
         c_index = range(n_color)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
-        c_value = [c_index[0], c_index[3], c_index[6], c_index[1], c_index[4],
+        c_value = [value for value in c_index]
+        """
+                   [c_index[0], c_index[3], c_index[6], c_index[1], c_index[4],
                    c_index[7], c_index[2], c_index[5], c_index[8]]
+        """
         if append:
             n_existingjcpds = self.model.jcpds_lst.__len__()
             n_addedjcpds = files.__len__()
