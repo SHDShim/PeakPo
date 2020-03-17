@@ -86,6 +86,12 @@ class MainController(object):
         self.widget.doubleSpinBox_SetWavelength.valueChanged.connect(
             self.apply_wavelength)
         self.widget.pushButton_SaveBgSubCHI.clicked.connect(self.save_bgsubchi)
+        self.widget.pushButton_SetXEat30.clicked.connect(
+            lambda: self.setXEat(0.4133))
+        self.widget.pushButton_SetXEat37.clicked.connect(
+            lambda: self.setXEat(0.3344))
+        self.widget.pushButton_SetXEat42.clicked.connect(
+            lambda: self.setXEat(0.2952))
         """
         self.widget.pushButton_ExportToUCFit.clicked.connect(
             self.export_to_ucfit)
@@ -492,6 +498,10 @@ class MainController(object):
             textinfo = self._find_closestjcpds(x_find)
             QtWidgets.QMessageBox.warning(self.widget, "Information",
                                           clicked_position + '\n' + textinfo)
+
+    def setXEat(self, wavelength):
+        self.widget.doubleSpinBox_SetWavelength.setValue(wavelength)
+        self.apply_wavelength()
 
     def apply_wavelength(self):
         # self.wavelength = value

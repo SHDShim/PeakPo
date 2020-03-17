@@ -532,7 +532,7 @@
               <property name="flat">
                <bool>true</bool>
               </property>
-              <layout class="QGridLayout" name="gridLayout_11" rowstretch="0,0,0,0,0">
+              <layout class="QGridLayout" name="gridLayout_11" rowstretch="0,0,0,0">
                <property name="leftMargin">
                 <number>3</number>
                </property>
@@ -1492,19 +1492,6 @@
                    <number>3</number>
                   </property>
                   <item>
-                   <widget class="QLabel" name="label_20">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="text">
-                     <string>Wavelength (A)</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
                    <widget class="QDoubleSpinBox" name="doubleSpinBox_SetWavelength">
                     <property name="sizePolicy">
                      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -1520,7 +1507,7 @@
                     </property>
                     <property name="maximumSize">
                      <size>
-                      <width>80</width>
+                      <width>70</width>
                       <height>16777215</height>
                      </size>
                     </property>
@@ -1549,8 +1536,71 @@
                   </item>
                   <item>
                    <widget class="QLabel" name="label_XRayEnergy">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
                     <property name="text">
                      <string>(37.077 keV)</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_SetXEat30">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>50</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>30</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_SetXEat37">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>50</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>37</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_SetXEat42">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>50</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>42</string>
                     </property>
                    </widget>
                   </item>

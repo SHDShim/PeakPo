@@ -2,11 +2,13 @@
 
 # Form implementation generated from reading ui file './ui/peakpo.ui'
 #
-# Created by: PyQt5 UI code generator 5.9.2
+# Created by: PyQt5 UI code generator 5.12.3
 #
 # WARNING! All changes made in this file will be lost!
 
+
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -590,14 +592,6 @@ class Ui_MainWindow(object):
         self.horizontalLayout_11 = QtWidgets.QHBoxLayout(self.frame_4)
         self.horizontalLayout_11.setContentsMargins(3, 3, 3, 3)
         self.horizontalLayout_11.setObjectName("horizontalLayout_11")
-        self.label_20 = QtWidgets.QLabel(self.frame_4)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_20.sizePolicy().hasHeightForWidth())
-        self.label_20.setSizePolicy(sizePolicy)
-        self.label_20.setObjectName("label_20")
-        self.horizontalLayout_11.addWidget(self.label_20)
         self.doubleSpinBox_SetWavelength = QtWidgets.QDoubleSpinBox(self.frame_4)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -605,7 +599,7 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.doubleSpinBox_SetWavelength.sizePolicy().hasHeightForWidth())
         self.doubleSpinBox_SetWavelength.setSizePolicy(sizePolicy)
         self.doubleSpinBox_SetWavelength.setMinimumSize(QtCore.QSize(70, 0))
-        self.doubleSpinBox_SetWavelength.setMaximumSize(QtCore.QSize(80, 16777215))
+        self.doubleSpinBox_SetWavelength.setMaximumSize(QtCore.QSize(70, 16777215))
         self.doubleSpinBox_SetWavelength.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.doubleSpinBox_SetWavelength.setLayoutDirection(QtCore.Qt.LeftToRight)
         self.doubleSpinBox_SetWavelength.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
@@ -615,8 +609,40 @@ class Ui_MainWindow(object):
         self.doubleSpinBox_SetWavelength.setObjectName("doubleSpinBox_SetWavelength")
         self.horizontalLayout_11.addWidget(self.doubleSpinBox_SetWavelength)
         self.label_XRayEnergy = QtWidgets.QLabel(self.frame_4)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_XRayEnergy.sizePolicy().hasHeightForWidth())
+        self.label_XRayEnergy.setSizePolicy(sizePolicy)
         self.label_XRayEnergy.setObjectName("label_XRayEnergy")
         self.horizontalLayout_11.addWidget(self.label_XRayEnergy)
+        self.pushButton_SetXEat30 = QtWidgets.QPushButton(self.frame_4)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushButton_SetXEat30.sizePolicy().hasHeightForWidth())
+        self.pushButton_SetXEat30.setSizePolicy(sizePolicy)
+        self.pushButton_SetXEat30.setMaximumSize(QtCore.QSize(50, 16777215))
+        self.pushButton_SetXEat30.setObjectName("pushButton_SetXEat30")
+        self.horizontalLayout_11.addWidget(self.pushButton_SetXEat30)
+        self.pushButton_SetXEat37 = QtWidgets.QPushButton(self.frame_4)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushButton_SetXEat37.sizePolicy().hasHeightForWidth())
+        self.pushButton_SetXEat37.setSizePolicy(sizePolicy)
+        self.pushButton_SetXEat37.setMaximumSize(QtCore.QSize(50, 16777215))
+        self.pushButton_SetXEat37.setObjectName("pushButton_SetXEat37")
+        self.horizontalLayout_11.addWidget(self.pushButton_SetXEat37)
+        self.pushButton_SetXEat42 = QtWidgets.QPushButton(self.frame_4)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushButton_SetXEat42.sizePolicy().hasHeightForWidth())
+        self.pushButton_SetXEat42.setSizePolicy(sizePolicy)
+        self.pushButton_SetXEat42.setMaximumSize(QtCore.QSize(50, 16777215))
+        self.pushButton_SetXEat42.setObjectName("pushButton_SetXEat42")
+        self.horizontalLayout_11.addWidget(self.pushButton_SetXEat42)
         self.verticalLayout.addWidget(self.frame_4)
         self.verticalLayout_18.addWidget(self.groupBox_3)
         self.groupBox = QtWidgets.QGroupBox(self.tab_Main)
@@ -2652,9 +2678,11 @@ class Ui_MainWindow(object):
         self.pushButton_NewBasePtn.setToolTip(_translate("MainWindow", "Open base pattern in chi"))
         self.pushButton_NewBasePtn.setText(_translate("MainWindow", "Open"))
         self.lineEdit_DiffractionPatternFileName.setToolTip(_translate("MainWindow", "Name and path of base 1D diffraction pattern"))
-        self.label_20.setText(_translate("MainWindow", "Wavelength (A)"))
         self.doubleSpinBox_SetWavelength.setToolTip(_translate("MainWindow", "Wavelength of X-ray beam"))
         self.label_XRayEnergy.setText(_translate("MainWindow", "(37.077 keV)"))
+        self.pushButton_SetXEat30.setText(_translate("MainWindow", "30"))
+        self.pushButton_SetXEat37.setText(_translate("MainWindow", "37"))
+        self.pushButton_SetXEat42.setText(_translate("MainWindow", "42"))
         self.groupBox.setTitle(_translate("MainWindow", "Pressure (GPa) and Temeprature (K)"))
         self.pushButton_RoomT.setToolTip(_translate("MainWindow", "Set temperature to 300 K"))
         self.pushButton_RoomT.setText(_translate("MainWindow", "300 K"))
@@ -2929,5 +2957,4 @@ class Ui_MainWindow(object):
         self.mplactionShow_a_JCPDS_file.setText(_translate("MainWindow", "Show a JCPDS file"))
         self.actionCiting_PeakPo.setText(_translate("MainWindow", "Citing PeakPo"))
         self.actionShortcut_keys.setText(_translate("MainWindow", "Shortcut keys"))
-
 from .mplwidget import MplWidget
