@@ -200,7 +200,7 @@ class PeakfitTableController(object):
         self.widget.tableWidget_PeakConstraints.horizontalHeader().setVisible(
             True)
         self.widget.tableWidget_PeakConstraints.setHorizontalHeaderLabels(
-            ['Ampl', 'Vary', 'Center', 'Vary', 'FHWM', 'Vary', 'n_L', 'Vary'])
+            ['Ampl', 'Vary', 'Center', 'Vary', 'FWHM', 'Vary', 'n_L', 'Vary'])
         for row in range(n_rows):
             # column 0 - height
             self.PkConst_doubleSpinBox_height = QtWidgets.QDoubleSpinBox()
