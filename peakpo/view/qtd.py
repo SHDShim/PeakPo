@@ -8,6 +8,7 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+import os
 
 
 class Ui_MainWindow(object):
@@ -23,7 +24,10 @@ class Ui_MainWindow(object):
         font.setItalic(False)
         font.setWeight(50)
         MainWindow.setFont(font)
-        MainWindow.setStyleSheet("font: 12pt \"Helvetica\";")
+        if os.name == 'nt':
+            MainWindow.setStyleSheet("font: 9pt \"Helvetica\";")
+        else:
+            MainWindow.setStyleSheet("font: 11pt \"Helvetica\";")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout_25 = QtWidgets.QVBoxLayout(self.centralwidget)

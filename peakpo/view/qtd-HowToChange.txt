@@ -1,0 +1,12 @@
+pyuic5 ../ui/peakpo.ui -o ./view/qtd.py
+
+then add
+
+import os
+
+go to line 26 and modify to
+
+if os.name == 'nt':
+    MainWindow.setStyleSheet("font: 9pt \"Helvetica\";")
+else:
+    MainWindow.setStyleSheet("font: 11pt \"Helvetica\";")

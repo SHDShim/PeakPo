@@ -1,16 +1,17 @@
-import faulthandler; faulthandler.enable()
-import os
-import sys
-import time
-import numpy
-import traceback
-from io import StringIO
-from PyQt5 import QtWidgets
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
-from control import MainController
-from utils import ErrorMessageBox
 import qdarkstyle
+from utils import ErrorMessageBox
+from control import MainController
+from PyQt5.QtCore import Qt
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+from io import StringIO
+import traceback
+import numpy
+import time
+import sys
+import os
+import faulthandler
+faulthandler.enable()
 
 
 def excepthook(exc_type, exc_value, traceback_obj):
@@ -48,16 +49,17 @@ def excepthook(exc_type, exc_value, traceback_obj):
 
 # 2020/02/15 block below does not affect screen resolution
 #QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-#os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
 app = QtWidgets.QApplication(sys.argv)
-# 2020/02/15 block below does not affect screen resolution
-# app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
+#app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
 sys.excepthook = excepthook
-if '-day' in sys.argv:
+if ('-day' in sys.argv):
     app.setStyle('default')
 else:
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+#font = app.font()
+#font.setPixelSize(48)
+#app.setFont(font)
 controller = MainController()
 controller.show_window()
 ret = app.exec_()
