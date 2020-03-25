@@ -145,7 +145,7 @@
              </property>
              <property name="minimumSize">
               <size>
-               <width>25</width>
+               <width>40</width>
                <height>25</height>
               </size>
              </property>
@@ -179,7 +179,7 @@
              </property>
              <property name="maximumSize">
               <size>
-               <width>25</width>
+               <width>40</width>
                <height>25</height>
               </size>
              </property>
@@ -207,7 +207,7 @@
              </property>
              <property name="maximumSize">
               <size>
-               <width>25</width>
+               <width>40</width>
                <height>25</height>
               </size>
              </property>
@@ -235,7 +235,7 @@
              </property>
              <property name="maximumSize">
               <size>
-               <width>25</width>
+               <width>40</width>
                <height>25</height>
               </size>
              </property>
@@ -266,7 +266,7 @@
              </property>
              <property name="maximumSize">
               <size>
-               <width>25</width>
+               <width>40</width>
                <height>25</height>
               </size>
              </property>
@@ -294,7 +294,7 @@
              </property>
              <property name="maximumSize">
               <size>
-               <width>25</width>
+               <width>40</width>
                <height>25</height>
               </size>
              </property>
@@ -322,7 +322,7 @@
              </property>
              <property name="maximumSize">
               <size>
-               <width>25</width>
+               <width>40</width>
                <height>25</height>
               </size>
              </property>
@@ -350,7 +350,7 @@
              </property>
              <property name="maximumSize">
               <size>
-               <width>25</width>
+               <width>40</width>
                <height>25</height>
               </size>
              </property>
@@ -387,7 +387,7 @@
              </property>
              <property name="maximumSize">
               <size>
-               <width>25</width>
+               <width>40</width>
                <height>25</height>
               </size>
              </property>
@@ -415,7 +415,7 @@
              </property>
              <property name="maximumSize">
               <size>
-               <width>25</width>
+               <width>40</width>
                <height>25</height>
               </size>
              </property>
@@ -530,20 +530,20 @@
                <string>Plot control</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_11" rowstretch="0,0,0,0">
                <property name="leftMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="topMargin">
                 <number>12</number>
                </property>
                <property name="rightMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="bottomMargin">
-                <number>6</number>
+                <number>12</number>
                </property>
                <property name="verticalSpacing">
                 <number>-1</number>
@@ -773,23 +773,23 @@
                <string>Navigation</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_26" stretch="0,0,0">
                <property name="spacing">
-                <number>2</number>
+                <number>-1</number>
                </property>
                <property name="leftMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="topMargin">
                 <number>12</number>
                </property>
                <property name="rightMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="bottomMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <item>
                 <widget class="QFrame" name="frame_24">
@@ -935,6 +935,12 @@
                </item>
                <item>
                 <widget class="QFrame" name="frame_6">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="frameShape">
                   <enum>QFrame::NoFrame</enum>
                  </property>
@@ -1035,16 +1041,16 @@
                       <number>-1</number>
                      </property>
                      <property name="leftMargin">
-                      <number>12</number>
-                     </property>
-                     <property name="topMargin">
                       <number>3</number>
                      </property>
+                     <property name="topMargin">
+                      <number>1</number>
+                     </property>
                      <property name="rightMargin">
-                      <number>12</number>
+                      <number>3</number>
                      </property>
                      <property name="bottomMargin">
-                      <number>8</number>
+                      <number>1</number>
                      </property>
                      <item>
                       <widget class="QRadioButton" name="radioButton_SortbyNme">
@@ -1192,17 +1198,17 @@
                <string>Session (dpp only)</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_8">
                <property name="leftMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="rightMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="bottomMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="horizontalSpacing">
                 <number>-1</number>
@@ -1229,6 +1235,37 @@
                  </property>
                  <property name="readOnly">
                   <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QPushButton" name="pushButton_SaveDPP">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>60</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Helvetica</family>
+                   <pointsize>12</pointsize>
+                   <weight>50</weight>
+                   <italic>false</italic>
+                   <bold>false</bold>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>Save session to a dpp file</string>
+                 </property>
+                 <property name="text">
+                  <string>Save</string>
                  </property>
                 </widget>
                </item>
@@ -1263,61 +1300,6 @@
                  </property>
                 </widget>
                </item>
-               <item row="1" column="2">
-                <widget class="QFrame" name="frame_2">
-                 <property name="frameShape">
-                  <enum>QFrame::NoFrame</enum>
-                 </property>
-                 <property name="frameShadow">
-                  <enum>QFrame::Raised</enum>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_12">
-                  <property name="leftMargin">
-                   <number>3</number>
-                  </property>
-                  <property name="topMargin">
-                   <number>3</number>
-                  </property>
-                  <property name="rightMargin">
-                   <number>3</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>3</number>
-                  </property>
-                 </layout>
-                </widget>
-               </item>
-               <item row="0" column="1">
-                <widget class="QPushButton" name="pushButton_SaveDPP">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>60</width>
-                   <height>16777215</height>
-                  </size>
-                 </property>
-                 <property name="font">
-                  <font>
-                   <family>Helvetica</family>
-                   <pointsize>12</pointsize>
-                   <weight>50</weight>
-                   <italic>false</italic>
-                   <bold>false</bold>
-                  </font>
-                 </property>
-                 <property name="toolTip">
-                  <string>Save session to a dpp file</string>
-                 </property>
-                 <property name="text">
-                  <string>Save</string>
-                 </property>
-                </widget>
-               </item>
               </layout>
              </widget>
             </item>
@@ -1333,23 +1315,23 @@
                <string>Base pattern</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout">
                <property name="spacing">
                 <number>2</number>
                </property>
                <property name="leftMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="topMargin">
                 <number>12</number>
                </property>
                <property name="rightMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="bottomMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <item>
                 <widget class="QFrame" name="frame">
@@ -1625,17 +1607,17 @@
                <string>Pressure (GPa) and Temeprature (K)</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_10">
                <property name="leftMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="topMargin">
                 <number>12</number>
                </property>
                <property name="rightMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="bottomMargin">
                 <number>12</number>
@@ -2105,7 +2087,7 @@
                <string>View</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_17">
                <property name="leftMargin">
@@ -2188,30 +2170,18 @@
              </widget>
             </item>
             <item>
-             <widget class="QFrame" name="frame_26">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <layout class="QGridLayout" name="gridLayout_13" columnstretch="0">
-               <property name="topMargin">
-                <number>3</number>
-               </property>
-               <property name="bottomMargin">
-                <number>3</number>
-               </property>
-              </layout>
-             </widget>
-            </item>
-            <item>
              <widget class="QFrame" name="frame_27">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::NoFrame</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Plain</enum>
               </property>
               <layout class="QGridLayout" name="gridLayout_12" columnstretch="0,0,0,0,0,0,0,0,0,0">
                <property name="leftMargin">
@@ -2339,7 +2309,7 @@
                  </property>
                  <property name="maximumSize">
                   <size>
-                   <width>90</width>
+                   <width>75</width>
                    <height>25</height>
                   </size>
                  </property>
@@ -2347,7 +2317,7 @@
                   <string>Set highlighted pattern in the waterfall list as a base pattern</string>
                  </property>
                  <property name="text">
-                  <string>Set as base</string>
+                  <string>Set base</string>
                  </property>
                 </widget>
                </item>
@@ -2402,7 +2372,7 @@
                 <widget class="QPushButton" name="pushButton_UncheckAllWaterfall">
                  <property name="maximumSize">
                   <size>
-                   <width>32</width>
+                   <width>37</width>
                    <height>25</height>
                   </size>
                  </property>
@@ -2486,17 +2456,17 @@
                <string>PONI file</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_4">
                <property name="leftMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="topMargin">
                 <number>12</number>
                </property>
                <property name="rightMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="bottomMargin">
                 <number>12</number>
@@ -2545,17 +2515,17 @@
                <string>Diffraction image file (read only)</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_9" stretch="0">
                <property name="leftMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="topMargin">
                 <number>12</number>
                </property>
                <property name="rightMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="bottomMargin">
                 <number>12</number>
@@ -2609,23 +2579,23 @@
                <string>Gray scale</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_11">
                <property name="spacing">
                 <number>-1</number>
                </property>
                <property name="leftMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="topMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="rightMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="bottomMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <item>
                 <widget class="QLabel" name="label_8">
@@ -2869,20 +2839,20 @@
                <string>Vertical size</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_21">
                <property name="spacing">
                 <number>0</number>
                </property>
                <property name="leftMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="topMargin">
                 <number>12</number>
                </property>
                <property name="rightMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <property name="bottomMargin">
                 <number>12</number>
@@ -2924,7 +2894,7 @@
                <string>Other configs</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_5">
                <item>
@@ -2990,7 +2960,7 @@
                <string>Mask out intensities</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_16">
                <property name="leftMargin">
@@ -3100,7 +3070,7 @@
                <string>Selective integration</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_16">
                <property name="topMargin">
@@ -3266,7 +3236,7 @@
                <string>JCPDS list source</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_12" stretch="0">
                <property name="topMargin">
@@ -3324,7 +3294,7 @@
                <string>JCPDS bars</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_23">
                <item>
@@ -3400,7 +3370,7 @@
                <string>Setup</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_20">
                <item>
@@ -3428,7 +3398,7 @@
                <string>Font size</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_4">
                <item>
@@ -3492,7 +3462,7 @@
                <string>Opacity</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_3">
                <property name="leftMargin">
@@ -3555,7 +3525,7 @@
                   </sizepolicy>
                  </property>
                  <property name="text">
-                  <string>Thickness, cake</string>
+                  <string>Thick, cake</string>
                  </property>
                 </widget>
                </item>
@@ -3600,7 +3570,7 @@
                   </sizepolicy>
                  </property>
                  <property name="text">
-                  <string>Thickness, ptn</string>
+                  <string>Thick, ptn</string>
                  </property>
                 </widget>
                </item>
@@ -3632,7 +3602,7 @@
                <string>List</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_20">
                <property name="leftMargin">
@@ -3750,13 +3720,13 @@
                  </property>
                  <property name="minimumSize">
                   <size>
-                   <width>80</width>
+                   <width>0</width>
                    <height>0</height>
                   </size>
                  </property>
                  <property name="maximumSize">
                   <size>
-                   <width>70</width>
+                   <width>60</width>
                    <height>25</height>
                   </size>
                  </property>
@@ -3764,7 +3734,7 @@
                   <string>Save JCPDSs to an excel file</string>
                  </property>
                  <property name="text">
-                  <string>Save XLS</string>
+                  <string>XLS</string>
                  </property>
                 </widget>
                </item>
@@ -3790,232 +3760,205 @@
                <string>Selected</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_2">
                <property name="verticalSpacing">
                 <number>-1</number>
                </property>
-               <item row="2" column="5">
-                <widget class="QFrame" name="frame_3">
-                 <property name="frameShape">
-                  <enum>QFrame::NoFrame</enum>
+               <item row="0" column="4">
+                <widget class="QPushButton" name="pushButton_SaveTwkJCPDS">
+                 <property name="maximumSize">
+                  <size>
+                   <width>60</width>
+                   <height>25</height>
+                  </size>
                  </property>
-                 <property name="frameShadow">
-                  <enum>QFrame::Plain</enum>
+                 <property name="toolTip">
+                  <string>Save Twk'ed JCPDSs for the checked items</string>
                  </property>
-                 <property name="lineWidth">
-                  <number>0</number>
+                 <property name="text">
+                  <string>Save</string>
                  </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_7">
-                  <property name="leftMargin">
-                   <number>3</number>
-                  </property>
-                  <property name="topMargin">
-                   <number>3</number>
-                  </property>
-                  <property name="rightMargin">
-                   <number>3</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>3</number>
-                  </property>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_AddToJlist">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="minimumSize">
-                     <size>
-                      <width>0</width>
-                      <height>0</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>32</width>
-                      <height>25</height>
-                     </size>
-                    </property>
-                    <property name="font">
-                     <font>
-                      <family>Helvetica</family>
-                      <pointsize>12</pointsize>
-                      <weight>50</weight>
-                      <italic>false</italic>
-                      <bold>false</bold>
-                     </font>
-                    </property>
-                    <property name="toolTip">
-                     <string>Add a JCPDS file to the list</string>
-                    </property>
-                    <property name="text">
-                     <string>+</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_RemoveJCPDS">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="minimumSize">
-                     <size>
-                      <width>0</width>
-                      <height>0</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>32</width>
-                      <height>25</height>
-                     </size>
-                    </property>
-                    <property name="font">
-                     <font>
-                      <family>Helvetica</family>
-                      <pointsize>12</pointsize>
-                      <weight>50</weight>
-                      <italic>false</italic>
-                      <bold>false</bold>
-                     </font>
-                    </property>
-                    <property name="toolTip">
-                     <string>Remove highlighted JCPDS from the list</string>
-                    </property>
-                    <property name="text">
-                     <string>−</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_MoveUp">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="minimumSize">
-                     <size>
-                      <width>0</width>
-                      <height>0</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>32</width>
-                      <height>25</height>
-                     </size>
-                    </property>
-                    <property name="font">
-                     <font>
-                      <family>Helvetica</family>
-                      <pointsize>12</pointsize>
-                      <weight>50</weight>
-                      <italic>false</italic>
-                      <bold>false</bold>
-                     </font>
-                    </property>
-                    <property name="toolTip">
-                     <string>Move up highlighted row in the list</string>
-                    </property>
-                    <property name="text">
-                     <string>↑</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_MoveDown">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="minimumSize">
-                     <size>
-                      <width>0</width>
-                      <height>0</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>32</width>
-                      <height>25</height>
-                     </size>
-                    </property>
-                    <property name="font">
-                     <font>
-                      <family>Helvetica</family>
-                      <pointsize>12</pointsize>
-                      <weight>50</weight>
-                      <italic>false</italic>
-                      <bold>false</bold>
-                     </font>
-                    </property>
-                    <property name="toolTip">
-                     <string>Move down highlighted row in the list</string>
-                    </property>
-                    <property name="text">
-                     <string>↓</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_SaveTwkJCPDS">
-                    <property name="maximumSize">
-                     <size>
-                      <width>60</width>
-                      <height>25</height>
-                     </size>
-                    </property>
-                    <property name="toolTip">
-                     <string>Save Twk'ed JCPDSs for the checked items</string>
-                    </property>
-                    <property name="text">
-                     <string>Save</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_ViewJCPDS">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>60</width>
-                      <height>25</height>
-                     </size>
-                    </property>
-                    <property name="font">
-                     <font>
-                      <family>Helvetica</family>
-                      <pointsize>12</pointsize>
-                      <weight>50</weight>
-                      <italic>false</italic>
-                      <bold>false</bold>
-                     </font>
-                    </property>
-                    <property name="toolTip">
-                     <string>Show calculation result for highlighted JCPDS in the Output tab</string>
-                    </property>
-                    <property name="text">
-                     <string>Show</string>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="QPushButton" name="pushButton_MoveUp">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>32</width>
+                   <height>25</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Helvetica</family>
+                   <pointsize>12</pointsize>
+                   <weight>50</weight>
+                   <italic>false</italic>
+                   <bold>false</bold>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>Move up highlighted row in the list</string>
+                 </property>
+                 <property name="text">
+                  <string>↑</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="3">
+                <widget class="QPushButton" name="pushButton_MoveDown">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>32</width>
+                   <height>25</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Helvetica</family>
+                   <pointsize>12</pointsize>
+                   <weight>50</weight>
+                   <italic>false</italic>
+                   <bold>false</bold>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>Move down highlighted row in the list</string>
+                 </property>
+                 <property name="text">
+                  <string>↓</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QPushButton" name="pushButton_RemoveJCPDS">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>32</width>
+                   <height>25</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Helvetica</family>
+                   <pointsize>12</pointsize>
+                   <weight>50</weight>
+                   <italic>false</italic>
+                   <bold>false</bold>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>Remove highlighted JCPDS from the list</string>
+                 </property>
+                 <property name="text">
+                  <string>−</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="5">
+                <widget class="QPushButton" name="pushButton_ViewJCPDS">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>60</width>
+                   <height>25</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Helvetica</family>
+                   <pointsize>12</pointsize>
+                   <weight>50</weight>
+                   <italic>false</italic>
+                   <bold>false</bold>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>Show calculation result for highlighted JCPDS in the Output tab</string>
+                 </property>
+                 <property name="text">
+                  <string>Show</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QPushButton" name="pushButton_AddToJlist">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>32</width>
+                   <height>25</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Helvetica</family>
+                   <pointsize>12</pointsize>
+                   <weight>50</weight>
+                   <italic>false</italic>
+                   <bold>false</bold>
+                  </font>
+                 </property>
+                 <property name="toolTip">
+                  <string>Add a JCPDS file to the list</string>
+                 </property>
+                 <property name="text">
+                  <string>+</string>
+                 </property>
                 </widget>
                </item>
               </layout>
@@ -4211,7 +4154,7 @@
                <string>Peakfits</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_22">
                <property name="leftMargin">
@@ -4385,7 +4328,7 @@
                <string>Parameters</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_5">
                <property name="leftMargin">
@@ -4574,7 +4517,7 @@
                <string>Range for background fit</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_9">
                <item row="0" column="0">
@@ -4717,19 +4660,6 @@
               </property>
              </widget>
             </item>
-            <item>
-             <spacer name="verticalSpacer">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
            </layout>
           </widget>
           <widget class="QWidget" name="tab_PkFt">
@@ -4738,13 +4668,13 @@
            </attribute>
            <layout class="QVBoxLayout" name="verticalLayout_14">
             <property name="leftMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <property name="topMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <property name="rightMargin">
-             <number>3</number>
+             <number>12</number>
             </property>
             <item>
              <widget class="QTabWidget" name="tabWidget_PeakFit">
@@ -4788,10 +4718,10 @@
                    <item row="0" column="2">
                     <widget class="QPushButton" name="pushButton_PlotSelectedPkFtResults">
                      <property name="toolTip">
-                      <string>Plot highlighted fit sections</string>
+                      <string>Plot highlighted fit sections in GSAS style</string>
                      </property>
                      <property name="text">
-                      <string>Plot GSAS style</string>
+                      <string>GSAS style</string>
                      </property>
                     </widget>
                    </item>
@@ -4818,7 +4748,7 @@
                       <string>Save all fitting results in an excel file</string>
                      </property>
                      <property name="text">
-                      <string>Save to XLS</string>
+                      <string>Save XLS</string>
                      </property>
                     </widget>
                    </item>
@@ -4854,7 +4784,7 @@
                    <string>Section</string>
                   </property>
                   <property name="flat">
-                   <bool>true</bool>
+                   <bool>false</bool>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_17">
                    <item row="0" column="3">
@@ -4934,7 +4864,7 @@
                    <string>Add/Remove peaks</string>
                   </property>
                   <property name="flat">
-                   <bool>true</bool>
+                   <bool>false</bool>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_18">
                    <item row="2" column="3">
@@ -5006,28 +4936,21 @@
                    <string>Peak</string>
                   </property>
                   <property name="flat">
-                   <bool>true</bool>
+                   <bool>false</bool>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_19">
                    <property name="leftMargin">
-                    <number>6</number>
+                    <number>12</number>
                    </property>
                    <property name="topMargin">
-                    <number>6</number>
+                    <number>12</number>
                    </property>
                    <property name="rightMargin">
-                    <number>6</number>
+                    <number>12</number>
                    </property>
                    <property name="bottomMargin">
-                    <number>6</number>
+                    <number>12</number>
                    </property>
-                   <item row="0" column="2">
-                    <widget class="QLabel" name="label_13">
-                     <property name="text">
-                      <string>Initial FWHM</string>
-                     </property>
-                    </widget>
-                   </item>
                    <item row="0" column="0">
                     <widget class="QLabel" name="label_12">
                      <property name="text">
@@ -5060,7 +4983,14 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="3">
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_13">
+                     <property name="text">
+                      <string>Initial FWHM</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
                     <widget class="QDoubleSpinBox" name="doubleSpinBox_InitialFWHM">
                      <property name="maximumSize">
                       <size>
@@ -5082,7 +5012,14 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="3">
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_31">
+                     <property name="text">
+                      <string>Max FWHM</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
                     <widget class="QDoubleSpinBox" name="doubleSpinBox_MaxFWHM">
                      <property name="maximumSize">
                       <size>
@@ -5107,13 +5044,6 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="2">
-                    <widget class="QLabel" name="label_31">
-                     <property name="text">
-                      <string>Max FWHM</string>
-                     </property>
-                    </widget>
-                   </item>
                   </layout>
                  </widget>
                 </item>
@@ -5126,14 +5056,14 @@
                    <string>Background</string>
                   </property>
                   <property name="flat">
-                   <bool>true</bool>
+                   <bool>false</bool>
                   </property>
                   <layout class="QHBoxLayout" name="horizontalLayout_3">
                    <property name="topMargin">
-                    <number>6</number>
+                    <number>12</number>
                    </property>
                    <property name="bottomMargin">
-                    <number>6</number>
+                    <number>12</number>
                    </property>
                    <item>
                     <widget class="QLabel" name="label_14">
@@ -5200,7 +5130,7 @@
                <string>Temporary files</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_6">
                <item row="1" column="0">
@@ -5270,7 +5200,7 @@
                <string>Tools</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout">
                <item>
@@ -5324,7 +5254,7 @@
                <string>Session (backward compatibility)</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout">
                <item row="0" column="0">
@@ -5402,18 +5332,24 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
+              <property name="layoutDirection">
+               <enum>Qt::LeftToRight</enum>
+              </property>
               <property name="title">
                <string>Plot setup</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_7">
+               <property name="leftMargin">
+                <number>3</number>
+               </property>
                <property name="rightMargin">
                 <number>3</number>
                </property>
                <property name="bottomMargin">
-                <number>3</number>
+                <number>12</number>
                </property>
                <item row="0" column="0">
                 <widget class="QCheckBox" name="checkBox_ShortPlotTitle">
@@ -5421,7 +5357,7 @@
                   <string>Make the title in 1D pattern short</string>
                  </property>
                  <property name="text">
-                  <string>Short title (file name only)</string>
+                  <string>Short title</string>
                  </property>
                 </widget>
                </item>
@@ -5488,7 +5424,7 @@
                <string>Line thickness</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_15">
                <property name="topMargin">
@@ -5622,7 +5558,7 @@
                <string>Dpp files</string>
               </property>
               <property name="flat">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <layout class="QGridLayout" name="gridLayout_14">
                <item row="0" column="0">

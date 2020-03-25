@@ -1,12 +1,24 @@
 pyuic5 ../ui/peakpo.ui -o ./view/qtd.py
 
-then add
+1. open qtd.py
+
+2. goto the last line and change to:
+
+from .mplwidget import MplWidget
+
+3. go back to the top and add
 
 import os
 
-go to line 26 and modify to
+4. go to line 26 and modify to
 
 if os.name == 'nt':
     MainWindow.setStyleSheet("font: 9pt \"Helvetica\";")
+    mpl_fontsize = 9
 else:
     MainWindow.setStyleSheet("font: 11pt \"Helvetica\";")
+    mpl_fontsize = 11
+
+5. line 60
+
+font.setPointSize(mpl_fontsize)

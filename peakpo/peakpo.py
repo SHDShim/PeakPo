@@ -49,7 +49,6 @@ def excepthook(exc_type, exc_value, traceback_obj):
 
 # 2020/02/15 block below does not affect screen resolution
 #QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-
 app = QtWidgets.QApplication(sys.argv)
 #app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
 sys.excepthook = excepthook
@@ -57,9 +56,6 @@ if ('-day' in sys.argv):
     app.setStyle('default')
 else:
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
-#font = app.font()
-#font.setPixelSize(48)
-#app.setFont(font)
 controller = MainController()
 controller.show_window()
 ret = app.exec_()
