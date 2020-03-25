@@ -380,20 +380,6 @@ class JCPDS(object):
 #            for dl in DLines:
 #                dsp = dl.dsp0
 #                dl.dsp = dsp
-        elif ((pressure == 0.0) and (temperature == 300.) and
-              not (use_table_for_0GPa)):
-            self._cal_UCPatPT(b_a, c_a)
-            DLines = self.get_DiffractionLines()
-#            a = self.a; b = self.b; c = self.c;
-#            alpha = self.alpha; beta = self.beta; gamma = self.gamma
-            for dl in DLines:
-                dsp = cal_dspacing(self.symmetry, dl.h, dl.k, dl.l,
-                                   self.a0, self.b0, self.c0,
-                                   self.alpha0, self.beta0, self.gamma0)
-                dl.dsp = dsp
-            # the code worked without the following line, perhaps
-            # due to the referencing or copy issue in python list
-            self.DiffLines = DLines[:]
         else:
             self._cal_UCPatPT(b_a, c_a)
             DLines = self.get_DiffractionLines()
@@ -407,6 +393,21 @@ class JCPDS(object):
             # the code worked without the following line, perhaps
             # due to the referencing or copy issue in python list
             self.DiffLines = DLines[:]
+        """
+        elif ((pressure == 0.0) and (temperature == 300.)) and (not use_table_for_0GPa):
+            self._cal_UCPatPT(b_a, c_a)
+            DLines = self.get_DiffractionLines()
+#            a = self.a; b = self.b; c = self.c;
+#            alpha = self.alpha; beta = self.beta; gamma = self.gamma
+            for dl in DLines:
+                dsp = cal_dspacing(self.symmetry, dl.h, dl.k, dl.l,
+                                   self.a0, self.b0, self.c0,
+                                   self.alpha0, self.beta0, self.gamma0)
+                dl.dsp = dsp
+            # the code worked without the following line, perhaps
+            # due to the referencing or copy issue in python list
+            self.DiffLines = DLines[:]
+        """
 
     def get_DiffractionLines(self):
         """
