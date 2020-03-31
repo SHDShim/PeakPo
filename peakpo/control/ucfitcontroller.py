@@ -225,7 +225,7 @@ class UcfitController(object):
                     "You need at least 3 data points for hexagonal.")
                 return
             a, s_a, c, s_c, v, s_v, res_lin, res_nlin = \
-                fit_hexagona_cell(data_to_fit_df, wavelength,
+                fit_hexagonal_cell(data_to_fit_df, wavelength,
                                   verbose=False)
             cell_params = [a, a, c]
             text_output += "a = {0:.5f} +/- {1:.5f} \n".format(a, s_a)

@@ -7,7 +7,7 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.7.30p"
+__version__ = "7.7.30q"
 """
 7.7.30: Unit-cell fitting added for cubic, tetragonal, hexagonal, and orthorhombic
 7.7.29: Update for better handling nosymmetry case of jcpds.
