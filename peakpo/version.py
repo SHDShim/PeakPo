@@ -7,8 +7,9 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.7.30q"
+__version__ = "7.7.31"
 """
+7.7.31: Beta tested more than 2 months.  Some minor bug fixes for ucfit.
 7.7.30: Unit-cell fitting added for cubic, tetragonal, hexagonal, and orthorhombic
 7.7.29: Update for better handling nosymmetry case of jcpds.
 7.7.28: Bug fix in 7.7.27 for not updating the info when navigated

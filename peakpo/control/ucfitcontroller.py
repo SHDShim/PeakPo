@@ -44,7 +44,10 @@ class UcfitController(object):
                 self.widget, "Warning",
                 "There is no peak fitting results to collect.")
             return
+        self.widget.comboBox_PeakFitLabels.clear()  # without this I will have previous record in it.
         # read data4ucfit
+        # self.ucfit_model = None # without this I will have previous record in it.
+        # self.phase = None # without this I will have previous record in it.
         self.ucfit_model = self._get_peaks_by_phase()
         # update comboBox_PeakFitLabels
         self.phase = list(self.ucfit_model.keys())[0]
@@ -61,6 +64,8 @@ class UcfitController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning", "Select a phase from " +
                 " the comboBox first.")
+            return
+        elif (phase == ''):
             return
         self.phase = phase
         # display in table
