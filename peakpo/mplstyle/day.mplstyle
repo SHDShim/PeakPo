@@ -268,8 +268,8 @@ ytick.minor.pad      : 4      # distance to the minor tick label in points
 ytick.color          : k      # color of the tick labels
 ytick.labelsize      : small # fontsize of the tick labels
 ytick.direction      : in     # direction: in, out, or inout
-ytick.major.left     : False   # draw y axis left major ticks
-ytick.major.right    : False   # draw y axis right major ticks
+ytick.major.left     : True   # draw y axis left major ticks
+ytick.major.right    : True   # draw y axis right major ticks
 ytick.minor.left     : False   # draw y axis left minor ticks
 ytick.minor.right    : False   # draw y axis right minor ticks
 ytick.alignment      : center

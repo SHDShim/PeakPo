@@ -272,7 +272,7 @@ class MplController(object):
         climits = np.asarray([
             self.widget.horizontalSlider_VMin.value(),
             self.widget.horizontalSlider_VMax.value()]) / \
-            1000. * prefactor
+            100. * prefactor
         if self.widget.checkBox_WhiteForPeak.isChecked():
             cmap = 'gray'
         else:
@@ -289,6 +289,7 @@ class MplController(object):
             extent=[tth_cake.min(), tth_cake.max(),
                     chi_cake.min(), chi_cake.max()],
             aspect="auto", cmap=cmap, clim=climits)  # gray_r
+        print('Cake intensity min, max = ', climits)
         tth_list, azi_list, note_list = self._read_azilist()
         tth_min = tth_cake.min()
         tth_max = tth_cake.max()

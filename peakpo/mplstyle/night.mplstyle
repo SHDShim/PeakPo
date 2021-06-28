@@ -23,8 +23,8 @@ ytick.direction      : in     # direction: in, out, or inout
 xtick.minor.top      : False   # draw x axis top minor ticks
 xtick.minor.bottom   : False   # draw x axis bottom minor ticks
 
-ytick.major.left     : False   # draw y axis left major ticks
-ytick.major.right    : False   # draw y axis right major ticks
+#ytick.major.left     : False   # draw y axis left major ticks
+#ytick.major.right    : False   # draw y axis right major ticks
 ytick.minor.left     : False   # draw y axis left minor ticks
 ytick.minor.right    : False   # draw y axis right minor ticks
 

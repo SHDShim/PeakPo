@@ -40,7 +40,7 @@ class FigureCanvasQTAgg_modified(FigureCanvasQTAgg, FigureCanvasQT_modified):
         self._bbox_queue = []
 
     @property
-    @cbook.deprecated("2.1")
+    #@cbook.deprecated("2.1")
     def blitbox(self):
         return self._bbox_queue
 
@@ -181,8 +181,8 @@ class MplCanvas(FigureCanvasQTAgg_modified):
         self.ax_cake.tick_params(which='both', axis='x',
                                  colors=self.objColor, direction='in',
                                  labelbottom=False, labeltop=False)
-        self.ax_cake.tick_params(axis='both', which='both', length=0)
-
+        #self.ax_cake.tick_params(axis='both', which='both', length=0)
+        self.ax_cake.tick_params(axis='x', which='both', length=0)
         self.ax_pattern.xaxis.set_label_position('bottom')
 
 

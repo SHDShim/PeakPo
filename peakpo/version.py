@@ -7,8 +7,10 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.7.31"
+__version__ = "7.7.32a"
 """
+7.7.32: change instruction for peakpo.command file
+7.7.32a: modified mplstyle to show y ticks.
 7.7.31: Beta tested more than 2 months.  Some minor bug fixes for ucfit.
 7.7.30: Unit-cell fitting added for cubic, tetragonal, hexagonal, and orthorhombic
 7.7.29: Update for better handling nosymmetry case of jcpds.
