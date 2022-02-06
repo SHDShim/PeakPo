@@ -74,8 +74,8 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['matplotlib>=2.0', 'pytheos', 'pyFAI', 'pyqt4',
-        'pyfai', 'pymatgen', 'periodictable', 'uncertainties', 'pyopencl'],
+    #    install_requires=['matplotlib>=2.0', 'pytheos', 'pyFAI', 'pyqt4',
+    #        'pyfai', 'pymatgen', 'periodictable', 'uncertainties', 'pyopencl'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
