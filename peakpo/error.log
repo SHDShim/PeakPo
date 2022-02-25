@@ -1,26 +1,8 @@
 --------------------------------------------------------------------------------
-2021-05-02, 13:24:54
+2022-02-23, 18:41:40
 --------------------------------------------------------------------------------
-<class 'FileNotFoundError'>: 
-[Errno 2] No such file or directory: '/Users/DanShim/Dropbox (ASU)/Current/2020-GroupMeeting-materials/Allen-Sutter/SCO_H_3_2020/1bar/LaB6_37keV_p30_cen_w_001.poni'
+<class 'AttributeError'>: 
+'MplCanvas' object has no attribute '_update_dpi'
 --------------------------------------------------------------------------------
-  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo-7.7.31/peakpo/control/cakecontroller.py", line 41, in update_cake
-    self.produce_cake()
-  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo-7.7.31/peakpo/control/cakecontroller.py", line 175, in produce_cake
-    self.cakemake_ctrl.cook()
-  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo-7.7.31/peakpo/control/cakemakecontroller.py", line 18, in cook
-    self.read_settings()
-  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo-7.7.31/peakpo/control/cakemakecontroller.py", line 13, in read_settings
-    self.model.diff_img.set_calibration(self.model.poni)
-  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo-7.7.31/peakpo/ds_cake/DiffractionImage.py", line 52, in set_calibration
-    self.poni = pyFAI.load(poni_filename)
-  File "/Users/DanShim/anaconda/envs/pkpo2021/lib/python3.8/site-packages/pyFAI/__init__.py", line 81, in load
-    return AzimuthalIntegrator.sload(filename)
-  File "/Users/DanShim/anaconda/envs/pkpo2021/lib/python3.8/site-packages/pyFAI/geometry.py", line 1228, in sload
-    inst.load(filename)
-  File "/Users/DanShim/anaconda/envs/pkpo2021/lib/python3.8/site-packages/pyFAI/geometry.py", line 1244, in load
-    poni = ponifile.PoniFile(data=filename)
-  File "/Users/DanShim/anaconda/envs/pkpo2021/lib/python3.8/site-packages/pyFAI/io/ponifile.py", line 62, in __init__
-    self.read_from_file(data)
-  File "/Users/DanShim/anaconda/envs/pkpo2021/lib/python3.8/site-packages/pyFAI/io/ponifile.py", line 71, in read_from_file
-    with open(filename) as opened_file:
+  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo/PeakPo-7.7.33/peakpo/view/mplwidget.py", line 53, in paintEvent
+    if self._update_dpi():

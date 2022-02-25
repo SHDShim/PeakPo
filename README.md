@@ -14,9 +14,13 @@ Major functions include:
 - Visual unit cell fitting  
 - Excel output of all the calculation results  
 
-## How to install
+## How to install with Python
 
 Check [Installation wiki page](https://github.com/SHDShim/PeakPo/wiki/Quick-Install)
+
+## How to download executables
+
+Check [my google drive folder](https://drive.google.com/drive/folders/0B0kkQLbYpQDYfjBGT21uMkx5cU1JMHJIUUhGR1FkdDVUdzFYVUdKR0Zya2NRcFYtUmRVUGM?resourcekey=0-FT-Lc6ZeuUBMaqHzzjZSbg&usp=sharing)
 
 ## How to get help
 

@@ -1,9 +1,9 @@
-import qdarkstyle
 from utils import ErrorMessageBox
 from control import MainController
 from PyQt5.QtCore import Qt
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
+from PyQt5.QtGui import QPalette, QColor
 from io import StringIO
 import traceback
 import numpy
@@ -11,6 +11,8 @@ import time
 import sys
 import os
 import faulthandler
+from sys import platform as _platform
+
 faulthandler.enable()
 
 
@@ -52,10 +54,49 @@ def excepthook(exc_type, exc_value, traceback_obj):
 app = QtWidgets.QApplication(sys.argv)
 #app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
 sys.excepthook = excepthook
-if ('-day' in sys.argv):
-    app.setStyle('default')
-else:
-    app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+
+app.setStyle('Fusion')
+
+if _platform == "darwin": # works only for mac
+    # Now use a palette to switch to dark colors:
+    """
+    palette = QPalette()
+    palette.setColor(QPalette.Window, QColor(53, 53, 53))
+    palette.setColor(QPalette.WindowText, Qt.white)
+    palette.setColor(QPalette.Base, QColor(25, 25, 25))
+    palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
+    palette.setColor(QPalette.ToolTipBase, Qt.black)
+    palette.setColor(QPalette.ToolTipText, Qt.white)
+    palette.setColor(QPalette.Text, Qt.white)
+    palette.setColor(QPalette.Button, QColor(53, 53, 53))
+    palette.setColor(QPalette.ButtonText, Qt.white)
+    palette.setColor(QPalette.BrightText, Qt.red)
+    palette.setColor(QPalette.Link, QColor(42, 130, 218))
+    palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+    palette.setColor(QPalette.HighlightedText, Qt.black)
+    app.setPalette(palette)
+    """
+    dark_palette = QPalette()
+    dark_palette.setColor(QPalette.Window, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.WindowText, Qt.white)
+    dark_palette.setColor(QPalette.Base, QColor(35, 35, 35))
+    dark_palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.ToolTipBase, QColor(25, 25, 25))
+    dark_palette.setColor(QPalette.ToolTipText, Qt.white)
+    dark_palette.setColor(QPalette.Text, Qt.white)
+    dark_palette.setColor(QPalette.Button, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.ButtonText, Qt.white)
+    dark_palette.setColor(QPalette.BrightText, Qt.red)
+    dark_palette.setColor(QPalette.Link, QColor(42, 130, 218))
+    dark_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+    dark_palette.setColor(QPalette.HighlightedText, QColor(35, 35, 35))
+    dark_palette.setColor(QPalette.Active, QPalette.Button, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.Disabled, QPalette.ButtonText, Qt.darkGray)
+    dark_palette.setColor(QPalette.Disabled, QPalette.WindowText, Qt.darkGray)
+    dark_palette.setColor(QPalette.Disabled, QPalette.Text, Qt.darkGray)
+    dark_palette.setColor(QPalette.Disabled, QPalette.Light, QColor(53, 53, 53))
+    app.setPalette(dark_palette)
+
 controller = MainController()
 controller.show_window()
 ret = app.exec_()

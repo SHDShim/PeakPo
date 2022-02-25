@@ -7,8 +7,9 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.7.32a"
+__version__ = "7.7.33"
 """
+7.7.33: fix CONDA_DEFAULT_ENV issue
 7.7.32: change instruction for peakpo.command file
 7.7.32a: modified mplstyle to show y ticks.
 7.7.31: Beta tested more than 2 months.  Some minor bug fixes for ucfit.
