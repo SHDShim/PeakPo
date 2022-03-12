@@ -1,12 +1,13 @@
 import numpy as np
 import os
-from pytheos import bm3_v
+from pytheos import bm3_v, bm3_p
 from .xrd import cal_UnitCellVolume, cal_dspacing
 import pymatgen as mg
 from pymatgen.analysis.diffraction.xrd import XRDCalculator
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from .jcpds_dioptas import jcpds, jcpds_reflection
 import datetime
+from scipy import interpolate
 
 # import numpy.ma as ma
 
@@ -344,8 +345,19 @@ class JCPDS(object):
                 self.v = self.v0
             else:
                 # print(pressure_st, self.v0, self.k0, self.k0p)
-                self.v = bm3_v(pressure_st, self.v0, self.k0, self.k0p,
-                               min_strain=0.3)
+                try:
+                    v_temp = bm3_v(pressure_st, self.v0, self.k0, self.k0p,
+                                min_strain=0.3)
+                except:
+                    n_pts = 110
+                    v_min = self.v0*0.1
+                    v_calib = np.linspace(self.v0, v_min, n_pts)
+                    p_calib = bm3_p(v_calib, self.v0, self.k0, self.k0p)
+                    bm3s_v = interpolate.InterpolatedUnivariateSpline(p_calib, v_calib)
+                    v_temp = bm3s_v(pressure) 
+                    del_p = pressure - bm3_p(v_temp, self.v0, self.k0, self.k0p)
+                    print('spline used for JCPDS calculation, residue = {0:.3e}'.format(del_p))
+                self.v = v_temp
 
     def cal_dsp(self, pressure=0., temperature=300.,
                 b_a=None, c_a=None, use_table_for_0GPa=True):

@@ -1,8 +1,18 @@
 --------------------------------------------------------------------------------
-2022-02-23, 18:41:40
+2022-03-12, 16:31:22
 --------------------------------------------------------------------------------
 <class 'AttributeError'>: 
-'MplCanvas' object has no attribute '_update_dpi'
+'numpy.float64' object has no attribute 'format'
 --------------------------------------------------------------------------------
-  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo/PeakPo-7.7.33/peakpo/view/mplwidget.py", line 53, in paintEvent
-    if self._update_dpi():
+  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo/PeakPo-7.7.33/peakpo/control/maincontroller.py", line 549, in apply_pt_to_graph
+    self.plot_ctrl.update()
+  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo/PeakPo-7.7.33/peakpo/control/mplcontroller.py", line 144, in update
+    self._plot_jcpds(limits)
+  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo/PeakPo-7.7.33/peakpo/control/mplcontroller.py", line 342, in _plot_jcpds
+    phase.cal_dsp(pressure,
+  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo/PeakPo-7.7.33/peakpo/ds_jcpds/jcpds.py", line 803, in cal_dsp
+    super(JCPDSplt, self).cal_dsp(pressure, temperature,
+  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo/PeakPo-7.7.33/peakpo/ds_jcpds/jcpds.py", line 375, in cal_dsp
+    self._cal_v(pressure, temperature)
+  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo/PeakPo-7.7.33/peakpo/ds_jcpds/jcpds.py", line 359, in _cal_v
+    print(del_p.format('spline used for JCPDS calculation, residue = {:.3e}'))
