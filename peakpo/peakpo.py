@@ -1,3 +1,7 @@
+# fbs - uncomment the following line
+#from fbs_runtime.application_context.PyQt5 import ApplicationContext
+#
+import sys
 from utils import ErrorMessageBox
 from control import MainController
 from PyQt5.QtCore import Qt
@@ -8,7 +12,6 @@ from io import StringIO
 import traceback
 import numpy
 import time
-import sys
 import os
 import faulthandler
 from sys import platform as _platform
@@ -54,8 +57,12 @@ def excepthook(exc_type, exc_value, traceback_obj):
 app = QtWidgets.QApplication(sys.argv)
 #app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
 sys.excepthook = excepthook
-
 app.setStyle('Fusion')
+# fbs
+#  comment three lines above and uncomment the following three lines
+#appctxt = ApplicationContext() #QtWidgets.QApplication(sys.argv)
+#sys.excepthook = excepthook
+#appctxt.app.setStyle('Fusion')
 
 if _platform == "darwin": # works only for mac
     # Now use a palette to switch to dark colors:
@@ -96,9 +103,15 @@ if _platform == "darwin": # works only for mac
     dark_palette.setColor(QPalette.Disabled, QPalette.Text, Qt.darkGray)
     dark_palette.setColor(QPalette.Disabled, QPalette.Light, QColor(53, 53, 53))
     app.setPalette(dark_palette)
+# fbs
+#  comment a line above and uncomment the following line
+#    appctxt.app.setPalette(dark_palette)
 
 controller = MainController()
 controller.show_window()
 ret = app.exec_()
+# fbs
+#  comment line above and uncomment line below
+#ret = appctxt.app.exec_()
 controller.write_setting()
 sys.exit(ret)

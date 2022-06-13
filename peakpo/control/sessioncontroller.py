@@ -476,7 +476,10 @@ class SessionController(object):
             if self.widget.checkBox_ShowCake.isChecked():
                 self._save_cake_format_file()
             # save version information for key modules
-            env = os.environ['CONDA_DEFAULT_ENV']
+            try:
+                env = os.environ['CONDA_DEFAULT_ENV']
+            except:
+                env = 'unknown'            
             temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
             ext = "sysinfo.txt"
             #filen_t = self.model.make_filename(ext)
