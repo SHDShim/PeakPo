@@ -1,6 +1,7 @@
 import os
 import sys
 import dill
+from pkg_resources import add_activation_listener
 import pyFAI
 import zipfile
 import copy
@@ -450,6 +451,11 @@ class SessionController(object):
             zf.close()
 
     def save_dpp_ppss(self):
+        # save temp files
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
+        if self.model.associated_image_exists():
+            self.model.diff_img.write_temp_cakefiles(temp_dir=temp_dir)
+        self.model.base_ptn.write_temporary_bgfiles(temp_dir)
         self.save_dpp()
         self.save_ppss()
 
@@ -495,7 +501,7 @@ class SessionController(object):
             self.widget.tableWidget_PkFtSections.setStyleSheet(
                 "Background-color:None;color:rgb(0,0,0);")
 
-    def save_ppss(self):
+    def save_ppss(self, quiet=False):
         """
         session = *.ppss
         """
@@ -505,10 +511,11 @@ class SessionController(object):
             fsession = self.model.make_filename('ppss')
         if self.widget.checkBox_ForceOverwite.isChecked():
             new_filename = fsession
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning",
-                "Force overwrite is On, so existing ppss with default name" +
-                " will be overwritten.")
+            if not quiet:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning",
+                    "Force overwrite is On, so existing ppss with default name" +
+                    " will be overwritten.")
         else:
             new_filename = dialog_savefile(self.widget, fsession)
         if new_filename != '':

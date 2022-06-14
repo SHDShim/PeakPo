@@ -10,7 +10,7 @@ from .mplwidget import MplWidget
 
 import os
 
-4. go to line 26 and modify to
+4. go to line ~26 (MainWindow.setStyleSheet("font: 12pt \"Helvetica\";")) and modify to
 
 if os.name == 'nt':
     MainWindow.setStyleSheet("font: 9pt \"Helvetica\";")

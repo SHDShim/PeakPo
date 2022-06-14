@@ -1,8 +1,16 @@
 --------------------------------------------------------------------------------
-2022-06-12, 21:03:27
+2022-06-13, 20:50:29
 --------------------------------------------------------------------------------
-<class 'AttributeError'>: 
-'MplCanvas' object has no attribute '_update_dpi'
+<class 'TypeError'>: 
+Object of type 'dict_values' is not JSON serializable
 --------------------------------------------------------------------------------
-  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo/PeakPo-7.7.34/peakpo/view/mplwidget.py", line 53, in paintEvent
-    if self._update_dpi():
+  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo/PeakPo-7.7.35/peakpo/control/cakecontroller.py", line 122, in show_tif_header
+    infobox.setText(json.dumps(metadata.values(), indent=4))
+  File "/Users/DanShim/anaconda/envs/pkpo2021fbs/lib/python3.6/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+  File "/Users/DanShim/anaconda/envs/pkpo2021fbs/lib/python3.6/json/encoder.py", line 201, in encode
+    chunks = list(chunks)
+  File "/Users/DanShim/anaconda/envs/pkpo2021fbs/lib/python3.6/json/encoder.py", line 437, in _iterencode
+    o = _default(o)
+  File "/Users/DanShim/anaconda/envs/pkpo2021fbs/lib/python3.6/json/encoder.py", line 180, in default
+    o.__class__.__name__)

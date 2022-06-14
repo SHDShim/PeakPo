@@ -362,9 +362,11 @@ class PeakPoDirModel(object):
 
     def associated_image_exists(self):
         filen_tif = self.make_filename('tif', original=True)
+        filen_tiff = self.make_filename('tiff', original=True)
         filen_mar3450 = self.make_filename('mar3450', original=True)
         filen_cbf = self.make_filename('cbf', original=True)
         if os.path.exists(filen_tif) or \
+                os.path.exists(filen_tiff) or \
                 os.path.exists(filen_mar3450) or \
                 os.path.exists(filen_cbf):
             return True
@@ -373,11 +375,14 @@ class PeakPoDirModel(object):
 
     def load_associated_img(self):
         filen_tif = self.make_filename('tif', original=True)
+        filen_tiff = self.make_filename('tiff', original=True)
         filen_mar3450 = self.make_filename('mar3450', original=True)
         filen_cbf = self.make_filename('cbf', original=True)
         self.reset_diff_img()
         if os.path.exists(filen_tif):
             filen_toload = filen_tif
+        elif os.path.exists(filen_tiff):
+            filen_toload = filen_tiff
         elif os.path.exists(filen_mar3450):
             filen_toload = filen_mar3450
         elif os.path.exists(filen_cbf):

@@ -25,6 +25,8 @@ class DiffImg(object):
         self.img_filename = img_filename
         if extract_extension(self.img_filename) == 'tif':
             data = Image.open(self.img_filename)
+        elif extract_extension(self.img_filename) == 'tiff':
+            data = Image.open(self.img_filename)
         elif extract_extension(self.img_filename) == 'mar3450':
             data_fabio = fabio.open(img_filename)
             data = data_fabio.data

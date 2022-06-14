@@ -88,9 +88,11 @@ class BasePatternController(object):
             self._update_bgsub_from_current_values()
             print('Temp chi ignored. Force new bgsub fit.')
         filen_tif = self.model.make_filename('tif', original=True)
+        filen_tiff = self.model.make_filename('tiff', original=True)
         filen_mar3450 = self.model.make_filename('mar3450', original=True)
         filen_cbf = self.model.make_filename('cbf', original=True)
         if not (os.path.exists(filen_tif) or \
+                os.path.exists(filen_tiff) or \
                 os.path.exists(filen_mar3450)) or \
                 os.path.exists(filen_cbf):
             self.widget.checkBox_ShowCake.setChecked(False)

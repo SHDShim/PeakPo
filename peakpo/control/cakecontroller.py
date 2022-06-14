@@ -3,9 +3,11 @@ import shutil
 from PyQt5 import QtWidgets
 import numpy as np
 from utils import dialog_savefile, writechi, get_directory, make_filename, \
-    get_temp_dir, extract_filename, extract_extension
+    get_temp_dir, extract_filename, extract_extension, InformationBox
 from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
+from PIL import Image
+import json
 
 
 class CakeController(object):
@@ -18,6 +20,7 @@ class CakeController(object):
         self.connect_channel()
 
     def connect_channel(self):
+        self.widget.pushButton_Info.clicked.connect(self.show_tif_header)
         self.widget.checkBox_ShowCake.clicked.connect(
             self.addremove_cake)
         self.widget.pushButton_GetPONI.clicked.connect(self.get_poni)
@@ -94,6 +97,33 @@ class CakeController(object):
     def _apply_changes_to_graph(self):
         self.plot_ctrl.update()
 
+    def show_tif_header(self):
+        if not self.model.base_ptn_exist():
+            return
+        filen_tif = self.model.make_filename('tif', original=True)
+        filen_tiff = self.model.make_filename('tiff', original=True)
+        if not (os.path.exists(filen_tif) or
+                os.path.exists(filen_tiff)):
+            QtWidgets.QMessageBox.warning(
+                self.widget, 'Warning',
+                'Cannot find image file: %s or %s in the chi folder.' %
+                (filen_tif, filen_tiff))
+        else:
+            textoutput = ''
+            if os.path.exists(filen_tif):
+                f = filen_tif
+            else:
+                f = filen_tiff
+            metadata = {}
+            with Image.open(f) as img:
+                for key in img.tag:
+                    metadata[key] = img.tag[key]
+            infobox = InformationBox()
+            infobox.setText(json.dumps(metadata, indent=4))
+            infobox.exec_()
+            #self.widget.plainTextEdit_ViewJCPDS.setPlainText(textoutput)
+
+
     def addremove_cake(self):
         """
         add / remove cake to the graph
@@ -134,15 +164,17 @@ class CakeController(object):
             self.model.poni = os.path.join(temp_dir, poni_filen)
             self.widget.lineEdit_PONI.setText(self.model.poni)
         filen_tif = self.model.make_filename('tif', original=True)
+        filen_tiff = self.model.make_filename('tiff', original=True)
         filen_mar3450 = self.model.make_filename('mar3450', original=True)
         filen_cbf = self.model.make_filename('cbf', original=True)
         if not ((os.path.exists(filen_tif) or
-                 os.path.exists(filen_mar3450)) or
+                os.path.exists(filen_tiff) or
+                os.path.exists(filen_mar3450)) or
                 os.path.exists(filen_cbf)):
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning',
                 'Cannot find image file: %s or %s or %s or %s.' %
-                (filen_tif, filen_tif, filen_mar3450, filen_cbf))
+                (filen_tif, filen_tiff, filen_mar3450, filen_cbf))
             self.widget.checkBox_ShowCake.setChecked(False)
             return False
         if self.model.diff_img_exist() and \
