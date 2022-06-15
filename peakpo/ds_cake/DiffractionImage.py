@@ -6,6 +6,7 @@ import numpy.ma as ma
 import numpy as np
 import pyFAI
 import matplotlib.pyplot as plt
+import datetime
 from utils import make_filename, extract_extension
 
 
@@ -33,9 +34,10 @@ class DiffImg(object):
         elif extract_extension(self.img_filename) == 'cbf':
             data_fabio = fabio.open(img_filename)
             data = data_fabio.data
-            #print('cbf detected')
-            # print(data)
         self.img = np.array(data)[::-1]
+        print(str(datetime.datetime.now())[:-7], 
+                ": Load ", self.img_filename)
+
 
     def histogram(self):
         if self.img is None:
@@ -52,6 +54,8 @@ class DiffImg(object):
 
     def set_calibration(self, poni_filename):
         self.poni = pyFAI.load(poni_filename)
+        print(str(datetime.datetime.now())[:-7], 
+            ": Load ", poni_filename)
 
     def calculate_n_azi_pnts(self):
         """
@@ -81,7 +85,8 @@ class DiffImg(object):
         r = self.calculate_n_azi_pnts() * \
             np.max([self.poni.pixel1, self.poni.pixel2]) / 2.  # / 2.
         tth_max = np.rad2deg(np.arctan(r / d))  # * 2.  # * 10.
-        print("two theta max for integration = {:.3f} ".format(tth_max))
+        print(str(datetime.datetime.now())[:-7], 
+            ": Two theta max for integration = {:.3f} ".format(tth_max))
         return tth_max
 
     def integrate_to_1d(self, **kwargs):
@@ -105,7 +110,8 @@ class DiffImg(object):
             self.img, n_azi_pnts, 360, unit="2th_deg", method='csr',
             radial_range=radial_range, polarization_factor=0.99, mask=self.mask,
             **kwargs)
-        print("Caking takes {0:.2f}s".format(time.time() - t_start))
+        print(str(datetime.datetime.now())[:-7], 
+            ": Caking takes {0:.2f}s".format(time.time() - t_start))
         self.intensity_cake = intensity_cake
         self.tth_cake = tth_cake
         self.chi_cake = chi_cake

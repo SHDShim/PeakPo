@@ -13,11 +13,10 @@ import os
 4. go to line ~26 (MainWindow.setStyleSheet("font: 12pt \"Helvetica\";")) and modify to
 
 if os.name == 'nt':
-    MainWindow.setStyleSheet("font: 9pt \"Helvetica\";")
     mpl_fontsize = 9
 else:
-    MainWindow.setStyleSheet("font: 11pt \"Helvetica\";")
-    mpl_fontsize = 11
+    mpl_fontsize = 12        
+MainWindow.setStyleSheet("font: {:d}pt \"Helvetica\";".format(mpl_fontsize))
 
 5. line 60
 

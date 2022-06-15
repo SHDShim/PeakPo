@@ -240,6 +240,8 @@ class JcpdsController(object):
                 self.widget.doubleSpinBox_Temperature.value())
             infobox = InformationBox()
             infobox.setText(textoutput)
+            print(str(datetime.datetime.now())[:-7], 
+                ": Show JCPDS \n", textoutput)
             infobox.exec_()
             #self.widget.plainTextEdit_ViewJCPDS.setPlainText(textoutput)
 

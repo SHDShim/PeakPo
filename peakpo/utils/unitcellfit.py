@@ -4,6 +4,7 @@ import statsmodels.stats.outliers_influence
 
 import pandas as pd
 import numpy as np
+import datetime
 
 from uncertainties import ufloat
 import uncertainties.umath as umath
@@ -107,7 +108,8 @@ def fit_cubic_cell(data_df, wavelength, verbose=True):
     s_v_nlin = v_res_nlin.std_dev
 
     if np.abs(a_lin.nominal_value - a_nlin) > a_lin.std_dev:
-        print('Difference between nonlinear and linear results exceed the error bar.')
+        print(str(datetime.datetime.now())[:-7], 
+            ': Difference between nonlinear and linear results exceed the error bar.')
 
     return a_nlin, s_a_nlin, v_nlin, s_v_nlin, res_lin, res_nlin
 
@@ -124,7 +126,8 @@ def fit_l_cubic_cell(data_df, verbose=True):
     mod = ols('Q ~ Prefactor', data=df)
     res_lin = mod.fit()
     if verbose:
-        print(res_lin.summary())
+        print(str(datetime.datetime.now())[:-7], 
+            ': Cubic cell fit result: ', res_lin.summary())
     return res_lin
 
 
@@ -190,7 +193,8 @@ def fit_tetragonal_cell(data_df, wavelength, verbose=True):
     c_lin = umath.sqrt(1./c_lin_star)
 
     if verbose:
-        print(a_lin, c_lin)
+        print(str(datetime.datetime.now())[:-7], ': Tetragonal cell: ', 
+            a_lin, c_lin)
 
     res_nlin = fit_nl_tetragonal_cell(data_df, a_lin.nominal_value,
                                       c_lin.nominal_value,
@@ -209,10 +213,12 @@ def fit_tetragonal_cell(data_df, wavelength, verbose=True):
     s_v_nlin = v_res_nlin.std_dev
 
     if verbose:
-        print(a_res_nlin, c_res_nlin)
+        print(str(datetime.datetime.now())[:-7], 
+            ': Tetragonal cell: ', a_res_nlin, c_res_nlin)
 
     if np.abs(a_lin.nominal_value - a_nlin) > a_lin.std_dev:
-        print('Difference between nonlinear and linear results exceed the error bar.')
+        print(str(datetime.datetime.now())[:-7], 
+            ': Difference between nonlinear and linear results exceed the error bar.')
 
     return a_nlin, s_a_nlin, c_nlin, s_c_nlin, v_nlin, s_v_nlin, res_lin, res_nlin
 
@@ -230,7 +236,8 @@ def fit_l_tetragonal_cell(data_df, verbose=True):
     mod = ols('Q ~ Prefactor0 + Prefactor1', data=df)
     res_lin = mod.fit()
     if verbose:
-        print(res_lin.summary())
+        print(str(datetime.datetime.now())[:-7], 
+            ': Tetragonal cell fit result: ', res_lin.summary())
     return res_lin
 
 
@@ -299,7 +306,8 @@ def fit_hexagonal_cell(data_df, wavelength, verbose=True):
     c_lin = umath.sqrt(1./c_lin_star)
 
     if verbose:
-        print(a_lin, c_lin)
+        print(str(datetime.datetime.now())[:-7], 
+            ': Hexagonal cell: ', a_lin, c_lin)
 
     res_nlin = fit_nl_hexagonal_cell(data_df, a_lin.nominal_value,
                                      c_lin.nominal_value,
@@ -318,10 +326,12 @@ def fit_hexagonal_cell(data_df, wavelength, verbose=True):
     s_v_nlin = v_res_nlin.std_dev
 
     if verbose:
-        print(a_res_nlin, c_res_nlin)
+        print(str(datetime.datetime.now())[:-7], 
+            ': Hexagonal cell: ', a_res_nlin, c_res_nlin)
 
     if np.abs(a_lin.nominal_value - a_nlin) > a_lin.std_dev:
-        print('Difference between nonlinear and linear results exceed the error bar.')
+        print(str(datetime.datetime.now())[:-7], 
+            ': Difference between nonlinear and linear results exceed the error bar.')
 
     return a_nlin, s_a_nlin, c_nlin, s_c_nlin, \
         v_nlin, s_v_nlin, res_lin, res_nlin
@@ -342,7 +352,8 @@ def fit_l_hexagonal_cell(data_df, verbose=True):
     mod = ols('Q ~ Prefactor0 + Prefactor1', data=df)
     res_lin = mod.fit()
     if verbose:
-        print(res_lin.summary())
+        print(str(datetime.datetime.now())[:-7], 
+            ': Hexagonal cell fit result: ', res_lin.summary())
     return res_lin
 
 
@@ -414,7 +425,8 @@ def fit_orthorhombic_cell(data_df, wavelength, verbose=True):
     c_lin = umath.sqrt(1./c_lin_star)
 
     if verbose:
-        print(a_lin, b_lin, c_lin)
+        print(str(datetime.datetime.now())[:-7], 
+            ': Orthorhombic cell: ', a_lin, b_lin, c_lin)
 
     res_nlin = fit_nl_orthorhombic_cell(data_df, a_lin.nominal_value,
                                         b_lin.nominal_value,
@@ -438,10 +450,12 @@ def fit_orthorhombic_cell(data_df, wavelength, verbose=True):
     s_v_nlin = v_res_nlin.std_dev
 
     if verbose:
-        print(a_res_nlin, b_res_nlin, c_res_nlin)
+        print(str(datetime.datetime.now())[:-7], 
+            ': Orthorhombic cell: ', a_res_nlin, b_res_nlin, c_res_nlin)
 
     if np.abs(a_lin.nominal_value - a_nlin) > a_lin.std_dev:
-        print('Difference between nonlinear and linear results exceed the error bar.')
+        print(str(datetime.datetime.now())[:-7], 
+            ': Difference between nonlinear and linear results exceed the error bar.')
 
     return a_nlin, s_a_nlin, b_nlin, s_b_nlin, c_nlin, s_c_nlin, \
         v_nlin, s_v_nlin, res_lin, res_nlin
@@ -461,7 +475,8 @@ def fit_l_orthorhombic_cell(data_df, verbose=True):
     mod = ols('Q ~ Prefactor0 + Prefactor1 + Prefactor2', data=df)
     res_lin = mod.fit()
     if verbose:
-        print(res_lin.summary())
+        print(str(datetime.datetime.now())[:-7], 
+            ': Orthorhombic cell fit result: ', res_lin.summary())
     return res_lin
 
 

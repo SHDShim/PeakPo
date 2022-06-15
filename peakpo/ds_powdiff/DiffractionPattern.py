@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import time
+import datetime
 from utils import writechi, readchi, make_filename
 from .background import fit_bg_cheb_auto
 
@@ -46,7 +47,8 @@ class Pattern(object):
             y_roi = y[i_roimin:i_roimax]
             return x_roi, y_roi
         else:
-            print("Error: ROI should be smaller than the data range")
+            print(str(datetime.datetime.now())[:-7], 
+                ": Error: ROI should be smaller than the data range")
             return x, y
 
     def get_section(self, roi, bgsub=True):
@@ -65,7 +67,8 @@ class Pattern(object):
         t_start = time.time()
         y_bg = fit_bg_cheb_auto(x, y, self.params_chbg[0],
                                 self.params_chbg[1], self.params_chbg[2])
-        print("Bgsub takes {0:.2f}s".format(time.time() - t_start))
+        print(str(datetime.datetime.now())[:-7], 
+            ": Bgsub takes {0:.2f}s".format(time.time() - t_start))
         self.x_bg = x
         self.x_bgsub = x
         y_bgsub = y - y_bg
@@ -78,6 +81,7 @@ class Pattern(object):
         self.roi = roi
 
     def subtract_bg(self, roi, params=None, yshift=10.):
+        print(str(datetime.datetime.now())[:-7], ": Receive BG subtraction")
         self._get_bg(roi, params=params, yshift=yshift)
 
     def get_raw(self):

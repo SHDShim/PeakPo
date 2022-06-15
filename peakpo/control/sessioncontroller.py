@@ -2,6 +2,7 @@ import os
 import sys
 import dill
 from pkg_resources import add_activation_listener
+import datetime
 import pyFAI
 import zipfile
 import copy
@@ -12,7 +13,7 @@ from .jcpdstablecontroller import JcpdsTableController
 from .peakfittablecontroller import PeakfitTableController
 from .cakemakecontroller import CakemakeController
 from utils import dialog_savefile, convert_wl_to_energy, get_temp_dir, \
-    make_filename
+    make_filename, extract_filename
 
 
 class SessionController(object):
@@ -435,20 +436,39 @@ class SessionController(object):
                     return
         if str(fzip) != '':
             path, filen = os.path.split(str(fzip))
-            fsession_name = '%s.forzip.ppss' % filen
+            fsession_name = '%s.forzip.dpp' % filen
             fsession = os.path.join(path, fsession_name)
-            self._dump_ppss(str(fsession))
+            self._dump_dpp(str(fsession))
             self.widget.textEdit_Jlist.setText('Jlist : ' + str(fsession))
             zf = zipfile.ZipFile(str(fzip), 'w', zipfile.ZIP_DEFLATED)
             zf.write(fsession, arcname=fsession_name)
             if self.model.base_ptn_exist():
                 dum, filen = os.path.split(self.model.base_ptn.fname)
                 zf.write(self.model.base_ptn.fname, arcname=filen)
+            if self.model.diff_img is not None:
+                dum, filen = os.path.split(self.model.diff_img.img_filename)
+                zf.write(self.model.diff_img.img_filename, arcname=filen)
+            path, filen = os.path.split(str(fzip))
+            folder_name = extract_filename(fzip) + '-param'
+            folder_path = os.path.join(path, folder_name)
+            for file in os.listdir(folder_path):
+                full_path = os.path.join(folder_path, file)
+                if os.path.isfile(full_path):
+                    zf.write(full_path, arcname=os.path.join(folder_name, file))
+            """
             if self.model.waterfall_exist():
                 for wf in self.model.waterfall_ptn:
                     dum, filen = os.path.split(wf.fname)
                     zf.write(wf.fname, arcname=filen)
+            """
             zf.close()
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Information",
+                "A Zip file was saved for sharing in " + fzip)
+
+            print(str(datetime.datetime.now())[:-7], 
+                    ": Save ", fzip)
+            print("            Because waterfall paths can be complicated, chi and tif files listed in waterfall are not included.")
 
     def save_dpp_ppss(self):
         # save temp files
@@ -479,8 +499,12 @@ class SessionController(object):
             self.model.save_temperature(
                 self.widget.doubleSpinBox_Temperature.value())
             self._dump_dpp(new_filename)
+            print(str(datetime.datetime.now())[:-7], 
+                    ": Save ", new_filename)
             if self.widget.checkBox_ShowCake.isChecked():
                 self._save_cake_format_file()
+                print(str(datetime.datetime.now())[:-7], 
+                    ": Update temporary cake image file.")
             # save version information for key modules
             try:
                 env = os.environ['CONDA_DEFAULT_ENV']
@@ -497,6 +521,8 @@ class SessionController(object):
                 f.write("Environment: " + env + '\n')
                 f.write("dill ver.: " + dill.__version__ + '\n')
                 f.write("pyFAI ver.: " + pyFAI.version + '\n')
+            print(str(datetime.datetime.now())[:-7], 
+                    ": Save ", filen)
             self.widget.textEdit_SessionFileName.setText(str(new_filename))
             self.widget.tableWidget_PkFtSections.setStyleSheet(
                 "Background-color:None;color:rgb(0,0,0);")
@@ -520,6 +546,8 @@ class SessionController(object):
             new_filename = dialog_savefile(self.widget, fsession)
         if new_filename != '':
             self._dump_ppss(new_filename)
+            print(str(datetime.datetime.now())[:-7], 
+                ": Save ", new_filename)
             self.widget.textEdit_SessionFileName.setText(str(new_filename))
 
     def save_ppss_with_default_name(self):

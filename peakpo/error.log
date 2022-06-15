@@ -1,16 +1,8 @@
 --------------------------------------------------------------------------------
-2022-06-13, 20:50:29
+2022-06-14, 21:30:13
 --------------------------------------------------------------------------------
-<class 'TypeError'>: 
-Object of type 'dict_values' is not JSON serializable
+<class 'FileNotFoundError'>: 
+[Errno 2] No such file or directory: 'MgFe_0009-param'
 --------------------------------------------------------------------------------
-  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo/PeakPo-7.7.35/peakpo/control/cakecontroller.py", line 122, in show_tif_header
-    infobox.setText(json.dumps(metadata.values(), indent=4))
-  File "/Users/DanShim/anaconda/envs/pkpo2021fbs/lib/python3.6/json/__init__.py", line 238, in dumps
-    **kw).encode(obj)
-  File "/Users/DanShim/anaconda/envs/pkpo2021fbs/lib/python3.6/json/encoder.py", line 201, in encode
-    chunks = list(chunks)
-  File "/Users/DanShim/anaconda/envs/pkpo2021fbs/lib/python3.6/json/encoder.py", line 437, in _iterencode
-    o = _default(o)
-  File "/Users/DanShim/anaconda/envs/pkpo2021fbs/lib/python3.6/json/encoder.py", line 180, in default
-    o.__class__.__name__)
+  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo/PeakPo-7.7.35/peakpo/control/sessioncontroller.py", line 454, in zip_ppss
+    for file in os.listdir(folder_name):

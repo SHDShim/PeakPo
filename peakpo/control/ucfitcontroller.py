@@ -4,6 +4,7 @@ import lmfit
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5 import QtGui
+import datetime
 from .mplcontroller import MplController
 from .ucfittablecontroller import UcfitTableController
 from utils import SpinBoxFixStyle
@@ -120,7 +121,8 @@ class UcfitController(object):
         peaks = []
         n_peaks = int(len(section.peakinfo) / 4)
         if verbose:
-            print("twoth between {0:.4f} and {1:.4f} degrees " +
+            print(str(datetime.datetime.now())[:-7], 
+                ": Twoth between {0:.4f} and {1:.4f} degrees " +
                   " created in {2:} has {3:d} peaks".format(
                       section.x.min(), section.x.max(),
                       section.timestamp, n_peaks))
@@ -132,7 +134,8 @@ class UcfitController(object):
                 np.sin(np.deg2rad(twoth / 2.))
             q = np.power((1./dsp), 2.)
             if verbose:
-                print(section.peakinfo[label+'phasename'],
+                print(str(datetime.datetime.now())[:-7], ': ',
+                    section.peakinfo[label+'phasename'],
                       section.peakinfo[label+'h'],
                       section.peakinfo[label+'k'],
                       section.peakinfo[label+'l'],

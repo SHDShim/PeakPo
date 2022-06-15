@@ -190,8 +190,8 @@ class MplController(object):
                    self.widget.doubleSpinBox_SetWavelength.value()
                    / 2. / np.sin(np.radians(x / 2.)))
         self.widget.mpl.canvas.draw()
-        print("Plot takes {0:.2f}s at".format(time.time() - t_start),
-              str(datetime.datetime.now())[:-7])
+        print(str(datetime.datetime.now())[:-7], 
+            ": Plot takes {0:.2f}s".format(time.time() - t_start))
         self.widget.unsetCursor()
         if self.widget.checkBox_LongCursor.isChecked():
             self.widget.cursor = MultiCursor(
@@ -289,7 +289,8 @@ class MplController(object):
             extent=[tth_cake.min(), tth_cake.max(),
                     chi_cake.min(), chi_cake.max()],
             aspect="auto", cmap=cmap, clim=climits)  # gray_r
-        print('Cake intensity min, max = ', climits)
+        print(str(datetime.datetime.now())[:-7], 
+            ': Cake intensity min, max = ', climits)
         tth_list, azi_list, note_list = self._read_azilist()
         tth_min = tth_cake.min()
         tth_max = tth_cake.max()

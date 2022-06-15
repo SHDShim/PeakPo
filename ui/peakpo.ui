@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>979</width>
-    <height>778</height>
+    <width>1200</width>
+    <height>806</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -77,7 +77,7 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>500</width>
+         <width>700</width>
          <height>0</height>
         </size>
        </property>
@@ -215,7 +215,7 @@
               <string>Previous file</string>
              </property>
              <property name="text">
-              <string>&lt;</string>
+              <string>◀️</string>
              </property>
             </widget>
            </item>
@@ -274,7 +274,7 @@
               <string>Next file</string>
              </property>
              <property name="text">
-              <string>&gt;</string>
+              <string>▶️</string>
              </property>
             </widget>
            </item>
@@ -842,7 +842,7 @@
                      <string>Open the first CHI file</string>
                     </property>
                     <property name="text">
-                     <string>|&lt;</string>
+                     <string>◀️◀️</string>
                     </property>
                    </widget>
                   </item>
@@ -870,7 +870,7 @@
                      <string>Open previous CHI file</string>
                     </property>
                     <property name="text">
-                     <string>&lt;</string>
+                     <string>◀️</string>
                     </property>
                    </widget>
                   </item>
@@ -898,7 +898,7 @@
                      <string>Open next CHI file</string>
                     </property>
                     <property name="text">
-                     <string>&gt;</string>
+                     <string>▶️</string>
                     </property>
                    </widget>
                   </item>
@@ -926,7 +926,7 @@
                      <string>Open the last CHI file</string>
                     </property>
                     <property name="text">
-                     <string>&gt;|</string>
+                     <string>▶️▶️</string>
                     </property>
                    </widget>
                   </item>
@@ -940,6 +940,12 @@
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>16777215</height>
+                  </size>
                  </property>
                  <property name="frameShape">
                   <enum>QFrame::NoFrame</enum>
@@ -987,7 +993,7 @@
                     <property name="minimumSize">
                      <size>
                       <width>50</width>
-                      <height>0</height>
+                      <height>25</height>
                      </size>
                     </property>
                     <property name="maximumSize">
@@ -1215,7 +1221,7 @@
                  <property name="maximumSize">
                   <size>
                    <width>16777215</width>
-                   <height>21</height>
+                   <height>35</height>
                   </size>
                  </property>
                  <property name="toolTip">
@@ -1236,7 +1242,7 @@
                  </property>
                  <property name="maximumSize">
                   <size>
-                   <width>60</width>
+                   <width>40</width>
                    <height>16777215</height>
                   </size>
                  </property>
@@ -1253,7 +1259,7 @@
                   <string>Save session to a dpp file</string>
                  </property>
                  <property name="text">
-                  <string>Save</string>
+                  <string>💾</string>
                  </property>
                 </widget>
                </item>
@@ -1267,7 +1273,7 @@
                  </property>
                  <property name="maximumSize">
                   <size>
-                   <width>60</width>
+                   <width>40</width>
                    <height>16777215</height>
                   </size>
                  </property>
@@ -1284,7 +1290,7 @@
                   <string>Load session from a dpp file</string>
                  </property>
                  <property name="text">
-                  <string>Load</string>
+                  <string>📂</string>
                  </property>
                 </widget>
                </item>
@@ -1361,7 +1367,7 @@
                     </property>
                     <property name="maximumSize">
                      <size>
-                      <width>16777215</width>
+                      <width>40</width>
                       <height>16777215</height>
                      </size>
                     </property>
@@ -1387,7 +1393,7 @@
                      <string/>
                     </property>
                     <property name="text">
-                     <string>Open</string>
+                     <string>📂</string>
                     </property>
                    </widget>
                   </item>
@@ -1419,7 +1425,7 @@
                      </size>
                     </property>
                     <property name="text">
-                     <string>info</string>
+                     <string>Info</string>
                     </property>
                    </widget>
                   </item>
@@ -1458,7 +1464,7 @@
                  <property name="lineWidth">
                   <number>0</number>
                  </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_11">
+                 <layout class="QHBoxLayout" name="horizontalLayout_11" stretch="0,0,0,0,0">
                   <property name="spacing">
                    <number>-1</number>
                   </property>
@@ -1485,7 +1491,7 @@
                     <property name="minimumSize">
                      <size>
                       <width>70</width>
-                      <height>0</height>
+                      <height>25</height>
                      </size>
                     </property>
                     <property name="maximumSize">
@@ -1813,27 +1819,33 @@
                  </property>
                  <layout class="QHBoxLayout" name="horizontalLayout_15">
                   <property name="sizeConstraint">
-                   <enum>QLayout::SetMinimumSize</enum>
+                   <enum>QLayout::SetDefaultConstraint</enum>
                   </property>
                   <property name="leftMargin">
                    <number>3</number>
                   </property>
                   <property name="topMargin">
-                   <number>1</number>
+                   <number>3</number>
                   </property>
                   <property name="rightMargin">
                    <number>3</number>
                   </property>
                   <property name="bottomMargin">
-                   <number>1</number>
+                   <number>3</number>
                   </property>
                   <item>
                    <widget class="QDoubleSpinBox" name="doubleSpinBox_PStep">
                     <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                       <horstretch>0</horstretch>
                       <verstretch>0</verstretch>
                      </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>25</height>
+                     </size>
                     </property>
                     <property name="maximumSize">
                      <size>
@@ -1939,27 +1951,33 @@
                    <number>0</number>
                   </property>
                   <property name="sizeConstraint">
-                   <enum>QLayout::SetMinimumSize</enum>
+                   <enum>QLayout::SetDefaultConstraint</enum>
                   </property>
                   <property name="leftMargin">
                    <number>3</number>
                   </property>
                   <property name="topMargin">
-                   <number>1</number>
+                   <number>3</number>
                   </property>
                   <property name="rightMargin">
                    <number>3</number>
                   </property>
                   <property name="bottomMargin">
-                   <number>1</number>
+                   <number>3</number>
                   </property>
                   <item>
                    <widget class="QSpinBox" name="spinBox_TStep">
                     <property name="sizePolicy">
-                     <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                       <horstretch>0</horstretch>
                       <verstretch>0</verstretch>
                      </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>25</height>
+                     </size>
                     </property>
                     <property name="maximumSize">
                      <size>
@@ -2334,7 +2352,7 @@
                   <string>Show all the patterns in waterfall list in graph</string>
                  </property>
                  <property name="text">
-                  <string>[X]</string>
+                  <string>✓</string>
                  </property>
                 </widget>
                </item>
@@ -2381,7 +2399,7 @@
                   <string>Hide all the patterns in waterfall list from graph</string>
                  </property>
                  <property name="text">
-                  <string>[  ]</string>
+                  <string>☐</string>
                  </property>
                 </widget>
                </item>
@@ -2493,11 +2511,17 @@
                    <height>0</height>
                   </size>
                  </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>40</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
                  <property name="toolTip">
                   <string>Open a PONI file</string>
                  </property>
                  <property name="text">
-                  <string>Open</string>
+                  <string>📂</string>
                  </property>
                 </widget>
                </item>
@@ -2762,7 +2786,7 @@
                     <property name="minimumSize">
                      <size>
                       <width>0</width>
-                      <height>0</height>
+                      <height>25</height>
                      </size>
                     </property>
                     <property name="maximumSize">
@@ -2991,6 +3015,12 @@
                </item>
                <item>
                 <widget class="QSpinBox" name="spinBox_MaskMin">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>25</height>
+                  </size>
+                 </property>
                  <property name="focusPolicy">
                   <enum>Qt::StrongFocus</enum>
                  </property>
@@ -3020,6 +3050,12 @@
                </item>
                <item>
                 <widget class="QSpinBox" name="spinBox_MaskMax">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>25</height>
+                  </size>
+                 </property>
                  <property name="focusPolicy">
                   <enum>Qt::StrongFocus</enum>
                  </property>
@@ -3405,7 +3441,7 @@
                <item>
                 <widget class="QLabel" name="label_15">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -3424,6 +3460,19 @@
                   </sizepolicy>
                  </property>
                 </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
                </item>
                <item>
                 <widget class="QLabel" name="label_3">
@@ -3472,7 +3521,7 @@
                <property name="rightMargin">
                 <number>12</number>
                </property>
-               <item row="0" column="2">
+               <item row="0" column="3">
                 <widget class="QLabel" name="label_30">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -3487,6 +3536,12 @@
                </item>
                <item row="0" column="1">
                 <widget class="QDoubleSpinBox" name="doubleSpinBox_JCPDS_ptn_Alpha">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>25</height>
+                  </size>
+                 </property>
                  <property name="alignment">
                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                  </property>
@@ -3501,7 +3556,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="1" column="3">
+               <item row="1" column="4">
                 <widget class="QComboBox" name="comboBox_CakeJCPDSBarThickness">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -3517,7 +3572,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="1" column="2">
+               <item row="1" column="3">
                 <widget class="QLabel" name="label_23">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -3530,8 +3585,14 @@
                  </property>
                 </widget>
                </item>
-               <item row="0" column="3">
+               <item row="0" column="4">
                 <widget class="QDoubleSpinBox" name="doubleSpinBox_JCPDS_cake_Alpha">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>25</height>
+                  </size>
+                 </property>
                  <property name="alignment">
                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                  </property>
@@ -3587,6 +3648,32 @@
                   <string>Alpha, ptn</string>
                  </property>
                 </widget>
+               </item>
+               <item row="0" column="2">
+                <spacer name="horizontalSpacer_2">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item row="1" column="2">
+                <spacer name="horizontalSpacer_3">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
                </item>
               </layout>
              </widget>
@@ -4029,6 +4116,12 @@
                </item>
                <item>
                 <widget class="QDoubleSpinBox" name="doubleSpinBox_JCPDSStep">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>25</height>
+                  </size>
+                 </property>
                  <property name="maximumSize">
                   <size>
                    <width>100</width>
@@ -4307,16 +4400,7 @@
            <attribute name="title">
             <string>Bkgn</string>
            </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout_10">
-            <property name="leftMargin">
-             <number>12</number>
-            </property>
-            <property name="rightMargin">
-             <number>12</number>
-            </property>
-            <property name="bottomMargin">
-             <number>12</number>
-            </property>
+           <layout class="QVBoxLayout" name="verticalLayout_8">
             <item>
              <widget class="QGroupBox" name="groupBox_7">
               <property name="sizePolicy">
@@ -4369,7 +4453,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="0" column="1">
+               <item row="0" column="2">
                 <widget class="QSpinBox" name="spinBox_BGParam0">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -4379,8 +4463,8 @@
                  </property>
                  <property name="minimumSize">
                   <size>
-                   <width>0</width>
-                   <height>0</height>
+                   <width>75</width>
+                   <height>25</height>
                   </size>
                  </property>
                  <property name="focusPolicy">
@@ -4422,7 +4506,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="1" column="1">
+               <item row="1" column="2">
                 <widget class="QSpinBox" name="spinBox_BGParam1">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -4432,8 +4516,8 @@
                  </property>
                  <property name="minimumSize">
                   <size>
-                   <width>0</width>
-                   <height>0</height>
+                   <width>75</width>
+                   <height>25</height>
                   </size>
                  </property>
                  <property name="focusPolicy">
@@ -4475,7 +4559,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="2" column="1">
+               <item row="2" column="2">
                 <widget class="QSpinBox" name="spinBox_BGParam2">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -4485,8 +4569,8 @@
                  </property>
                  <property name="minimumSize">
                   <size>
-                   <width>0</width>
-                   <height>0</height>
+                   <width>75</width>
+                   <height>25</height>
                   </size>
                  </property>
                  <property name="focusPolicy">
@@ -4502,6 +4586,45 @@
                   <number>20</number>
                  </property>
                 </widget>
+               </item>
+               <item row="0" column="1">
+                <spacer name="horizontalSpacer_4">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item row="1" column="1">
+                <spacer name="horizontalSpacer_5">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item row="2" column="1">
+                <spacer name="horizontalSpacer_6">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
                </item>
               </layout>
              </widget>
@@ -4545,17 +4668,82 @@
                   </font>
                  </property>
                  <property name="text">
-                  <string>Min. two theta</string>
+                  <string>Minimum two theta</string>
                  </property>
                 </widget>
                </item>
-               <item row="0" column="1">
+               <item row="1" column="2">
+                <widget class="QDoubleSpinBox" name="doubleSpinBox_Background_ROI_max">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>75</width>
+                   <height>25</height>
+                  </size>
+                 </property>
+                 <property name="focusPolicy">
+                  <enum>Qt::StrongFocus</enum>
+                 </property>
+                 <property name="toolTip">
+                  <string>Max two theta angle for background fit</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                 <property name="decimals">
+                  <number>1</number>
+                 </property>
+                 <property name="maximum">
+                  <double>10000.000000000000000</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.100000000000000</double>
+                 </property>
+                 <property name="value">
+                  <double>21.000000000000000</double>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="label">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Helvetica</family>
+                   <pointsize>12</pointsize>
+                   <weight>50</weight>
+                   <italic>false</italic>
+                   <bold>false</bold>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Maximum two theta</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
                 <widget class="QDoubleSpinBox" name="doubleSpinBox_Background_ROI_min">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>75</width>
+                   <height>25</height>
+                  </size>
                  </property>
                  <property name="focusPolicy">
                   <enum>Qt::StrongFocus</enum>
@@ -4580,58 +4768,31 @@
                  </property>
                 </widget>
                </item>
-               <item row="1" column="0">
-                <widget class="QLabel" name="label">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
+               <item row="0" column="1">
+                <spacer name="horizontalSpacer_7">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
                  </property>
-                 <property name="font">
-                  <font>
-                   <family>Helvetica</family>
-                   <pointsize>12</pointsize>
-                   <weight>50</weight>
-                   <italic>false</italic>
-                   <bold>false</bold>
-                  </font>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
                  </property>
-                 <property name="text">
-                  <string>Max. two theta</string>
-                 </property>
-                </widget>
+                </spacer>
                </item>
                <item row="1" column="1">
-                <widget class="QDoubleSpinBox" name="doubleSpinBox_Background_ROI_max">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
+                <spacer name="horizontalSpacer_8">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
                  </property>
-                 <property name="focusPolicy">
-                  <enum>Qt::StrongFocus</enum>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
                  </property>
-                 <property name="toolTip">
-                  <string>Max two theta angle for background fit</string>
-                 </property>
-                 <property name="alignment">
-                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                 </property>
-                 <property name="decimals">
-                  <number>1</number>
-                 </property>
-                 <property name="maximum">
-                  <double>10000.000000000000000</double>
-                 </property>
-                 <property name="singleStep">
-                  <double>0.100000000000000</double>
-                 </property>
-                 <property name="value">
-                  <double>21.000000000000000</double>
-                 </property>
-                </widget>
+                </spacer>
                </item>
               </layout>
              </widget>
@@ -4658,6 +4819,35 @@
               </property>
               <property name="text">
                <string>Update background</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_SaveBgSubCHI">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="toolTip">
+               <string>Save background subtracted 1D pattern</string>
+              </property>
+              <property name="text">
+               <string>Save BgSub.CHI</string>
               </property>
              </widget>
             </item>
@@ -4870,6 +5060,12 @@
                   <layout class="QGridLayout" name="gridLayout_18">
                    <item row="2" column="3">
                     <widget class="QSpinBox" name="spinBox_PeaksFromJlistIntensity">
+                     <property name="minimumSize">
+                      <size>
+                       <width>0</width>
+                       <height>25</height>
+                      </size>
+                     </property>
                      <property name="alignment">
                       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                      </property>
@@ -4961,6 +5157,12 @@
                    </item>
                    <item row="0" column="1">
                     <widget class="QDoubleSpinBox" name="doubleSpinBox_PeakCenterRange">
+                     <property name="minimumSize">
+                      <size>
+                       <width>0</width>
+                       <height>25</height>
+                      </size>
+                     </property>
                      <property name="maximumSize">
                       <size>
                        <width>80</width>
@@ -4993,6 +5195,12 @@
                    </item>
                    <item row="1" column="1">
                     <widget class="QDoubleSpinBox" name="doubleSpinBox_InitialFWHM">
+                     <property name="minimumSize">
+                      <size>
+                       <width>0</width>
+                       <height>25</height>
+                      </size>
+                     </property>
                      <property name="maximumSize">
                       <size>
                        <width>80</width>
@@ -5022,6 +5230,12 @@
                    </item>
                    <item row="2" column="1">
                     <widget class="QDoubleSpinBox" name="doubleSpinBox_MaxFWHM">
+                     <property name="minimumSize">
+                      <size>
+                       <width>0</width>
+                       <height>25</height>
+                      </size>
+                     </property>
                      <property name="maximumSize">
                       <size>
                        <width>80</width>
@@ -5075,6 +5289,12 @@
                    </item>
                    <item>
                     <widget class="QSpinBox" name="spinBox_BGPolyOrder">
+                     <property name="minimumSize">
+                      <size>
+                       <width>0</width>
+                       <height>25</height>
+                      </size>
+                     </property>
                      <property name="alignment">
                       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                      </property>
@@ -5190,60 +5410,6 @@
              </widget>
             </item>
             <item>
-             <widget class="QGroupBox" name="groupBox_21">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="title">
-               <string>Tools</string>
-              </property>
-              <property name="flat">
-               <bool>false</bool>
-              </property>
-              <layout class="QHBoxLayout" name="horizontalLayout">
-               <item>
-                <widget class="QPushButton" name="pushButton_toPkFt">
-                 <property name="toolTip">
-                  <string>Send information to PkFt</string>
-                 </property>
-                 <property name="text">
-                  <string>to PkFt</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="pushButton_fromPkFt">
-                 <property name="toolTip">
-                  <string>Receive information from PkFt</string>
-                 </property>
-                 <property name="text">
-                  <string>from PkFt</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="pushButton_SaveBgSubCHI">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="toolTip">
-                  <string>Save background subtracted 1D pattern</string>
-                 </property>
-                 <property name="text">
-                  <string>Save BgSub.CHI</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
              <widget class="QGroupBox" name="groupBox_12">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -5302,7 +5468,7 @@
                   <string>Package diffraction files, images, and DPP</string>
                  </property>
                  <property name="text">
-                  <string>Package</string>
+                  <string>Package for share</string>
                  </property>
                 </widget>
                </item>
@@ -5492,7 +5658,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="0" column="2">
+               <item row="0" column="3">
                 <widget class="QLabel" name="label_25">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -5505,7 +5671,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="0" column="3">
+               <item row="0" column="4">
                 <widget class="QComboBox" name="comboBox_WaterfallLineThickness">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -5518,7 +5684,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="1" column="2">
+               <item row="1" column="3">
                 <widget class="QLabel" name="label_26">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -5531,7 +5697,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="1" column="3">
+               <item row="1" column="4">
                 <widget class="QComboBox" name="comboBox_VertCursorThickness">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -5543,6 +5709,32 @@
                   <enum>Qt::RightToLeft</enum>
                  </property>
                 </widget>
+               </item>
+               <item row="0" column="2">
+                <spacer name="horizontalSpacer_9">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item row="1" column="2">
+                <spacer name="horizontalSpacer_10">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
                </item>
               </layout>
              </widget>

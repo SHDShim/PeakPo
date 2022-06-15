@@ -356,7 +356,8 @@ class JCPDS(object):
                     bm3s_v = interpolate.InterpolatedUnivariateSpline(p_calib, v_calib)
                     v_temp = bm3s_v(pressure) 
                     del_p = pressure - bm3_p(v_temp, self.v0, self.k0, self.k0p)
-                    print('spline used for JCPDS calculation, residue = {0:.3e}'.format(del_p))
+                    print(str(datetime.datetime.now())[:-7], 
+                        ': Spline used for JCPDS calculation, residue = {0:.3e}'.format(del_p))
                 self.v = v_temp
 
     def cal_dsp(self, pressure=0., temperature=300.,
@@ -505,7 +506,8 @@ class JCPDS(object):
             self.c = c_a * self.a
             self.b = b_a * self.a
         else:
-            print('no symmetry is given')
+            print(str(datetime.datetime.now())[:-7], 
+                ': No symmetry is given')
 
 #    return {'ver': ver, 'header': header, 'crystal_system': crystal_system, \
 #            'K0': K0, 'K0p': K0p, 'u_param':
@@ -542,13 +544,15 @@ class JCPDS(object):
         d_work = datetime.datetime(2019, 4, 11)
 
         if d_current_version < d_work:
-            print('Update your pymatgen newer than 2019.4.11.')
+            print(str(datetime.datetime.now())[:-7], 
+                ': Update your pymatgen newer than 2019.4.11.')
             return False
 
         structure = mg.Structure.from_file(fn_cif)
         crystal_system = SpacegroupAnalyzer(structure).get_crystal_system()
         if crystal_system == 'triclinic':
-            print('Your cif has triclinic symmetry.  PeakPo cannot currently handle this.')
+            print(str(datetime.datetime.now())[:-7], 
+                ': Your cif has triclinic symmetry.  PeakPo cannot currently handle this.')
             return False
         self.set_from_pymatgen(structure, k0, k0p, file=file,
                                name=name, version=version,

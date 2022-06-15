@@ -1,6 +1,7 @@
 import pickle
 import os
 import copy
+import datetime
 import xlwt
 from ds_cake import DiffImg
 # do not change the module structure for ds_jcpds and ds_powdiff for
@@ -36,7 +37,8 @@ class PeakPoDirModel(object):
 
     def make_proc_dir(self, tmp=False, overwrite=False):
         if not self.base_ptn_exist():
-            print('Base pattern does not exist')
+            print(str(datetime.datetime.now())[:-7], 
+                ': Base pattern does not exist')
             return None
         if tmp:
             dir_ext = '-tmp'

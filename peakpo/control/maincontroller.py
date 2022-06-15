@@ -5,6 +5,7 @@ from matplotlib.backend_bases import key_press_handler
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 import gc
+import datetime
 from view import MainWindow
 from model import PeakPoModel
 from .basepatterncontroller import BasePatternController
@@ -126,8 +127,8 @@ class MainController(object):
             self.apply_changes_to_graph)
         # navigation toolbar modification.  Do not move the followings to
         # other controller files.
-        self.widget.pushButton_toPkFt.clicked.connect(self.to_PkFt)
-        self.widget.pushButton_fromPkFt.clicked.connect(self.from_PkFt)
+        #self.widget.pushButton_toPkFt.clicked.connect(self.to_PkFt)
+        #self.widget.pushButton_fromPkFt.clicked.connect(self.from_PkFt)
         self.widget.checkBox_NightView.clicked.connect(self.set_nightday_view)
         self.widget.pushButton_S_Zoom.clicked.connect(self.plot_new_graph)
         self.widget.checkBox_AutoY.clicked.connect(self.apply_changes_to_graph)
@@ -355,6 +356,7 @@ class MainController(object):
         # print('write:' + self.model.chi_path)
         self.settings.setValue('chi_path', self.model.chi_path)
         self.settings.setValue('jcpds_path', self.model.jcpds_path)
+        
 
     def read_setting(self):
         """
@@ -395,7 +397,7 @@ class MainController(object):
         else:
             key_press_handler(event, self.widget.mpl.canvas,
                               self.widget.mpl.ntb)
-
+    """
     def to_PkFt(self):
         # listen
         if not self.model.base_ptn_exist():
@@ -415,6 +417,7 @@ class MainController(object):
         new_lims = [float(i) for i in a[2:6]]
         self.base_ptn_ctrl._load_a_new_pattern(new_filen)
         self.plot_ctrl.update(new_lims)
+    """
 
     def set_nightday_view(self):
         self.plot_ctrl._set_nightday_view()
@@ -536,6 +539,9 @@ class MainController(object):
         temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
         self.model.base_ptn.write_temporary_bgfiles(temp_dir=temp_dir)
         if self.model.waterfall_exist():
+            print(str(datetime.datetime.now())[:-7], 
+                ": BGfit and BGsub for waterfall patterns even if they are displayed.\n",
+                "Yes this is a bit of waste.  Future fix needed.")
             for pattern in self.model.waterfall_ptn:
                 pattern.subtract_bg(bg_roi, bg_params, yshift=0)
         self.plot_new_graph()

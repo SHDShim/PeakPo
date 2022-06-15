@@ -478,7 +478,8 @@ class JCPDS(object):
             self.c = c_a * self.a
             self.b = b_a * self.a
         else:
-            print('no symmetry is given')
+            print(str(datetime.datetime.now())[:-7], 
+                ': No symmetry is given')
 
 #    return {'ver': ver, 'header': header, 'crystal_system': crystal_system, \
 #            'K0': K0, 'K0p': K0p, 'u_param':
@@ -515,13 +516,15 @@ class JCPDS(object):
         d_work = datetime.datetime(2019, 4, 11)
 
         if d_current_version < d_work:
-            print('Update your pymatgen newer than 2019.4.11.')
+            print(str(datetime.datetime.now())[:-7], 
+                ': Update your pymatgen newer than 2019.4.11.')
             return False
 
         structure = mg.Structure.from_file(fn_cif)
         crystal_system = SpacegroupAnalyzer(structure).get_crystal_system()
         if crystal_system == 'triclinic':
-            print('Your cif has triclinic symmetry.  PeakPo cannot currently handle this.')
+            print(str(datetime.datetime.now())[:-7], 
+                ': Your cif has triclinic symmetry.  PeakPo cannot currently handle this.')
             return False
         self.set_from_pymatgen(structure, k0, k0p, file=file,
                                name=name, version=version,
@@ -877,7 +880,8 @@ def get_cell_prm_twk(symmetry, v_twk, a0, b0, c0, alpha0, beta0, gamma0,
         c_twk = c_a_twk * a_twk
         b_twk = b_a_twk * a_twk
     else:
-        #print('no symmetry is given')
+        print(str(datetime.datetime.now())[:-7], 
+            ": No symmetry is detected in this jcpds.")
         a_twk = a0
         b_twk = b0
         c_twk = c0

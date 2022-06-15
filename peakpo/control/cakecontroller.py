@@ -8,7 +8,7 @@ from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
 from PIL import Image
 import json
-
+import datetime
 
 class CakeController(object):
 
@@ -120,6 +120,8 @@ class CakeController(object):
                     metadata[key] = img.tag[key]
             infobox = InformationBox()
             infobox.setText(json.dumps(metadata, indent=4))
+            print(str(datetime.datetime.now())[:-7], ': TIF metadata\n', 
+                json.dumps(metadata, indent=4))
             infobox.exec_()
             #self.widget.plainTextEdit_ViewJCPDS.setPlainText(textoutput)
 
@@ -223,8 +225,12 @@ class CakeController(object):
             success = self.model.diff_img.read_cake_from_tempfile(
                 temp_dir=temp_dir)
             if success:
+                print(str(datetime.datetime.now())[:-7], 
+                    ": Load cake image from temporary file.")
                 pass
             else:
+                print(str(datetime.datetime.now())[:-7], 
+                    ": Create new temporary file for cake image.")
                 self._update_temp_cake_files(temp_dir)
             #else:
                 #os.makedirs(temp_dir)

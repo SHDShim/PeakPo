@@ -7,8 +7,10 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.7.35"
+__version__ = "7.7.36"
 """
+7.7.36: Some UI changes.  Delete obsolete functions.  Fix packaging function. 
+        Support terminal logging.
 7.7.35: Add info function (meta data of diffraction images)
         Rescale plot area for better viewing
         Support tiff files from BMD

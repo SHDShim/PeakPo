@@ -3,6 +3,7 @@ from PyQt5 import QtWidgets
 from utils import get_sorted_filelist, find_from_filelist, readchi, \
     make_filename, writechi, get_directory
 from utils import undo_button_press, get_temp_dir
+import datetime
 from .mplcontroller import MplController
 from .cakecontroller import CakeController
 
@@ -68,7 +69,9 @@ class BasePatternController(object):
         #    '1D Pattern: ' + self.model.get_base_ptn_filename())
         self.widget.lineEdit_DiffractionPatternFileName.setText(
             str(self.model.get_base_ptn_filename()))
-
+        print(str(datetime.datetime.now())[:-7], 
+                ": Receive request to open ", 
+                str(self.model.get_base_ptn_filename()))
         temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
         if self.widget.checkBox_UseTempBGSub.isChecked():
             if os.path.exists(temp_dir):
@@ -76,17 +79,21 @@ class BasePatternController(object):
                     temp_dir=temp_dir)
                 if success:
                     self._update_bg_params_in_widget()
-                    print('Read temp chi successfully.')
+                    print(str(datetime.datetime.now())[:-7], 
+                        ': Read temp chi successfully.')
                 else:
                     self._update_bgsub_from_current_values()
-                    print('No temp chi file found. Force new bgsub fit.')
+                    print(str(datetime.datetime.now())[:-7], 
+                        ': No temp chi file found. Force new bgsub fit.')
             else:
                 os.makedirs(temp_dir)
                 self._update_bgsub_from_current_values()
-                print('No temp chi file found. Force new bgsub fit.')
+                print(str(datetime.datetime.now())[:-7], 
+                    ': No temp chi file found. Force new bgsub fit.')
         else:
             self._update_bgsub_from_current_values()
-            print('Temp chi ignored. Force new bgsub fit.')
+            print(str(datetime.datetime.now())[:-7], 
+                ': Temp chi ignored. Force new bgsub fit.')
         filen_tif = self.model.make_filename('tif', original=True)
         filen_tiff = self.model.make_filename('tiff', original=True)
         filen_mar3450 = self.model.make_filename('mar3450', original=True)
