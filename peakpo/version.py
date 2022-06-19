@@ -10,6 +10,7 @@ Todo:
 __version__ = "7.7.37"
 """
 7.7.37: Enable step size changes for tweak functions.  Fix font problems in PDF file output.
+        Improve plot format.
 7.7.36: Some UI changes.  Delete obsolete functions.  Fix packaging function. 
         Support terminal logging.
 7.7.35: Add info function (meta data of diffraction images)
