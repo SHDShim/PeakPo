@@ -179,13 +179,18 @@ class MplController(object):
         """
         self.widget.mpl.canvas.ax_pattern.format_coord = \
             lambda x, y: \
-            "\n 2\u03B8 = {0:.3f}\u00B0, Int = {1:.4e}\n d-sp = {2:.4f} \u212B".\
+            "\n 2\u03B8={0:.3f}\u00B0, I={1:.4e}, d-sp={2:.4f}\u212B".\
             format(x, y,
                    self.widget.doubleSpinBox_SetWavelength.value()
                    / 2. / np.sin(np.radians(x / 2.)))
+#            lambda x, y: \
+#            "\n 2\u03B8 = {0:.3f}\u00B0, Int = {1:.4e}\n d-sp = {2:.4f} \u212B".\
+#            format(x, y,
+#                   self.widget.doubleSpinBox_SetWavelength.value()
+#                   / 2. / np.sin(np.radians(x / 2.)))
         self.widget.mpl.canvas.ax_cake.format_coord = \
             lambda x, y: \
-            "\n 2\u03B8 = {0:.3f}\u00B0, Int = {1:.4e}\n d-sp = {2:.4f} \u212B".\
+            "\n 2\u03B8={0:.3f}\u00B0, I={1:.4e}, d-sp={2:.4f}\u212B".\
             format(x, y,
                    self.widget.doubleSpinBox_SetWavelength.value()
                    / 2. / np.sin(np.radians(x / 2.)))

@@ -5,12 +5,23 @@ patch.edgecolor: white
 
 text.color: white
 
-font.sans-serif     : Helvetica
+# do not use helvetical for compiled version
+font.size           : 10.0
+font.serif     :  Helvetica, DejaVu Serif, New Century Schoolbook, Century Schoolbook L, Utopia, ITC Bookman, Bookman, Nimbus Roman No9 L, Times New Roman, Times, Palatino, Charter, serif
+font.sans-serif: Helvetica, DejaVu Sans, Lucida Grande, Verdana, Geneva, Lucid, Arial, Avant Garde, sans-serif
+font.cursive   : Apple Chancery, Textile, Zapf Chancery, Sand, Script MT, Felipa, cursive
+font.fantasy   : Comic Sans MS, Chicago, Charcoal, ImpactWestern, Humor Sans, fantasy
+font.monospace : DejaVu Sans Mono, Andale Mono, Nimbus Mono L, Courier New, Courier, Fixed, Terminal, monospace
+
+pdf.fonttype       : 42 
 
 axes.facecolor: black
 axes.edgecolor: white
 axes.labelcolor: white
 axes.prop_cycle: cycler('color', ['8dd3c7', 'feffb3', 'bfbbd9', 'fa8174', '81b1d2', 'fdb462', 'b3de69', 'bc82bd', 'ccebc4', 'ffed6f'])
+axes.labelsize      : small  # fontsize of the x any y labels
+
+savefig.dpi         : 300      # figure dots per inch
 
 xtick.color: white
 ytick.color: white

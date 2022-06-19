@@ -32,11 +32,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def build_ui(self):
         # self.pushButton_MakeBasePtn.setEnabled(False)
+        """ This was unstable feature but from 06/18/2022 it is enabled.
         self.pushButton_SetJCPDSStepTo0001.setDisabled(True)
         self.pushButton_SetJCPDSStepTo001.setDisabled(True)
         self.pushButton_SetJCPDSStepTo01.setDisabled(True)
         self.pushButton_UpdateJCPDSSteps.setDisabled(True)
         self.doubleSpinBox_JCPDSStep.setDisabled(True)
+        """
         self.doubleSpinBox_JCPDSStep.setKeyboardTracking(False)
         self.doubleSpinBox_JCPDSStep.setStyle(SpinBoxFixStyle())
         self.doubleSpinBox_Pressure.setKeyboardTracking(False)
