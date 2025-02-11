@@ -2,6 +2,10 @@ import pickle
 import os
 import copy
 import xlwt
+import numpy
+import base64
+from json import JSONEncoder
+import json
 from ds_cake import DiffImg
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
@@ -145,6 +149,8 @@ class PeakPoModel(object):
         self.session = model_r.session
         self.jcpds_path = model_r.jcpds_path
         self.chi_path = model_r.chi_path
+        # added 2023.03.26
+        self.current_section = None
 
     def import_section_list(self, model_r):
         new_section_lst = copy.deepcopy(model_r.section_lst)
@@ -366,7 +372,7 @@ class PeakPoModel(object):
         if os.path.exists(filen_tif):
             filen_toload = filen_tif
         elif os.path.exists(filen_tiff):
-            filen_toload = filen_tiff
+            filen_toload = filen_tiff 
         elif os.path.exists(filen_mar3450):
             filen_toload = filen_mar3450
         elif os.path.exists(filen_cbf):
@@ -518,7 +524,131 @@ class PeakPoModel707(PeakPoModel):
             azimutal angles, and all pattern variables
             wonder if I need to revise the fit sections to link to Azimuthal
             sections
-
-
         """
         self.azisections = []
+
+class PeakPoModel8(PeakPoModel):
+    def __init__(self):
+        """
+        self.base_ptn = None
+        self.waterfall_ptn = []
+        self.jcpds_lst = []
+        self.ucfit_lst = []
+        self.diff_img = None
+        self.poni = None
+        self.session = None
+        self.jcpds_path = ''
+        self.chi_path = ''
+        self.current_section = None
+        self.section_lst = []
+        self.saved_pressure = 10.
+        self.saved_temperature = 300.
+        """
+        self.dum = None
+
+    def from_model7(self, model7):
+        self.base_ptn = model7.base_ptn
+        self.waterfall_ptn = model7.waterfall_ptn
+        self.jcpds_lst = model7.jcpds_lst
+        self.ucfit_lst = model7.ucfit_lst
+        self.diff_img = model7.diff_img
+        self.poni = model7.poni
+        self.session = model7.session
+        self.jcpds_path = model7.jcpds_path
+        self.chi_path = model7.chi_path
+        self.current_section = model7.current_section
+        self.section_lst = model7.section_lst
+        self.saved_pressure = model7.saved_pressure
+        self.saved_temperature = model7.saved_temperature
+
+    def to_model7(self):
+        model7 = PeakPoModel()
+        model7.base_ptn = self.base_ptn
+        model7.waterfall_ptn = self.waterfall_ptn
+        model7.jcpds_lst = self.jcpds_lst
+        model7.ucfit_lst = self.ucfit_lst
+        model7.diff_img = self.diff_img
+        model7.poni = self.poni
+        model7.session = self.session
+        model7.jcpds_path = self.jcpds_path
+        model7.chi_path = self.chi_path
+        model7.current_section = self.current_section
+        model7.section_lst = self.section_lst
+        model7.saved_pressure = self.saved_pressure
+        model7.saved_temperature = self.saved_temperature
+        return model7
+
+    def save_to_txtdata(self, temp_dir):
+        # base_ptn
+        write_JSON(self.base_ptn, 'base_ptn', temp_dir)
+        # waterfall_ptn
+        write_JSON(self.waterfall_ptn, 'waterfall_ptn', temp_dir)
+        # jcpds_list
+        write_JSON(self.jcpds_lst, 'jcpds_lst', temp_dir)
+        # ucfit_list
+        write_JSON(self.ucfit_lst, 'ucfit_lst', temp_dir)
+        # diff_img
+        dict = diffimg_to_dict(self.diff_img)
+        json_str = json.dumps(dict, indent=4, cls=PeakPoEncoder)
+        json_filen = os.path.join(temp_dir, 'diff_img.json')
+        with open(json_filen, 'w') as outfile:
+            outfile.write(json_str)
+        # poni
+        write_JSON(self.poni, 'poni', temp_dir)
+        # session
+        write_JSON(self.session, 'session', temp_dir)
+        # jcpds_path
+        write_JSON(self.jcpds_path, 'jcpds_path', temp_dir)
+        # chi_path
+        write_JSON(self.chi_path, 'chi_path', temp_dir)
+        # current_section
+        write_JSON(self.current_section, 'current_section', temp_dir)
+        # section_lst
+        write_JSON(self.section_lst, 'section_lst', temp_dir)
+        # saved_pressure
+        write_JSON(self.saved_pressure, 'saved_pressure', temp_dir)
+        # saved_temperature
+        write_JSON(self.saved_temperature, 'saved_temperature', temp_dir)
+
+    def load_from_txtdata(self):
+        # https://pynative.com/python-convert-json-data-into-custom-python-object/
+        print('I am here')
+
+def write_JSON(obj, filename, dir):
+    json_str = json.dumps(obj, indent=4, cls=PeakPoEncoder)
+    json_filen = os.path.join(dir, filename+'.json')
+    with open(json_filen, 'w') as outfile:
+        outfile.write(json_str)
+
+# https://stackoverflow.com/questions/27909658/json-encoder-and-decoder-for-complex-numpy-arrays
+class PeakPoEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, numpy.ndarray):
+            #data_b64 = base64.b64encode(obj.data)
+            #return dict(__ndarray__=data_b64,
+            #            dtype=str(obj.dtype),
+            #            shape=obj.shape)
+            return obj.tolist()
+        else:
+            return obj.__dict__
+        
+class PeakPoEncoder1(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, numpy.ndarray):
+            #data_b64 = base64.b64encode(obj.data)
+            #return dict(__ndarray__=data_b64,
+            #            dtype=str(obj.dtype),
+            #            shape=obj.shape)
+            return None
+        else:
+            return obj.__dict__
+        
+def check_NONE(item):
+    if item is None:
+        return None
+    else:
+        return item.tolist()
+        
+def diffimg_to_dict(diffimg):
+    dict = {'img_filename': diffimg.img_filename, 'mask': check_NONE(diffimg.mask)}
+    return dict

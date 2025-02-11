@@ -445,7 +445,11 @@ class JCPDS(object):
             i = line.intensity
             dsp.append(d)
             intensity.append(i)
-        tth = 2. * np.degrees(np.arcsin(wavelength / 2. / np.array(dsp)))
+        reciprocal_d = wavelength / 2. / np.array(dsp)
+        tth = 2. * np.degrees(np.arcsin(reciprocal_d))
+        if np.any(reciprocal_d > 1.0):
+            print(str(datetime.datetime.now())[:-7], 
+                ": Ignore arcsin warning. Some dsp in jcpds are too small.")
         return tth, np.array(intensity)
 
     def get_hkl_in_text(self):

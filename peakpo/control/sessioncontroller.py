@@ -386,12 +386,14 @@ class SessionController(object):
     def _dump_dpp(self, filen_dpp):
         with open(filen_dpp, 'wb') as f:
             # cake cannot be dilled, so I remove it before dill
-            model_dill = copy.deepcopy(self.model)
+            model_dill = copy.deepcopy(self.model.to_model7())
             try:
                 dill.dump(model_dill, f)
+                self.model.save_to_txtdata(get_temp_dir(self.model.get_base_ptn_filename()))
             except:
                 model_dill.diff_img = None
                 dill.dump(model_dill, f)
+                self.model.save_to_txtdata(get_temp_dir(self.model.get_base_ptn_filename()))
 
     def _dump_ppss(self, fsession):
         """

@@ -1,1 +1,1 @@
-from .model import PeakPoModel
+from .model import PeakPoModel, PeakPoModel8

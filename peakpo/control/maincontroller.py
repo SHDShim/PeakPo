@@ -7,7 +7,7 @@ from PyQt5 import QtCore
 import gc
 import datetime
 from view import MainWindow
-from model import PeakPoModel
+from model import PeakPoModel, PeakPoModel8
 from .basepatterncontroller import BasePatternController
 from .mplcontroller import MplController
 # cake controller is called in BasePatternController already.
@@ -37,7 +37,7 @@ class MainController(object):
     def __init__(self):
 
         self.widget = MainWindow()
-        self.model = PeakPoModel()
+        self.model = PeakPoModel8()
         # self.obj_color = 'white'
         self.base_ptn_ctrl = BasePatternController(self.model, self.widget)
         self.plot_ctrl = MplController(self.model, self.widget)

@@ -1,8 +1,12 @@
 --------------------------------------------------------------------------------
-2022-06-14, 21:30:13
+2025-02-08, 21:16:59
 --------------------------------------------------------------------------------
-<class 'FileNotFoundError'>: 
-[Errno 2] No such file or directory: 'MgFe_0009-param'
+<class 'AttributeError'>: 
+'PeakPoModel8' object has no attribute 'base_ptn'
 --------------------------------------------------------------------------------
-  File "/Users/DanShim/Dropbox (ASU)/Python/PeakPo/PeakPo-7.7.35/peakpo/control/sessioncontroller.py", line 454, in zip_ppss
-    for file in os.listdir(folder_name):
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0/peakpo/control/basepatterncontroller.py", line 33, in select_base_ptn
+    self._setshow_new_base_ptn(str(filen))
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0/peakpo/control/basepatterncontroller.py", line 46, in _setshow_new_base_ptn
+    if self.model.base_ptn_exist():
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0/peakpo/model/model.py", line 194, in base_ptn_exist
+    if self.base_ptn is None:
