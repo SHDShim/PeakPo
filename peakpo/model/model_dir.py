@@ -367,9 +367,11 @@ class PeakPoDirModel(object):
         filen_tiff = self.make_filename('tiff', original=True)
         filen_mar3450 = self.make_filename('mar3450', original=True)
         filen_cbf = self.make_filename('cbf', original=True)
+        filen_h5 = self.make_filename('h5', original=True)
         if os.path.exists(filen_tif) or \
                 os.path.exists(filen_tiff) or \
                 os.path.exists(filen_mar3450) or \
+                os.path.exists(filen_h5) or \
                 os.path.exists(filen_cbf):
             return True
         else:
