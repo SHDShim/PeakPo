@@ -355,10 +355,12 @@ class PeakPoModel(object):
         filen_tiff = self.make_filename('tiff', original=True)
         filen_mar3450 = self.make_filename('mar3450', original=True)
         filen_cbf = self.make_filename('cbf', original=True)
+        filen_h5 = self.make_filename('h5', original=True)
         if os.path.exists(filen_tif) or \
                 os.path.exists(filen_tiff) or \
                 os.path.exists(filen_mar3450) or \
-                os.path.exists(filen_cbf):
+                os.path.exists(filen_cbf) or \
+                os.path.exists(filen_h5):
             return True
         else:
             return False
@@ -368,6 +370,7 @@ class PeakPoModel(object):
         filen_tiff = self.make_filename('tiff', original=True)
         filen_mar3450 = self.make_filename('mar3450', original=True)
         filen_cbf = self.make_filename('cbf', original=True)
+        filen_h5 = self.make_filename('h5', original=True)
         self.reset_diff_img()
         if os.path.exists(filen_tif):
             filen_toload = filen_tif
@@ -377,6 +380,8 @@ class PeakPoModel(object):
             filen_toload = filen_mar3450
         elif os.path.exists(filen_cbf):
             filen_toload = filen_cbf
+        elif os.path.exists(filen_h5):
+            filen_toload = filen_h5
         self.diff_img.load(filen_toload)
 
     def section_list_exist(self):
@@ -529,7 +534,6 @@ class PeakPoModel707(PeakPoModel):
 
 class PeakPoModel8(PeakPoModel):
     def __init__(self):
-        """
         self.base_ptn = None
         self.waterfall_ptn = []
         self.jcpds_lst = []
@@ -543,7 +547,6 @@ class PeakPoModel8(PeakPoModel):
         self.section_lst = []
         self.saved_pressure = 10.
         self.saved_temperature = 300.
-        """
         self.dum = None
 
     def from_model7(self, model7):
@@ -604,7 +607,14 @@ class PeakPoModel8(PeakPoModel):
         # current_section
         write_JSON(self.current_section, 'current_section', temp_dir)
         # section_lst
-        write_JSON(self.section_lst, 'section_lst', temp_dir)
+        # need to solve below.  temporary blocked.
+        # the reason is that section_lst is collection of Section object 
+        # which is not serialized yet.
+        if self.section_lst is None:
+            print('self section_lst none')
+        else:
+            print(self.section_lst)
+        # write_JSON(self.section_lst, 'section_lst', temp_dir)
         # saved_pressure
         write_JSON(self.saved_pressure, 'saved_pressure', temp_dir)
         # saved_temperature

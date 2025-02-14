@@ -28,6 +28,9 @@ class DiffImg(object):
             data = Image.open(self.img_filename)
         elif extract_extension(self.img_filename) == 'tiff':
             data = Image.open(self.img_filename)
+        elif extract_extension(self.img_filename) == 'h5':
+            images = fabio.open(self.img_filename)
+            data = images.data
         elif extract_extension(self.img_filename) == 'mar3450':
             data_fabio = fabio.open(img_filename)
             data = data_fabio.data

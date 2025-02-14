@@ -418,7 +418,8 @@ class MplController(object):
                             alpha=self.widget.doubleSpinBox_JCPDS_cake_Alpha.value())
         if self.widget.checkBox_JCPDSinPattern.isChecked():
             leg_jcpds = self.widget.mpl.canvas.ax_pattern.legend(
-                loc=1, prop={'size': 10}, framealpha=0., handlelength=1)
+                loc=1, prop={'size': 14}, framealpha=0., 
+                handlelength=1)
             for line, txt in zip(leg_jcpds.get_lines(), leg_jcpds.get_texts()):
                 txt.set_color(line.get_color())
         # print("JCPDS update takes {0:.2f}s at".format(time.time() - t_start),

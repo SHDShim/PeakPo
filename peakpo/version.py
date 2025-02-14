@@ -7,8 +7,9 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.7.37"
+__version__ = "7.8.0"
 """
+7.8.0: New interface with H5 format support.
 7.7.37: Enable step size changes for tweak functions.  Fix font problems in PDF file output.
         Improve plot format.
 7.7.36: Some UI changes.  Delete obsolete functions.  Fix packaging function. 

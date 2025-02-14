@@ -50,11 +50,11 @@ def excepthook(exc_type, exc_value, traceback_obj):
     errorbox.setText(error_message)
     errorbox.exec_()
 
-
 # 2020/02/15 block below does not affect screen resolution
 #QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
 app = QtWidgets.QApplication(sys.argv) #app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
-app.setStyle('Fusion')
+app.setStyle('Fusion') # default Fusion
+#['bb10dark', 'bb10bright', 'cleanlooks', 'cde', 'motif', 'plastique', 'Windows', 'Fusion']
 # fbs
 #  comment two lines above and uncomment the following two lines
 #appctxt = ApplicationContext() #QtWidgets.QApplication(sys.argv)
@@ -89,6 +89,7 @@ app.setPalette(dark_palette)
 # fbs
 #  comment a line above and uncomment the following line
 #    appctxt.app.setPalette(dark_palette)
+
 
 controller = MainController()
 controller.show_window()

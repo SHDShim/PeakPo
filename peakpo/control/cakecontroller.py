@@ -169,9 +169,11 @@ class CakeController(object):
         filen_tiff = self.model.make_filename('tiff', original=True)
         filen_mar3450 = self.model.make_filename('mar3450', original=True)
         filen_cbf = self.model.make_filename('cbf', original=True)
-        if not ((os.path.exists(filen_tif) or
+        filen_h5 = self.model.make_filename('h5', original=True)
+        if not (os.path.exists(filen_tif) or
                 os.path.exists(filen_tiff) or
-                os.path.exists(filen_mar3450)) or
+                os.path.exists(filen_mar3450) or
+                os.path.exists(filen_h5) or
                 os.path.exists(filen_cbf)):
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning',
