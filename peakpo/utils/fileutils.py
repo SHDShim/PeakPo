@@ -2,6 +2,30 @@ import os.path
 import glob
 import numpy as np
 import re
+import os
+import shutil
+
+def get_unique_filename(filename):
+    """Generate a unique filename by appending a number 
+    if the file already exists."""
+    base, ext = os.path.splitext(filename)
+    counter = 1
+
+    while os.path.exists(filename):
+        filename = f"{base}_{counter}{ext}"
+        counter += 1
+        if counter > 100:
+            return None
+    new_filename = filename
+
+    return new_filename
+
+def backup_copy(filename):
+    """Write content to a file, making a copy if the file already exists."""
+    unique_filename = get_unique_filename(filename)
+    if unique_filename != None:
+        shutil.copy(filename, unique_filename)
+    return unique_filename
 
 
 def writechi(filen, x, y, preheader=None):

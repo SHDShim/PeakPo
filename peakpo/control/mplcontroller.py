@@ -7,6 +7,8 @@ from matplotlib.widgets import MultiCursor
 import matplotlib.transforms as transforms
 # import matplotlib.colors as colors
 import matplotlib.patches as patches
+from matplotlib.textpath import TextPath
+import matplotlib.pyplot as plt
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from ds_jcpds import convert_tth
@@ -116,12 +118,19 @@ class MplController(object):
         if self.model.base_ptn_exist():
             if self.widget.checkBox_ShortPlotTitle.isChecked():
                 title = os.path.basename(self.model.base_ptn.fname)
-                fontsize = 12
+                #fontsize = 12
             else:
-                title = self.model.base_ptn.fname
-                fontsize = 8
+                temp_title = self.model.base_ptn.fname
+                # come back here
+                title_font_size = plt.rcParams["axes.titlesize"]
+                fig_width_pixels = \
+                    self.widget.mpl.canvas.fig.get_size_inches()[0] * \
+                        self.widget.mpl.canvas.fig.dpi
+                max_width = 0.25 * fig_width_pixels  # Reserve some space
+                title = truncate_title(temp_title, title_font_size, max_width)
+                #fontsize = 8
             self.widget.mpl.canvas.fig.suptitle(
-                title, color=self.obj_color, fontsize=fontsize)
+                title, color=self.obj_color) #, fontsize=fontsize)
             self._plot_diffpattern(gsas_style)
             if self.model.waterfall_exist():
                 self._plot_waterfallpatterns()
@@ -418,7 +427,7 @@ class MplController(object):
                             alpha=self.widget.doubleSpinBox_JCPDS_cake_Alpha.value())
         if self.widget.checkBox_JCPDSinPattern.isChecked():
             leg_jcpds = self.widget.mpl.canvas.ax_pattern.legend(
-                loc=1, prop={'size': 14}, framealpha=0., 
+                loc=1, framealpha=0., #prop={'size': 14}, 
                 handlelength=1)
             for line, txt in zip(leg_jcpds.get_lines(), leg_jcpds.get_texts()):
                 txt.set_color(line.get_color())
@@ -589,3 +598,32 @@ class MplController(object):
                     x_plot, section.get_fit_residue_baseline(bgsub=bgsub) +
                     y_shift, residue + y_shift, facecolor='r')
             i += 1
+
+from matplotlib.textpath import TextPath
+
+def truncate_title(title, font_size, max_width):
+    """Truncate the middle part of the title if it exceeds max_width.
+       Dynamically adds more to last_part if space allows.
+    """
+    text_path = TextPath((0, 0), title, size=font_size)
+    title_width = text_path.get_extents().width  # Adjust for better scaling
+    print(font_size, title_width, max_width)
+
+    if title_width <= max_width:
+        return title  # No truncation needed
+
+    # Start with first 20 and last 40 characters
+    first_part = title[:15]
+    last_part = title[-25:]
+
+    # Reduce first_part if necessary
+    truncated_text = first_part + " ... " + last_part
+    truncated_path = TextPath((0, 0), truncated_text, size=font_size)
+
+    # If the text is too short, add more to last_part
+    while (truncated_path.get_extents().width < max_width * 0.95) and (len(last_part) < len(title) - len(first_part) - 5):
+        last_part = title[-(len(last_part) + 1):]  # Add one more character from the end
+        truncated_text = first_part + " ... " + last_part
+        truncated_path = TextPath((0, 0), truncated_text, size=font_size)
+
+    return truncated_text

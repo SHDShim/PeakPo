@@ -591,11 +591,12 @@ class PeakPoModel8(PeakPoModel):
         # ucfit_list
         write_JSON(self.ucfit_lst, 'ucfit_lst', temp_dir)
         # diff_img
-        dict = diffimg_to_dict(self.diff_img)
-        json_str = json.dumps(dict, indent=4, cls=PeakPoEncoder)
-        json_filen = os.path.join(temp_dir, 'diff_img.json')
-        with open(json_filen, 'w') as outfile:
-            outfile.write(json_str)
+        if self.diff_img != None:
+            dict = diffimg_to_dict(self.diff_img)
+            json_str = json.dumps(dict, indent=4, cls=PeakPoEncoder)
+            json_filen = os.path.join(temp_dir, 'diff_img.json')
+            with open(json_filen, 'w') as outfile:
+                outfile.write(json_str)
         # poni
         write_JSON(self.poni, 'poni', temp_dir)
         # session

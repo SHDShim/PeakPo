@@ -1,18 +1,16 @@
 --------------------------------------------------------------------------------
-2025-02-13, 15:38:34
+2025-02-16, 13:55:18
 --------------------------------------------------------------------------------
 <class 'TypeError'>: 
-'EigerImage' object does not support indexing
+truncate_title() missing 1 required positional argument: 'max_width'
 --------------------------------------------------------------------------------
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0/peakpo/control/cakecontroller.py", line 133, in addremove_cake
-    update = self._addremove_cake()
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0/peakpo/control/cakecontroller.py", line 188, in _addremove_cake
-    self.process_temp_cake()
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0/peakpo/control/cakecontroller.py", line 226, in process_temp_cake
-    self._load_new_image()
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0/peakpo/control/cakecontroller.py", line 197, in _load_new_image
-    self.model.load_associated_img()
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0/peakpo/model/model.py", line 385, in load_associated_img
-    self.diff_img.load(filen_toload)
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0/peakpo/ds_cake/DiffractionImage.py", line 33, in load
-    data = images[0]
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0c/peakpo/control/basepatterncontroller.py", line 33, in select_base_ptn
+    self._setshow_new_base_ptn(str(filen))
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0c/peakpo/control/basepatterncontroller.py", line 53, in _setshow_new_base_ptn
+    self.plot_new_graph()
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0c/peakpo/control/basepatterncontroller.py", line 149, in plot_new_graph
+    self.plot_ctrl.zoom_out_graph()
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0c/peakpo/control/mplcontroller.py", line 81, in zoom_out_graph
+    cake_ylimits=(-180, 180))
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0c/peakpo/control/mplcontroller.py", line 128, in update
+    title = truncate_title(temp_title, title_font_size, max_width)

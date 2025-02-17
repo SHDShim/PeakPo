@@ -7,8 +7,11 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.8.0"
+__version__ = "7.8.0c"
 """
+7.8.0c: DPP backup option added.
+7.8.0b: bug fix for dpp, ppss writing issue by no image.
+7.8.0a: bug fix for cake navigation issue.
 7.8.0: New interface with H5 format support.
 7.7.37: Enable step size changes for tweak functions.  Fix font problems in PDF file output.
         Improve plot format.

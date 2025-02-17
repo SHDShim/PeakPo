@@ -13,8 +13,7 @@ from .jcpdstablecontroller import JcpdsTableController
 from .peakfittablecontroller import PeakfitTableController
 from .cakemakecontroller import CakemakeController
 from utils import dialog_savefile, convert_wl_to_energy, get_temp_dir, \
-    make_filename, extract_filename
-
+    make_filename, extract_filename, get_unique_filename, backup_copy
 
 class SessionController(object):
 
@@ -113,7 +112,8 @@ class SessionController(object):
             #    '1D pattern: ' + str(self.model.base_ptn.fname))
             self.widget.lineEdit_DiffractionPatternFileName.setText(
                 str(self.model.base_ptn.fname))
-            self.widget.textEdit_SessionFileName.setText(str(fsession))
+            # ppss should not do this.
+            #self.widget.textEdit_SessionFileName.setText(str(fsession))
         success = self._load_waterfall_ptn_from_ppss()
         if not success:
             QtWidgets.QMessageBox.warning(
@@ -475,7 +475,8 @@ class SessionController(object):
     def save_dpp_ppss(self):
         # save temp files
         temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
-        if self.model.associated_image_exists():
+        if (self.model.associated_image_exists() and 
+            (self.model.diff_img != None) ):
             self.model.diff_img.write_temp_cakefiles(temp_dir=temp_dir)
         self.model.base_ptn.write_temporary_bgfiles(temp_dir)
         self.save_dpp()
@@ -488,11 +489,35 @@ class SessionController(object):
             fsession = self.model.make_filename('dpp')
         if self.widget.checkBox_ForceOverwite.isChecked():
             new_filename = fsession
-            if not quiet:
-                QtWidgets.QMessageBox.warning(
-                    self.widget, "Warning",
-                    "Force overwrite is On, so existing dpp " +
-                    "with default name will be overwritten.")
+            if os.path.exists(fsession) and (not quiet):
+                msg_box = QtWidgets.QMessageBox(self.widget)
+                msg_box.setWindowTitle("Question")
+                msg_box.setText("DPP with default name already exist. Overwrite?\n\n" + \
+                    "For Backup, a copy of the existing DPP will be made\n" + \
+                    "and then the default named DPP will be created."    )
+                overwrite_button = msg_box.addButton("Overwrite", 
+                                                     QtWidgets.QMessageBox.YesRole)
+                backup_button = msg_box.addButton("Backup", 
+                                                  QtWidgets.QMessageBox.NoRole)
+                cancel_button = msg_box.addButton("Cancel", 
+                                                  QtWidgets.QMessageBox.RejectRole)
+
+                msg_box.setDefaultButton(overwrite_button)
+                msg_box.exec_()
+                reply = msg_box.clickedButton()
+                if reply == backup_button:
+                    backup_file_name = backup_copy(new_filename)
+                    if backup_file_name == None:
+                        QtWidgets.QMessageBox.warning(
+                            self.widget, "Warning",
+                            "More than 99 backup files were found.\n" +
+                            "Delete some unused backup files and try again.")
+                    else:
+                        print(str(datetime.datetime.now())[:-7],
+                            ": Existing DPP file copied to: " + 
+                            backup_file_name)
+                elif reply == cancel_button:
+                    return 
         else:
             new_filename = dialog_savefile(self.widget, fsession)
         if new_filename != '':
@@ -539,18 +564,21 @@ class SessionController(object):
             fsession = self.model.make_filename('ppss')
         if self.widget.checkBox_ForceOverwite.isChecked():
             new_filename = fsession
+            """
             if not quiet:
                 QtWidgets.QMessageBox.warning(
                     self.widget, "Warning",
                     "Force overwrite is On, so existing ppss with default name" +
                     " will be overwritten.")
+            """
         else:
             new_filename = dialog_savefile(self.widget, fsession)
         if new_filename != '':
             self._dump_ppss(new_filename)
             print(str(datetime.datetime.now())[:-7], 
                 ": Save ", new_filename)
-            self.widget.textEdit_SessionFileName.setText(str(new_filename))
+            # ppss should not do this.
+            #self.widget.textEdit_SessionFileName.setText(str(new_filename))
 
     def save_ppss_with_default_name(self):
         if not self.model.base_ptn_exist():
@@ -567,7 +595,8 @@ class SessionController(object):
                 return
         if str(fsession) != '':
             self._dump_ppss(str(fsession))
-            self.widget.textEdit_SessionFileName.setText(str(fsession))
+            # ppss should not do this.
+            #self.widget.textEdit_SessionFileName.setText(str(fsession))
 
     def reset_bgsub(self):
         '''

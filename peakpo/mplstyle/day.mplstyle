@@ -1,3 +1,16 @@
+# General font size
+font.size: 12
+
+# JCPDS legend font size
+legend.fontsize: 14
+
+# Figure title font size
+figure.titlesize: 12
+
+# Title and label font sizes
+axes.titlesize: 11
+axes.labelsize: 11
+
 # Set black background default line colors to white.
 
 lines.color: k
@@ -6,7 +19,7 @@ patch.edgecolor: k
 text.color: k
 
 # do not use helvetical for compiled version
-font.size           : 10.0
+#font.size           : 10.0
 font.serif     :  Helvetica, DejaVu Serif, New Century Schoolbook, Century Schoolbook L, Utopia, ITC Bookman, Bookman, Nimbus Roman No9 L, Times New Roman, Times, Palatino, Charter, serif
 font.sans-serif: Helvetica, DejaVu Sans, Lucida Grande, Verdana, Geneva, Lucid, Arial, Avant Garde, sans-serif
 font.cursive   : Apple Chancery, Textile, Zapf Chancery, Sand, Script MT, Felipa, cursive
@@ -19,15 +32,15 @@ axes.facecolor: w
 axes.edgecolor: k
 axes.labelcolor: k
 axes.prop_cycle: cycler('color', ['8dd3c7', 'feffb3', 'bfbbd9', 'fa8174', '81b1d2', 'fdb462', 'b3de69', 'bc82bd', 'ccebc4', 'ffed6f'])
-axes.labelsize      : small  # fontsize of the x any y labels
+#axes.labelsize      : small  # fontsize of the x any y labels
 
 savefig.dpi         : 300      # figure dots per inch
 
 xtick.color: k
 ytick.color: k
 
-xtick.labelsize      : small # fontsize of the tick labels
-ytick.labelsize      : small # fontsize of the tick labels
+#xtick.labelsize      : small # fontsize of the tick labels
+#ytick.labelsize      : small # fontsize of the tick labels
 xtick.direction      : in     # direction: in, out, or inout
 ytick.direction      : in     # direction: in, out, or inout
 
