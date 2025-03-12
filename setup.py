@@ -1,5 +1,7 @@
 """A setuptools based setup module.
 
+THIS FILE IS NOT PROPERLY SETUP YET.
+
 See:
 https://packaging.python.org/en/latest/distributing.html
 https://github.com/pypa/sampleproject

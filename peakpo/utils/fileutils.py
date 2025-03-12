@@ -162,7 +162,8 @@ def get_temp_dir(base_ptn_filename, branch='-param'):
 #########################################
 def read_any_poni_file(filename):
     """
-    Read any version of poni file to check the version
+    Read any version of poni file and return the content 
+    to check the version of poni file
     """
     data = collections.OrderedDict()
 
@@ -179,13 +180,14 @@ def read_any_poni_file(filename):
     #read_from_dict(data)
 
 
-def modify_poni_file(input_file_path, output_file_path):
+def make_poni2_from_poni21(poni21, poni2):
     """
+    formerly modify_poni_file
     convert poni 2.1 to poni 2 by simply removing orientation
     field in detector_config
     """
     # Read the input file as text
-    with open(input_file_path, 'r') as infile:
+    with open(poni21, 'r') as infile:
         lines = infile.readlines()
     
     new_lines = ['# Converted from version higher than 2.\n']
@@ -213,14 +215,16 @@ def modify_poni_file(input_file_path, output_file_path):
                 new_lines.append(line)
     
     # Write the modified content back to the output file
-    with open(output_file_path, 'w') as outfile:
+    with open(poni2, 'w') as outfile:
         outfile.writelines(new_lines)
     
-    print(f"File modified and saved as {output_file_path}")
+    print(f"File modified and saved as {poni2}")
 
-def modify_file_name(file_path):
+def make_converted_poni2_filename(file_path):
     """
+    formerly modify_file_name
     modify poni file name to note the backward conversion
+    normally paird with make_poni2_from_poni21
     """
     # Extract the directory path, file name, and extension
     directory, file_name = os.path.split(file_path)

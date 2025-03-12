@@ -5,7 +5,7 @@ from PyQt5 import QtWidgets
 import numpy as np
 from utils import dialog_savefile, writechi, get_directory, make_filename, \
     get_temp_dir, extract_filename, extract_extension, InformationBox, \
-        modify_file_name, modify_poni_file, read_any_poni_file
+        make_converted_poni2_filename, make_poni2_from_poni21, read_any_poni_file
 from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
 from PIL import Image
@@ -135,6 +135,24 @@ class CakeController(object):
         update = self._addremove_cake()
         if update:
             self._apply_changes_to_graph()
+    """
+    def image_file_exists(self):
+        # if no image file, no cake
+        filen_tif = self.model.make_filename('tif', original=True)
+        filen_tiff = self.model.make_filename('tiff', original=True)
+        filen_mar3450 = self.model.make_filename('mar3450',
+            original=True)
+        filen_cbf = self.model.make_filename('cbf', original=True)
+        filen_h5 = self.model.make_filename('h5', original=True)
+        if not (os.path.exists(filen_tif) or
+                os.path.exists(filen_tiff) or
+                os.path.exists(filen_mar3450) or
+                os.path.exists(filen_h5) or
+                os.path.exists(filen_cbf)):
+            return False
+        else:
+            return True
+    """
 
     def _addremove_cake(self):
         """
@@ -143,13 +161,21 @@ class CakeController(object):
         """
         if not self.widget.checkBox_ShowCake.isChecked():
             return True
+        # if no base ptn, no cake
         if not self.model.base_ptn_exist():
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'Choose CHI file first.')
             self.widget.checkBox_ShowCake.setChecked(False)
             return False
-        poni_all = self.get_all_temp_poni()
+        if not self.model.associated_image_exists():
+            QtWidgets.QMessageBox.warning(
+                self.widget, 'Warning',
+                'Cannot find image file.')
+            self.widget.checkBox_ShowCake.setChecked(False)
+            return False
 
+        # if base pattern and image exist
+        poni_all = self.get_all_temp_poni()
         if len(poni_all) == 1:
             self.model.poni = poni_all[0]
             self.widget.lineEdit_PONI.setText(self.model.poni)
@@ -189,22 +215,6 @@ class CakeController(object):
                 self.model.poni = os.path.join(temp_dir, poni_filen)
                 self.widget.lineEdit_PONI.setText(self.model.poni)
             """
-        filen_tif = self.model.make_filename('tif', original=True)
-        filen_tiff = self.model.make_filename('tiff', original=True)
-        filen_mar3450 = self.model.make_filename('mar3450', original=True)
-        filen_cbf = self.model.make_filename('cbf', original=True)
-        filen_h5 = self.model.make_filename('h5', original=True)
-        if not (os.path.exists(filen_tif) or
-                os.path.exists(filen_tiff) or
-                os.path.exists(filen_mar3450) or
-                os.path.exists(filen_h5) or
-                os.path.exists(filen_cbf)):
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning',
-                'Cannot find image file: %s or %s or %s or %s.' %
-                (filen_tif, filen_tiff, filen_mar3450, filen_cbf))
-            self.widget.checkBox_ShowCake.setChecked(False)
-            return False
         """ Not sure why we need this.
         if self.model.diff_img_exist() and \
                 self.model.same_filename_as_base_ptn(
@@ -324,8 +334,8 @@ class CakeController(object):
                 if 'poni_version' in poni_content:
                     if poni_content['poni_version'] != 2:
                         # Call the function to modify the file
-                        output_file = modify_file_name(filename)
-                        modify_poni_file(filename, output_file)
+                        output_file = make_converted_poni2_filename(filename)
+                        make_poni2_from_poni21(filename, output_file)
                         # copy the chose file to temp_dir
                         shutil.move(output_file, temp_dir)
                         filen = extract_filename(output_file) + '.' + \
