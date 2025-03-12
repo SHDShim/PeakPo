@@ -16,11 +16,13 @@ Major functions include:
 
 ## How to install with Python
 
-Check [Installation wiki page](https://github.com/SHDShim/PeakPo/wiki/Quick-Install)
+Check [Installation google slide](https://docs.google.com/presentation/d/11nTraMvenpO7E3Cg7NAH2Qa4UpTwjJVcexdU-CPNE9Q/edit?usp=sharing) (up-to-date)
+
+Check [Installation wiki page](https://github.com/SHDShim/PeakPo/wiki/Quick-Install) (outdated)
 
 ## How to download executables
 
-Check [my google drive folder](https://drive.google.com/drive/folders/0B0kkQLbYpQDYfjBGT21uMkx5cU1JMHJIUUhGR1FkdDVUdzFYVUdKR0Zya2NRcFYtUmRVUGM?resourcekey=0-FT-Lc6ZeuUBMaqHzzjZSbg&usp=sharing)
+Check [my google drive folder](https://drive.google.com/drive/folders/0B0kkQLbYpQDYfjBGT21uMkx5cU1JMHJIUUhGR1FkdDVUdzFYVUdKR0Zya2NRcFYtUmRVUGM?resourcekey=0-FT-Lc6ZeuUBMaqHzzjZSbg&usp=sharing) (outdated)
 
 ## How to get help
 
