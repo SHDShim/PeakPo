@@ -7,6 +7,9 @@ import numpy as np
 import pyFAI
 import matplotlib.pyplot as plt
 import datetime
+import collections
+import re
+
 from utils import make_filename, extract_extension
 
 
@@ -177,3 +180,4 @@ class DiffImg(object):
         np.save(tth_filen, self.tth_cake)
         np.save(azi_filen, self.chi_cake)
         np.save(int_filen, self.intensity_cake)
+

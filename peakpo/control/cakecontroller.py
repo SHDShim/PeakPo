@@ -1,9 +1,11 @@
 import os
 import shutil
+import glob
 from PyQt5 import QtWidgets
 import numpy as np
 from utils import dialog_savefile, writechi, get_directory, make_filename, \
-    get_temp_dir, extract_filename, extract_extension, InformationBox
+    get_temp_dir, extract_filename, extract_extension, InformationBox, \
+        modify_file_name, modify_poni_file, read_any_poni_file
 from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
 from PIL import Image
@@ -141,30 +143,52 @@ class CakeController(object):
         """
         if not self.widget.checkBox_ShowCake.isChecked():
             return True
-        if not self.model.poni_exist():
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning', 'Choose PONI file first.')
-            self.widget.checkBox_ShowCake.setChecked(False),
-            return False
-        # check if model.poni exist
-        if not os.path.exists(self.model.poni):
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning', 'The poni does not exist in the path.')
-            self.widget.checkBox_ShowCake.setChecked(False),
-            return False
         if not self.model.base_ptn_exist():
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'Choose CHI file first.')
             self.widget.checkBox_ShowCake.setChecked(False)
             return False
-        # check if model.poni is in temp_dir
-        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
-        poni_filen = extract_filename(self.model.poni) + '.' + \
-                     extract_extension(self.model.poni)
-        if self.model.poni != os.path.join(temp_dir, poni_filen):
-            shutil.copy(self.model.poni, os.path.join(temp_dir, poni_filen))
-            self.model.poni = os.path.join(temp_dir, poni_filen)
+        poni_all = self.get_all_temp_poni()
+
+        if len(poni_all) == 1:
+            self.model.poni = poni_all[0]
             self.widget.lineEdit_PONI.setText(self.model.poni)
+            if self.model.diff_img_exist():
+                #self.produce_cake()
+                self.process_temp_cake()
+            #self._apply_changes_to_graph()
+            #return True
+        else:
+            if not self.model.poni_exist():
+                if len(poni_all) == 0:
+                        QtWidgets.QMessageBox.warning(
+                            self.widget, 'Warning', 'Choose PONI file first.')
+                        self.widget.checkBox_ShowCake.setChecked(False),
+                        return False
+                else:
+                    QtWidgets.QMessageBox.warning(
+                        self.widget, 'Warning', 
+                        'More than 2 PONI files were found in TEMP folder. Delete all but one.')
+                    self.widget.checkBox_ShowCake.setChecked(False),
+                    return False
+            else:
+                # check if model.poni exist
+                if not os.path.exists(self.model.poni):
+                    QtWidgets.QMessageBox.warning(
+                        self.widget, 'Warning', 'The poni does not exist in the path.')
+                    self.widget.checkBox_ShowCake.setChecked(False),
+                    return False
+            """ unsure why the code below is needed.
+            # check if model.poni is in temp_dir
+            temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
+            poni_filen = extract_filename(self.model.poni) + '.' + \
+                        extract_extension(self.model.poni)
+            # if model.poni and temp poni do not match, model.poni will be copied to TEMP folder
+            if self.model.poni != os.path.join(temp_dir, poni_filen):
+                shutil.copy(self.model.poni, os.path.join(temp_dir, poni_filen))
+                self.model.poni = os.path.join(temp_dir, poni_filen)
+                self.widget.lineEdit_PONI.setText(self.model.poni)
+            """
         filen_tif = self.model.make_filename('tif', original=True)
         filen_tiff = self.model.make_filename('tiff', original=True)
         filen_mar3450 = self.model.make_filename('mar3450', original=True)
@@ -181,10 +205,12 @@ class CakeController(object):
                 (filen_tif, filen_tiff, filen_mar3450, filen_cbf))
             self.widget.checkBox_ShowCake.setChecked(False)
             return False
+        """ Not sure why we need this.
         if self.model.diff_img_exist() and \
                 self.model.same_filename_as_base_ptn(
                 self.model.diff_img.img_filename):
             return True
+        """
         self.process_temp_cake()
         return True
 
@@ -244,27 +270,86 @@ class CakeController(object):
         self.produce_cake()
         self.model.diff_img.write_temp_cakefiles(temp_dir=temp_dir)
 
+    def get_all_temp_poni(self):
+        """
+        Check if a poni file exist in temp_dir
+        returns 1 if there is one
+        returns 0 if non
+        returns number of poni files if multiples
+        """
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
+        search_pattern = os.path.join(temp_dir, "*.poni")
+        poni_all = glob.glob(search_pattern)
+        return poni_all
+    
+    def temp_cake_exists(self):
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
+        search_pattern = os.path.join(temp_dir, "*.cake.npy")
+        cake_all = glob.glob(search_pattern)
+        print(len(cake_all))
+        if len(cake_all) < 3:
+            return False
+        else:
+            return True
+
     def get_poni(self):
         """
         Opens a pyFAI calibration file
         signal to update_graph
         """
-        filen = QtWidgets.QFileDialog.getOpenFileName(
-            self.widget, "Open a PONI File",
-            self.model.chi_path, "PONI files (*.poni)")[0]
-        filename = str(filen)
-        if os.path.exists(filename):
-            # copy the chose file to temp_dir
-            temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
-            shutil.copy(filename, temp_dir)
-            filen = extract_filename(filename) + '.' + \
-                    extract_extension(filename)
-            # set filename to that exists in temp_dir
-            self.model.poni = os.path.join(temp_dir, filen)
+        poni_all = self.get_all_temp_poni()
+        num_poni = len(poni_all)
+        temp_dir = get_temp_dir(
+            self.model.get_base_ptn_filename())
+        if num_poni == 1:
+            # single poni file in temp folder
+            QtWidgets.QMessageBox.warning(
+                self.widget, 'Warning', self.model.poni + \
+                    ' already exists in TEMP folder.' + \
+                    ' If the file is not correct, delete it in TEMP folder.')
+            self.model.poni = poni_all[0]
             self.widget.lineEdit_PONI.setText(self.model.poni)
             if self.model.diff_img_exist():
                 self.produce_cake()
             self._apply_changes_to_graph()
+        elif num_poni == 0:
+            # no poni file in temp folder
+            filen = QtWidgets.QFileDialog.getOpenFileName(
+                self.widget, "Open a PONI File",
+                self.model.chi_path, "PONI files (*.poni)")[0]
+            filename = str(filen)
+            if os.path.exists(filename):
+                # Check if the chosen poni file is version 2.1
+                poni_content = read_any_poni_file(filename)
+                if 'poni_version' in poni_content:
+                    if poni_content['poni_version'] != 2:
+                        # Call the function to modify the file
+                        output_file = modify_file_name(filename)
+                        modify_poni_file(filename, output_file)
+                        # copy the chose file to temp_dir
+                        shutil.move(output_file, temp_dir)
+                        filen = extract_filename(output_file) + '.' + \
+                                extract_extension(output_file)
+                    else:
+                        shutil.copy(filename, temp_dir)
+                        filen = extract_filename(filename) + '.' + \
+                                extract_extension(filename)
+                else:
+                    # copy the chose file to temp_dir
+                    shutil.copy(filename, temp_dir)
+                    filen = extract_filename(filename) + '.' + \
+                            extract_extension(filename)
+                # set filename to that exists in temp_dir
+                self.model.poni = os.path.join(temp_dir, filen)
+                self.widget.lineEdit_PONI.setText(self.model.poni)
+                if self.model.diff_img_exist():
+                    self.produce_cake()
+                self._apply_changes_to_graph()
+        else:
+            QtWidgets.QMessageBox.warning(
+                self.widget, 'Warning',  
+                    'More than 2 PONI files exist in TEMP folder. ' + \
+                    'Delete except for a correct one.')
 
     def load_new_poni_from_name(self):
         if self.widget.lineEdit_PONI.isModified():
@@ -278,3 +363,4 @@ class CakeController(object):
             else:
                 QtWidgets.QMessageBox.warning(
                     self.widget, 'Warning', 'The PONI file does not exist.')
+

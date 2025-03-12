@@ -107,6 +107,11 @@ class BasePatternController(object):
             self.widget.checkBox_ShowCake.setChecked(False)
             return
         # self._update_bg_params_in_widget()
+        poni_all = self.cake_ctrl.get_all_temp_poni()
+        if len(poni_all) == 1:
+            self.model.poni = poni_all[0]
+            self.widget.lineEdit_PONI.setText(self.model.poni)
+
         if self.widget.checkBox_ShowCake.isChecked() and \
                 (self.model.poni is not None):
             self.cake_ctrl.process_temp_cake()

@@ -1,16 +1,12 @@
 --------------------------------------------------------------------------------
-2025-02-16, 13:55:18
+2025-03-11, 22:49:18
 --------------------------------------------------------------------------------
-<class 'TypeError'>: 
-truncate_title() missing 1 required positional argument: 'max_width'
+<class 'NameError'>: 
+name 'cake_call' is not defined
 --------------------------------------------------------------------------------
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0c/peakpo/control/basepatterncontroller.py", line 33, in select_base_ptn
-    self._setshow_new_base_ptn(str(filen))
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0c/peakpo/control/basepatterncontroller.py", line 53, in _setshow_new_base_ptn
-    self.plot_new_graph()
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0c/peakpo/control/basepatterncontroller.py", line 149, in plot_new_graph
-    self.plot_ctrl.zoom_out_graph()
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0c/peakpo/control/mplcontroller.py", line 81, in zoom_out_graph
-    cake_ylimits=(-180, 180))
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0c/peakpo/control/mplcontroller.py", line 128, in update
-    title = truncate_title(temp_title, title_font_size, max_width)
+  File "/Users/DanShim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0e/peakpo/control/cakecontroller.py", line 135, in addremove_cake
+    update = self._addremove_cake()
+  File "/Users/DanShim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0e/peakpo/control/cakecontroller.py", line 210, in _addremove_cake
+    if not self.temp_cake_exists():
+  File "/Users/DanShim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0e/peakpo/control/cakecontroller.py", line 286, in temp_cake_exists
+    print(len(cake_call))

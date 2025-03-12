@@ -7,8 +7,10 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.8.0c"
+__version__ = "7.8.0e"
 """
+7.8.0e: poni 2.1 downgrade to poni 2 for solving reading issues.
+7.8.0d: UI change at synchrotron
 7.8.0c: DPP backup option added.
 7.8.0b: bug fix for dpp, ppss writing issue by no image.
 7.8.0a: bug fix for cake navigation issue.
