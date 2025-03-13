@@ -27,7 +27,7 @@ I no longer create executable files. You may still download previous versions fr
 
 ## Where to get help
 
-Review [the PeakPo wiki page](https://github.com/SHDShim/peakpo/wiki) for detailed instructions regarding installation, setup, operation, and updates.”
+Review [the PeakPo wiki page](https://github.com/SHDShim/peakpo/wiki) for detailed instructions regarding installation, setup, operation, and updates.
 
 ## How to cite
 
