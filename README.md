@@ -6,28 +6,28 @@ A python application for X-ray diffraction analysis of the samples at high press
 
 Major functions include:
 
-- Pressure and temperature estimation  
-- Phase identification  
-- 2D analysis of data  
-- Visual equation of state fitting  
-- Peakfitting  
-- Visual unit cell fitting  
-- Excel output of all the calculation results  
+- Pressure and temperature estimation
+- Phase identification
+- Two-dimensional analysis of data
+- Visual equation of state fitting
+- Peak fitting
+- Visual unit cell fitting
+- Generation of Excel files containing all calculation results
 
-## How to install with Python
+## How to install
 
-Check [Installation google slide](https://docs.google.com/presentation/d/11nTraMvenpO7E3Cg7NAH2Qa4UpTwjJVcexdU-CPNE9Q/edit?usp=sharing) (up-to-date)
+[Installation wiki page](https://github.com/SHDShim/PeakPo/wiki/Installation-and-Update) 
 
-Check [Installation wiki page](https://github.com/SHDShim/PeakPo/wiki/Quick-Install) (outdated)
+[Installation google slide](https://docs.google.com/presentation/d/11nTraMvenpO7E3Cg7NAH2Qa4UpTwjJVcexdU-CPNE9Q/edit?usp=sharing) 
 
-## How to download executables
 
-Check [my google drive folder](https://drive.google.com/drive/folders/0B0kkQLbYpQDYfjBGT21uMkx5cU1JMHJIUUhGR1FkdDVUdzFYVUdKR0Zya2NRcFYtUmRVUGM?resourcekey=0-FT-Lc6ZeuUBMaqHzzjZSbg&usp=sharing) (outdated)
+## Where to download executables
 
-## How to get help
+I no longer create executable files. You may still download previous versions from [a Google Drive folder](https://drive.google.com/drive/folders/0B0kkQLbYpQDYfjBGT21uMkx5cU1JMHJIUUhGR1FkdDVUdzFYVUdKR0Zya2NRcFYtUmRVUGM?resourcekey=0-FT-Lc6ZeuUBMaqHzzjZSbg&usp=sharing).
 
-Check [the PeakPo wiki page](https://github.com/SHDShim/peakpo/wiki) in this repo for manual together with 
-information on: how to install, how to setup, how to run and how to update.
+## Where to get help
+
+Review [the PeakPo wiki page](https://github.com/SHDShim/peakpo/wiki) for detailed instructions regarding installation, setup, operation, and updates.”
 
 ## How to cite
 
