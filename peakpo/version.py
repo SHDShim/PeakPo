@@ -7,8 +7,9 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.8.0e"
+__version__ = "7.8.1"
 """
+7.8.1: After having 8 months of stability check
 7.8.0e: poni 2.1 downgrade to poni 2 for solving reading issues.
 7.8.0d: UI change at synchrotron
 7.8.0c: DPP backup option added.
