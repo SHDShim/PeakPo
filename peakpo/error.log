@@ -1,12 +1,9 @@
 --------------------------------------------------------------------------------
-2025-03-11, 22:49:18
+2025-12-25, 19:56:19
 --------------------------------------------------------------------------------
-<class 'NameError'>: 
-name 'cake_call' is not defined
+<class 'AttributeError'>: 
+'MplCanvas' object has no attribute '_update_dpi'
 --------------------------------------------------------------------------------
-  File "/Users/DanShim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0e/peakpo/control/cakecontroller.py", line 135, in addremove_cake
-    update = self._addremove_cake()
-  File "/Users/DanShim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0e/peakpo/control/cakecontroller.py", line 210, in _addremove_cake
-    if not self.temp_cake_exists():
-  File "/Users/DanShim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0e/peakpo/control/cakecontroller.py", line 286, in temp_cake_exists
-    print(len(cake_call))
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.8.0e/peakpo/view/mplwidget.py", line 53, in paintEvent
+    if self._update_dpi():
+       ^^^^^^^^^^^^^^^^
