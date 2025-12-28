@@ -144,8 +144,8 @@ class MainController(object):
             self.load_jlist_from_session)
         self.widget.pushButton_UpdateBackground.clicked.connect(
             self.update_bgsub)
-        self.widget.checkBox_LongCursor.clicked.connect(
-            self.apply_changes_to_graph)
+        self.widget.checkBox_LongCursor.stateChanged.connect(
+            self._handle_cursor_toggle)  # Changed from clicked to stateChanged
         self.widget.checkBox_ShowMillerIndices.clicked.connect(
             self.apply_changes_to_graph)
         self.widget.comboBox_BasePtnLineThickness.currentIndexChanged.connect(
@@ -226,6 +226,38 @@ class MainController(object):
             lambda: self.goto_next_file('last'))
         self.widget.pushButton_FirstBasePtn.clicked.connect(
             lambda: self.goto_next_file('first'))
+        
+    def _handle_cursor_toggle(self, state):
+        """Handle vertical cursor checkbox - implement mutual exclusivity with toolbar"""
+        if state == QtCore.Qt.Checked:
+            # Cursor was just checked - deactivate toolbar pan/zoom
+            toolbar = self.widget.mpl.canvas.toolbar
+            if toolbar:
+                # Check which mode is active
+                current_mode = ''
+                if hasattr(toolbar, 'mode'):
+                    # New matplotlib API (3.3+)
+                    current_mode = toolbar.mode
+                elif hasattr(toolbar, '_active'):
+                    # Old matplotlib API
+                    current_mode = toolbar._active or ''
+                
+                # Deactivate zoom or pan if active
+                if current_mode == 'zoom rect' or current_mode == 'ZOOM':
+                    toolbar.zoom()  # Toggle zoom off
+                    print("  ✓ Zoom deactivated (cursor enabled)")
+                elif current_mode == 'pan/zoom' or current_mode == 'PAN':
+                    toolbar.pan()   # Toggle pan off
+                    print("  ✓ Pan deactivated (cursor enabled)")
+                
+                # Ensure toolbar state is cleared
+                if hasattr(toolbar, 'mode'):
+                    toolbar.mode = ''
+                if hasattr(self.plot_ctrl, '_toolbar_active'):
+                    self.plot_ctrl._toolbar_active = False
+        
+        # Update plot to show/hide cursor
+        self.apply_changes_to_graph()
 
     def integrate_to_1d(self):
         filen = self.cakeazi_ctrl.integrate_to_1d()

@@ -37,11 +37,17 @@ class MplController(object):
             def zoom_wrapper(*args, **kwargs):
                 result = self._original_zoom(*args, **kwargs)
                 self._toolbar_active = (toolbar.mode != '')
+                # ✅ NEW: Uncheck cursor when zoom is activated
+                if toolbar.mode == 'zoom rect':
+                    self.widget.checkBox_LongCursor.setChecked(False)
                 return result
             
             def pan_wrapper(*args, **kwargs):
                 result = self._original_pan(*args, **kwargs)
                 self._toolbar_active = (toolbar.mode != '')
+                # ✅ NEW: Uncheck cursor when pan is activated
+                if toolbar.mode == 'pan/zoom':
+                    self.widget.checkBox_LongCursor.setChecked(False)
                 return result
             
             def home_wrapper(*args, **kwargs):
