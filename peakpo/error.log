@@ -1,8 +1,9 @@
 --------------------------------------------------------------------------------
-2025-12-28, 00:21:09
+2025-12-28, 11:22:57
 --------------------------------------------------------------------------------
-<class 'TypeError'>: 
-setValue(self, val: int): argument 1 has unexpected type 'numpy.float32'
+<class 'AttributeError'>: 
+'matplotlib.backends._backend_agg.BufferRegion' object has no attribute 'to_string_argb'
 --------------------------------------------------------------------------------
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/cakecontroller.py", line 96, in reset_max_cake_scale
-    self.widget.spinBox_MaxCakeScale.setValue(intensity_cake.max())
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/view/mplwidget.py", line 94, in paintEvent
+    buf = reg.to_string_argb()
+          ^^^^^^^^^^^^^^^^^^
