@@ -5,7 +5,7 @@ import numpy as np
 import numpy.ma as ma
 #from matplotlib.widgets import MultiCursor
 #import matplotlib.transforms as transforms
-# import matplotlib.colors as colors
+#import matplotlib.colors as colors
 #import matplotlib.patches as patches
 #from matplotlib.textpath import TextPath
 #import matplotlib.pyplot as plt
@@ -526,6 +526,10 @@ class MplController(object):
         """Updates the graph"""
         import matplotlib.pyplot as plt
         from PyQt5.QtCore import QTimer
+        from matplotlib.widgets import MultiCursor
+        import matplotlib.transforms as transforms  # ✅ UNCOMMENTED
+        import matplotlib.patches as patches       # ✅ UNCOMMENTED
+        from matplotlib.textpath import TextPath   # ✅ UNCOMMENTED
         
         # ✅ Block updates during drawing OR toolbar interaction
         if self._is_drawing or self._toolbar_active:
@@ -637,14 +641,47 @@ class MplController(object):
                         self.widget.doubleSpinBox_SetWavelength.value()
                         / 2. / np.sin(np.radians(x / 2.)))
             
-            # ✅ AT THE END: Use QTimer for deferred drawing
+            # ✅ MOVED: Set up cursor BEFORE drawing (inside try block)
+            if self.widget.checkBox_LongCursor.isChecked():
+                # Determine which axes to use
+                if hasattr(self.widget.mpl.canvas, 'ax_cake') and \
+                   self.widget.checkBox_ShowCake.isChecked():
+                    # Use both axes
+                    axes_list = (self.widget.mpl.canvas.ax_pattern,
+                                self.widget.mpl.canvas.ax_cake)
+                else:
+                    # Use only pattern axis
+                    axes_list = (self.widget.mpl.canvas.ax_pattern,)
+                
+                # Get line width
+                try:
+                    lw_value = float(
+                        self.widget.comboBox_VertCursorThickness.currentText())
+                except:
+                    lw_value = 1.0
+                
+                # Create MultiCursor
+                self.widget.cursor = MultiCursor(
+                    self.widget.mpl.canvas.fig,  # Use figure, not canvas
+                    axes_list,
+                    color='r',
+                    lw=lw_value,
+                    ls='--',
+                    useblit=False,
+                    horizOn=False)  # Only vertical line
+            else:
+                # Clear cursor if checkbox is unchecked
+                if hasattr(self.widget, 'cursor'):
+                    self.widget.cursor = None
+            
+            # ✅ Draw canvas (deferred to Qt event loop)
+            from PyQt5.QtCore import QTimer
             QTimer.singleShot(0, self.widget.mpl.canvas.draw)
             
             print(str(datetime.datetime.now())[:-7], 
                 ": Plot takes {0:.2f}s".format(time.time() - t_start))
         
         except Exception as e:
-            # ✅ Log any errors that occur
             print(f"Error during plot update: {e}")
             import traceback
             traceback.print_exc()
@@ -653,19 +690,6 @@ class MplController(object):
         finally:
             self._is_drawing = False
             self.widget.unsetCursor()
-        
-        # ✅ Set up cursor after drawing completes
-        if self.widget.checkBox_LongCursor.isChecked():
-            # ✅ Check if ax_cake exists before using it in MultiCursor
-            if hasattr(self.widget.mpl.canvas, 'ax_cake'):
-                self.widget.cursor = MultiCursor(
-                    self.widget.mpl.canvas,
-                    (self.widget.mpl.canvas.ax_pattern,
-                    self.widget.mpl.canvas.ax_cake), color='r',
-                    lw=float(
-                        self.widget.comboBox_VertCursorThickness.
-                        currentText()),
-                    ls='--', useblit=False)
 
 
 from matplotlib.textpath import TextPath
