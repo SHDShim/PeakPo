@@ -17,13 +17,56 @@ from ds_jcpds import convert_tth
 class MplController(object):
 
     def __init__(self, model, widget):
-
         self.model = model
         self.widget = widget
         self.obj_color = 'k'
-        # ✅ Add cache for title
         self._cached_title = None
         self._cached_filename = None
+        self._is_drawing = False
+        self._toolbar_active = False
+        
+        # ✅ Wrap toolbar methods to track state
+        toolbar = self.widget.mpl.canvas.toolbar
+        if toolbar:
+            self._original_zoom = toolbar.zoom
+            self._original_pan = toolbar.pan
+            self._original_home = toolbar.home
+            self._original_back = toolbar.back
+            self._original_forward = toolbar.forward
+            
+            def zoom_wrapper(*args, **kwargs):
+                result = self._original_zoom(*args, **kwargs)
+                self._toolbar_active = (toolbar.mode != '')
+                return result
+            
+            def pan_wrapper(*args, **kwargs):
+                result = self._original_pan(*args, **kwargs)
+                self._toolbar_active = (toolbar.mode != '')
+                return result
+            
+            def home_wrapper(*args, **kwargs):
+                self._toolbar_active = True
+                result = self._original_home(*args, **kwargs)
+                self._toolbar_active = False
+                return result
+            
+            def back_wrapper(*args, **kwargs):
+                self._toolbar_active = True
+                result = self._original_back(*args, **kwargs)
+                self._toolbar_active = False
+                return result
+            
+            def forward_wrapper(*args, **kwargs):
+                self._toolbar_active = True
+                result = self._original_forward(*args, **kwargs)
+                self._toolbar_active = False
+                return result
+            
+            toolbar.zoom = zoom_wrapper
+            toolbar.pan = pan_wrapper
+            toolbar.home = home_wrapper
+            toolbar.back = back_wrapper
+            toolbar.forward = forward_wrapper
 
     def _set_nightday_view(self):
         if not self.widget.checkBox_NightView.isChecked():
@@ -98,149 +141,8 @@ class MplController(object):
                 y.min() - (y.max() - y.min()) * y_margin,
                 y.max() + (y.max() - y.min()) * y_margin)
 
-    def update(self, limits=None, gsas_style=False, cake_ylimits=None):
-        """Updates the graph"""
-        import matplotlib.pyplot as plt
-        from matplotlib.widgets import MultiCursor
-        t_start = time.time()
-        self.widget.setCursor(QtCore.Qt.WaitCursor)
+
     
-        t_start = time.time()
-        self.widget.setCursor(QtCore.Qt.WaitCursor)
-        if limits is None:
-            limits = self.widget.mpl.canvas.ax_pattern.axis()
-        if cake_ylimits is None:
-            c_limits = self.widget.mpl.canvas.ax_cake.axis()
-            cake_ylimits = c_limits[2:4]
-        if (not self.model.base_ptn_exist()) and \
-                (not self.model.jcpds_exist()):
-            return
-        if self.widget.checkBox_ShowCake.isChecked() and \
-                self.model.diff_img_exist():
-            new_height = self.widget.horizontalSlider_CakeAxisSize.value()
-            self.widget.mpl.canvas.resize_axes(new_height)
-            self._plot_cake()
-        else:
-            self.widget.mpl.canvas.resize_axes(1)
-        self._set_nightday_view()
-        if self.model.base_ptn_exist():
-            # ✅ Cache title to avoid expensive TextPath calculations
-            current_filename = self.model.base_ptn.fname
-            
-            if self.widget.checkBox_ShortPlotTitle.isChecked():
-                title = os.path.basename(current_filename)
-            else:
-                # Only recalculate if filename changed
-                if self._cached_filename != current_filename:
-                    temp_title = current_filename
-                    title_font_size = plt.rcParams["axes.titlesize"]
-                    
-                    # ✅ Simple truncation without TextPath
-                    if len(temp_title) > 80:
-                        title = temp_title[:35] + " ... " + temp_title[-35:]
-                    else:
-                        title = temp_title
-                    
-                    # Cache it
-                    self._cached_title = title
-                    self._cached_filename = current_filename
-                else:
-                    title = self._cached_title
-            
-            self.widget.mpl.canvas.fig.suptitle(title, color=self.obj_color)
-            self._plot_diffpattern(gsas_style)
-            if self.model.waterfall_exist():
-                self._plot_waterfallpatterns()
-        # if self.model.jcpds_exist():
-        #    self._plot_jcpds(limits)
-        """
-        if self.model.ucfit_exist():
-            self._plot_ucfit()
-        """
-        if (self.widget.tabWidget.currentIndex() == 8):
-            if gsas_style:
-                self._plot_peakfit_in_gsas_style()
-            else:
-                self._plot_peakfit()
-        self.widget.mpl.canvas.ax_pattern.set_xlim(limits[0], limits[1])
-        if not self.widget.checkBox_AutoY.isChecked():
-            self.widget.mpl.canvas.ax_pattern.set_ylim(limits[2], limits[3])
-        self.widget.mpl.canvas.ax_cake.set_ylim(cake_ylimits)
-        if self.model.jcpds_exist():
-            self._plot_jcpds(limits)
-            if not self.widget.checkBox_Intensity.isChecked():
-                new_low_limit = -1.1 * limits[3] * \
-                    self.widget.horizontalSlider_JCPDSBarScale.value() / 100.
-                self.widget.mpl.canvas.ax_pattern.set_ylim(
-                    new_low_limit, limits[3])
-        if self.widget.checkBox_ShowLargePnT.isChecked():
-            label_p_t = "{0: 5.1f} GPa\n{1: 4.0f} K".\
-                format(self.widget.doubleSpinBox_Pressure.value(),
-                       self.widget.doubleSpinBox_Temperature.value())
-            self.widget.mpl.canvas.ax_pattern.text(
-                0.01, 0.98, label_p_t, horizontalalignment='left',
-                verticalalignment='top',
-                transform=self.widget.mpl.canvas.ax_pattern.transAxes,
-                fontsize=int(
-                    self.widget.comboBox_PnTFontSize.currentText()))
-        xlabel = "Two Theta (degrees), {:6.4f} \u212B".\
-            format(self.widget.doubleSpinBox_SetWavelength.value())
-        self.widget.mpl.canvas.ax_pattern.set_xlabel(xlabel)
-        # if I move the line below to elsewhere I cannot get ylim or axis
-        # self.widget.mpl.canvas.ax_pattern.autoscale(
-        # enable=False, axis=u'both', tight=True)
-        """Removing the lines below for the tick reduce the plot time
-        significantly.  So do not turn this on.
-        x_size = limits[1] - limits[0]
-        if x_size <= 50.:
-            majortick_interval = 1
-            minortick_interval = 0.1
-        else:
-            majortick_interval = 10
-            minortick_interval = 1
-        majorLocator = MultipleLocator(majortick_interval)
-        minorLocator = MultipleLocator(minortick_interval)
-        self.widget.mpl.canvas.ax_pattern.xaxis.set_major_locator(majorLocator)
-        self.widget.mpl.canvas.ax_pattern.xaxis.set_minor_locator(minorLocator)
-        """
-        self.widget.mpl.canvas.ax_pattern.format_coord = \
-            lambda x, y: \
-            "\n 2\u03B8={0:.3f}\u00B0, I={1:.4e}, d-sp={2:.4f}\u212B".\
-            format(x, y,
-                   self.widget.doubleSpinBox_SetWavelength.value()
-                   / 2. / np.sin(np.radians(x / 2.)))
-#            lambda x, y: \
-#            "\n 2\u03B8 = {0:.3f}\u00B0, Int = {1:.4e}\n d-sp = {2:.4f} \u212B".\
-#            format(x, y,
-#                   self.widget.doubleSpinBox_SetWavelength.value()
-#                   / 2. / np.sin(np.radians(x / 2.)))
-        self.widget.mpl.canvas.ax_cake.format_coord = \
-            lambda x, y: \
-            "\n 2\u03B8={0:.3f}\u00B0, I={1:.4e}, d-sp={2:.4f}\u212B".\
-            format(x, y,
-                   self.widget.doubleSpinBox_SetWavelength.value()
-                   / 2. / np.sin(np.radians(x / 2.)))
-        self.widget.mpl.canvas.draw()
-        print(str(datetime.datetime.now())[:-7], 
-            ": Plot takes {0:.2f}s".format(time.time() - t_start))
-        self.widget.unsetCursor()
-        if self.widget.checkBox_LongCursor.isChecked():
-            self.widget.cursor = MultiCursor(
-                self.widget.mpl.canvas,
-                (self.widget.mpl.canvas.ax_pattern,
-                 self.widget.mpl.canvas.ax_cake), color='r',
-                lw=float(
-                    self.widget.comboBox_VertCursorThickness.
-                    currentText()),
-                ls='--', useblit=False)  # useblit not supported for pyqt5 yet
-            """
-            self.widget.cursor_pattern = Cursor(
-                self.widget.mpl.canvas.ax_pattern, useblit=False,
-                lw = 1, ls=':')
-            self.widget.cursor_cake = Cursor(
-                self.widget.mpl.canvas.ax_cake, useblit=False, c= 'r',
-                lw = 1, ls=':')
-            """
     """
     def _plot_ucfit(self):
         i = 0
@@ -619,6 +521,152 @@ class MplController(object):
                     x_plot, section.get_fit_residue_baseline(bgsub=bgsub) +
                     y_shift, residue + y_shift, facecolor='r')
             i += 1
+
+    def update(self, limits=None, gsas_style=False, cake_ylimits=None):
+        """Updates the graph"""
+        import matplotlib.pyplot as plt
+        from PyQt5.QtCore import QTimer
+        
+        # ✅ Block updates during drawing OR toolbar interaction
+        if self._is_drawing or self._toolbar_active:
+            return
+        
+        # ✅ Pre-check conditions BEFORE setting flag
+        if (not self.model.base_ptn_exist()) and \
+                (not self.model.jcpds_exist()):
+            return
+        
+        t_start = time.time()
+        self.widget.setCursor(QtCore.Qt.WaitCursor)
+        
+        # ✅ Set drawing flag AFTER pre-checks
+        self._is_drawing = True
+        
+        try:
+            if limits is None:
+                limits = self.widget.mpl.canvas.ax_pattern.axis()
+            if cake_ylimits is None:
+                # ✅ Check if ax_cake exists before accessing
+                if hasattr(self.widget.mpl.canvas, 'ax_cake'):
+                    c_limits = self.widget.mpl.canvas.ax_cake.axis()
+                    cake_ylimits = c_limits[2:4]
+                else:
+                    cake_ylimits = (-180, 180)
+            
+            if self.widget.checkBox_ShowCake.isChecked() and \
+                    self.model.diff_img_exist():
+                new_height = self.widget.horizontalSlider_CakeAxisSize.value()
+                self.widget.mpl.canvas.resize_axes(new_height)
+                self._plot_cake()
+            else:
+                self.widget.mpl.canvas.resize_axes(1)
+            
+            self._set_nightday_view()
+            
+            if self.model.base_ptn_exist():
+                if self.widget.checkBox_ShortPlotTitle.isChecked():
+                    title = os.path.basename(self.model.base_ptn.fname)
+                else:
+                    temp_title = self.model.base_ptn.fname
+                    title_font_size = plt.rcParams["axes.titlesize"]
+                    fig_width_pixels = \
+                        self.widget.mpl.canvas.fig.get_size_inches()[0] * \
+                            self.widget.mpl.canvas.fig.dpi
+                    max_width = 0.25 * fig_width_pixels
+                    title = truncate_title(temp_title, title_font_size, max_width)
+                
+                self.widget.mpl.canvas.fig.suptitle(
+                    title, color=self.obj_color)
+                
+                self._plot_diffpattern(gsas_style)
+                
+                if self.model.waterfall_exist():
+                    self._plot_waterfallpatterns()
+            
+            if (self.widget.tabWidget.currentIndex() == 8):
+                if gsas_style:
+                    self._plot_peakfit_in_gsas_style()
+                else:
+                    self._plot_peakfit()
+            
+            self.widget.mpl.canvas.ax_pattern.set_xlim(limits[0], limits[1])
+            
+            if not self.widget.checkBox_AutoY.isChecked():
+                self.widget.mpl.canvas.ax_pattern.set_ylim(limits[2], limits[3])
+            
+            # ✅ Check if ax_cake exists before setting ylim
+            if hasattr(self.widget.mpl.canvas, 'ax_cake'):
+                self.widget.mpl.canvas.ax_cake.set_ylim(cake_ylimits)
+            
+            if self.model.jcpds_exist():
+                self._plot_jcpds(limits)
+                if not self.widget.checkBox_Intensity.isChecked():
+                    new_low_limit = -1.1 * limits[3] * \
+                        self.widget.horizontalSlider_JCPDSBarScale.value() / 100.
+                    self.widget.mpl.canvas.ax_pattern.set_ylim(
+                        new_low_limit, limits[3])
+            
+            if self.widget.checkBox_ShowLargePnT.isChecked():
+                label_p_t = "{0: 5.1f} GPa\n{1: 4.0f} K".\
+                    format(self.widget.doubleSpinBox_Pressure.value(),
+                        self.widget.doubleSpinBox_Temperature.value())
+                self.widget.mpl.canvas.ax_pattern.text(
+                    0.01, 0.98, label_p_t, horizontalalignment='left',
+                    verticalalignment='top',
+                    transform=self.widget.mpl.canvas.ax_pattern.transAxes,
+                    fontsize=int(
+                        self.widget.comboBox_PnTFontSize.currentText()))
+            
+            xlabel = "Two Theta (degrees), {:6.4f} \u212B".\
+                format(self.widget.doubleSpinBox_SetWavelength.value())
+            self.widget.mpl.canvas.ax_pattern.set_xlabel(xlabel)
+            
+            self.widget.mpl.canvas.ax_pattern.format_coord = \
+                lambda x, y: \
+                "\n 2\u03B8={0:.3f}\u00B0, I={1:.4e}, d-sp={2:.4f}\u212B".\
+                format(x, y,
+                    self.widget.doubleSpinBox_SetWavelength.value()
+                    / 2. / np.sin(np.radians(x / 2.)))
+            
+            # ✅ Only set cake format_coord if ax_cake exists
+            if hasattr(self.widget.mpl.canvas, 'ax_cake'):
+                self.widget.mpl.canvas.ax_cake.format_coord = \
+                    lambda x, y: \
+                    "\n 2\u03B8={0:.3f}\u00B0, I={1:.4e}, d-sp={2:.4f}\u212B".\
+                    format(x, y,
+                        self.widget.doubleSpinBox_SetWavelength.value()
+                        / 2. / np.sin(np.radians(x / 2.)))
+            
+            # ✅ AT THE END: Use QTimer for deferred drawing
+            QTimer.singleShot(0, self.widget.mpl.canvas.draw)
+            
+            print(str(datetime.datetime.now())[:-7], 
+                ": Plot takes {0:.2f}s".format(time.time() - t_start))
+        
+        except Exception as e:
+            # ✅ Log any errors that occur
+            print(f"Error during plot update: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        # ✅ Always clear flag and restore cursor
+        finally:
+            self._is_drawing = False
+            self.widget.unsetCursor()
+        
+        # ✅ Set up cursor after drawing completes
+        if self.widget.checkBox_LongCursor.isChecked():
+            # ✅ Check if ax_cake exists before using it in MultiCursor
+            if hasattr(self.widget.mpl.canvas, 'ax_cake'):
+                self.widget.cursor = MultiCursor(
+                    self.widget.mpl.canvas,
+                    (self.widget.mpl.canvas.ax_pattern,
+                    self.widget.mpl.canvas.ax_cake), color='r',
+                    lw=float(
+                        self.widget.comboBox_VertCursorThickness.
+                        currentText()),
+                    ls='--', useblit=False)
+
 
 from matplotlib.textpath import TextPath
 

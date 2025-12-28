@@ -24,13 +24,23 @@ class FigureCanvasQT_modified(FigureCanvasQT):
     def drawRectangle(self, rect):
         if rect is not None:
             def _draw_rect_callback(painter):
-                pen = QtGui.QPen(QtCore.Qt.red, 5 / self._dpi_ratio,
-                                 QtCore.Qt.DotLine)
+                # ✅ Ensure _dpi_ratio exists
+                dpi = getattr(self, '_dpi_ratio', 1.0)
+                
+                pen = QtGui.QPen(QtCore.Qt.red, 5 / dpi, QtCore.Qt.DotLine)
                 painter.setPen(pen)
-                painter.drawRect(*(pt / self._dpi_ratio for pt in rect))
+                
+                # ✅ FIX: Properly scale and create QRectF
+                try:
+                    scaled_rect = [pt / dpi for pt in rect]
+                    qrect = QtCore.QRectF(*scaled_rect)
+                    painter.drawRect(qrect)
+                except Exception as e:
+                    print(f"Error drawing rectangle: {e}")
         else:
             def _draw_rect_callback(painter):
                 return
+        
         self._draw_rect_callback = _draw_rect_callback
         self.update()
 

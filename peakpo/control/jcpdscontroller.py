@@ -1,11 +1,11 @@
 import os
 import copy
+import numpy as np
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5 import QtGui
-# import matplotlib.pyplot as plt
-#from matplotlib import colors
-#import matplotlib.cm as cmx
+from matplotlib import colors as mcolors
+import matplotlib.cm as cmx
 from .mplcontroller import MplController
 from .jcpdstablecontroller import JcpdsTableController
 from utils import xls_jlist, dialog_savefile, make_filename, get_temp_dir, \
@@ -13,6 +13,7 @@ from utils import xls_jlist, dialog_savefile, make_filename, get_temp_dir, \
 from ds_jcpds import JCPDS
 import pymatgen as mg
 import datetime
+
 
 class JcpdsController(object):
 
@@ -30,12 +31,6 @@ class JcpdsController(object):
             lambda: self.make_jlist(append=True))
         self.widget.checkBox_Intensity.clicked.connect(
             lambda: self._apply_changes_to_graph(limits=None))
-        """
-        self.widget.pushButton_CheckAllJCPDS.clicked.connect(
-            self.check_all_jcpds)
-        self.widget.pushButton_UncheckAllJCPDS.clicked.connect(
-            self.uncheck_all_jcpds)
-        """
         self.widget.pushButton_MoveUp.clicked.connect(self.move_up_jcpds)
         self.widget.pushButton_MoveDown.clicked.connect(self.move_down_jcpds)
         self.widget.pushButton_ExportXLS.clicked.connect(self.save_xls)
@@ -60,7 +55,63 @@ class JcpdsController(object):
         else:
             return idx_checked[0].row()
 
+    @staticmethod
+    def get_color_distance(color1, color2):
+        """
+        Calculate perceptual distance between two colors in RGB space.
+        Colors should be in hex format (e.g., '#FF0000')
+        Returns: distance value (0-1.732 range)
+        """
+        # Convert hex to RGB arrays
+        rgb1 = np.array(mcolors.to_rgb(color1))
+        rgb2 = np.array(mcolors.to_rgb(color2))
+        
+        # Euclidean distance in RGB space
+        # For better perceptual uniformity, could convert to Lab space
+        # but this is a good approximation and fast
+        distance = np.sqrt(np.sum((rgb1 - rgb2)**2))
+        
+        return distance
 
+    @staticmethod
+    def find_most_distinctive_color(existing_colors, color_palette):
+        """
+        Find the color from palette that is most distinctive from existing colors.
+        Uses max-min distance strategy: picks color with maximum minimum distance
+        to any existing color.
+        
+        Args:
+            existing_colors: list of hex color strings already in use
+            color_palette: list of candidate hex color strings
+        
+        Returns:
+            hex color string that is most distinctive from existing colors
+        """
+        if not existing_colors:
+            return color_palette[0]
+        
+        max_min_distance = -1
+        best_color = color_palette[0]
+        
+        # For each candidate color
+        for candidate in color_palette:
+            # Skip if already used
+            if candidate in existing_colors:
+                continue
+            
+            # Find minimum distance to any existing color
+            min_distance = min(
+                JcpdsController.get_color_distance(candidate, existing) 
+                for existing in existing_colors
+            )
+            
+            # Choose candidate with maximum minimum distance
+            # (farthest from nearest existing color)
+            if min_distance > max_min_distance:
+                max_min_distance = min_distance
+                best_color = candidate
+        
+        return best_color
 
     def make_jlist(self, append=False):
         """
@@ -75,41 +126,42 @@ class JcpdsController(object):
         self._make_jlist(files, append=append)
 
     def _make_jlist(self, files, append=False):
-        from matplotlib import colors
-        import matplotlib.cm as cmx
-        
+        """
+        Create or append to JCPDS list with automatic distinctive color selection
+        """
         n_color = 20
-        # jet = plt.get_cmap('gist_rainbow')
         jet = cmx.get_cmap('gist_rainbow')
-        cNorm = colors.Normalize(vmin=0, vmax=n_color)
+        cNorm = mcolors.Normalize(vmin=0, vmax=n_color)
         c_index = range(n_color)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
-        c_value = [value for value in c_index]
-        """
-                   [c_index[0], c_index[3], c_index[6], c_index[1], c_index[4],
-                   c_index[7], c_index[2], c_index[5], c_index[8]]
-        """
+        
+        # Generate full color palette
+        color_palette = [
+            mcolors.rgb2hex(scalarMap.to_rgba(i)) 
+            for i in c_index
+        ]
+        
+        # Get existing colors if appending
         if append:
-            n_existingjcpds = self.model.jcpds_lst.__len__()
-            n_addedjcpds = files.__len__()
-            if ((n_existingjcpds + n_addedjcpds) > n_color):
-                i = 0
-            else:
-                i = n_existingjcpds
+            existing_colors = [jcpds.color for jcpds in self.model.jcpds_lst]
         else:
             self.model.reset_jcpds_lst()
-            i = 0
+            existing_colors = []
+        
+        # Add each file with most distinctive color
         for f in files:
-            color = colors.rgb2hex(scalarMap.to_rgba(c_value[i]))
+            # ✅ Find most distinctive color from palette
+            color = self.find_most_distinctive_color(existing_colors, color_palette)
+            
             if self.model.append_a_jcpds(str(f), color):
-                i += 1
-                if i >= n_color - 1:
-                    i = 0
+                # Add to existing colors list
+                existing_colors.append(color)
             else:
                 QtWidgets.QMessageBox.warning(
                     self.widget, "Warning",
                     f+" seems to have errors in format.")
-        # display on the QTableWidget
+        
+        # Display on the QTableWidget
         self.jcpdstable_ctrl.update()
         if self.model.base_ptn_exist():
             self._apply_changes_to_graph()
@@ -130,8 +182,6 @@ class JcpdsController(object):
         former_above = copy.copy(self.model.jcpds_lst[i-1])
         self.model.jcpds_lst[i - 1], self.model.jcpds_lst[i] = \
             former_below, former_above
-        # self.model.jcpds_lst[i - 1], self.model.jcpds_lst[i] = \
-        #    self.model.jcpds_lst[i], self.model.jcpds_lst[i - 1]
         self.widget.tableWidget_JCPDS.clearContents()
         self.jcpdstable_ctrl.update()
         self.widget.tableWidget_JCPDS.selectRow(i - 1)
@@ -150,36 +200,9 @@ class JcpdsController(object):
         former_above = copy.copy(self.model.jcpds_lst[i])
         self.model.jcpds_lst[i + 1], self.model.jcpds_lst[i] = \
             former_above, former_below
-        # self.model.jcpds_lst[i + 1], self.model.jcpds_lst[i] = \
-        #    self.model.jcpds_lst[i], self.model.jcpds_lst[i + 1]
         self.widget.tableWidget_JCPDS.clearContents()
         self.jcpdstable_ctrl.update()
         self.widget.tableWidget_JCPDS.selectRow(i + 1)
-        """
-        self.widget.tableWidget_JCPDS.setCurrentItem(
-            self.widget.tableWidget_JCPDS.item(i + 1, 1))
-        self.widget.tableWidget_JCPDS.setItemSelected(
-            self.widget.tableWidget_JCPDS.item(i + 1, 1), True)
-        self.widget.tableWidget_JCPDS.setItemSelected(
-            self.widget.tableWidget_JCPDS.item(i, 1), False)
-        """
-    """
-    def check_all_jcpds(self):
-        if not self.model.jcpds_exist():
-            return
-        for phase in self.model.jcpds_lst:
-            phase.display = True
-        self.jcpdstable_ctrl.update()
-        self._apply_changes_to_graph()
-
-    def uncheck_all_jcpds(self):
-        if not self.model.jcpds_exist():
-            return
-        for phase in self.model.jcpds_lst:
-            phase.display = False
-        self.jcpdstable_ctrl.update()
-        self._apply_changes_to_graph()
-    """
 
     def remove_a_jcpds(self):
         reply = QtWidgets.QMessageBox.question(
@@ -189,17 +212,14 @@ class JcpdsController(object):
             QtWidgets.QMessageBox.Yes)
         if reply == QtWidgets.QMessageBox.No:
             return
-        # print self.widget.tableWidget_JCPDS.selectedIndexes().__len__()
         idx_checked = [s.row() for s in
                        self.widget.tableWidget_JCPDS.selectionModel().
                        selectedRows()]
-        # remove checked ones
         if idx_checked != []:
             idx_checked.reverse()
             for idx in idx_checked:
                 self.model.jcpds_lst.remove(self.model.jcpds_lst[idx])
                 self.widget.tableWidget_JCPDS.removeRow(idx)
-#        self.update_table()
             self._apply_changes_to_graph()
         else:
             QtWidgets.QMessageBox.warning(
@@ -246,7 +266,6 @@ class JcpdsController(object):
             print(str(datetime.datetime.now())[:-7], 
                 ": Show JCPDS \n", textoutput)
             infobox.exec_()
-            #self.widget.plainTextEdit_ViewJCPDS.setPlainText(textoutput)
 
     def write_twk_jcpds(self):
         if not self.model.jcpds_exist():
@@ -265,7 +284,6 @@ class JcpdsController(object):
                 self.widget, "Warning",
                 "Only one JCPDS card can be written at a time.")
             return
-        # get filename to write
         path, __ = os.path.split(self.model.get_base_ptn_filename())
         suggested_filen = os.path.join(
             path,
@@ -273,7 +291,6 @@ class JcpdsController(object):
         filen_twk_jcpds = dialog_savefile(self.widget, suggested_filen)
         if filen_twk_jcpds == '':
             return
-        # make comments
         comments = "modified from " + \
             self.model.jcpds_lst[idx_checked[0]].file + \
             ", twk for " + \

@@ -1,9 +1,13 @@
 --------------------------------------------------------------------------------
-2025-12-28, 11:22:57
+2025-12-28, 12:57:54
 --------------------------------------------------------------------------------
-<class 'AttributeError'>: 
-'matplotlib.backends._backend_agg.BufferRegion' object has no attribute 'to_string_argb'
+<class 'NameError'>: 
+name 'MultiCursor' is not defined
 --------------------------------------------------------------------------------
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/view/mplwidget.py", line 94, in paintEvent
-    buf = reg.to_string_argb()
-          ^^^^^^^^^^^^^^^^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/maincontroller.py", line 309, in plot_new_graph
+    self.plot_ctrl.zoom_out_graph()
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/mplcontroller.py", line 126, in zoom_out_graph
+    self.update(limits=data_limits,
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/mplcontroller.py", line 661, in update
+    self.widget.cursor = MultiCursor(
+                         ^^^^^^^^^^^

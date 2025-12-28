@@ -56,6 +56,24 @@ from control import MainController
 # ========================================
 def excepthook(exc_type, exc_value, traceback_obj):
     """Global exception handler"""
+    # ✅ Safely convert error to string
+    try:
+        error_msg = str(exc_value)
+    except:
+        error_msg = repr(exc_value)
+    
+    # ✅ Don't show GUI for Qt/matplotlib painting errors
+    painting_keywords = ['QPainter', 'QBackingStore', 'paint device', 
+                        'drawRect', 'paintEvent', 'Painter not active',
+                        'TypeError: arguments did not match']
+    
+    if any(keyword in error_msg for keyword in painting_keywords):
+        print(f"\n⚠️  Qt/Matplotlib painting error (suppressed GUI dialog):")
+        print(f"   {error_msg}")
+        traceback.print_exception(exc_type, exc_value, traceback_obj)
+        return  # Don't show error dialog for painting errors
+    
+    # ✅ For other errors, log and show dialog
     separator = '-' * 80
     log_file = "error.log"
     time_string = time.strftime("%Y-%m-%d, %H:%M:%S")
