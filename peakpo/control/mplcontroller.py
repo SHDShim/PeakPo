@@ -21,6 +21,9 @@ class MplController(object):
         self.model = model
         self.widget = widget
         self.obj_color = 'k'
+        # ✅ Add cache for title
+        self._cached_title = None
+        self._cached_filename = None
 
     def _set_nightday_view(self):
         if not self.widget.checkBox_NightView.isChecked():
@@ -99,18 +102,6 @@ class MplController(object):
         """Updates the graph"""
         import matplotlib.pyplot as plt
         from matplotlib.widgets import MultiCursor
-        
-        # ✅ Check if widget is actually visible before drawing
-        if not self.widget.isVisible():
-            print("  ⚠ Skipping update - window not visible yet")
-            return
-        
-        # ✅ Check if canvas has a renderer
-        if not hasattr(self.widget.mpl.canvas, 'renderer') or \
-        self.widget.mpl.canvas.renderer is None:
-            print("  ⚠ Skipping update - renderer not ready")
-            return
-        
         t_start = time.time()
         self.widget.setCursor(QtCore.Qt.WaitCursor)
     
@@ -133,21 +124,30 @@ class MplController(object):
             self.widget.mpl.canvas.resize_axes(1)
         self._set_nightday_view()
         if self.model.base_ptn_exist():
+            # ✅ Cache title to avoid expensive TextPath calculations
+            current_filename = self.model.base_ptn.fname
+            
             if self.widget.checkBox_ShortPlotTitle.isChecked():
-                title = os.path.basename(self.model.base_ptn.fname)
-                #fontsize = 12
+                title = os.path.basename(current_filename)
             else:
-                temp_title = self.model.base_ptn.fname
-                # come back here
-                title_font_size = plt.rcParams["axes.titlesize"]
-                fig_width_pixels = \
-                    self.widget.mpl.canvas.fig.get_size_inches()[0] * \
-                        self.widget.mpl.canvas.fig.dpi
-                max_width = 0.25 * fig_width_pixels  # Reserve some space
-                title = truncate_title(temp_title, title_font_size, max_width)
-                #fontsize = 8
-            self.widget.mpl.canvas.fig.suptitle(
-                title, color=self.obj_color) #, fontsize=fontsize)
+                # Only recalculate if filename changed
+                if self._cached_filename != current_filename:
+                    temp_title = current_filename
+                    title_font_size = plt.rcParams["axes.titlesize"]
+                    
+                    # ✅ Simple truncation without TextPath
+                    if len(temp_title) > 80:
+                        title = temp_title[:35] + " ... " + temp_title[-35:]
+                    else:
+                        title = temp_title
+                    
+                    # Cache it
+                    self._cached_title = title
+                    self._cached_filename = current_filename
+                else:
+                    title = self._cached_title
+            
+            self.widget.mpl.canvas.fig.suptitle(title, color=self.obj_color)
             self._plot_diffpattern(gsas_style)
             if self.model.waterfall_exist():
                 self._plot_waterfallpatterns()
@@ -623,51 +623,25 @@ class MplController(object):
 from matplotlib.textpath import TextPath
 
 def truncate_title(title, font_size, max_width):
-    """Truncate the middle part of the title if it exceeds max_width.
-       Dynamically adds more to last_part if space allows.
-    """
-    from matplotlib.textpath import TextPath
-    from matplotlib.font_manager import FontProperties
-    
-    # ✅ Convert font_size to numeric using matplotlib's FontProperties
+    """Fast truncation without expensive TextPath calculations"""
+    # ✅ Simple character-based truncation
+    # Approximate: average character is ~7 pixels at size 12
     if isinstance(font_size, str):
-        fp = FontProperties(size=font_size)
-        font_size = fp.get_size_in_points()
+        font_size = 12  # Default
     else:
         font_size = float(font_size)
     
-    try:
-        text_path = TextPath((0, 0), title, size=font_size)
-        title_width = text_path.get_extents().width
-    except Exception as e:
-        print(f"Warning: Could not calculate title width: {e}")
-        # Fall back to simple truncation
-        if len(title) > 60:
-            return title[:25] + " ... " + title[-25:]
+    # Rough estimate of characters that fit
+    approx_chars = int(max_width / (font_size * 0.6))
+    
+    if len(title) <= approx_chars:
         return title
     
-    print(f"Font size: {font_size}, Title width: {title_width}, Max width: {max_width}")
-
-    if title_width <= max_width:
-        return title  # No truncation needed
-
-    # Start with first 15 and last 25 characters
-    first_part = title[:15]
-    last_part = title[-25:]
-
-    # Create truncated text
-    truncated_text = first_part + " ... " + last_part
+    # Keep first 30% and last 50% of available space
+    first_chars = int(approx_chars * 0.3)
+    last_chars = int(approx_chars * 0.5)
     
-    try:
-        truncated_path = TextPath((0, 0), truncated_text, size=font_size)
-
-        # If the text is too short, add more to last_part
-        while (truncated_path.get_extents().width < max_width * 0.95) and \
-              (len(last_part) < len(title) - len(first_part) - 5):
-            last_part = title[-(len(last_part) + 1):]
-            truncated_text = first_part + " ... " + last_part
-            truncated_path = TextPath((0, 0), truncated_text, size=font_size)
-    except:
-        pass  # Keep the initial truncated text if calculation fails
-
-    return truncated_text
+    if first_chars + last_chars + 5 >= len(title):
+        return title
+    
+    return title[:first_chars] + " ... " + title[-last_chars:]
