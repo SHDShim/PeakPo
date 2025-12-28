@@ -3,11 +3,12 @@ import sys
 import numpy as np
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
-from matplotlib.backends.backend_qt5agg \
-    import FigureCanvasQTAgg, FigureCanvasQT  # as FigureCanvas
-#    import FigureCanvasQTAgg  # as FigureCanvas
-from matplotlib.backends.backend_qt5agg \
-    import NavigationToolbar2QT as NavigationToolbar
+
+# ✅ Fixed imports for matplotlib 3.7+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.backends.backend_qt5 import FigureCanvasQT
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 import matplotlib.style as mplstyle
@@ -18,9 +19,9 @@ DEBUG = False
 
 
 class FigureCanvasQT_modified(FigureCanvasQT):
+    """Modified FigureCanvasQT to add rectangle drawing"""
+    
     def drawRectangle(self, rect):
-        # Draw the zoom rectangle to the QPainter.  _draw_rect_callback needs
-        # to be called at the end of paintEvent.
         if rect is not None:
             def _draw_rect_callback(painter):
                 pen = QtGui.QPen(QtCore.Qt.red, 5 / self._dpi_ratio,
@@ -35,31 +36,46 @@ class FigureCanvasQT_modified(FigureCanvasQT):
 
 
 class FigureCanvasQTAgg_modified(FigureCanvasQTAgg, FigureCanvasQT_modified):
+    """Modified FigureCanvasQTAgg with custom blitting and rectangle drawing"""
+    
     def __init__(self, figure):
-        super(FigureCanvasQTAgg, self).__init__(figure=figure)
+        super(FigureCanvasQTAgg_modified, self).__init__(figure)
         self._bbox_queue = []
+        self._draw_rect_callback = lambda painter: None
 
     @property
-    #@cbook.deprecated("2.1")
     def blitbox(self):
         return self._bbox_queue
 
     def paintEvent(self, e):
-        """Copy the image from the Agg canvas to the qt.drawable.
-
-        In Qt, all drawing should be done inside of here when a widget is
-        shown onscreen.
-        """
-        if self._update_dpi():
-            # The dpi update triggered its own paintEvent.
+        """Copy the image from the Agg canvas to the qt.drawable."""
+        # Handle DPI updates
+        if hasattr(self, '_update_dpi'):
+            try:
+                if self._update_dpi():
+                    return
+            except:
+                pass
+        
+        # ✅ CRITICAL FIX: Ensure renderer exists before custom painting
+        if not hasattr(self, 'renderer') or self.renderer is None:
+            # On first paint, let the parent class initialize the renderer
+            try:
+                # This will create the renderer and do the initial draw
+                FigureCanvasQTAgg.paintEvent(self, e)
+            except Exception as ex:
+                print(f"Initial paintEvent failed: {ex}")
             return
-        self._draw_idle()  # Only does something if a draw is pending.
-
-        # if the canvas does not have a renderer, then give up and wait for
-        # FigureCanvasAgg.draw(self) to be called
-        if not hasattr(self, 'renderer'):
-            return
-
+        
+        # ✅ Ensure _dpi_ratio is set
+        if not hasattr(self, '_dpi_ratio'):
+            self._dpi_ratio = 1.0
+            try:
+                self._dpi_ratio = self.devicePixelRatio()
+            except:
+                pass
+        
+        # Custom blitting code (only runs after renderer is initialized)
         painter = QtGui.QPainter(self)
 
         if self._bbox_queue:
@@ -69,6 +85,7 @@ class FigureCanvasQTAgg_modified(FigureCanvasQTAgg, FigureCanvasQT_modified):
             bbox_queue = [
                 Bbox([[0, 0], [self.renderer.width, self.renderer.height]])]
         self._bbox_queue = []
+        
         for bbox in bbox_queue:
             l, b, r, t = map(int, bbox.extents)
             w = r - l
@@ -76,29 +93,30 @@ class FigureCanvasQTAgg_modified(FigureCanvasQTAgg, FigureCanvasQT_modified):
             reg = self.copy_from_bbox(bbox)
             buf = reg.to_string_argb()
             qimage = QtGui.QImage(buf, w, h, QtGui.QImage.Format_ARGB32)
-            # Adjust the buf reference count to work around a memory leak bug
-            # in QImage under PySide on Python 3.
+            
+            # ✅ Safely set device pixel ratio
             if hasattr(qimage, 'setDevicePixelRatio'):
-                # Not available on Qt4 or some older Qt5.
-                qimage.setDevicePixelRatio(self._dpi_ratio)
-            origin = QtCore.QPoint(l, self.renderer.height - t)
+                try:
+                    qimage.setDevicePixelRatio(self._dpi_ratio)
+                except:
+                    pass
+            
+            # ✅ FIX: Ensure both arguments to QPoint are Python int
+            origin = QtCore.QPoint(int(l), int(self.renderer.height - t))
             painter.drawImage(origin / self._dpi_ratio, qimage)
 
-        self._draw_rect_callback(painter)
+        if hasattr(self, '_draw_rect_callback'):
+            self._draw_rect_callback(painter)
 
         painter.end()
 
     def blit(self, bbox=None):
-        """Blit the region in bbox.
-        """
-        # If bbox is None, blit the entire canvas. Otherwise
-        # blit only the area defined by the bbox.
+        """Blit the region in bbox."""
         if bbox is None and self.figure:
             bbox = self.figure.bbox
 
         self._bbox_queue.append(bbox)
 
-        # repaint uses logical pixels, not physical pixels like the renderer.
         l, b, w, h = [pt / self._dpi_ratio for pt in bbox.bounds]
         t = b + h
         self.repaint(l, self.renderer.height / self._dpi_ratio - t, w, h)
@@ -111,23 +129,51 @@ class FigureCanvasQTAgg_modified(FigureCanvasQTAgg, FigureCanvasQT_modified):
 class MplCanvas(FigureCanvasQTAgg_modified):
     """Class to represent the FigureCanvas widget"""
 
+class MplCanvas(FigureCanvasQTAgg_modified):
+    """Class to represent the FigureCanvas widget"""
+
     def __init__(self):
-        # setup Matplotlib Figure and Axis
+        # Create figure
         self.fig = Figure()
         bbox = self.fig.get_window_extent().transformed(
             self.fig.dpi_scale_trans.inverted())
         width, height = bbox.width * self.fig.dpi, bbox.height * self.fig.dpi
+        
+        # Adjust layout
         self.fig.subplots_adjust(
-            left = 50 / width, #40 / width,
-            bottom = 30 / height, #20 / height
-            right = 1 - 20 / width, # 1 - 5 / width,
+            left = 50 / width,
+            bottom = 30 / height,
+            right = 1 - 20 / width,
             top = 1 - 30 / height,
             hspace = 0.0)
-        # left=0.07, right=0.98,
-        # top=0.94, bottom=0.07, hspace=0.0)
+        
+        # Set defaults BEFORE creating axes
+        self.bgColor = 'black'
+        self.objColor = 'white'
+        
+        # Create axes
         self._define_axes(1)
-        self.set_toNight(True)
+        
+        # Apply basic style
+        try:
+            mplstyle.use('dark_background')
+        except:
+            pass
+        self.fig.set_facecolor(self.bgColor)
+        
+        # Initialize parent
         FigureCanvasQTAgg_modified.__init__(self, self.fig)
+        
+        # ✅ Initialize DPI ratio for HiDPI displays
+        self._dpi_ratio = 1.0
+        try:
+            self._dpi_ratio = self.devicePixelRatioF()  # Use F version for float
+        except:
+            try:
+                self._dpi_ratio = self.devicePixelRatio()
+            except:
+                pass
+        
         FigureCanvasQTAgg_modified.setSizePolicy(
             self, QtWidgets.QSizePolicy.Expanding,
             QtWidgets.QSizePolicy.Expanding)
@@ -158,53 +204,46 @@ class MplCanvas(FigureCanvasQTAgg_modified):
             self.ax_cake.set_ylabel("Azimuth (degrees)")
 
     def set_toNight(self, NightView=True):
+        """Apply matplotlib style"""
         if NightView:
             try:
-                mplstyle.use(
-                    os.path.join(os.path.curdir, 'mplstyle', 'night.mplstyle'))
-            except:
                 mplstyle.use('dark_background')
+            except:
+                pass
             self.bgColor = 'black'
             self.objColor = 'white'
         else:
             try:
-                mplstyle.use(
-                    os.path.join(os.path.curdir, 'mplstyle', 'day.mplstyle'))
-            except:
                 mplstyle.use('classic')
+            except:
+                pass
             self.bgColor = 'white'
             self.objColor = 'black'
-#        self.fig.clf()
-#        self.ax_pattern.cla()
-#        Cursor(self.ax, useblit=True, color=self.objColor, linewidth=2 )
+        
         self.fig.set_facecolor(self.bgColor)
         self.ax_cake.tick_params(which='both', axis='x',
                                  colors=self.objColor, direction='in',
                                  labelbottom=False, labeltop=False)
-        #self.ax_cake.tick_params(axis='both', which='both', length=0)
         self.ax_cake.tick_params(axis='x', which='both', length=0)
         self.ax_pattern.xaxis.set_label_position('bottom')
-
+        
+        try:
+            self.draw_idle()
+        except:
+            pass
 
 class MplWidget(QtWidgets.QWidget):
     """Widget defined in Qt Designer"""
 
     def __init__(self, parent=None):
-        # initialization of Qt MainWindow widget
         QtWidgets.QWidget.__init__(self, parent)
-        # set the canvas to the Matplotlib widget
         self.canvas = MplCanvas()
-        #
         self.canvas.setParent(self)
         self.canvas.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.canvas.setFocus()
-        # create a vertical box layout
+        
         self.vbl = QtWidgets.QVBoxLayout()
-        # add navigation toolbar
         self.ntb = NavigationToolbar(self.canvas, self)
-        # pack these widget into the vertical box
         self.vbl.addWidget(self.ntb)
-        # add mpl widget to the vertical box
         self.vbl.addWidget(self.canvas)
-        # set the layout to the vertical box
         self.setLayout(self.vbl)

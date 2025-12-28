@@ -1,3 +1,5 @@
+Run the following under /peakpo folder.
+
 pyuic5 ../ui/peakpo.ui -o ./view/qtd.py
 
 1. open qtd.py

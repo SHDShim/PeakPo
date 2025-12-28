@@ -3,12 +3,12 @@ import time
 import datetime
 import numpy as np
 import numpy.ma as ma
-from matplotlib.widgets import MultiCursor
-import matplotlib.transforms as transforms
+#from matplotlib.widgets import MultiCursor
+#import matplotlib.transforms as transforms
 # import matplotlib.colors as colors
-import matplotlib.patches as patches
-from matplotlib.textpath import TextPath
-import matplotlib.pyplot as plt
+#import matplotlib.patches as patches
+#from matplotlib.textpath import TextPath
+#import matplotlib.pyplot as plt
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from ds_jcpds import convert_tth
@@ -97,6 +97,23 @@ class MplController(object):
 
     def update(self, limits=None, gsas_style=False, cake_ylimits=None):
         """Updates the graph"""
+        import matplotlib.pyplot as plt
+        from matplotlib.widgets import MultiCursor
+        
+        # ✅ Check if widget is actually visible before drawing
+        if not self.widget.isVisible():
+            print("  ⚠ Skipping update - window not visible yet")
+            return
+        
+        # ✅ Check if canvas has a renderer
+        if not hasattr(self.widget.mpl.canvas, 'renderer') or \
+        self.widget.mpl.canvas.renderer is None:
+            print("  ⚠ Skipping update - renderer not ready")
+            return
+        
+        t_start = time.time()
+        self.widget.setCursor(QtCore.Qt.WaitCursor)
+    
         t_start = time.time()
         self.widget.setCursor(QtCore.Qt.WaitCursor)
         if limits is None:
@@ -273,6 +290,8 @@ class MplController(object):
     """
 
     def _plot_cake(self):
+        import matplotlib.patches as patches
+
         intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
         min_slider_pos = self.widget.horizontalSlider_VMin.value()
         max_slider_pos = self.widget.horizontalSlider_VMax.value()
@@ -336,6 +355,8 @@ class MplController(object):
                 self.widget.mpl.canvas.ax_cake.add_patch(rect)
 
     def _plot_jcpds(self, axisrange):
+        import matplotlib.transforms as transforms
+
         # t_start = time.time()
         if (not self.widget.checkBox_JCPDSinPattern.isChecked()) and \
                 (not self.widget.checkBox_JCPDSinCake.isChecked()):
@@ -605,25 +626,48 @@ def truncate_title(title, font_size, max_width):
     """Truncate the middle part of the title if it exceeds max_width.
        Dynamically adds more to last_part if space allows.
     """
-    text_path = TextPath((0, 0), title, size=font_size)
-    title_width = text_path.get_extents().width  # Adjust for better scaling
-    print(font_size, title_width, max_width)
+    from matplotlib.textpath import TextPath
+    from matplotlib.font_manager import FontProperties
+    
+    # ✅ Convert font_size to numeric using matplotlib's FontProperties
+    if isinstance(font_size, str):
+        fp = FontProperties(size=font_size)
+        font_size = fp.get_size_in_points()
+    else:
+        font_size = float(font_size)
+    
+    try:
+        text_path = TextPath((0, 0), title, size=font_size)
+        title_width = text_path.get_extents().width
+    except Exception as e:
+        print(f"Warning: Could not calculate title width: {e}")
+        # Fall back to simple truncation
+        if len(title) > 60:
+            return title[:25] + " ... " + title[-25:]
+        return title
+    
+    print(f"Font size: {font_size}, Title width: {title_width}, Max width: {max_width}")
 
     if title_width <= max_width:
         return title  # No truncation needed
 
-    # Start with first 20 and last 40 characters
+    # Start with first 15 and last 25 characters
     first_part = title[:15]
     last_part = title[-25:]
 
-    # Reduce first_part if necessary
+    # Create truncated text
     truncated_text = first_part + " ... " + last_part
-    truncated_path = TextPath((0, 0), truncated_text, size=font_size)
-
-    # If the text is too short, add more to last_part
-    while (truncated_path.get_extents().width < max_width * 0.95) and (len(last_part) < len(title) - len(first_part) - 5):
-        last_part = title[-(len(last_part) + 1):]  # Add one more character from the end
-        truncated_text = first_part + " ... " + last_part
+    
+    try:
         truncated_path = TextPath((0, 0), truncated_text, size=font_size)
+
+        # If the text is too short, add more to last_part
+        while (truncated_path.get_extents().width < max_width * 0.95) and \
+              (len(last_part) < len(title) - len(first_part) - 5):
+            last_part = title[-(len(last_part) + 1):]
+            truncated_text = first_part + " ... " + last_part
+            truncated_path = TextPath((0, 0), truncated_text, size=font_size)
+    except:
+        pass  # Keep the initial truncated text if calculation fails
 
     return truncated_text

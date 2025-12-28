@@ -5,7 +5,7 @@ import fabio
 import numpy.ma as ma
 import numpy as np
 import pyFAI
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import datetime
 import collections
 import re
@@ -46,6 +46,8 @@ class DiffImg(object):
 
 
     def histogram(self):
+        import matplotlib.pyplot as plt
+
         if self.img is None:
             return
         f, ax = plt.subplots(figsize=(10, 4))
@@ -53,6 +55,8 @@ class DiffImg(object):
         f.show()
 
     def show(self, clim=(0, 8e3)):
+        import matplotlib.pyplot as plt
+        
         f, ax = plt.subplots(figsize=(10, 10))
         cax = ax.imshow(self.img, origin="lower", cmap="gray_r", clim=clim)
         cbar = f.colorbar(cax, orientation='horizontal')

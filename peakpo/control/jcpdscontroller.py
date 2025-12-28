@@ -4,8 +4,8 @@ from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5 import QtGui
 # import matplotlib.pyplot as plt
-from matplotlib import colors
-import matplotlib.cm as cmx
+#from matplotlib import colors
+#import matplotlib.cm as cmx
 from .mplcontroller import MplController
 from .jcpdstablecontroller import JcpdsTableController
 from utils import xls_jlist, dialog_savefile, make_filename, get_temp_dir, \
@@ -75,6 +75,9 @@ class JcpdsController(object):
         self._make_jlist(files, append=append)
 
     def _make_jlist(self, files, append=False):
+        from matplotlib import colors
+        import matplotlib.cm as cmx
+        
         n_color = 20
         # jet = plt.get_cmap('gist_rainbow')
         jet = cmx.get_cmap('gist_rainbow')

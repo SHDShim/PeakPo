@@ -1,7 +1,8 @@
 import os
 import sys
 import dill
-from pkg_resources import add_activation_listener
+from importlib.metadata import entry_points
+#from pkg_resources import add_activation_listener
 import datetime
 import pyFAI
 import zipfile

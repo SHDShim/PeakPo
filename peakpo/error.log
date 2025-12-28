@@ -1,0 +1,8 @@
+--------------------------------------------------------------------------------
+2025-12-28, 00:21:09
+--------------------------------------------------------------------------------
+<class 'TypeError'>: 
+setValue(self, val: int): argument 1 has unexpected type 'numpy.float32'
+--------------------------------------------------------------------------------
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/cakecontroller.py", line 96, in reset_max_cake_scale
+    self.widget.spinBox_MaxCakeScale.setValue(intensity_cake.max())

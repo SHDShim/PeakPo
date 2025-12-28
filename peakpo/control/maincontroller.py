@@ -1,7 +1,7 @@
 import os
 import glob
 import numpy as np
-from matplotlib.backend_bases import key_press_handler
+#from matplotlib.backend_bases import key_press_handler
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 import gc
@@ -35,35 +35,78 @@ from ds_powdiff import get_DataSection
 class MainController(object):
 
     def __init__(self):
+        print("MainController.__init__ - START")
 
         self.widget = MainWindow()
+        print("  ✓ MainWindow created")
+        
         self.model = PeakPoModel8()
-        # self.obj_color = 'white'
+        print("  ✓ PeakPoModel8 created")
+        
         self.base_ptn_ctrl = BasePatternController(self.model, self.widget)
+        print("  ✓ BasePatternController created")
+        
         self.plot_ctrl = MplController(self.model, self.widget)
+        print("  ✓ MplController created")
+        
         self.cakeazi_ctrl = CakeAziController(self.model, self.widget)
-        # self.cake_ctrl = CakeController(self.model, self.widget)
-        self.waterfall_ctrl = \
-            WaterfallController(self.model, self.widget)
+        print("  ✓ CakeAziController created")
+        
+        self.waterfall_ctrl = WaterfallController(self.model, self.widget)
+        print("  ✓ WaterfallController created")
+        
         self.ucfit_ctrl = UcfitController(self.model, self.widget)
+        print("  ✓ UcfitController created")
+        
         self.jcpds_ctrl = JcpdsController(self.model, self.widget)
-        self.waterfalltable_ctrl = \
-            WaterfallTableController(self.model, self.widget)
-        #self.ucfittable_ctrl = UcfitTableController(self.model, self.widget)
+        print("  ✓ JcpdsController created")
+        
+        self.waterfalltable_ctrl = WaterfallTableController(self.model, self.widget)
+        print("  ✓ WaterfallTableController created")
+        
         self.jcpdstable_ctrl = JcpdsTableController(self.model, self.widget)
+        print("  ✓ JcpdsTableController created")
+        
         self.session_ctrl = SessionController(self.model, self.widget)
+        print("  ✓ SessionController created")
+        
         self.peakfit_ctrl = PeakFitController(self.model, self.widget)
-        self.peakfit_table_ctrl = PeakfitTableController(
-            self.model, self.widget)
+        print("  ✓ PeakFitController created")
+        
+        self.peakfit_table_ctrl = PeakfitTableController(self.model, self.widget)
+        print("  ✓ PeakfitTableController created")
+        
         self.read_setting()
+        print("  ✓ read_setting() done")
+        
         self.connect_channel()
-        #
+        print("  ✓ connect_channel() done")
+        
         self.clip = QtWidgets.QApplication.clipboard()
-        # no more stuff can be added below
+        print("  ✓ clipboard set")
+        
+        print("MainController.__init__ - DONE\n")
 
     def show_window(self):
+        """Show the main window and ensure it renders"""
+        # Just show - don't force draw yet
         self.widget.show()
+        
+        # Bring to front (important on macOS)
+        self.widget.raise_()
+        self.widget.activateWindow()
+        
+        # Let event loop initialize canvas, THEN draw
+        QtCore.QTimer.singleShot(100, self._initial_render)
 
+    def _initial_render(self):
+        """Perform initial render after event loop starts"""
+        try:
+            self.widget.mpl.canvas.draw()
+            print("  ✓ Initial canvas render complete")
+        except Exception as e:
+            print(f"  ⚠ Initial render failed: {e}")
+        
     def connect_channel(self):
         # connecting events
         self.widget.mpl.canvas.mpl_connect(
@@ -377,6 +420,8 @@ class MainController(object):
     """
 
     def on_key_press(self, event):
+        from matplotlib.backend_bases import key_press_handler
+        
         if event.key == 'i':
             if self.widget.mpl.ntb._active == 'PAN':
                 self.widget.mpl.ntb.pan()
@@ -425,8 +470,15 @@ class MainController(object):
         self.plot_ctrl.update()
 
     def deliver_mouse_signal(self, event):
-        if self.widget.mpl.ntb._active is not None:
-            return
+        # ✅ Compatible with matplotlib 3.3+
+        if hasattr(self.widget.mpl.ntb, 'mode'):
+            # New matplotlib API
+            if self.widget.mpl.ntb.mode != '':
+                return
+        elif hasattr(self.widget.mpl.ntb, '_active'):
+            # Old matplotlib API
+            if self.widget.mpl.ntb._active is not None:
+                return
         if (event.xdata is None) or (event.ydata is None):
             return
         if (event.button != 1) and (event.button != 3):
