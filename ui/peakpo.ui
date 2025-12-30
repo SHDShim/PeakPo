@@ -215,7 +215,7 @@
               <string>Previous file</string>
              </property>
              <property name="text">
-              <string>◀️</string>
+              <string>←</string>
              </property>
             </widget>
            </item>
@@ -274,7 +274,7 @@
               <string>Next file</string>
              </property>
              <property name="text">
-              <string>▶️</string>
+              <string>→</string>
              </property>
             </widget>
            </item>
@@ -798,7 +798,7 @@
                              <string>Open the first CHI file</string>
                             </property>
                             <property name="text">
-                             <string>◀️◀️</string>
+                             <string>&lt;&lt;</string>
                             </property>
                            </widget>
                           </item>
@@ -826,7 +826,7 @@
                              <string>Open previous CHI file</string>
                             </property>
                             <property name="text">
-                             <string>◀️</string>
+                             <string>&lt;</string>
                             </property>
                            </widget>
                           </item>
@@ -854,7 +854,7 @@
                              <string>Open next CHI file</string>
                             </property>
                             <property name="text">
-                             <string>▶️</string>
+                             <string>&gt;</string>
                             </property>
                            </widget>
                           </item>
@@ -882,7 +882,7 @@
                              <string>Open the last CHI file</string>
                             </property>
                             <property name="text">
-                             <string>▶️▶️</string>
+                             <string>&gt;&gt;</string>
                             </property>
                            </widget>
                           </item>
@@ -1473,7 +1473,7 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>375</width>
+                     <width>568</width>
                      <height>713</height>
                     </rect>
                    </property>
@@ -5316,8 +5316,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>388</width>
-                     <height>257</height>
+                     <width>568</width>
+                     <height>637</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_37">
@@ -5630,13 +5630,13 @@
               </property>
               <widget class="QWidget" name="tabWidget_4Page1">
                <attribute name="title">
-                <string>Setup</string>
+                <string>Pattern</string>
                </attribute>
                <layout class="QVBoxLayout" name="verticalLayout_7">
                 <item>
                  <widget class="QTabWidget" name="tabWidget_PeakFit">
                   <property name="currentIndex">
-                   <number>0</number>
+                   <number>1</number>
                   </property>
                   <widget class="QWidget" name="tab_PeakFitSection">
                    <attribute name="title">
@@ -5758,8 +5758,8 @@
                         <rect>
                          <x>0</x>
                          <y>0</y>
-                         <width>284</width>
-                         <height>300</height>
+                         <width>522</width>
+                         <height>582</height>
                         </rect>
                        </property>
                        <layout class="QVBoxLayout" name="verticalLayout_40">
@@ -5941,8 +5941,8 @@
                         <rect>
                          <x>0</x>
                          <y>0</y>
-                         <width>192</width>
-                         <height>435</height>
+                         <width>522</width>
+                         <height>582</height>
                         </rect>
                        </property>
                        <layout class="QVBoxLayout" name="verticalLayout_41">
@@ -6159,7 +6159,7 @@
               </widget>
               <widget class="QWidget" name="tabWidget_4Page2">
                <attribute name="title">
-                <string>Run</string>
+                <string>Unit Cell</string>
                </attribute>
                <layout class="QVBoxLayout" name="verticalLayout_42">
                 <item>
@@ -6172,8 +6172,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>225</width>
-                     <height>352</height>
+                     <width>568</width>
+                     <height>637</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_38">

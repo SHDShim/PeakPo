@@ -593,7 +593,7 @@ class MplController(object):
                 if self.model.waterfall_exist():
                     self._plot_waterfallpatterns()
             
-            if (self.widget.tabWidget.currentIndex() == 8):
+            if (self.widget.tabWidget.currentIndex() == 4):
                 if gsas_style:
                     self._plot_peakfit_in_gsas_style()
                 else:

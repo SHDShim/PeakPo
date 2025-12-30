@@ -1,0 +1,53 @@
+--------------------------------------------------------------------------------
+2025-12-29, 20:55:20
+--------------------------------------------------------------------------------
+<class 'AttributeError'>: 
+'mappingproxy' object has no attribute '__dict__'
+--------------------------------------------------------------------------------
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/sessioncontroller.py", line 483, in save_dpp_ppss
+    self.save_dpp()
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/sessioncontroller.py", line 529, in save_dpp
+    self._dump_dpp(new_filename)
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/sessioncontroller.py", line 397, in _dump_dpp
+    self.model.save_to_txtdata(get_temp_dir(self.model.get_base_ptn_filename()))
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/model/model.py", line 609, in save_to_txtdata
+    write_JSON(self.current_section, 'current_section', temp_dir)
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/model/model.py", line 629, in write_JSON
+    json_str = json.dumps(obj, indent=4, cls=PeakPoEncoder)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/json/encoder.py", line 202, in encode
+    chunks = list(chunks)
+             ^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/json/encoder.py", line 440, in _iterencode
+    yield from _iterencode(o, _current_indent_level)
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/json/encoder.py", line 432, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/json/encoder.py", line 440, in _iterencode
+    yield from _iterencode(o, _current_indent_level)
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/json/encoder.py", line 432, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/json/encoder.py", line 440, in _iterencode
+    yield from _iterencode(o, _current_indent_level)
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/json/encoder.py", line 432, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/json/encoder.py", line 440, in _iterencode
+    yield from _iterencode(o, _current_indent_level)
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/json/encoder.py", line 439, in _iterencode
+    o = _default(o)
+        ^^^^^^^^^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/model/model.py", line 644, in default
+    return obj.__dict__
+           ^^^^^^^^^^^^

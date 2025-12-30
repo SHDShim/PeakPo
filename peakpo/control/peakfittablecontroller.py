@@ -209,7 +209,7 @@ class PeakfitTableController(object):
                 QtCore.Qt.AlignVCenter)
             self.PkConst_doubleSpinBox_height.setMaximum(100000.)
             self.PkConst_doubleSpinBox_height.setSingleStep(10.)
-            self.PkConst_doubleSpinBox_height.setDecimals(0)
+            self.PkConst_doubleSpinBox_height.setDecimals(3)
             self.PkConst_doubleSpinBox_height.setValue(
                 self.model.current_section.peaks_in_queue[row]['amplitude'])
             self.PkConst_doubleSpinBox_height.valueChanged.connect(

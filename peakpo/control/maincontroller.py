@@ -519,7 +519,7 @@ class MainController(object):
             mouse_button = 'left'
         elif event.button == 3:
             mouse_button = 'right'
-        if (self.widget.tabWidget.currentIndex() == 8) and \
+        if (self.widget.tabWidget.currentIndex() == 4) and \
                 (self.widget.pushButton_AddRemoveFromMouse.isChecked()):
             if not self.model.current_section_exist():
                 QtWidgets.QMessageBox.warning(
