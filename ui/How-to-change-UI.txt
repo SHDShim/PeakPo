@@ -12,7 +12,7 @@ from .mplwidget import MplWidget
 
 import os
 
-4. go to line ~26 (MainWindow.setStyleSheet("font: 12pt \"Helvetica\";")) and modify to
+4. go to line ~27 (MainWindow.setStyleSheet("font: 12pt \"Helvetica\";")) and modify to
 
 if os.name == 'nt':
     mpl_fontsize = 9
@@ -20,6 +20,6 @@ else:
     mpl_fontsize = 12        
 MainWindow.setStyleSheet("font: {:d}pt \"Helvetica\";".format(mpl_fontsize))
 
-5. line 60
+5. line ~59
 
 font.setPointSize(mpl_fontsize)

@@ -206,7 +206,7 @@ class MplController(object):
 
         # make a copy of intensity_cake and make sure it also has mask information 
         #intensity_cake_plot = ma.masked_values(intensity_cake, 0.)
-        intensity_cake_plot = ma.masked_invalid(intensity_cake)
+        # intensity_cake_plot = ma.masked_equal(intensity_cake, 0.0, copy=False)
         #intensity_cake_plot = ma.array(intensity_cake, mask=self.model.diff_img.mask)
 
         # Get z scaling parameters
@@ -229,14 +229,32 @@ class MplController(object):
         mid_angle = self.widget.spinBox_AziShift.value()
         if mid_angle != 0:
             #int_new = np.array(intensity_cake_plot)
-            int_new = intensity_cake_plot
-            int_new[0:mid_angle] = intensity_cake[360 - mid_angle:361]
-            int_new[mid_angle:361] = intensity_cake[0:360 - mid_angle]
+            int_plot = intensity_cake
+            int_plot[0:mid_angle] = intensity_cake[360 - mid_angle:361]
+            int_plot[mid_angle:361] = intensity_cake[0:360 - mid_angle]
         else:
             # int_new = np.array(intensity_cake_plot)
-            int_new = intensity_cake_plot
+            int_plot = intensity_cake
+
+        # Mask zeros (treat them as "bad" pixels)
+        int_new = ma.masked_equal(int_plot, 0.0, copy=False)
+
+        # Colormap: masked ("bad") pixels in semi-transparent red
+        cmap = (plt.cm.gray if self.widget.checkBox_WhiteForPeak.isChecked()
+                else plt.cm.gray_r).copy()
+        cmap.set_bad(color=(1.0, 0.0, 0.0, 0.15))  # red with alpha=0.5
+
+        self.widget.mpl.canvas.ax_cake.imshow(
+            int_new,
+            origin="lower",
+            extent=[tth_cake.min(), tth_cake.max(), chi_cake.min(), chi_cake.max()],
+            aspect="auto",
+            cmap=cmap,
+            vmin=climits[0], vmax=climits[1],
+        )
 
         # get gray scale color map and make sure masked data points are colored red
+        """
         if self.widget.checkBox_WhiteForPeak.isChecked():
             #cmap = 'gray'
             cmap = plt.cm.gray.copy()
@@ -244,13 +262,16 @@ class MplController(object):
             #cmap = 'gray_r'
             cmap = plt.cm.gray_r.copy()
         cmap.set_bad(color='red')
+        """
 
         # plot the data as an image
+        """
         self.widget.mpl.canvas.ax_cake.imshow(
             int_new, origin="lower",
             extent=[tth_cake.min(), tth_cake.max(),
                     chi_cake.min(), chi_cake.max()],
             aspect="auto", cmap=cmap, clim=climits)  # gray_r
+        """
         print(str(datetime.datetime.now())[:-7], 
             ': Cake intensity min, max = ', climits)
 
@@ -663,12 +684,15 @@ class MplController(object):
             
             # ✅ Only set cake format_coord if ax_cake exists
             if hasattr(self.widget.mpl.canvas, 'ax_cake'):
+                """
                 self.widget.mpl.canvas.ax_cake.format_coord = \
                     lambda x, y: \
                     "\n 2\u03B8={0:.3f}\u00B0, azi={1:.1f}, d-sp={2:.4f}\u212B".\
                     format(x, y,  
                         self.widget.doubleSpinBox_SetWavelength.value()
                         / 2. / np.sin(np.radians(x / 2.)))
+                """
+                self.widget.mpl.canvas.ax_cake.format_coord = self._format_coord_x_y_z_dsp
             
             # ✅ MOVED: Set up cursor BEFORE drawing (inside try block)
             if self.widget.checkBox_LongCursor.isChecked():
@@ -719,6 +743,98 @@ class MplController(object):
         finally:
             self._is_drawing = False
             self.widget.unsetCursor()
+
+    def _format_coord_x_y_z_dsp(self, x, y):
+        """
+        Read 2theta, azimuthal angle, intensity, and d-spacing from the image
+        
+        :param x: 2 theta angle
+        :param y: azimuthal angle
+        """
+        ax = self.widget.mpl.canvas.ax_cake
+
+        # compute d-spacing from x (2-theta)
+        try:
+            dsp = (self.widget.doubleSpinBox_SetWavelength.value()
+                   / 2.0 / np.sin(np.radians(x / 2.0)))
+        except Exception:
+            dsp = None
+
+        # If no image on the axis, return x,y,dsp only
+        if not ax.images:
+            if dsp is None:
+                return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp=NA".format(x, y)
+            return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp={:.4f}\u212B".format(x, y, dsp)
+
+        img = ax.images[0]
+        data = img.get_array()
+        if data is None:
+            if dsp is None:
+                return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp=NA".format(x, y)
+            return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp={:.4f}\u212B".format(x, y, dsp)
+
+        # extent -> map data coords to pixel indices
+        xmin, xmax, ymin, ymax = img.get_extent()
+        if xmax == xmin or ymax == ymin:
+            # degenerate extent
+            if dsp is None:
+                return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp=NA".format(x, y)
+            return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp={:.4f}\u212B".format(x, y, dsp)
+
+        # ensure 2D image
+        try:
+            ny, nx = data.shape
+        except Exception:
+            # not a 2D image
+            if dsp is None:
+                return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp=NA".format(x, y)
+            return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp={:.4f}\u212B".format(x, y, dsp)
+
+        # fractional positions (0..nx-1, 0..ny-1)
+        fx = (x - xmin) / (xmax - xmin) * (nx - 1)
+        fy = (y - ymin) / (ymax - ymin) * (ny - 1)
+
+        # nearest-neighbor
+        col = int(round(fx))
+        row = int(round(fy))
+
+        # handle origin
+        origin = getattr(img, 'origin', None)
+        if origin == 'upper':
+            row = (ny - 1) - row
+
+        # clamp & check bounds
+        if col < 0 or col >= nx or row < 0 or row >= ny:
+            if dsp is None:
+                return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp=NA".format(x, y)
+            return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp={:.4f}\u212B".format(x, y, dsp)
+
+        # read intensity, handle masked/invalid
+        try:
+            if np.ma.isMaskedArray(data):
+                mask = data.mask
+                if mask is not None and mask.shape == data.shape and mask[row, col]:
+                    z_text = "NA"
+                else:
+                    z_val = data.data[row, col]
+                    if np.isnan(z_val) or np.isinf(z_val):
+                        z_text = "(invalid)"
+                    else:
+                        z_text = "{:.0f}".format(float(z_val))
+            else:
+                z_val = data[row, col]
+                if isinstance(z_val, (float, np.floating)) and (np.isnan(z_val) or np.isinf(z_val)):
+                    z_text = "(invalid)"
+                else:
+                    z_text = "{:.0f}".format(float(z_val))
+        except Exception:
+            z_text = "NA"
+
+        # format final string: x, y, z, d-sp
+        if dsp is None:
+            return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I={}, d-sp=NA".format(x, y, z_text)
+        return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I={}, d-sp={:.4f}\u212B".format(x, y, z_text, dsp)
+
 
 
 from matplotlib.textpath import TextPath

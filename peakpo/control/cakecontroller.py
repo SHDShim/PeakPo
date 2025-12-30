@@ -28,6 +28,7 @@ class CakeController(object):
         self.widget.pushButton_GetPONI.clicked.connect(self.get_poni)
         self.widget.pushButton_ApplyCakeView.clicked.connect(self.update_cake)
         self.widget.pushButton_ApplyMask.clicked.connect(self.apply_mask)
+        self.widget.pushButton_MaskReset.clicked.connect(self.reset_maskrange)
         self.widget.lineEdit_PONI.editingFinished.connect(
             self.load_new_poni_from_name)
         self.widget.pushButton_ResetCakeScale.clicked.connect(
@@ -237,6 +238,15 @@ class CakeController(object):
     def apply_mask(self):
         self.produce_cake()
         self._apply_changes_to_graph()
+
+    def reset_maskrange(self):
+        # get min and max of the cake image
+        intensity_cake, _, _ = self.model.diff_img.get_cake()
+        # push those values to spinboxes
+        self.widget.spinBox_MaskMin.setValue(int(intensity_cake.min()))
+        self.widget.spinBox_MaskMax.setValue(int(intensity_cake.max()))
+        # reprocess the image
+        self.apply_mask()
 
     def produce_cake(self):
         """

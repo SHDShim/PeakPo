@@ -3502,8 +3502,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>552</width>
-                     <height>637</height>
+                     <width>391</width>
+                     <height>533</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_33">
@@ -5177,10 +5177,22 @@
                     <item>
                      <widget class="QPushButton" name="pushButton_ApplyCakeView">
                       <property name="sizePolicy">
-                       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                         <horstretch>0</horstretch>
                         <verstretch>0</verstretch>
                        </sizepolicy>
+                      </property>
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>25</height>
+                       </size>
+                      </property>
+                      <property name="maximumSize">
+                       <size>
+                        <width>16777215</width>
+                        <height>100</height>
+                       </size>
                       </property>
                       <property name="toolTip">
                        <string>Force update plot</string>
@@ -5188,84 +5200,6 @@
                       <property name="text">
                        <string>Update cake</string>
                       </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QGroupBox" name="groupBox_11">
-                      <property name="sizePolicy">
-                       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                        <horstretch>0</horstretch>
-                        <verstretch>0</verstretch>
-                       </sizepolicy>
-                      </property>
-                      <property name="title">
-                       <string/>
-                      </property>
-                      <property name="flat">
-                       <bool>false</bool>
-                      </property>
-                      <layout class="QGridLayout" name="gridLayout_4">
-                       <property name="leftMargin">
-                        <number>12</number>
-                       </property>
-                       <property name="topMargin">
-                        <number>12</number>
-                       </property>
-                       <property name="rightMargin">
-                        <number>12</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>12</number>
-                       </property>
-                       <item row="1" column="1">
-                        <widget class="QLineEdit" name="lineEdit_PONI">
-                         <property name="minimumSize">
-                          <size>
-                           <width>0</width>
-                           <height>25</height>
-                          </size>
-                         </property>
-                         <property name="toolTip">
-                          <string>PONI file name and location</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="2">
-                        <widget class="QPushButton" name="pushButton_GetPONI">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="minimumSize">
-                          <size>
-                           <width>0</width>
-                           <height>0</height>
-                          </size>
-                         </property>
-                         <property name="maximumSize">
-                          <size>
-                           <width>40</width>
-                           <height>16777215</height>
-                          </size>
-                         </property>
-                         <property name="toolTip">
-                          <string>Open a PONI file</string>
-                         </property>
-                         <property name="text">
-                          <string>📂</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="0">
-                        <widget class="QLabel" name="label_32">
-                         <property name="text">
-                          <string>PONI</string>
-                         </property>
-                        </widget>
-                       </item>
-                      </layout>
                      </widget>
                     </item>
                     <item>
@@ -5310,6 +5244,113 @@
                        <property name="bottomMargin">
                         <number>12</number>
                        </property>
+                       <item>
+                        <widget class="QFrame" name="frame_8">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
+                         <property name="frameShape">
+                          <enum>QFrame::NoFrame</enum>
+                         </property>
+                         <property name="frameShadow">
+                          <enum>QFrame::Plain</enum>
+                         </property>
+                         <layout class="QHBoxLayout" name="horizontalLayout_8">
+                          <property name="topMargin">
+                           <number>3</number>
+                          </property>
+                          <property name="bottomMargin">
+                           <number>3</number>
+                          </property>
+                          <item>
+                           <widget class="QSpinBox" name="spinBox_MaxCakeScale">
+                            <property name="sizePolicy">
+                             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                              <horstretch>0</horstretch>
+                              <verstretch>0</verstretch>
+                             </sizepolicy>
+                            </property>
+                            <property name="minimumSize">
+                             <size>
+                              <width>0</width>
+                              <height>25</height>
+                             </size>
+                            </property>
+                            <property name="maximumSize">
+                             <size>
+                              <width>16777215</width>
+                              <height>16777215</height>
+                             </size>
+                            </property>
+                            <property name="focusPolicy">
+                             <enum>Qt::StrongFocus</enum>
+                            </property>
+                            <property name="toolTip">
+                             <string>Max value of the gray scale</string>
+                            </property>
+                            <property name="alignment">
+                             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                            </property>
+                            <property name="buttonSymbols">
+                             <enum>QAbstractSpinBox::NoButtons</enum>
+                            </property>
+                            <property name="maximum">
+                             <number>10000000</number>
+                            </property>
+                            <property name="value">
+                             <number>100000</number>
+                            </property>
+                           </widget>
+                          </item>
+                          <item>
+                           <widget class="QPushButton" name="pushButton_ResetCakeScale">
+                            <property name="sizePolicy">
+                             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                              <horstretch>0</horstretch>
+                              <verstretch>0</verstretch>
+                             </sizepolicy>
+                            </property>
+                            <property name="minimumSize">
+                             <size>
+                              <width>0</width>
+                              <height>25</height>
+                             </size>
+                            </property>
+                            <property name="maximumSize">
+                             <size>
+                              <width>16777215</width>
+                              <height>16777215</height>
+                             </size>
+                            </property>
+                            <property name="toolTip">
+                             <string>Reset to the max value of the scale to the max value of image</string>
+                            </property>
+                            <property name="text">
+                             <string>Reset Scale</string>
+                            </property>
+                            <property name="autoDefault">
+                             <bool>false</bool>
+                            </property>
+                            <property name="default">
+                             <bool>false</bool>
+                            </property>
+                            <property name="flat">
+                             <bool>false</bool>
+                            </property>
+                           </widget>
+                          </item>
+                         </layout>
+                        </widget>
+                       </item>
                        <item>
                         <widget class="QLabel" name="label_8">
                          <property name="layoutDirection">
@@ -5460,107 +5501,6 @@
                          </property>
                         </widget>
                        </item>
-                       <item>
-                        <widget class="QFrame" name="frame_8">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="frameShape">
-                          <enum>QFrame::NoFrame</enum>
-                         </property>
-                         <property name="frameShadow">
-                          <enum>QFrame::Plain</enum>
-                         </property>
-                         <layout class="QHBoxLayout" name="horizontalLayout_8">
-                          <property name="topMargin">
-                           <number>3</number>
-                          </property>
-                          <property name="bottomMargin">
-                           <number>3</number>
-                          </property>
-                          <item>
-                           <widget class="QSpinBox" name="spinBox_MaxCakeScale">
-                            <property name="sizePolicy">
-                             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                              <horstretch>0</horstretch>
-                              <verstretch>0</verstretch>
-                             </sizepolicy>
-                            </property>
-                            <property name="minimumSize">
-                             <size>
-                              <width>0</width>
-                              <height>25</height>
-                             </size>
-                            </property>
-                            <property name="maximumSize">
-                             <size>
-                              <width>16777215</width>
-                              <height>16777215</height>
-                             </size>
-                            </property>
-                            <property name="focusPolicy">
-                             <enum>Qt::StrongFocus</enum>
-                            </property>
-                            <property name="toolTip">
-                             <string>Max value of the gray scale</string>
-                            </property>
-                            <property name="alignment">
-                             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                            </property>
-                            <property name="buttonSymbols">
-                             <enum>QAbstractSpinBox::NoButtons</enum>
-                            </property>
-                            <property name="maximum">
-                             <number>10000000</number>
-                            </property>
-                            <property name="value">
-                             <number>100000</number>
-                            </property>
-                           </widget>
-                          </item>
-                          <item>
-                           <widget class="QPushButton" name="pushButton_ResetCakeScale">
-                            <property name="sizePolicy">
-                             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                              <horstretch>0</horstretch>
-                              <verstretch>0</verstretch>
-                             </sizepolicy>
-                            </property>
-                            <property name="minimumSize">
-                             <size>
-                              <width>0</width>
-                              <height>25</height>
-                             </size>
-                            </property>
-                            <property name="maximumSize">
-                             <size>
-                              <width>16777215</width>
-                              <height>16777215</height>
-                             </size>
-                            </property>
-                            <property name="toolTip">
-                             <string>Reset to the max value of the scale to the max value of image</string>
-                            </property>
-                            <property name="text">
-                             <string>Reset</string>
-                            </property>
-                            <property name="autoDefault">
-                             <bool>false</bool>
-                            </property>
-                            <property name="default">
-                             <bool>false</bool>
-                            </property>
-                            <property name="flat">
-                             <bool>false</bool>
-                            </property>
-                           </widget>
-                          </item>
-                         </layout>
-                        </widget>
-                       </item>
                       </layout>
                      </widget>
                     </item>
@@ -5685,6 +5625,84 @@
                          </property>
                          <property name="singleStep">
                           <number>5</number>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QGroupBox" name="groupBox_11">
+                      <property name="sizePolicy">
+                       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                        <horstretch>0</horstretch>
+                        <verstretch>0</verstretch>
+                       </sizepolicy>
+                      </property>
+                      <property name="title">
+                       <string/>
+                      </property>
+                      <property name="flat">
+                       <bool>false</bool>
+                      </property>
+                      <layout class="QGridLayout" name="gridLayout_4">
+                       <property name="leftMargin">
+                        <number>12</number>
+                       </property>
+                       <property name="topMargin">
+                        <number>12</number>
+                       </property>
+                       <property name="rightMargin">
+                        <number>12</number>
+                       </property>
+                       <property name="bottomMargin">
+                        <number>12</number>
+                       </property>
+                       <item row="1" column="1">
+                        <widget class="QLineEdit" name="lineEdit_PONI">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
+                         <property name="toolTip">
+                          <string>PONI file name and location</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="1" column="2">
+                        <widget class="QPushButton" name="pushButton_GetPONI">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>0</height>
+                          </size>
+                         </property>
+                         <property name="maximumSize">
+                          <size>
+                           <width>40</width>
+                           <height>16777215</height>
+                          </size>
+                         </property>
+                         <property name="toolTip">
+                          <string>Open a PONI file</string>
+                         </property>
+                         <property name="text">
+                          <string>📂</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="1" column="0">
+                        <widget class="QLabel" name="label_32">
+                         <property name="text">
+                          <string>PONI</string>
                          </property>
                         </widget>
                        </item>
@@ -5824,6 +5842,12 @@
                        </property>
                        <item>
                         <widget class="QLabel" name="label_34">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
                          <property name="text">
                           <string>Mask</string>
                          </property>
@@ -5903,9 +5927,22 @@
                         </widget>
                        </item>
                        <item>
+                        <widget class="QPushButton" name="pushButton_MaskReset">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
+                         <property name="text">
+                          <string>Reset</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
                         <widget class="QPushButton" name="pushButton_ApplyMask">
                          <property name="sizePolicy">
-                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
@@ -6181,8 +6218,8 @@
                         <rect>
                          <x>0</x>
                          <y>0</y>
-                         <width>522</width>
-                         <height>582</height>
+                         <width>345</width>
+                         <height>186</height>
                         </rect>
                        </property>
                        <layout class="QVBoxLayout" name="verticalLayout_39">
@@ -6505,8 +6542,8 @@
                         <rect>
                          <x>0</x>
                          <y>0</y>
-                         <width>522</width>
-                         <height>582</height>
+                         <width>192</width>
+                         <height>435</height>
                         </rect>
                        </property>
                        <layout class="QVBoxLayout" name="verticalLayout_41">
@@ -6736,8 +6773,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>568</width>
-                     <height>637</height>
+                     <width>225</width>
+                     <height>352</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_38">
