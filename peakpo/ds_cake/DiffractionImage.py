@@ -144,6 +144,7 @@ class DiffImg(object):
         masked = ma.masked_where(
             (self.img <= range[0]) | (self.img >= range[1]), self.img)
         self.mask = masked.mask
+        self.integrate_to_cake()
 
     def write_to_npy(self, chi_filen_wo_ext_in_temp):
         """

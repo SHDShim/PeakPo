@@ -199,14 +199,23 @@ class MplController(object):
 
     def _plot_cake(self):
         import matplotlib.patches as patches
+        import matplotlib.pyplot as plt
 
+        # Get cake data
         intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
+
+        # make a copy of intensity_cake and make sure it also has mask information 
+        #intensity_cake_plot = ma.masked_values(intensity_cake, 0.)
+        intensity_cake_plot = ma.masked_invalid(intensity_cake)
+        #intensity_cake_plot = ma.array(intensity_cake, mask=self.model.diff_img.mask)
+
+        # Get z scaling parameters
         min_slider_pos = self.widget.horizontalSlider_VMin.value()
         max_slider_pos = self.widget.horizontalSlider_VMax.value()
         if (max_slider_pos <= min_slider_pos):
             self.widget.horizontalSlider_VMin.setValue(1)
             self.widget.horizontalSlider_VMax.setValue(99)
-        intensity_cake_plot = ma.masked_values(intensity_cake, 0.)
+
         prefactor = self.widget.spinBox_MaxCakeScale.value() / \
             (10. ** self.widget.horizontalSlider_MaxScaleBars.value())
         # intensity_cake_plot.max() / \
@@ -214,17 +223,29 @@ class MplController(object):
             self.widget.horizontalSlider_VMin.value(),
             self.widget.horizontalSlider_VMax.value()]) / \
             100. * prefactor
-        if self.widget.checkBox_WhiteForPeak.isChecked():
-            cmap = 'gray'
-        else:
-            cmap = 'gray_r'
+
+        # get azimuthal angle shift parameter mid_angle and apply to the data.
+        # if intensity_cake, intensity_cake_plot, int_new are all temporary, it is better to merge them into one variable to save memory?
         mid_angle = self.widget.spinBox_AziShift.value()
         if mid_angle != 0:
-            int_new = np.array(intensity_cake_plot)
+            #int_new = np.array(intensity_cake_plot)
+            int_new = intensity_cake_plot
             int_new[0:mid_angle] = intensity_cake[360 - mid_angle:361]
             int_new[mid_angle:361] = intensity_cake[0:360 - mid_angle]
         else:
-            int_new = np.array(intensity_cake_plot)
+            # int_new = np.array(intensity_cake_plot)
+            int_new = intensity_cake_plot
+
+        # get gray scale color map and make sure masked data points are colored red
+        if self.widget.checkBox_WhiteForPeak.isChecked():
+            #cmap = 'gray'
+            cmap = plt.cm.gray.copy()
+        else:
+            #cmap = 'gray_r'
+            cmap = plt.cm.gray_r.copy()
+        cmap.set_bad(color='red')
+
+        # plot the data as an image
         self.widget.mpl.canvas.ax_cake.imshow(
             int_new, origin="lower",
             extent=[tth_cake.min(), tth_cake.max(),
@@ -232,6 +253,8 @@ class MplController(object):
             aspect="auto", cmap=cmap, clim=climits)  # gray_r
         print(str(datetime.datetime.now())[:-7], 
             ': Cake intensity min, max = ', climits)
+
+        # overlay azimuthal sections information
         tth_list, azi_list, note_list = self._read_azilist()
         tth_min = tth_cake.min()
         tth_max = tth_cake.max()
@@ -642,8 +665,8 @@ class MplController(object):
             if hasattr(self.widget.mpl.canvas, 'ax_cake'):
                 self.widget.mpl.canvas.ax_cake.format_coord = \
                     lambda x, y: \
-                    "\n 2\u03B8={0:.3f}\u00B0, I={1:.4e}, d-sp={2:.4f}\u212B".\
-                    format(x, y,
+                    "\n 2\u03B8={0:.3f}\u00B0, azi={1:.1f}, d-sp={2:.4f}\u212B".\
+                    format(x, y,  
                         self.widget.doubleSpinBox_SetWavelength.value()
                         / 2. / np.sin(np.radians(x / 2.)))
             

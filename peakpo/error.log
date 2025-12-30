@@ -1,8 +1,20 @@
 --------------------------------------------------------------------------------
-2025-12-29, 21:34:46
+2025-12-29, 23:44:02
 --------------------------------------------------------------------------------
-<class 'TypeError'>: 
-setValue(self, val: int): argument 1 has unexpected type 'numpy.float32'
+<class 'RuntimeError'>: 
+Mask shape matches
 --------------------------------------------------------------------------------
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/cakecontroller.py", line 96, in reset_max_cake_scale
-    self.widget.spinBox_MaxCakeScale.setValue(intensity_cake.max())
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/maincontroller.py", line 284, in integrate_to_1d
+    filen = self.cakeazi_ctrl.integrate_to_1d()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/cakeazicontroller.py", line 234, in integrate_to_1d
+    tth_i, intensity_i = self.model.diff_img.integrate_to_1d(
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/ds_cake/DiffractionImage.py", line 105, in integrate_to_1d
+    tth, intensity = self.poni.integrate1d(
+                     ^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/site-packages/pyFAI/integrator/azimuthal.py", line 247, in integrate1d
+    cython_integr = self.setup_sparse_integrator(shape, npt, mask,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/site-packages/pyFAI/integrator/common.py", line 400, in setup_sparse_integrator
+    raise RuntimeError("Mask shape matches")
