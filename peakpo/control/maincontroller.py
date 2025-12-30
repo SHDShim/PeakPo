@@ -146,6 +146,9 @@ class MainController(object):
             self.update_bgsub)
         self.widget.checkBox_LongCursor.stateChanged.connect(
             self._handle_cursor_toggle)  # Changed from clicked to stateChanged
+        # ✅ ADD: Connect checkbox to deactivate toolbar
+        self.widget.checkBox_LongCursor.stateChanged.connect(
+            self._on_long_cursor_changed)
         self.widget.checkBox_ShowMillerIndices.clicked.connect(
             self.apply_changes_to_graph)
         self.widget.comboBox_BasePtnLineThickness.currentIndexChanged.connect(
@@ -226,7 +229,25 @@ class MainController(object):
             lambda: self.goto_next_file('last'))
         self.widget.pushButton_FirstBasePtn.clicked.connect(
             lambda: self.goto_next_file('first'))
-        
+
+    def _on_long_cursor_changed(self, state):
+        """Deactivate pan/zoom when vertical cursor is enabled"""
+        if state == QtCore.Qt.Checked:
+            # Deactivate any active toolbar mode
+            toolbar = self.widget.mpl.canvas.toolbar
+            if toolbar and toolbar.mode:
+                # Click the active button again to deactivate it
+                if toolbar.mode == 'zoom rect':
+                    toolbar.zoom()  # Toggle off
+                elif toolbar.mode == 'pan/zoom':
+                    toolbar.pan()   # Toggle off
+            
+            # Update the plot to show cursor
+            self.plot_ctrl.update()
+        else:
+            # Update the plot to remove cursor
+            self.plot_ctrl.update()
+
     def _handle_cursor_toggle(self, state):
         """Handle vertical cursor checkbox - implement mutual exclusivity with toolbar"""
         if state == QtCore.Qt.Checked:

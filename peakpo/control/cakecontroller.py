@@ -93,7 +93,7 @@ class CakeController(object):
 
     def reset_max_cake_scale(self):
         intensity_cake, _, _ = self.model.diff_img.get_cake()
-        self.widget.spinBox_MaxCakeScale.setValue(intensity_cake.max())
+        self.widget.spinBox_MaxCakeScale.setValue(int(intensity_cake.max()))
         self._apply_changes_to_graph()
 
     def _apply_changes_to_graph(self):

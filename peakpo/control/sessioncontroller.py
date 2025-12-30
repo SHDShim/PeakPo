@@ -195,7 +195,7 @@ class SessionController(object):
             temp_values = []
             with open(filen, "r") as f:
                 for line in f:
-                    temp_values.append(float(line.split(':')[1]))
+                    temp_values.append(int(line.split(':')[1]))
             self.widget.spinBox_AziShift.setValue(temp_values[0])
             self.widget.spinBox_MaxCakeScale.setValue(temp_values[1])
             self.widget.horizontalSlider_VMin.setValue(temp_values[2])

@@ -468,7 +468,7 @@
              <property name="minimumSize">
               <size>
                <width>10</width>
-               <height>0</height>
+               <height>25</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -514,7 +514,7 @@
              <property name="minimumSize">
               <size>
                <width>10</width>
-               <height>0</height>
+               <height>25</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -548,6 +548,12 @@
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>25</height>
+              </size>
+             </property>
              <property name="toolTip">
               <string>Show cake image</string>
              </property>
@@ -563,6 +569,12 @@
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>25</height>
+              </size>
              </property>
              <property name="toolTip">
               <string>Subtract background from 1D pattern</string>
@@ -583,6 +595,12 @@
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>25</height>
+              </size>
+             </property>
              <property name="toolTip">
               <string>Automatic adjustment of y axis range</string>
              </property>
@@ -599,11 +617,17 @@
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>25</height>
+              </size>
+             </property>
              <property name="toolTip">
               <string>Change cursor to a vertical bar</string>
              </property>
              <property name="text">
-              <string>V. guide</string>
+              <string>Vert. Cursor</string>
              </property>
              <property name="checked">
               <bool>false</bool>
@@ -785,7 +809,7 @@
                             <property name="minimumSize">
                              <size>
                               <width>0</width>
-                              <height>0</height>
+                              <height>25</height>
                              </size>
                             </property>
                             <property name="maximumSize">
@@ -813,7 +837,7 @@
                             <property name="minimumSize">
                              <size>
                               <width>0</width>
-                              <height>0</height>
+                              <height>25</height>
                              </size>
                             </property>
                             <property name="maximumSize">
@@ -841,7 +865,7 @@
                             <property name="minimumSize">
                              <size>
                               <width>0</width>
-                              <height>0</height>
+                              <height>25</height>
                              </size>
                             </property>
                             <property name="maximumSize">
@@ -869,7 +893,7 @@
                             <property name="minimumSize">
                              <size>
                               <width>0</width>
-                              <height>0</height>
+                              <height>25</height>
                              </size>
                             </property>
                             <property name="maximumSize">
@@ -989,7 +1013,7 @@
                             <property name="minimumSize">
                              <size>
                               <width>0</width>
-                              <height>0</height>
+                              <height>25</height>
                              </size>
                             </property>
                             <property name="layoutDirection">
@@ -1022,6 +1046,12 @@
                                  <verstretch>0</verstretch>
                                 </sizepolicy>
                                </property>
+                               <property name="minimumSize">
+                                <size>
+                                 <width>0</width>
+                                 <height>25</height>
+                                </size>
+                               </property>
                                <property name="maximumSize">
                                 <size>
                                  <width>70</width>
@@ -1052,6 +1082,12 @@
                                  <horstretch>0</horstretch>
                                  <verstretch>0</verstretch>
                                 </sizepolicy>
+                               </property>
+                               <property name="minimumSize">
+                                <size>
+                                 <width>0</width>
+                                 <height>25</height>
+                                </size>
                                </property>
                                <property name="maximumSize">
                                 <size>
@@ -1138,6 +1174,12 @@
                               <verstretch>0</verstretch>
                              </sizepolicy>
                             </property>
+                            <property name="minimumSize">
+                             <size>
+                              <width>0</width>
+                              <height>25</height>
+                             </size>
+                            </property>
                             <property name="toolTip">
                              <string>Name and path of base 1D diffraction pattern</string>
                             </property>
@@ -1151,6 +1193,12 @@
                           </item>
                           <item>
                            <widget class="QPushButton" name="pushButton_Info">
+                            <property name="minimumSize">
+                             <size>
+                              <width>0</width>
+                              <height>25</height>
+                             </size>
+                            </property>
                             <property name="maximumSize">
                              <size>
                               <width>50</width>
@@ -1264,6 +1312,12 @@
                               <verstretch>0</verstretch>
                              </sizepolicy>
                             </property>
+                            <property name="minimumSize">
+                             <size>
+                              <width>0</width>
+                              <height>25</height>
+                             </size>
+                            </property>
                             <property name="text">
                              <string>(37.077 keV)</string>
                             </property>
@@ -1276,6 +1330,12 @@
                               <horstretch>0</horstretch>
                               <verstretch>0</verstretch>
                              </sizepolicy>
+                            </property>
+                            <property name="minimumSize">
+                             <size>
+                              <width>0</width>
+                              <height>25</height>
+                             </size>
                             </property>
                             <property name="maximumSize">
                              <size>
@@ -1296,6 +1356,12 @@
                               <verstretch>0</verstretch>
                              </sizepolicy>
                             </property>
+                            <property name="minimumSize">
+                             <size>
+                              <width>0</width>
+                              <height>25</height>
+                             </size>
+                            </property>
                             <property name="maximumSize">
                              <size>
                               <width>50</width>
@@ -1314,6 +1380,12 @@
                               <horstretch>0</horstretch>
                               <verstretch>0</verstretch>
                              </sizepolicy>
+                            </property>
+                            <property name="minimumSize">
+                             <size>
+                              <width>0</width>
+                              <height>25</height>
+                             </size>
                             </property>
                             <property name="maximumSize">
                              <size>
@@ -1370,6 +1442,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="maximumSize">
                           <size>
                            <width>40</width>
@@ -1400,6 +1478,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
                          </property>
                          <property name="maximumSize">
                           <size>
@@ -1474,7 +1558,7 @@
                      <x>0</x>
                      <y>0</y>
                      <width>568</width>
-                     <height>713</height>
+                     <height>733</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_31">
@@ -1504,6 +1588,12 @@
                        </property>
                        <item>
                         <widget class="QPushButton" name="pushButton_AboutPeakpo">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Information on PeakPo</string>
                          </property>
@@ -1514,6 +1604,12 @@
                        </item>
                        <item>
                         <widget class="QPushButton" name="pushButton_Help">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Help on PeakPo</string>
                          </property>
@@ -1575,6 +1671,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Show JCPDS in cake image</string>
                          </property>
@@ -1593,6 +1695,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
                          </property>
                          <property name="toolTip">
                           <string>Plot JCPDS bar height proportional to intensity</string>
@@ -1613,6 +1721,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Show JCPDS in 1D pattern</string>
                          </property>
@@ -1632,6 +1746,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Show Miller indices in cake</string>
                          </property>
@@ -1642,6 +1762,12 @@
                        </item>
                        <item row="0" column="2">
                         <widget class="QCheckBox" name="checkBox_ShowMillerIndices">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Show Miller indices in 1D pattern</string>
                          </property>
@@ -1657,6 +1783,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
                          </property>
                          <property name="toolTip">
                           <string>Show cake labels</string>
@@ -1677,6 +1809,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Show waterfall patterns</string>
                          </property>
@@ -1695,6 +1833,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
                          </property>
                          <property name="toolTip">
                           <string>Show filenames in waterfall</string>
@@ -1748,6 +1892,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Show in black background</string>
                          </property>
@@ -1761,6 +1911,12 @@
                        </item>
                        <item row="1" column="1">
                         <widget class="QCheckBox" name="checkBox_WhiteForPeak">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Make white for peak intensity</string>
                          </property>
@@ -1777,6 +1933,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Show large P &amp; T label</string>
                          </property>
@@ -1790,6 +1952,12 @@
                        </item>
                        <item row="0" column="0">
                         <widget class="QCheckBox" name="checkBox_ShortPlotTitle">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Make the title in 1D pattern short</string>
                          </property>
@@ -1846,6 +2014,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="layoutDirection">
                           <enum>Qt::RightToLeft</enum>
                          </property>
@@ -1864,6 +2038,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
                          </property>
                          <property name="layoutDirection">
                           <enum>Qt::RightToLeft</enum>
@@ -1904,6 +2084,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="layoutDirection">
                           <enum>Qt::RightToLeft</enum>
                          </property>
@@ -1929,6 +2115,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
                          </property>
                          <property name="layoutDirection">
                           <enum>Qt::RightToLeft</enum>
@@ -1978,6 +2170,12 @@
                       <layout class="QVBoxLayout" name="verticalLayout_30">
                        <item>
                         <widget class="QCheckBox" name="checkBox_NavDPP">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="maximumSize">
                           <size>
                            <width>200</width>
@@ -2006,6 +2204,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="maximumSize">
                           <size>
                            <width>250</width>
@@ -2025,6 +2229,12 @@
                        </item>
                        <item>
                         <widget class="QCheckBox" name="checkBox_SaveDPPMove">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="maximumSize">
                           <size>
                            <width>250</width>
@@ -2071,6 +2281,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Overwrite DPP and PPSS with default name</string>
                          </property>
@@ -2084,6 +2300,12 @@
                        </item>
                        <item row="0" column="1">
                         <widget class="QCheckBox" name="checkBox_IgnoreDirChange">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="text">
                           <string>Ignore directory change</string>
                          </property>
@@ -2094,6 +2316,12 @@
                        </item>
                        <item row="1" column="0" colspan="2">
                         <widget class="QCheckBox" name="checkBox_AutogenMissing">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="text">
                           <string>Autogen only for missing</string>
                          </property>
@@ -2128,6 +2356,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Load PPSS file</string>
                          </property>
@@ -2143,6 +2377,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
                          </property>
                          <property name="toolTip">
                           <string>Save PPSS file</string>
@@ -2160,6 +2400,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Package diffraction files, images, and DPP</string>
                          </property>
@@ -2175,6 +2421,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
                          </property>
                          <property name="toolTip">
                           <string>Save both DPP and PPSS</string>
@@ -2807,7 +3059,7 @@
                          <property name="minimumSize">
                           <size>
                            <width>0</width>
-                           <height>0</height>
+                           <height>20</height>
                           </size>
                          </property>
                          <property name="maximumSize">
@@ -2840,6 +3092,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
                          </property>
                          <property name="maximumSize">
                           <size>
@@ -2875,7 +3133,7 @@
                          <property name="minimumSize">
                           <size>
                            <width>0</width>
-                           <height>0</height>
+                           <height>20</height>
                           </size>
                          </property>
                          <property name="maximumSize">
@@ -2912,7 +3170,7 @@
                          <property name="minimumSize">
                           <size>
                            <width>0</width>
-                           <height>0</height>
+                           <height>20</height>
                           </size>
                          </property>
                          <property name="maximumSize">
@@ -2940,6 +3198,12 @@
                        </item>
                        <item row="0" column="4">
                         <widget class="QPushButton" name="pushButton_SaveTwkJCPDS">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="maximumSize">
                           <size>
                            <width>60</width>
@@ -2965,7 +3229,7 @@
                          <property name="minimumSize">
                           <size>
                            <width>0</width>
-                           <height>0</height>
+                           <height>20</height>
                           </size>
                          </property>
                          <property name="maximumSize">
@@ -2993,6 +3257,12 @@
                        </item>
                        <item row="0" column="7">
                         <widget class="QPushButton" name="pushButton_savePeakPos">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="maximumSize">
                           <size>
                            <width>60</width>
@@ -3232,13 +3502,19 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>391</width>
-                     <height>545</height>
+                     <width>552</width>
+                     <height>637</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_33">
                     <item>
                      <widget class="QPushButton" name="pushButton_ForceUpdatePlot">
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>20</height>
+                       </size>
+                      </property>
                       <property name="toolTip">
                        <string>Force update plot</string>
                       </property>
@@ -3275,6 +3551,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
                          </property>
                          <property name="maximumSize">
                           <size>
@@ -3338,6 +3620,12 @@
                        </item>
                        <item>
                         <widget class="QSlider" name="horizontalSlider_JCPDSBarScale">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Change height of the JCPDS bars</string>
                          </property>
@@ -3364,6 +3652,12 @@
                        </item>
                        <item>
                         <widget class="QSlider" name="horizontalSlider_JCPDSBarPosition">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>20</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Change position of the JCPDS bars</string>
                          </property>
@@ -3445,6 +3739,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                         </widget>
                        </item>
                        <item>
@@ -3480,6 +3780,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
                          </property>
                         </widget>
                        </item>
@@ -3550,6 +3856,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="layoutDirection">
                           <enum>Qt::RightToLeft</enum>
                          </property>
@@ -3600,6 +3912,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
                          </property>
                          <property name="layoutDirection">
                           <enum>Qt::RightToLeft</enum>
@@ -3699,6 +4017,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="maximumSize">
                           <size>
                            <width>60</width>
@@ -3730,6 +4054,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="maximumSize">
                           <size>
                            <width>60</width>
@@ -3760,6 +4090,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
                          </property>
                          <property name="maximumSize">
                           <size>
@@ -3795,7 +4131,7 @@
                          <property name="minimumSize">
                           <size>
                            <width>0</width>
-                           <height>0</height>
+                           <height>25</height>
                           </size>
                          </property>
                          <property name="maximumSize">
@@ -3866,6 +4202,12 @@
                         <verstretch>0</verstretch>
                        </sizepolicy>
                       </property>
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>25</height>
+                       </size>
+                      </property>
                       <property name="maximumSize">
                        <size>
                         <width>16777215</width>
@@ -3896,6 +4238,12 @@
                         <horstretch>0</horstretch>
                         <verstretch>0</verstretch>
                        </sizepolicy>
+                      </property>
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>25</height>
+                       </size>
                       </property>
                       <property name="title">
                        <string>Range for background fit</string>
@@ -4064,6 +4412,12 @@
                         <horstretch>0</horstretch>
                         <verstretch>0</verstretch>
                        </sizepolicy>
+                      </property>
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>25</height>
+                       </size>
                       </property>
                       <property name="title">
                        <string>Parameters</string>
@@ -4326,8 +4680,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>360</width>
-                     <height>297</height>
+                     <width>568</width>
+                     <height>637</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_35">
@@ -4338,6 +4692,12 @@
                         <horstretch>0</horstretch>
                         <verstretch>0</verstretch>
                        </sizepolicy>
+                      </property>
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>25</height>
+                       </size>
                       </property>
                       <property name="toolTip">
                        <string>Force update graph</string>
@@ -4382,6 +4742,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Convert two theta angles of waterfall patterns to match the wavelength of base pattern</string>
                          </property>
@@ -4395,6 +4761,12 @@
                        </item>
                        <item>
                         <widget class="QCheckBox" name="checkBox_IntNorm">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Normalize intensities of waterfall pattern with respect to their max. intensities</string>
                          </property>
@@ -4414,6 +4786,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="text">
                           <string>Waterfall gap</string>
                          </property>
@@ -4424,6 +4802,12 @@
                        </item>
                        <item>
                         <widget class="QSlider" name="horizontalSlider_WaterfallGaps">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Change size of vertical gaps between waterfall patterns</string>
                          </property>
@@ -4476,6 +4860,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="maximumSize">
                           <size>
                            <width>32</width>
@@ -4513,6 +4903,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="maximumSize">
                           <size>
                            <width>32</width>
@@ -4534,6 +4930,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
                          </property>
                          <property name="maximumSize">
                           <size>
@@ -4557,6 +4959,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="maximumSize">
                           <size>
                            <width>32</width>
@@ -4579,6 +4987,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="maximumSize">
                           <size>
                            <width>75</width>
@@ -4595,6 +5009,12 @@
                        </item>
                        <item row="0" column="6">
                         <widget class="QPushButton" name="pushButton_CheckAllWaterfall">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="maximumSize">
                           <size>
                            <width>32</width>
@@ -4616,6 +5036,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
                          </property>
                          <property name="maximumSize">
                           <size>
@@ -4642,6 +5068,12 @@
                        </item>
                        <item row="0" column="7">
                         <widget class="QPushButton" name="pushButton_UncheckAllWaterfall">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="maximumSize">
                           <size>
                            <width>37</width>
@@ -4787,6 +5219,12 @@
                        </property>
                        <item row="1" column="1">
                         <widget class="QLineEdit" name="lineEdit_PONI">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>PONI file name and location</string>
                          </property>
@@ -4887,6 +5325,12 @@
                        </item>
                        <item>
                         <widget class="QSlider" name="horizontalSlider_VMin">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="maximumSize">
                           <size>
                            <width>16777215</width>
@@ -4937,6 +5381,12 @@
                        </item>
                        <item>
                         <widget class="QSlider" name="horizontalSlider_VMax">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Change max value of gray scale</string>
                          </property>
@@ -4950,7 +5400,7 @@
                           <number>1000</number>
                          </property>
                          <property name="value">
-                          <number>1000</number>
+                          <number>150</number>
                          </property>
                          <property name="orientation">
                           <enum>Qt::Horizontal</enum>
@@ -4972,6 +5422,12 @@
                        </item>
                        <item>
                         <widget class="QSlider" name="horizontalSlider_MaxScaleBars">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Coarse adjustment of the gray scale</string>
                          </property>
@@ -4985,10 +5441,10 @@
                           <number>5</number>
                          </property>
                          <property name="value">
-                          <number>3</number>
+                          <number>2</number>
                          </property>
                          <property name="sliderPosition">
-                          <number>3</number>
+                          <number>2</number>
                          </property>
                          <property name="orientation">
                           <enum>Qt::Horizontal</enum>
@@ -5073,6 +5529,12 @@
                               <verstretch>0</verstretch>
                              </sizepolicy>
                             </property>
+                            <property name="minimumSize">
+                             <size>
+                              <width>0</width>
+                              <height>25</height>
+                             </size>
+                            </property>
                             <property name="maximumSize">
                              <size>
                               <width>16777215</width>
@@ -5141,6 +5603,12 @@
                        </item>
                        <item>
                         <widget class="QSlider" name="horizontalSlider_CakeAxisSize">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Vertical size of cake image</string>
                          </property>
@@ -5203,7 +5671,7 @@
                          <property name="minimumSize">
                           <size>
                            <width>80</width>
-                           <height>0</height>
+                           <height>25</height>
                           </size>
                          </property>
                          <property name="toolTip">
@@ -5264,6 +5732,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
                          </property>
                          <property name="maximumSize">
                           <size>
@@ -5436,6 +5910,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Apply mask out intensities</string>
                          </property>
@@ -5479,6 +5959,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Add a marker from currently plotted cake range</string>
                          </property>
@@ -5495,6 +5981,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Clear marker list</string>
                          </property>
@@ -5505,6 +5997,12 @@
                        </item>
                        <item row="0" column="4">
                         <widget class="QPushButton" name="pushButton_LoadCakeMarkerFile">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Load a marker file</string>
                          </property>
@@ -5520,6 +6018,12 @@
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
                          </property>
                          <property name="toolTip">
                           <string>Remove highlighted markers from the list</string>
@@ -5537,6 +6041,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Invert marker ranges</string>
                          </property>
@@ -5547,6 +6057,12 @@
                        </item>
                        <item row="1" column="4">
                         <widget class="QPushButton" name="pushButton_SaveCakeMarkerFile">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Save list to a marker file</string>
                          </property>
@@ -5563,6 +6079,12 @@
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Integrate for ranges in the list</string>
                          </property>
@@ -5573,6 +6095,12 @@
                        </item>
                        <item row="0" column="5">
                         <widget class="QPushButton" name="pushButton_HighlightSelectedMarker">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Highlight selected marker in the list</string>
                          </property>
@@ -5669,6 +6197,12 @@
                           <layout class="QGridLayout" name="gridLayout_20">
                            <item row="0" column="0">
                             <widget class="QPushButton" name="pushButton_PkFtSectionRemove">
+                             <property name="minimumSize">
+                              <size>
+                               <width>0</width>
+                               <height>25</height>
+                              </size>
+                             </property>
                              <property name="toolTip">
                               <string>Remove highlighted section</string>
                              </property>
@@ -5679,6 +6213,12 @@
                            </item>
                            <item row="0" column="1">
                             <widget class="QPushButton" name="pushButton_PkFtSectionSetToCurrent">
+                             <property name="minimumSize">
+                              <size>
+                               <width>0</width>
+                               <height>25</height>
+                              </size>
+                             </property>
                              <property name="toolTip">
                               <string>Set highlighted section as current for fit or plot</string>
                              </property>
@@ -5689,6 +6229,12 @@
                            </item>
                            <item row="0" column="2">
                             <widget class="QPushButton" name="pushButton_PlotSelectedPkFtResults">
+                             <property name="minimumSize">
+                              <size>
+                               <width>0</width>
+                               <height>25</height>
+                              </size>
+                             </property>
                              <property name="toolTip">
                               <string>Plot highlighted fit sections in GSAS style</string>
                              </property>
@@ -5699,6 +6245,12 @@
                            </item>
                            <item row="1" column="0">
                             <widget class="QPushButton" name="pushButton_PkFtSectionClear">
+                             <property name="minimumSize">
+                              <size>
+                               <width>0</width>
+                               <height>25</height>
+                              </size>
+                             </property>
                              <property name="text">
                               <string>Clear</string>
                              </property>
@@ -5706,6 +6258,12 @@
                            </item>
                            <item row="1" column="1">
                             <widget class="QPushButton" name="pushButton_PkFtSectionImport">
+                             <property name="minimumSize">
+                              <size>
+                               <width>0</width>
+                               <height>25</height>
+                              </size>
+                             </property>
                              <property name="toolTip">
                               <string>Import peak fitting results from dpp</string>
                              </property>
@@ -5716,6 +6274,12 @@
                            </item>
                            <item row="1" column="2">
                             <widget class="QPushButton" name="pushButton_PkFtSectionSavetoXLS">
+                             <property name="minimumSize">
+                              <size>
+                               <width>0</width>
+                               <height>25</height>
+                              </size>
+                             </property>
                              <property name="toolTip">
                               <string>Save all fitting results in an excel file</string>
                              </property>
@@ -6215,7 +6779,7 @@
                          <property name="minimumSize">
                           <size>
                            <width>0</width>
-                           <height>0</height>
+                           <height>25</height>
                           </size>
                          </property>
                          <property name="maximumSize">
@@ -6243,6 +6807,12 @@
                        </item>
                        <item row="2" column="1">
                         <widget class="QComboBox" name="comboBox_Symmetry">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Crystal system for unit cell fitting</string>
                          </property>
@@ -6250,6 +6820,12 @@
                        </item>
                        <item row="1" column="1">
                         <widget class="QComboBox" name="comboBox_PeakFitLabels">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Phase labels from peak fitting</string>
                          </property>
@@ -6257,6 +6833,12 @@
                        </item>
                        <item row="1" column="0">
                         <widget class="QPushButton" name="pushButton_CollectPeakFitResults">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
                          <property name="toolTip">
                           <string>Collect peak fitting results and update the phase combo box</string>
                          </property>

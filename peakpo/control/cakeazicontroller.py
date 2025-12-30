@@ -70,13 +70,17 @@ class CakeAziController(object):
         self._apply_changes_to_graph()
 
     def _invert_cake_selections(self):
+        # azi_list is read from the table
         azi_list = self._read_azilist()
-        # [comment, tth_min, azi_min, tth_max, azi_max]
+        # each component of azi_list has [comment, tth_min, azi_min, tth_max, azi_max]
         if azi_list is None:
             return
-        __, __, azi_whole = self.model.diff_img.get_cake()
+        # azi_whole is a numpy array with azimuthal angles where 1D pattern exists
+        __, __, azi_whole = self.model.diff_img.get_cake() 
         new_azi_list = []
+        # epsilon is threshold for the azimuthal angle differences.
         epsilon = 0.01
+        # inversion of 1 range does not have a problem.
         if azi_list.__len__() == 1:
             azi = azi_list[0]
             if (np.abs(azi[2] - azi_whole.min()) < epsilon) and \
@@ -95,7 +99,8 @@ class CakeAziController(object):
                                      azi_whole.max()])
         else:
             sorted_azi_list = sorted(azi_list,
-                                     key=lambda azi_list: azi_list[1])
+                                     key=lambda azi_list: azi_list[2])
+            print('sorted', sorted_azi_list)
             lower_azi = azi_whole.min()
             for azi in sorted_azi_list:
                 if np.abs(lower_azi - azi[2]) > epsilon:
