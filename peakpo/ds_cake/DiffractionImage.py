@@ -149,7 +149,10 @@ class DiffImg(object):
         #self.integrate_to_cake()
 
     def get_mask_range(self):
-        return self.mask_range
+        if self.mask_range == []:
+            return None
+        else:
+            return self.mask_range
 
     def write_to_npy(self, chi_filen_wo_ext_in_temp):
         """
