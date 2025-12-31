@@ -204,8 +204,7 @@ class MplController(object):
         # Get cake data
         intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
 
-        print(str(datetime.datetime.now())[:-7], 
-        ': Num of tth points = {0:.0f}, azi strips = {1:.0f}'.format(len(tth_cake), len(chi_cake)))
+        #print(str(datetime.datetime.now())[:-7], ': Num of tth points = {0:.0f}, azi strips = {1:.0f}'.format(len(tth_cake), len(chi_cake)))
 
         # make a copy of intensity_cake and make sure it also has mask information 
         #intensity_cake_plot = ma.masked_values(intensity_cake, 0.)
@@ -241,8 +240,8 @@ class MplController(object):
         mask_range = self.model.diff_img.get_mask_range()
         if (self.widget.pushButton_ApplyMask.isChecked() and mask_range != None):
             vmin_mask, vmax_mask = mask_range
-            mask = (int_plot < vmin_mask) | (int_plot > vmax_mask) # | ~np.isfinite(int_plot)
-            print(np.sum(mask))
+            mask = (int_plot < vmin_mask) | (int_plot > vmax_mask) | ~np.isfinite(int_plot)
+            # print(np.sum(mask))
             int_new = ma.masked_where(mask, int_plot, copy=False)
             self.model.diff_img.set_mask(mask_range)
         else:
@@ -285,8 +284,7 @@ class MplController(object):
                     chi_cake.min(), chi_cake.max()],
             aspect="auto", cmap=cmap, clim=climits)  # gray_r
         """
-        print(str(datetime.datetime.now())[:-7], 
-            ': Cake intensity min, max = ', climits)
+        #print(str(datetime.datetime.now())[:-7], ': Cake intensity min, max = ', climits)
 
         # overlay azimuthal sections information
         tth_list, azi_list, note_list = self._read_azilist()
