@@ -237,18 +237,19 @@ class CakeController(object):
 
     def apply_mask(self):
         # self.produce_cake()
-        min_mask = self.widget.spinBox_MaskMin.value()
-        max_mask = self.widget.spinBox_MaskMax.value()
+        min_mask = float(self.widget.spinBox_MaskMin.value())
+        max_mask = float(self.widget.spinBox_MaskMax.value())
         self.model.diff_img.set_mask([min_mask, max_mask])
         self._apply_changes_to_graph()
 
     def reset_maskrange(self):
         # get min and max of the cake image
-        intensity_cake, _, _ = self.model.diff_img.get_cake()
+        #intensity_cake, _, _ = self.model.diff_img.get_cake()
+        intensity = self.model.diff_img.img
         # push those values to spinboxes
-        self.widget.spinBox_MaskMin.setValue(int(intensity_cake.min()))
-        self.widget.spinBox_MaskMax.setValue(int(intensity_cake.max()))
-        self.model.diff_img.set_mask([intensity_cake.min(), intensity_cake.max()])
+        self.widget.spinBox_MaskMin.setValue(int(intensity.min()))
+        self.widget.spinBox_MaskMax.setValue(int(intensity.max()))
+        self.model.diff_img.set_mask(None)
         self._apply_changes_to_graph()
         # reprocess the image
         # self.apply_mask()

@@ -11,8 +11,9 @@ class CakemakeController(object):
 
     def read_settings(self):
         self.model.diff_img.set_calibration(self.model.poni)
-        self.model.diff_img.set_mask((self.widget.spinBox_MaskMin.value(),
-                                      self.widget.spinBox_MaskMax.value()))
+        mask_min = float(self.widget.spinBox_MaskMin.value())
+        mask_max = float(self.widget.spinBox_MaskMax.value())
+        self.model.diff_img.set_mask([mask_min, mask_max])
 
     def cook(self):
         self.read_settings()

@@ -24,7 +24,6 @@ class DiffImg(object):
         self.tth_cake = None
         self.chi_cake = None
         self.mask = None
-        self.mask_range = []
 
     def load(self, img_filename):
         self.img_filename = img_filename
@@ -142,17 +141,56 @@ class DiffImg(object):
     def set_mask(self, range):
         if self.img is None:
             return False
+        if range == None:
+            self.mask = None
+            return False
+        # print('set_mask', self.img.max(), range)
         masked = ma.masked_where(
-            (self.img <= range[0]) | (self.img >= range[1]), self.img)
+            (self.img < range[0]) | (self.img > range[1]), self.img)
         self.mask = masked.mask
-        self.mask_range = range
         #self.integrate_to_cake()
-
+        
     def get_mask_range(self):
-        if self.mask_range == []:
+        """
+        Return the numeric range spanned by the *unmasked* pixels.
+
+        Returns:
+            [vmin, vmax] (floats) for the unmasked data, or None if
+            self.img or self.mask is missing or there are no unmasked pixels.
+        """
+        if self.mask is None or self.img is None:
             return None
-        else:
-            return self.mask_range
+
+        # Ensure mask is a boolean array of same shape as img
+        mask = self.mask
+        try:
+            # If mask came from a MaskedArray, it might be a boolean array or MaskedConstant
+            if np.ma.isMaskedArray(mask):
+                mask = mask.mask
+        except Exception:
+            pass
+
+        mask = np.asarray(mask, dtype=bool)
+
+        # Compute unmasked boolean selection
+        unmasked_sel = ~mask
+
+        # If no unmasked pixels, nothing to return
+        if not np.any(unmasked_sel):
+            return None
+
+        # Extract unmasked data, ignore NaN/Inf safely
+        unmasked_vals = self.img[unmasked_sel]
+        # Mask invalid float values
+        unmasked_vals = unmasked_vals[np.isfinite(unmasked_vals)]
+
+        if unmasked_vals.size == 0:
+            return None
+
+        vmin = float(np.nanmin(unmasked_vals))
+        vmax = float(np.nanmax(unmasked_vals))
+
+        return [vmin, vmax]
 
     def write_to_npy(self, chi_filen_wo_ext_in_temp):
         """

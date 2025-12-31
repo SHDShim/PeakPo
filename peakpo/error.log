@@ -1,16 +1,11 @@
 --------------------------------------------------------------------------------
-2025-12-30, 18:26:57
+2025-12-30, 23:37:06
 --------------------------------------------------------------------------------
-<class 'AttributeError'>: 
-'NoneType' object has no attribute 'getFit2D'
+<class 'ValueError'>: 
+The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
 --------------------------------------------------------------------------------
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/cakecontroller.py", line 251, in reset_maskrange
-    self.model.diff_img.set_mask([intensity_cake.min(), intensity_cake.max()])
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/ds_cake/DiffractionImage.py", line 149, in set_mask
-    self.integrate_to_cake()
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/ds_cake/DiffractionImage.py", line 118, in integrate_to_cake
-    n_azi_pnts = self.calculate_n_azi_pnts() * 2
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/ds_cake/DiffractionImage.py", line 77, in calculate_n_azi_pnts
-    fit2d_parameter = self.poni.getFit2D()
-                      ^^^^^^^^^^^^^^^^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/cakecontroller.py", line 242, in apply_mask
+    self.model.diff_img.set_mask([min_mask, max_mask])
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/ds_cake/DiffractionImage.py", line 147, in set_mask
+    print('set_mask', max(self.img), range)
+                      ^^^^^^^^^^^^^

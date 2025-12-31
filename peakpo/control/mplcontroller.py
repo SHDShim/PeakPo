@@ -238,12 +238,13 @@ class MplController(object):
         # Mask zeros (treat them as "bad" pixels)
         #int_new = ma.masked_equal(int_plot, 0.0, copy=False)
         mask_range = self.model.diff_img.get_mask_range()
+        # print('mask_range', mask_range)
         if (self.widget.pushButton_ApplyMask.isChecked() and mask_range != None):
             vmin_mask, vmax_mask = mask_range
             mask = (int_plot < vmin_mask) | (int_plot > vmax_mask) | ~np.isfinite(int_plot)
             # print(np.sum(mask))
             int_new = ma.masked_where(mask, int_plot, copy=False)
-            self.model.diff_img.set_mask(mask_range)
+            # self.model.diff_img.set_mask(mask_range)
         else:
             # ensure int_new is a MaskedArray for consistent handling
             if np.ma.isMaskedArray(int_plot):
