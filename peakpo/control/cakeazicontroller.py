@@ -215,6 +215,8 @@ class CakeAziController(object):
         tth = []
         intensity = []
         mid_angle = self.widget.spinBox_AziShift.value()
+        # unsure line below is needed
+        self.model.diff_img.integrate_to_cake()
         for azi_i in azi_list:
             azi_conv = []
             if mid_angle <= 180:

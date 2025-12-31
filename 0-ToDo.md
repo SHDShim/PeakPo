@@ -1,0 +1,10 @@
+- [x] test excel output functions
+- [ ] `dpp` read error particularly with old `pyFAI` related issues.
+- [ ] `pip install` setup
+- [ ] make an installation instruction 
+- [ ] Not sure but can we add background subtraction function for cake images?
+- [ ] can we solve long cake processing time issue with H5?  Search for methods using LLMs.
+- [ ] Update jnb-tools folder contents
+- [ ] Update environments folder contents
+- [ ] Update scripts folder contents
+- [ ] Update shortcuts folder contents

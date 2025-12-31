@@ -1,20 +1,16 @@
 --------------------------------------------------------------------------------
-2025-12-29, 23:44:02
+2025-12-30, 18:26:57
 --------------------------------------------------------------------------------
-<class 'RuntimeError'>: 
-Mask shape matches
+<class 'AttributeError'>: 
+'NoneType' object has no attribute 'getFit2D'
 --------------------------------------------------------------------------------
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/maincontroller.py", line 284, in integrate_to_1d
-    filen = self.cakeazi_ctrl.integrate_to_1d()
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/cakeazicontroller.py", line 234, in integrate_to_1d
-    tth_i, intensity_i = self.model.diff_img.integrate_to_1d(
-                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/ds_cake/DiffractionImage.py", line 105, in integrate_to_1d
-    tth, intensity = self.poni.integrate1d(
-                     ^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/site-packages/pyFAI/integrator/azimuthal.py", line 247, in integrate1d
-    cython_integr = self.setup_sparse_integrator(shape, npt, mask,
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/homebrew/Caskroom/miniforge/base/envs/pkpo2026/lib/python3.11/site-packages/pyFAI/integrator/common.py", line 400, in setup_sparse_integrator
-    raise RuntimeError("Mask shape matches")
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/cakecontroller.py", line 251, in reset_maskrange
+    self.model.diff_img.set_mask([intensity_cake.min(), intensity_cake.max()])
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/ds_cake/DiffractionImage.py", line 149, in set_mask
+    self.integrate_to_cake()
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/ds_cake/DiffractionImage.py", line 118, in integrate_to_cake
+    n_azi_pnts = self.calculate_n_azi_pnts() * 2
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/ds_cake/DiffractionImage.py", line 77, in calculate_n_azi_pnts
+    fit2d_parameter = self.poni.getFit2D()
+                      ^^^^^^^^^^^^^^^^^^

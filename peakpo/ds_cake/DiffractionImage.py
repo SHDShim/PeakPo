@@ -24,6 +24,7 @@ class DiffImg(object):
         self.tth_cake = None
         self.chi_cake = None
         self.mask = None
+        self.mask_range = []
 
     def load(self, img_filename):
         self.img_filename = img_filename
@@ -144,7 +145,11 @@ class DiffImg(object):
         masked = ma.masked_where(
             (self.img <= range[0]) | (self.img >= range[1]), self.img)
         self.mask = masked.mask
-        self.integrate_to_cake()
+        self.mask_range = range
+        #self.integrate_to_cake()
+
+    def get_mask_range(self):
+        return self.mask_range
 
     def write_to_npy(self, chi_filen_wo_ext_in_temp):
         """

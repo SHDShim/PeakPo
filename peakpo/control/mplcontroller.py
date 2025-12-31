@@ -204,6 +204,9 @@ class MplController(object):
         # Get cake data
         intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
 
+        print(str(datetime.datetime.now())[:-7], 
+        ': Num of tth points = {0:.0f}, azi strips = {1:.0f}'.format(len(tth_cake), len(chi_cake)))
+
         # make a copy of intensity_cake and make sure it also has mask information 
         #intensity_cake_plot = ma.masked_values(intensity_cake, 0.)
         # intensity_cake_plot = ma.masked_equal(intensity_cake, 0.0, copy=False)
@@ -227,22 +230,32 @@ class MplController(object):
         # get azimuthal angle shift parameter mid_angle and apply to the data.
         # if intensity_cake, intensity_cake_plot, int_new are all temporary, it is better to merge them into one variable to save memory?
         mid_angle = self.widget.spinBox_AziShift.value()
+        int_plot = intensity_cake
         if mid_angle != 0:
             #int_new = np.array(intensity_cake_plot)
-            int_plot = intensity_cake
             int_plot[0:mid_angle] = intensity_cake[360 - mid_angle:361]
             int_plot[mid_angle:361] = intensity_cake[0:360 - mid_angle]
-        else:
-            # int_new = np.array(intensity_cake_plot)
-            int_plot = intensity_cake
 
         # Mask zeros (treat them as "bad" pixels)
-        int_new = ma.masked_equal(int_plot, 0.0, copy=False)
+        #int_new = ma.masked_equal(int_plot, 0.0, copy=False)
+        mask_range = self.model.diff_img.get_mask_range()
+        if (self.widget.pushButton_ApplyMask.isChecked() and mask_range != []):
+            vmin_mask, vmax_mask = mask_range
+            mask = (int_plot < vmin_mask) | (int_plot > vmax_mask) # | ~np.isfinite(int_plot)
+            print(np.sum(mask))
+            int_new = ma.masked_where(mask, int_plot, copy=False)
+            self.model.diff_img.set_mask(mask_range)
+        else:
+            # ensure int_new is a MaskedArray for consistent handling
+            if np.ma.isMaskedArray(int_plot):
+                int_new = int_plot
+            else:
+                int_new = ma.MaskedArray(int_plot)  # no mask
 
         # Colormap: masked ("bad") pixels in semi-transparent red
         cmap = (plt.cm.gray if self.widget.checkBox_WhiteForPeak.isChecked()
                 else plt.cm.gray_r).copy()
-        cmap.set_bad(color=(1.0, 0.0, 0.0, 0.15))  # red with alpha=0.5
+        cmap.set_bad(color=(1.0, 0.0, 0.0, 1.0))  # red with alpha=0.5
 
         self.widget.mpl.canvas.ax_cake.imshow(
             int_new,
@@ -834,8 +847,6 @@ class MplController(object):
         if dsp is None:
             return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I={}, d-sp=NA".format(x, y, z_text)
         return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I={}, d-sp={:.4f}\u212B".format(x, y, z_text, dsp)
-
-
 
 from matplotlib.textpath import TextPath
 

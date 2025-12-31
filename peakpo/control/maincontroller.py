@@ -35,11 +35,11 @@ from ds_powdiff import get_DataSection
 class MainController(object):
 
     def __init__(self):
-        print("MainController.__init__ - START")
 
+        print("MainController.__init__ - START")
         self.widget = MainWindow()
         print("  ✓ MainWindow created")
-        
+
         self.model = PeakPoModel8()
         print("  ✓ PeakPoModel8 created")
         
