@@ -65,3 +65,14 @@ htmlcov/
 *.tmp
 *.bak
 *.orig
+
+# Generated notebook outputs
+*.html
+*.nb.html
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# If you store automatically exported python files and don't want them committed
+# (only do this if you will rely on jupytext paired files instead)
+# *.py    # enable only if you choose to ignore generated .py files
