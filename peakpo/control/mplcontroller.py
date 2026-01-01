@@ -201,8 +201,6 @@ class MplController(object):
         import matplotlib.patches as patches
         import matplotlib.pyplot as plt
 
-        # Get cake data
-        intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
 
         #print(str(datetime.datetime.now())[:-7], ': Num of tth points = {0:.0f}, azi strips = {1:.0f}'.format(len(tth_cake), len(chi_cake)))
 
@@ -228,6 +226,11 @@ class MplController(object):
 
         # get azimuthal angle shift parameter mid_angle and apply to the data.
         # if intensity_cake, intensity_cake_plot, int_new are all temporary, it is better to merge them into one variable to save memory?
+
+        # Get cake data
+        intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
+#        self.model.diff_img.integrate_to_cake()
+
         mid_angle = self.widget.spinBox_AziShift.value()
         int_plot = intensity_cake
         if mid_angle != 0:

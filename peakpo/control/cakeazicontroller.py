@@ -17,9 +17,9 @@ class CakeAziController(object):
 
     def connect_channel(self):
         """
-        self.widget.pushButton_IntegrateCake.clicked.connect(
-            self.integrate_to_1d)
+        Integrate handling exists in maincontroller.py
         """
+        # self.widget.pushButton_IntegrateCake.clicked.connect(self.integrate_to_1d)
         self.widget.pushButton_AddAzi.clicked.connect(
             self._add_azi_to_list)
         self.widget.pushButton_RemoveAzi.clicked.connect(
@@ -205,6 +205,8 @@ class CakeAziController(object):
             return tth_range, azi_range
 
     def integrate_to_1d(self):
+
+        # get azimuthal angle list from UI
         azi_list = self._read_azilist()
         if azi_list is None:
             QtWidgets.QMessageBox.warning(
@@ -215,8 +217,9 @@ class CakeAziController(object):
         tth = []
         intensity = []
         mid_angle = self.widget.spinBox_AziShift.value()
-        # unsure line below is needed
-        self.model.diff_img.integrate_to_cake()
+
+        # azi_conv = converted azimuthal angle for mid_angle shift.
+        # azi_real = azimuthal angle in original img data.
         for azi_i in azi_list:
             azi_conv = []
             if mid_angle <= 180:
@@ -238,6 +241,7 @@ class CakeAziController(object):
             tth.append(tth_i)
             intensity.append(intensity_i)
         intensity_merged = np.zeros_like(intensity[0])
+        # adding 1D intensities of different azi sections on top of each other
         for tth_i, intensity_i in zip(tth, intensity):
             if not np.array_equal(tth_i, tth[0]):
                 QtWidgets.QMessageBox.warning(

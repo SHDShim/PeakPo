@@ -1,4 +1,5 @@
 - [x] test excel output functions
+- [ ] self.mask should be defined clearly whether for cake or original data.  for speed it should be better for cake.  then later when mask file from dioptas is read, which is for original image, it can be confusing.  But intensity mask can be still maintained for cake, not for original.  The decision depends on whether sectional integration is happening for existing cake or for original image file.
 - [ ] `dpp` read error particularly with old `pyFAI` related issues.
 - [ ] `pip install` setup
 - [ ] make an installation instruction 

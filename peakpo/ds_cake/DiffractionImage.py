@@ -18,12 +18,15 @@ class DiffImg(object):
         self.img_filename = None
         self.poni = None
         self.img = None
+        # mask for self.img, not self.intensity_cake (cake image)
+        self.mask = None 
+        # self.intensity is for intersity of 1D pattern
         self.intensity = None
         self.tth = None
+        # the following three are for cake
         self.intensity_cake = None
         self.tth_cake = None
         self.chi_cake = None
-        self.mask = None
 
     def load(self, img_filename):
         self.img_filename = img_filename
@@ -43,7 +46,6 @@ class DiffImg(object):
         self.img = np.array(data)[::-1]
         print(str(datetime.datetime.now())[:-7], 
                 ": Load ", self.img_filename)
-
 
     def histogram(self):
         import matplotlib.pyplot as plt
@@ -89,8 +91,10 @@ class DiffImg(object):
         return int(max_dist * 2)
 
     def calculate_max_twotheta(self):
-        # 2019/06/20 decrease r by a factor of 2 and
-        # decrease tth_max by a factor of 2.
+        """
+        2019/06/20 decrease r by a factor of 2 and
+        decrease tth_max by a factor of 2.
+        """
         d = self.poni.dist
         r = self.calculate_n_azi_pnts() * \
             np.max([self.poni.pixel1, self.poni.pixel2]) / 2.  # / 2.
@@ -100,8 +104,14 @@ class DiffImg(object):
         return tth_max
 
     def integrate_to_1d(self, **kwargs):
+        """
+        Integrate to 1D pattern
+        self.mask is used for self.img
+        """
         n_azi_pnts = self.calculate_n_azi_pnts()  # * 2 reduced number for Mar345 data
         radial_range = (0., self.calculate_max_twotheta())
+
+        # integrate to 1 D using pyFAI
         tth, intensity = self.poni.integrate1d(
             self.img, n_azi_pnts, radial_range=radial_range,
             mask=self.mask, unit="2th_deg", polarization_factor=0.99,
@@ -113,13 +123,18 @@ class DiffImg(object):
         return tth, intensity
 
     def integrate_to_cake(self, **kwargs):
+        """
+        Make cake image from original img data.
+        Note that self.mask is used here and therefore self.mask
+        should be for self.img
+        """
         t_start = time.time()
         n_azi_pnts = self.calculate_n_azi_pnts() * 2
         radial_range = (0., self.calculate_max_twotheta())
         intensity_cake, tth_cake, chi_cake = self.poni.integrate2d(
             self.img, n_azi_pnts, 360, unit="2th_deg", method='csr',
-            radial_range=radial_range, polarization_factor=0.99, mask=self.mask,
-            **kwargs)
+            radial_range=radial_range, polarization_factor=0.99, 
+            mask=self.mask, **kwargs)
         print(str(datetime.datetime.now())[:-7], 
             ": Caking takes {0:.2f}s".format(time.time() - t_start))
         self.intensity_cake = intensity_cake
@@ -139,9 +154,11 @@ class DiffImg(object):
             return self.intensity_cake, self.tth_cake, self.chi_cake
 
     def set_mask(self, range):
-        if self.img is None:
-            return False
-        if range == None:
+        """
+        Calculate mask array for self.img.
+        Mask pixels below range[0] and pixels above range[1]
+        """
+        if (self.img is None) or (range ==None):
             self.mask = None
             return False
         # print('set_mask', self.img.max(), range)
@@ -149,6 +166,15 @@ class DiffImg(object):
             (self.img < range[0]) | (self.img > range[1]), self.img)
         self.mask = masked.mask
         #self.integrate_to_cake()
+
+    def get_mask(self):
+        """
+        Get mask for self.img
+        If there is no img or mask, then return None
+        """
+        if (self.img is None):
+            self.mask = None
+        return self.mask
         
     def get_mask_range(self):
         """

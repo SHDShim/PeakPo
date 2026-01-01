@@ -281,7 +281,10 @@ class MainController(object):
         self.apply_changes_to_graph()
 
     def integrate_to_1d(self):
+        # cakeazi_ctrl is pointing CakeAziController 
+        # which is in cakeazicontroller.py
         filen = self.cakeazi_ctrl.integrate_to_1d()
+
         if filen is None:
             return
         else:
