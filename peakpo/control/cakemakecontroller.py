@@ -11,6 +11,9 @@ class CakemakeController(object):
 
     def read_settings(self):
         self.model.diff_img.set_calibration(self.model.poni)
+        # read intensity mask setting from UI and set diff_img object
+        # for masking.  mask_min and mask_max is for original image, not
+        # for intensity_cake.
         mask_min = float(self.widget.spinBox_MaskMin.value())
         mask_max = float(self.widget.spinBox_MaskMax.value())
         self.model.diff_img.set_mask([mask_min, mask_max])

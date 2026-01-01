@@ -4680,8 +4680,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>568</width>
-                     <height>637</height>
+                     <width>360</width>
+                     <height>320</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_35">
@@ -5143,7 +5143,7 @@
             <item>
              <widget class="QTabWidget" name="tabWidget_2">
               <property name="currentIndex">
-               <number>1</number>
+               <number>0</number>
               </property>
               <widget class="QWidget" name="tabWidget_2Page1">
                <attribute name="title">
@@ -5883,6 +5883,9 @@
                          <property name="alignment">
                           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                          </property>
+                         <property name="minimum">
+                          <number>-1000000</number>
+                         </property>
                          <property name="maximum">
                           <number>10000000</number>
                          </property>
@@ -5917,6 +5920,9 @@
                          </property>
                          <property name="alignment">
                           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                         </property>
+                         <property name="minimum">
+                          <number>-1000</number>
                          </property>
                          <property name="maximum">
                           <number>10000000</number>

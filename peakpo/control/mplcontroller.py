@@ -198,9 +198,11 @@ class MplController(object):
     """
 
     def _plot_cake(self):
+        """
+        Controls cake viewing as well as mask
+        """
         import matplotlib.patches as patches
         import matplotlib.pyplot as plt
-
 
         #print(str(datetime.datetime.now())[:-7], ': Num of tth points = {0:.0f}, azi strips = {1:.0f}'.format(len(tth_cake), len(chi_cake)))
 
@@ -209,13 +211,12 @@ class MplController(object):
         # intensity_cake_plot = ma.masked_equal(intensity_cake, 0.0, copy=False)
         #intensity_cake_plot = ma.array(intensity_cake, mask=self.model.diff_img.mask)
 
-        # Get z scaling parameters
+        # Get image contrast parameters from UI
         min_slider_pos = self.widget.horizontalSlider_VMin.value()
         max_slider_pos = self.widget.horizontalSlider_VMax.value()
         if (max_slider_pos <= min_slider_pos):
             self.widget.horizontalSlider_VMin.setValue(1)
             self.widget.horizontalSlider_VMax.setValue(99)
-
         prefactor = self.widget.spinBox_MaxCakeScale.value() / \
             (10. ** self.widget.horizontalSlider_MaxScaleBars.value())
         # intensity_cake_plot.max() / \
@@ -229,8 +230,8 @@ class MplController(object):
 
         # Get cake data
         intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
-#        self.model.diff_img.integrate_to_cake()
 
+        # Shift cake image if necessary
         mid_angle = self.widget.spinBox_AziShift.value()
         int_plot = intensity_cake
         if mid_angle != 0:
@@ -238,27 +239,32 @@ class MplController(object):
             int_plot[0:mid_angle] = intensity_cake[360 - mid_angle:361]
             int_plot[mid_angle:361] = intensity_cake[0:360 - mid_angle]
 
-        # Mask zeros (treat them as "bad" pixels)
-        #int_new = ma.masked_equal(int_plot, 0.0, copy=False)
-        mask_range = self.model.diff_img.get_mask_range()
-        # print('mask_range', mask_range)
+        # Check if ApplyMask is on
+        # If so, get mask range from UI and set mask, then process cake for new mask.  Note that if mask from UI is for entire range of data, do not re-integrate.
+
+        """        mask_range = self.model.diff_img.get_mask_range()
         if (self.widget.pushButton_ApplyMask.isChecked() and mask_range != None):
             vmin_mask, vmax_mask = mask_range
             mask = (int_plot < vmin_mask) | (int_plot > vmax_mask) | ~np.isfinite(int_plot)
-            # print(np.sum(mask))
             int_new = ma.masked_where(mask, int_plot, copy=False)
-            # self.model.diff_img.set_mask(mask_range)
         else:
-            # ensure int_new is a MaskedArray for consistent handling
             if np.ma.isMaskedArray(int_plot):
                 int_new = int_plot
             else:
                 int_new = ma.MaskedArray(int_plot)  # no mask
+        """
 
         # Colormap: masked ("bad") pixels in semi-transparent red
         cmap = (plt.cm.gray if self.widget.checkBox_WhiteForPeak.isChecked()
                 else plt.cm.gray_r).copy()
-        cmap.set_bad(color=(1.0, 0.0, 0.0, 1.0))  # red with alpha=0.5
+
+        mask = self.model.diff_img.get_mask()
+        if (self.widget.pushButton_ApplyMask.isChecked() and ((mask is not None) and np.any(mask))):
+            int_new = ma.masked_where(int_plot == 0, int_plot)
+            cmap.set_bad(color=(1.0, 0.0, 0.0, 1.0))  
+        else:
+            int_new = int_plot
+
 
         self.widget.mpl.canvas.ax_cake.imshow(
             int_new,

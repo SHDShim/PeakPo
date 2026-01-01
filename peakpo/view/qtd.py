@@ -28,7 +28,7 @@ class Ui_MainWindow(object):
             mpl_fontsize = 9
         else:
             mpl_fontsize = 12        
-        MainWindow.setStyleSheet("font: {:d}pt \"Helvetica\";".format(mpl_fontsize))        
+        MainWindow.setStyleSheet("font: {:d}pt \"Helvetica\";".format(mpl_fontsize))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout_25 = QtWidgets.QVBoxLayout(self.centralwidget)
@@ -621,7 +621,7 @@ class Ui_MainWindow(object):
         self.scrollArea_2.setAlignment(QtCore.Qt.AlignCenter)
         self.scrollArea_2.setObjectName("scrollArea_2")
         self.scrollAreaWidgetContents_2 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 568, 733))
+        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 375, 733))
         self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
         self.verticalLayout_31 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents_2)
         self.verticalLayout_31.setObjectName("verticalLayout_31")
@@ -1961,7 +1961,7 @@ class Ui_MainWindow(object):
         self.scrollArea_6.setWidgetResizable(True)
         self.scrollArea_6.setObjectName("scrollArea_6")
         self.scrollAreaWidgetContents_6 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_6.setGeometry(QtCore.QRect(0, 0, 568, 637))
+        self.scrollAreaWidgetContents_6.setGeometry(QtCore.QRect(0, 0, 360, 320))
         self.scrollAreaWidgetContents_6.setObjectName("scrollAreaWidgetContents_6")
         self.verticalLayout_35 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents_6)
         self.verticalLayout_35.setObjectName("verticalLayout_35")
@@ -2442,6 +2442,7 @@ class Ui_MainWindow(object):
         self.spinBox_MaskMin.setMinimumSize(QtCore.QSize(0, 25))
         self.spinBox_MaskMin.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.spinBox_MaskMin.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.spinBox_MaskMin.setMinimum(-1000000)
         self.spinBox_MaskMin.setMaximum(10000000)
         self.spinBox_MaskMin.setObjectName("spinBox_MaskMin")
         self.horizontalLayout_16.addWidget(self.spinBox_MaskMin)
@@ -2457,6 +2458,7 @@ class Ui_MainWindow(object):
         self.spinBox_MaskMax.setMinimumSize(QtCore.QSize(0, 25))
         self.spinBox_MaskMax.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.spinBox_MaskMax.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.spinBox_MaskMax.setMinimum(-1000)
         self.spinBox_MaskMax.setMaximum(10000000)
         self.spinBox_MaskMax.setProperty("value", 10000000)
         self.spinBox_MaskMax.setObjectName("spinBox_MaskMax")

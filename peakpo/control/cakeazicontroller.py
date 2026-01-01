@@ -5,7 +5,6 @@ from utils import dialog_savefile, writechi
 from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
 
-
 class CakeAziController(object):
 
     def __init__(self, model, widget):

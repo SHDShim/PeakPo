@@ -152,15 +152,27 @@ class DiffImg(object):
             return None, None, None
         else:
             return self.intensity_cake, self.tth_cake, self.chi_cake
+        
+    def get_img_zrange(self):
+        if self.img is None:
+            return None
+        else:
+            zmin = self.img.min()
+            zmax = self.img.max()
+            return [zmin, zmax]
 
     def set_mask(self, range):
         """
         Calculate mask array for self.img.
         Mask pixels below range[0] and pixels above range[1]
         """
-        if (self.img is None) or (range ==None):
+        if (self.img is None):
+            # here returns array used for mask without any masked points
             self.mask = None
-            return False
+            return
+        if (range is None):
+            self.mask = np.zeros_like(self.img, dtype=bool)
+            return
         # print('set_mask', self.img.max(), range)
         masked = ma.masked_where(
             (self.img < range[0]) | (self.img > range[1]), self.img)
