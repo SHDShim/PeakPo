@@ -1,0 +1,67 @@
+# =========================
+# Python bytecode
+# =========================
+__pycache__/
+*.py[cod]
+
+# =========================
+# Virtual environments
+# =========================
+.venv/
+venv/
+env/
+
+# =========================
+# Python packaging
+# =========================
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# =========================
+# PyQt / Qt runtime artifacts
+# =========================
+*.qmlc
+*.qmlcache
+qt.conf
+
+# =========================
+# Matplotlib cache
+# =========================
+.matplotlib/
+
+# =========================
+# Logs and runtime files
+# =========================
+*.log
+*.pid
+
+# =========================
+# Editor / IDE
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# =========================
+# OS-specific
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Test / coverage
+# =========================
+.pytest_cache/
+.coverage
+htmlcov/
+
+# =========================
+# Temporary / scratch
+# =========================
+*.tmp
+*.bak
+*.orig
