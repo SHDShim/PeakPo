@@ -1,11 +1,9 @@
 --------------------------------------------------------------------------------
-2025-12-31, 19:48:53
+2026-01-01, 21:11:09
 --------------------------------------------------------------------------------
-<class 'TypeError'>: 
-'NoneType' object is not subscriptable
+<class 'AttributeError'>: 
+'matplotlib.backends._backend_agg.BufferRegion' object has no attribute 'to_string_argb'
 --------------------------------------------------------------------------------
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/cakecontroller.py", line 261, in reset_maskrange
-    self.model.diff_img.set_mask(None)
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/ds_cake/DiffractionImage.py", line 174, in set_mask
-    (self.img < range[0]) | (self.img > range[1]), self.img)
-                ~~~~~^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/view/mplwidget.py", line 104, in paintEvent
+    buf = reg.to_string_argb()
+          ^^^^^^^^^^^^^^^^^^
