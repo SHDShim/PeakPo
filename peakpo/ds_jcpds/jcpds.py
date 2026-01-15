@@ -2,7 +2,8 @@ import numpy as np
 import os
 from pytheos import bm3_v, bm3_p
 from .xrd import cal_UnitCellVolume, cal_dspacing
-import pymatgen as mg
+#import pymatgen as mg
+import pymatgen.core as mg 
 from pymatgen.analysis.diffraction.xrd import XRDCalculator
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from .jcpds_dioptas import jcpds, jcpds_reflection
