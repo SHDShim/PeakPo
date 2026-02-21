@@ -270,7 +270,7 @@ class JcpdsTableController(object):
         
         self.widget.tableWidget_JCPDS.resizeColumnsToContents()
         self.widget.tableWidget_JCPDS.itemClicked.connect(
-            self._handle_ItemClicked)
+            self._handle_ItemClicked, QtCore.Qt.UniqueConnection)
 
     def _handle_doubleSpinBoxChanged(self, value):
         box = self.widget.sender()

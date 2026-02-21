@@ -1,9 +1,17 @@
 --------------------------------------------------------------------------------
-2026-01-01, 21:11:09
+2026-02-21, 17:42:27
 --------------------------------------------------------------------------------
-<class 'AttributeError'>: 
-'matplotlib.backends._backend_agg.BufferRegion' object has no attribute 'to_string_argb'
+<class 'ValueError'>: 
+not enough values to unpack (expected 2, got 0)
 --------------------------------------------------------------------------------
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/view/mplwidget.py", line 104, in paintEvent
-    buf = reg.to_string_argb()
-          ^^^^^^^^^^^^^^^^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/basepatterncontroller.py", line 33, in select_base_ptn
+    self._setshow_new_base_ptn(str(filen))
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/basepatterncontroller.py", line 51, in _setshow_new_base_ptn
+    self._load_a_new_pattern(new_filename)
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/control/basepatterncontroller.py", line 66, in _load_a_new_pattern
+    self.model.set_base_ptn(
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/model/model.py", line 246, in set_base_ptn
+    self.base_ptn.read_file(new_base_ptn_filen)
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.0/peakpo/ds_powdiff/DiffractionPattern.py", line 33, in read_file
+    twotheta, intensity = data.T
+    ^^^^^^^^^^^^^^^^^^^
