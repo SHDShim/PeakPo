@@ -159,7 +159,7 @@ class JcpdsController(object):
             else:
                 QtWidgets.QMessageBox.warning(
                     self.widget, "Warning",
-                    f+" seems to have errors in format.")
+                    f+" could be DIOPTAS JCPDS which has a different format.")
         
         # Display on the QTableWidget
         self.jcpdstable_ctrl.update()

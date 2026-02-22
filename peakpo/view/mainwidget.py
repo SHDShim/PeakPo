@@ -131,9 +131,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_SetPStepTo10.clicked.connect(
             lambda: self.set_q_pstep(10.))
         self.pushButton_SetTStepTo100.clicked.connect(
-            lambda: self.set_q_tstep(100.))
+            lambda: self.set_q_tstep(100))
         self.pushButton_SetTStepTo1000.clicked.connect(
-            lambda: self.set_q_tstep(1000.))
+            lambda: self.set_q_tstep(1000))
         self.doubleSpinBox_PStep.valueChanged.connect(self.set_pstep)
         self.spinBox_TStep.valueChanged.connect(self.set_tstep)
         """
