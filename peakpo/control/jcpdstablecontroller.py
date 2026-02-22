@@ -269,8 +269,13 @@ class JcpdsTableController(object):
                     setKeyboardTracking(False)
         
         self.widget.tableWidget_JCPDS.resizeColumnsToContents()
+        # Disconnect all previous connections to avoid multiple dialogs
+        try:
+            self.widget.tableWidget_JCPDS.itemClicked.disconnect()
+        except:
+            pass  # No connections exist yet
         self.widget.tableWidget_JCPDS.itemClicked.connect(
-            self._handle_ItemClicked, QtCore.Qt.UniqueConnection)
+            self._handle_ItemClicked)
 
     def _handle_doubleSpinBoxChanged(self, value):
         box = self.widget.sender()

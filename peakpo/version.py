@@ -7,7 +7,7 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.9.1"
+__version__ = "7.9.2"
 """
 7.9.1: Bug fix for multiple opens of color picker found at APS
 7.8.1: After having 8 months of stability check
