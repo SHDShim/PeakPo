@@ -26,7 +26,7 @@ setup(
     python_requires=">=3.11",
     install_requires=[
         "matplotlib==3.7.5",
-        "pymatgen==2023.12.18",
+        "pymatgen==2024.2.20",
         "numpy==1.26.4",
         "scipy==1.16.3",
         "pandas==2.3.3",
