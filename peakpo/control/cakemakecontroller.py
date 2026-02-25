@@ -1,6 +1,6 @@
 import os
 from PyQt5 import QtWidgets
-from utils import undo_button_press, dialog_savefile, writechi
+from ..utils import undo_button_press, dialog_savefile, writechi
 
 
 class CakemakeController(object):

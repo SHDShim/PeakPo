@@ -3,7 +3,7 @@ import dill
 from PyQt5 import QtWidgets
 from .mplcontroller import MplController
 from .peakfittablecontroller import PeakfitTableController
-from utils import make_filename, get_temp_dir
+from ..utils import make_filename, get_temp_dir
 
 
 class PeakFitController(object):

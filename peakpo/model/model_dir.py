@@ -3,13 +3,14 @@ import os
 import copy
 import datetime
 import xlwt
-from ds_cake import DiffImg
+from ..ds_cake import DiffImg
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
-from ds_jcpds import JCPDSplt, Session
-from ds_powdiff import PatternPeakPo, get_DataSection
-from ds_section import Section
-from utils import samefilename, make_filename, change_file_path
+from ..ds_jcpds import JCPDSplt, Session
+from ..ds_powdiff import PatternPeakPo, get_DataSection
+from ..ds_section import Section
+from ..utils import samefilename, make_filename, change_file_path
+from ..compat_pickle import PeakPoCompatPickleUnpickler
 
 
 class PeakPoDirModel(object):
@@ -334,7 +335,7 @@ class PeakPoDirModel(object):
 
     def read_ppss(self, fname):
         f = open(fname, 'rb')
-        session = pickle.load(f, encoding='latin1')
+        session = PeakPoCompatPickleUnpickler(f).load()
         f.close()
         self.session = session
 

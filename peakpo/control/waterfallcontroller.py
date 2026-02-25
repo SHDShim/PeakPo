@@ -5,7 +5,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtGui
 from .mplcontroller import MplController
 from .waterfalltablecontroller import WaterfallTableController
-from utils import convert_wl_to_energy, get_directory, get_temp_dir
+from ..utils import convert_wl_to_energy, get_directory, get_temp_dir
 
 
 class WaterfallController(object):

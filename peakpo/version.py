@@ -7,8 +7,9 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.9.2a"
+__version__ = "7.9.3"
 """
+7.9.3: Pip installable version
 7.9.2: Bug fix for DIOPTAS JCPDS Crash in windows.
 7.9.1: Bug fix for multiple opens of color picker found at APS
 7.8.1: After having 8 months of stability check

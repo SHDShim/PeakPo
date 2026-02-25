@@ -1,8 +1,8 @@
 import os
 from PyQt5 import QtWidgets
-from utils import get_sorted_filelist, find_from_filelist, readchi, \
+from ..utils import get_sorted_filelist, find_from_filelist, readchi, \
     make_filename, writechi, get_directory
-from utils import undo_button_press, get_temp_dir
+from ..utils import undo_button_press, get_temp_dir
 import datetime
 from .mplcontroller import MplController
 from .cakecontroller import CakeController

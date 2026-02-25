@@ -1,112 +1,61 @@
-"""A setuptools based setup module.
+from pathlib import Path
 
-THIS FILE IS NOT PROPERLY SETUP YET.
+from setuptools import find_packages, setup
 
-See:
-https://packaging.python.org/en/latest/distributing.html
-https://github.com/pypa/sampleproject
-"""
 
-# Always prefer setuptools over distutils
-from setuptools import setup, find_packages
-# To use a consistent encoding
-from codecs import open
-from os import path
-exec(open('./peakpo/version.py').read())
+about = {}
+exec(Path("peakpo/version.py").read_text(encoding="utf-8"), about)
 
-here = path.abspath(path.dirname(__file__))
+readme = Path("README.md").read_text(encoding="utf-8")
 
-# Get the long description from the README file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
 
 setup(
-    name='PeakPo',
-
-    # Versions should comply with PEP440.  For a discussion on single-sourcing
-    # the version across setup.py and the project code, see
-    # https://packaging.python.org/en/latest/single_source_version.html
-    version=__version__,
-
-    description='X-ray diffraction alaysis for high pressure science',
-    long_description=long_description,
-
-    # The project's main homepage.
-    url='https://github.com/shdshim/xxxx',
-
-    # Author details
-    author='S.-H. Dan Shim',
-    author_email='shdshim@gmail.com',
-
-    # Choose your license
-    license='Apache-2',
-
-    # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
-    classifiers=[
-        # How mature is this project? Common values are
-        #   3 - Alpha
-        #   4 - Beta
-        #   5 - Production/Stable
-        'Development Status :: 6 - Alpha',
-
-        # Indicate who your project is intended for
-        'Intended Audience :: Scientists',
-        'Topic :: Data Analysis :: ',
-
-        # Pick your license as you wish (should match "license" above)
-        'License :: OSI Approved :: Apache-2 License',
-
-        # Specify the Python versions you support here. In particular, ensure
-        # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 3.5',
+    name="PeakPo",
+    version=about["__version__"],
+    description="X-ray diffraction analysis for high pressure science",
+    long_description=readme,
+    long_description_content_type="text/markdown",
+    url="https://github.com/SHDShim/PeakPo",
+    author="S.-H. Dan Shim",
+    author_email="shdshim@gmail.com",
+    license="Apache-2.0",
+    packages=find_packages(exclude=("deletables", "setup_bin")),
+    include_package_data=False,
+    package_data={"peakpo": ["mplstyle/*.mplstyle"]},
+    exclude_package_data={"": ["__pycache__/*", "*.py[cod]"], "peakpo": ["error.log"]},
+    python_requires=">=3.11",
+    install_requires=[
+        "matplotlib==3.7.5",
+        "pymatgen==2023.12.18",
+        "numpy==1.26.4",
+        "scipy==1.16.3",
+        "pandas==2.3.3",
+        "pyqt5==5.15.10",
+        "pyqt5-qt5==5.15.18",
+        "pyqt5-sip==12.17.2",
+        "pyfai==2025.12.1",
+        "pytheos==0.0.2",
+        "lmfit==1.3.4",
+        "periodictable==2.0.2",
+        "silx==2.2.2",
+        "h5py==3.15.1",
+        "hdf5plugin==6.0.0",
+        "spglib==2.6.0",
+        "statsmodels==0.14.6",
+        "uncertainties==3.2.3",
+        "xlwt==1.3.0",
     ],
-
-    # What does your project relate to?
-    keywords='xrd analysis pressure',
-
-    # You can just specify the packages manually here if your project is
-    # simple. Or you can use find_packages().
-    packages=find_packages(exclude=['deletables', 'setup_bin']),
-
-    # Alternatively, if you want to distribute just a my_module.py, uncomment
-    # this:
-    #   py_modules=["my_module"],
-
-    # List run-time dependencies here.  These will be installed by pip when
-    # your project is installed. For an analysis of "install_requires" vs pip's
-    # requirements files see:
-    # https://packaging.python.org/en/latest/requirements.html
-    #    install_requires=['matplotlib>=2.0', 'pytheos', 'pyFAI', 'pyqt4',
-    #        'pyfai', 'pymatgen', 'periodictable', 'uncertainties', 'pyopencl'],
-
-    # List additional groups of dependencies here (e.g. development
-    # dependencies). You can install these using the following syntax,
-    # for example:
-    # $ pip install -e .[dev,test]
-    # extras_require={
-    #    'dev': ['check-manifest'],
-    #    'test': ['coverage'],
-    # },
-
-    # If there are data files included in your packages that need to be
-    # installed, specify them here.  If using Python 2.6 or less, then these
-    # have to be included in MANIFEST.in as well.
-    # package_data={
-    #    'sample': ['package_data.dat'],
-    # },
-
-    # Although 'package_data' is the preferred approach, in some case you may
-    # need to place data files outside of your packages. See:
-    # http://docs.python.org/3.4/distutils/setupscript.html#installing-additional-files # noqa
-    # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
-    # data_files=[('my_data', ['data/data_file'])],
-
-    # To provide executable scripts, use entry points in preference to the
-    # "scripts" keyword. Entry points provide cross-platform support and allow
-    # pip to create the appropriate form of executable for the target platform.
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: Apache Software License",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.11",
+    ],
+    keywords="xrd analysis pressure",
     entry_points={
-        'console_scripts': [
-            'peakpo=peakpo.peakpo',
+        "console_scripts": [
+            "peakpo=peakpo.__main__:main",
         ],
     },
 )

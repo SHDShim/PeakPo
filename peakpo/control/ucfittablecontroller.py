@@ -2,8 +2,8 @@ from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5 import QtGui
 from .mplcontroller import MplController
-from utils import SpinBoxFixStyle
-from utils import xls_ucfitlist, dialog_savefile
+from ..utils import SpinBoxFixStyle
+from ..utils import xls_ucfitlist, dialog_savefile
 
 
 class UcfitTableController(object):

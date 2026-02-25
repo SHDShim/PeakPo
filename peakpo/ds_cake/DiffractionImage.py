@@ -10,7 +10,7 @@ import datetime
 import collections
 import re
 
-from utils import make_filename, extract_extension
+from ..utils import make_filename, extract_extension
 
 
 class DiffImg(object):

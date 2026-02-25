@@ -11,7 +11,7 @@ import numpy.ma as ma
 #import matplotlib.pyplot as plt
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
-from ds_jcpds import convert_tth
+from ..ds_jcpds import convert_tth
 
 
 class MplController(object):

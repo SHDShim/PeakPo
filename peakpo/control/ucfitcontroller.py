@@ -7,8 +7,8 @@ from PyQt5 import QtGui
 import datetime
 from .mplcontroller import MplController
 from .ucfittablecontroller import UcfitTableController
-from utils import SpinBoxFixStyle
-from utils import xls_ucfitlist, dialog_savefile, fit_cubic_cell, \
+from ..utils import SpinBoxFixStyle
+from ..utils import xls_ucfitlist, dialog_savefile, fit_cubic_cell, \
     fit_hexagonal_cell, fit_tetragonal_cell, fit_orthorhombic_cell, \
     make_output_table, get_directory, make_filename, cal_dspacing, get_temp_dir
 

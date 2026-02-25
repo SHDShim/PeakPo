@@ -6,8 +6,8 @@ from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 import gc
 import datetime
-from view import MainWindow
-from model import PeakPoModel, PeakPoModel8
+from ..view import MainWindow
+from ..model import PeakPoModel, PeakPoModel8
 from .basepatterncontroller import BasePatternController
 from .mplcontroller import MplController
 # cake controller is called in BasePatternController already.
@@ -22,13 +22,13 @@ from .sessioncontroller import SessionController
 from .peakfitcontroller import PeakFitController
 from .peakfittablecontroller import PeakfitTableController
 from .cakeazicontroller import CakeAziController
-from utils import dialog_savefile, writechi, extract_extension, \
+from ..utils import dialog_savefile, writechi, extract_extension, \
     convert_wl_to_energy, get_sorted_filelist, find_from_filelist, \
     make_filename, get_directory, get_temp_dir
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
-from ds_jcpds import UnitCell
-from ds_powdiff import get_DataSection
+from ..ds_jcpds import UnitCell
+from ..ds_powdiff import get_DataSection
 #from utils import readchi, make_filename, writechi
 
 

@@ -6,14 +6,15 @@ import numpy
 import base64
 from json import JSONEncoder
 import json
-from ds_cake import DiffImg
+from ..ds_cake import DiffImg
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
-from ds_jcpds import JCPDSplt, Session
-from ds_powdiff import PatternPeakPo, get_DataSection
-from ds_section import Section
-from utils import samefilename, make_filename, change_file_path, \
+from ..ds_jcpds import JCPDSplt, Session
+from ..ds_powdiff import PatternPeakPo, get_DataSection
+from ..ds_section import Section
+from ..utils import samefilename, make_filename, change_file_path, \
     cal_dspacing, extract_extension
+from ..compat_pickle import PeakPoCompatPickleUnpickler
 
 
 class PeakPoModel(object):
@@ -322,7 +323,7 @@ class PeakPoModel(object):
 
     def read_ppss(self, fname):
         f = open(fname, 'rb')
-        session = pickle.load(f, encoding='latin1')
+        session = PeakPoCompatPickleUnpickler(f).load()
         f.close()
         self.session = session
 

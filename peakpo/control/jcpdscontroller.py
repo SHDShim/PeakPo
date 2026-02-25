@@ -8,9 +8,9 @@ from matplotlib import colors as mcolors
 import matplotlib.cm as cmx
 from .mplcontroller import MplController
 from .jcpdstablecontroller import JcpdsTableController
-from utils import xls_jlist, dialog_savefile, make_filename, get_temp_dir, \
+from ..utils import xls_jlist, dialog_savefile, make_filename, get_temp_dir, \
     InformationBox, extract_filename, extract_extension
-from ds_jcpds import JCPDS
+from ..ds_jcpds import JCPDS
 import pymatgen as mg
 import datetime
 

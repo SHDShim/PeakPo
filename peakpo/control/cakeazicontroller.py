@@ -1,7 +1,7 @@
 import os
 from PyQt5 import QtWidgets
 import numpy as np
-from utils import dialog_savefile, writechi
+from ..utils import dialog_savefile, writechi
 from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
 

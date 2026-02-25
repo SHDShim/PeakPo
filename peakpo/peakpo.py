@@ -12,15 +12,23 @@ if sys.platform == 'darwin':
 faulthandler.enable()
 
 # ========================================
-# STEP 2: Configure Matplotlib (BEFORE PyQt5)
+# STEP 2: Import QtCore and set attributes ASAP
+# ========================================
+from PyQt5.QtCore import Qt, QCoreApplication
+
+if sys.platform == 'darwin':
+    QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
+    QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, False)
+
+# ========================================
+# STEP 3: Configure Matplotlib (BEFORE QtWidgets QApplication)
 # ========================================
 import matplotlib
 matplotlib.use('Qt5Agg')
 
 # ========================================
-# STEP 3: Import PyQt5 ONLY (not your app modules yet)
+# STEP 4: Import remaining PyQt5 modules
 # ========================================
-from PyQt5.QtCore import Qt, QCoreApplication
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QPalette, QColor
 
@@ -29,13 +37,6 @@ from io import StringIO
 import traceback
 import time
 from sys import platform as _platform
-
-# ========================================
-# STEP 4: Set Qt Attributes (BEFORE QApplication)
-# ========================================
-if sys.platform == 'darwin':
-    QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
-    QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, False)
 
 # ========================================
 # STEP 5: CREATE QApplication FIRST!
@@ -47,8 +48,16 @@ app.setStyle('Fusion')
 # STEP 6: NOW Import Your Application Modules
 # (Safe because QApplication exists)
 # ========================================
-from utils import ErrorMessageBox
-from control import MainController
+if __package__ in (None, ""):
+    # Support direct script execution (e.g., python peakpo/peakpo.py)
+    # by forcing package context so relative imports behave consistently.
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if repo_root not in sys.path:
+        sys.path.insert(0, repo_root)
+    __package__ = "peakpo"
+
+from .utils import ErrorMessageBox
+from .control import MainController
 
 
 # ========================================

@@ -3,7 +3,7 @@ import shutil
 import glob
 from PyQt5 import QtWidgets
 import numpy as np
-from utils import dialog_savefile, writechi, get_directory, make_filename, \
+from ..utils import dialog_savefile, writechi, get_directory, make_filename, \
     get_temp_dir, extract_filename, extract_extension, InformationBox, \
         make_converted_poni2_filename, make_poni2_from_poni21, read_any_poni_file
 from .mplcontroller import MplController

@@ -13,8 +13,9 @@ from .waterfalltablecontroller import WaterfallTableController
 from .jcpdstablecontroller import JcpdsTableController
 from .peakfittablecontroller import PeakfitTableController
 from .cakemakecontroller import CakemakeController
-from utils import dialog_savefile, convert_wl_to_energy, get_temp_dir, \
+from ..utils import dialog_savefile, convert_wl_to_energy, get_temp_dir, \
     make_filename, extract_filename, get_unique_filename, backup_copy
+from ..compat_pickle import PeakPoCompatDillUnpickler
 
 class SessionController(object):
 
@@ -127,7 +128,7 @@ class SessionController(object):
         '''
         try:
             with open(filen_dpp, 'rb') as f:
-                model_dpp = dill.load(f)
+                model_dpp = PeakPoCompatDillUnpickler(f).load()
         except Exception as inst:
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning", str(inst))
