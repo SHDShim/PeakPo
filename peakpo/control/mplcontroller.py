@@ -647,7 +647,7 @@ class MplController(object):
                     fig_width_pixels = \
                         self.widget.mpl.canvas.fig.get_size_inches()[0] * \
                             self.widget.mpl.canvas.fig.dpi
-                    max_width = 0.75 * fig_width_pixels
+                    max_width = 0.5 * fig_width_pixels
                     title = truncate_title(temp_title, title_font_size, max_width)
                 
                 self.widget.mpl.canvas.fig.suptitle(
