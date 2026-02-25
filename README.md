@@ -14,7 +14,28 @@ Major functions include:
 - Visual unit cell fitting
 - Generation of Excel files containing all calculation results
 
-## How to install
+## How to install (may be unstable)
+
+Open terminal and make a new conda environment,
+
+```
+conda create -n pkpo793 python=3.11 -y
+```
+
+Activate the new environment,
+
+```
+conda activate pkpo793
+```
+
+Install `PeakPo`.
+
+```
+pip install -i https://test.pypi.org/simple/ PeakPo==7.9.3
+```
+
+
+## How to install before 7.9.x
 
 [Installation wiki page](https://github.com/SHDShim/PeakPo/wiki/Installation-and-Update) 
 
