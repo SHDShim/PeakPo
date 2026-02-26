@@ -7,7 +7,7 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.9.3"
+__version__ = "7.9.3a"
 """
 7.9.3: Pip installable version
 7.9.2: Bug fix for DIOPTAS JCPDS Crash in windows.
