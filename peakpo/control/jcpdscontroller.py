@@ -1,9 +1,9 @@
 import os
 import copy
 import numpy as np
-from PyQt5 import QtWidgets
-from PyQt5 import QtCore
-from PyQt5 import QtGui
+from qtpy import QtWidgets
+from qtpy import QtCore
+from qtpy import QtGui
 from matplotlib import colors as mcolors
 import matplotlib.cm as cmx
 from .mplcontroller import MplController
@@ -265,7 +265,7 @@ class JcpdsController(object):
             infobox.setText(textoutput)
             print(str(datetime.datetime.now())[:-7], 
                 ": Show JCPDS \n", textoutput)
-            infobox.exec_()
+            infobox.exec()
 
     def write_twk_jcpds(self):
         if not self.model.jcpds_exist():

@@ -1,5 +1,5 @@
 import os
-from PyQt5 import QtWidgets
+from qtpy import QtWidgets
 import numpy as np
 from ..utils import dialog_savefile, writechi
 from .mplcontroller import MplController

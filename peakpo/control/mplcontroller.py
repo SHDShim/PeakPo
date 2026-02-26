@@ -9,8 +9,8 @@ import numpy.ma as ma
 #import matplotlib.patches as patches
 #from matplotlib.textpath import TextPath
 #import matplotlib.pyplot as plt
-from PyQt5 import QtWidgets
-from PyQt5 import QtCore
+from qtpy import QtWidgets
+from qtpy import QtCore
 from ..ds_jcpds import convert_tth
 
 
@@ -596,7 +596,7 @@ class MplController(object):
     def update(self, limits=None, gsas_style=False, cake_ylimits=None):
         """Updates the graph"""
         import matplotlib.pyplot as plt
-        from PyQt5.QtCore import QTimer
+        from qtpy.QtCore import QTimer
         from matplotlib.widgets import MultiCursor
         import matplotlib.transforms as transforms  # ✅ UNCOMMENTED
         import matplotlib.patches as patches       # ✅ UNCOMMENTED
@@ -749,7 +749,7 @@ class MplController(object):
                     self.widget.cursor = None
             
             # ✅ Draw canvas (deferred to Qt event loop)
-            from PyQt5.QtCore import QTimer
+            from qtpy.QtCore import QTimer
             QTimer.singleShot(0, self.widget.mpl.canvas.draw)
             
             print(str(datetime.datetime.now())[:-7], 

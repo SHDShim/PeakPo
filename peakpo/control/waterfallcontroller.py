@@ -1,8 +1,8 @@
 import os
 import copy
-from PyQt5 import QtWidgets
-from PyQt5 import QtCore
-from PyQt5 import QtGui
+from qtpy import QtWidgets
+from qtpy import QtCore
+from qtpy import QtGui
 from .mplcontroller import MplController
 from .waterfalltablecontroller import WaterfallTableController
 from ..utils import convert_wl_to_energy, get_directory, get_temp_dir

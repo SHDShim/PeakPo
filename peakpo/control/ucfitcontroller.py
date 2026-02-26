@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy as np
 import lmfit
-from PyQt5 import QtWidgets
-from PyQt5 import QtCore
-from PyQt5 import QtGui
+from qtpy import QtWidgets
+from qtpy import QtCore
+from qtpy import QtGui
 import datetime
 from .mplcontroller import MplController
 from .ucfittablecontroller import UcfitTableController

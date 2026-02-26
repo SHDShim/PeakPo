@@ -1,4 +1,4 @@
-from PyQt5 import QtGui, QtWidgets, QtCore
+from qtpy import QtGui, QtWidgets, QtCore
 import os.path
 from .fileutils import extract_extension
 

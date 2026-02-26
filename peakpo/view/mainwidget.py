@@ -1,5 +1,5 @@
 import os
-from PyQt5 import QtWidgets
+from qtpy import QtWidgets
 from .qtd import Ui_MainWindow
 from ..utils import SpinBoxFixStyle
 from ..version import __version__
@@ -193,7 +193,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             'This is a free software and no support is provided.<br>'
         infobox = InformationBox(title="About PeakPo")
         infobox.setText(information)
-        infobox.exec_()
+        infobox.exec()
 
         """
         self.textEdit_about.setText(
@@ -229,7 +229,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             'Toggle y scale (log/lin): l when mouse is over an axes<br>'
         infobox = InformationBox(title="Help")
         infobox.setText(information)
-        infobox.exec_()
+        infobox.exec()
 
         """
         self.textEdit_shortcuts.setText(

@@ -2,8 +2,8 @@ import os
 import glob
 import numpy as np
 #from matplotlib.backend_bases import key_press_handler
-from PyQt5 import QtWidgets
-from PyQt5 import QtCore
+from qtpy import QtWidgets
+from qtpy import QtCore
 import gc
 import datetime
 from ..view import MainWindow

@@ -1,18 +1,17 @@
 import os
 import sys
 import numpy as np
-from PyQt5 import QtCore, QtGui
-from PyQt5 import QtWidgets
+from qtpy import QtCore, QtGui
+from qtpy import QtWidgets
 
 # ✅ Fixed imports for matplotlib 3.7+
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-from matplotlib.backends.backend_qt5 import FigureCanvasQT
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from matplotlib.backends.backend_qt import FigureCanvasQT
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 import matplotlib.style as mplstyle
-from matplotlib.transforms import Bbox
 from matplotlib import cbook
 
 DEBUG = False
@@ -58,7 +57,7 @@ class FigureCanvasQTAgg_modified(FigureCanvasQTAgg, FigureCanvasQT_modified):
         return self._bbox_queue
 
     def paintEvent(self, e):
-        """Copy the image from the Agg canvas to the qt.drawable."""
+        """Delegate painting to Matplotlib backend, then draw overlays."""
         # Handle DPI updates
         if hasattr(self, '_update_dpi'):
             try:
@@ -67,69 +66,29 @@ class FigureCanvasQTAgg_modified(FigureCanvasQTAgg, FigureCanvasQT_modified):
             except:
                 pass
         
-        # ✅ CRITICAL FIX: Ensure renderer exists before custom painting
-        if not hasattr(self, 'renderer') or self.renderer is None:
-            # On first paint, let the parent class initialize the renderer
-            try:
-                # This will create the renderer and do the initial draw
-                FigureCanvasQTAgg.paintEvent(self, e)
-            except Exception as ex:
-                print(f"Initial paintEvent failed: {ex}")
+        # Matplotlib 3.10+ changed BufferRegion API; use native backend paint path.
+        try:
+            FigureCanvasQTAgg.paintEvent(self, e)
+        except Exception as ex:
+            print(f"paintEvent failed: {ex}")
             return
-        
-        # ✅ Ensure _dpi_ratio is set
-        if not hasattr(self, '_dpi_ratio'):
-            self._dpi_ratio = 1.0
-            try:
-                self._dpi_ratio = self.devicePixelRatio()
-            except:
-                pass
-        
-        # Custom blitting code (only runs after renderer is initialized)
+
+        # Draw custom rectangle overlay (if any) after base canvas painting.
         painter = QtGui.QPainter(self)
-
-        if self._bbox_queue:
-            bbox_queue = self._bbox_queue
-        else:
-            painter.eraseRect(self.rect())
-            bbox_queue = [
-                Bbox([[0, 0], [self.renderer.width, self.renderer.height]])]
-        self._bbox_queue = []
-        
-        for bbox in bbox_queue:
-            l, b, r, t = map(int, bbox.extents)
-            w = r - l
-            h = t - b
-            reg = self.copy_from_bbox(bbox)
-            buf = reg.to_string_argb()
-            qimage = QtGui.QImage(buf, w, h, QtGui.QImage.Format_ARGB32)
-            
-            # ✅ Safely set device pixel ratio
-            if hasattr(qimage, 'setDevicePixelRatio'):
-                try:
-                    qimage.setDevicePixelRatio(self._dpi_ratio)
-                except:
-                    pass
-            
-            # ✅ FIX: Ensure both arguments to QPoint are Python int
-            origin = QtCore.QPoint(int(l), int(self.renderer.height - t))
-            painter.drawImage(origin / self._dpi_ratio, qimage)
-
-        if hasattr(self, '_draw_rect_callback'):
-            self._draw_rect_callback(painter)
-
-        painter.end()
+        try:
+            self._bbox_queue = []
+            if hasattr(self, '_draw_rect_callback'):
+                self._draw_rect_callback(painter)
+        finally:
+            if painter.isActive():
+                painter.end()
 
     def blit(self, bbox=None):
         """Blit the region in bbox."""
         if bbox is None and self.figure:
             bbox = self.figure.bbox
-
         self._bbox_queue.append(bbox)
-
-        l, b, w, h = [pt / self._dpi_ratio for pt in bbox.bounds]
-        t = b + h
-        self.repaint(l, self.renderer.height / self._dpi_ratio - t, w, h)
+        super().blit(bbox)
 
     def print_figure(self, *args, **kwargs):
         super(FigureCanvasQTAgg, self).print_figure(*args, **kwargs)

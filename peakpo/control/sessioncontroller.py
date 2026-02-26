@@ -2,6 +2,7 @@ import os
 import sys
 import dill
 import traceback
+import tempfile
 from importlib.metadata import entry_points
 #from pkg_resources import add_activation_listener
 import datetime
@@ -9,7 +10,7 @@ import pyFAI
 import zipfile
 import copy
 import dill._dill as _dill_impl
-from PyQt5 import QtWidgets
+from qtpy import QtWidgets
 from .mplcontroller import MplController
 from .waterfalltablecontroller import WaterfallTableController
 from .jcpdstablecontroller import JcpdsTableController
@@ -128,6 +129,16 @@ class SessionController(object):
         '''
         internal method for reading dilled dpp file
         '''
+        debug_compat = os.environ.get("PEAKPO_DEBUG_COMPAT_PICKLE", "").strip() == "1"
+        if (not os.path.exists(filen_dpp)) or (os.path.getsize(filen_dpp) == 0):
+            QtWidgets.QMessageBox.warning(
+                self.widget,
+                "Warning",
+                "DPP file is empty or missing.\n\n"
+                f"File: {filen_dpp}\n"
+                f"Size: {os.path.getsize(filen_dpp) if os.path.exists(filen_dpp) else 0} bytes",
+            )
+            return False
         try:
             from .. import compat_pickle as _compat_pickle_module
             debug_info = (
@@ -142,19 +153,33 @@ class SessionController(object):
                 f"compat_code_ctor_calls(before): "
                 f"{getattr(_compat_pickle_module, '_compat_code_ctor_calls', 'n/a')}"
             )
-            print(debug_info)
+            if debug_compat:
+                print(debug_info)
             with open(filen_dpp, 'rb') as f:
                 model_dpp = PeakPoCompatDillUnpickler(f).load()
+        except EOFError:
+            QtWidgets.QMessageBox.warning(
+                self.widget,
+                "Warning",
+                "DPP file appears truncated or corrupted (unexpected end of file).\n\n"
+                f"File: {filen_dpp}\n"
+                f"Size: {os.path.getsize(filen_dpp)} bytes\n\n"
+                "Try loading a backup copy (*.bak*), or re-save this session from the source data."
+            )
+            return False
         except Exception as inst:
             from .. import compat_pickle as _compat_pickle_module
             err = traceback.format_exc()
-            print(err)
+            if debug_compat:
+                print(err)
             debug_info = debug_info + "\n" + (
                 "compat_code_ctor_calls(after): "
                 f"{getattr(_compat_pickle_module, '_compat_code_ctor_calls', 'n/a')}"
             )
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning", str(inst) + "\n\n" + debug_info + "\n\n" + err)
+            message = str(inst)
+            if debug_compat:
+                message += "\n\n" + debug_info + "\n\n" + err
+            QtWidgets.QMessageBox.warning(self.widget, "Warning", message)
             return False
         # inspect the paths of baseptn and update all file paths
         if (model_dpp.chi_path != os.path.dirname(filen_dpp)):
@@ -409,16 +434,28 @@ class SessionController(object):
                 return False
 
     def _dump_dpp(self, filen_dpp):
-        with open(filen_dpp, 'wb') as f:
-            # cake cannot be dilled, so I remove it before dill
-            model_dill = copy.deepcopy(self.model.to_model7())
-            try:
-                dill.dump(model_dill, f)
-                self.model.save_to_txtdata(get_temp_dir(self.model.get_base_ptn_filename()))
-            except:
-                model_dill.diff_img = None
-                dill.dump(model_dill, f)
-                self.model.save_to_txtdata(get_temp_dir(self.model.get_base_ptn_filename()))
+        # Write atomically to avoid creating partial/empty .dpp on failures.
+        model_dill = copy.deepcopy(self.model.to_model7())
+        try:
+            payload = dill.dumps(model_dill)
+        except Exception:
+            model_dill.diff_img = None
+            payload = dill.dumps(model_dill)
+
+        target_dir = os.path.dirname(os.path.abspath(filen_dpp)) or "."
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile("wb", delete=False, dir=target_dir) as tmpf:
+                tmp_path = tmpf.name
+                tmpf.write(payload)
+                tmpf.flush()
+                os.fsync(tmpf.fileno())
+            os.replace(tmp_path, filen_dpp)
+        finally:
+            if tmp_path is not None and os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
+        self.model.save_to_txtdata(get_temp_dir(self.model.get_base_ptn_filename()))
 
     def _dump_ppss(self, fsession):
         """
@@ -528,7 +565,7 @@ class SessionController(object):
                                                   QtWidgets.QMessageBox.RejectRole)
 
                 msg_box.setDefaultButton(overwrite_button)
-                msg_box.exec_()
+                msg_box.exec()
                 reply = msg_box.clickedButton()
                 if reply == backup_button:
                     backup_file_name = backup_copy(new_filename)

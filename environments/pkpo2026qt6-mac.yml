@@ -1,0 +1,27 @@
+name: pkpo2026qt6
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - setuptools
+  - wheel
+  - pip:
+      - matplotlib
+      - pymatgen
+      - numpy
+      - scipy
+      - pandas
+      - qtpy
+      - pyqt6
+      - pyfai
+      - pytheos
+      - lmfit
+      - periodictable
+      - silx
+      - h5py
+      - hdf5plugin
+      - spglib
+      - statsmodels
+      - uncertainties
+      - xlwt

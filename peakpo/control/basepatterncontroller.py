@@ -1,5 +1,5 @@
 import os
-from PyQt5 import QtWidgets
+from qtpy import QtWidgets
 from ..utils import get_sorted_filelist, find_from_filelist, readchi, \
     make_filename, writechi, get_directory
 from ..utils import undo_button_press, get_temp_dir

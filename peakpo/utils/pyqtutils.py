@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets
+from qtpy import QtWidgets
 
 
 def undo_button_press(buttonObj, released_text='Released',

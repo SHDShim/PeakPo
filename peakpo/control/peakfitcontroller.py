@@ -1,6 +1,6 @@
 import os
 import traceback
-from PyQt5 import QtWidgets
+from qtpy import QtWidgets
 from .mplcontroller import MplController
 from .peakfittablecontroller import PeakfitTableController
 from ..utils import make_filename, get_temp_dir
@@ -61,9 +61,27 @@ class PeakFitController(object):
         '''
         internal method for reading dilled dpp file
         '''
+        if (not os.path.exists(filen_dpp)) or (os.path.getsize(filen_dpp) == 0):
+            QtWidgets.QMessageBox.warning(
+                self.widget,
+                "Warning",
+                "DPP file is empty or missing.\n\n"
+                f"File: {filen_dpp}\n"
+                f"Size: {os.path.getsize(filen_dpp) if os.path.exists(filen_dpp) else 0} bytes",
+            )
+            return False
         try:
             with open(filen_dpp, 'rb') as f:
                 model_dpp = PeakPoCompatDillUnpickler(f).load()
+        except EOFError:
+            QtWidgets.QMessageBox.warning(
+                self.widget,
+                "Warning",
+                "DPP file appears truncated or corrupted (unexpected end of file).\n\n"
+                f"File: {filen_dpp}\n"
+                f"Size: {os.path.getsize(filen_dpp)} bytes",
+            )
+            return False
         except Exception as inst:
             err = traceback.format_exc()
             print(err)

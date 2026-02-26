@@ -1,5 +1,5 @@
 import os
-from PyQt5 import QtWidgets
+from qtpy import QtWidgets
 from ..utils import undo_button_press, dialog_savefile, writechi
 
 

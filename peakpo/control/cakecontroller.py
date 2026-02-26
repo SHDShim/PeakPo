@@ -1,7 +1,7 @@
 import os
 import shutil
 import glob
-from PyQt5 import QtWidgets
+from qtpy import QtWidgets
 import numpy as np
 from ..utils import dialog_savefile, writechi, get_directory, make_filename, \
     get_temp_dir, extract_filename, extract_extension, InformationBox, \
@@ -125,7 +125,7 @@ class CakeController(object):
             infobox.setText(json.dumps(metadata, indent=4))
             print(str(datetime.datetime.now())[:-7], ': TIF metadata\n', 
                 json.dumps(metadata, indent=4))
-            infobox.exec_()
+            infobox.exec()
             #self.widget.plainTextEdit_ViewJCPDS.setPlainText(textoutput)
 
 

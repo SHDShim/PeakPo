@@ -6,31 +6,41 @@ import faulthandler
 # STEP 1: Environment Setup (BEFORE any imports)
 # ========================================
 if sys.platform == 'darwin':
-    os.environ['QT_MAC_WANTS_LAYER'] = '1'
-    os.environ['MPLBACKEND'] = 'Qt5Agg'
+    os.environ['MPLBACKEND'] = 'QtAgg'
 
 faulthandler.enable()
 
 # ========================================
 # STEP 2: Import QtCore and set attributes ASAP
 # ========================================
-from PyQt5.QtCore import Qt, QCoreApplication
+from qtpy.QtCore import Qt, QCoreApplication
 
 if sys.platform == 'darwin':
-    QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts, True)
-    QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, False)
+    # Qt6 moved/removed some AA_* flags; apply only when available.
+    app_attr = getattr(Qt, "ApplicationAttribute", None)
+    share_gl = getattr(Qt, "AA_ShareOpenGLContexts", None)
+    if share_gl is None and app_attr is not None:
+        share_gl = getattr(app_attr, "AA_ShareOpenGLContexts", None)
+    if share_gl is not None:
+        QCoreApplication.setAttribute(share_gl, True)
+
+    disable_hidpi = getattr(Qt, "AA_EnableHighDpiScaling", None)
+    if disable_hidpi is None and app_attr is not None:
+        disable_hidpi = getattr(app_attr, "AA_EnableHighDpiScaling", None)
+    if disable_hidpi is not None:
+        QCoreApplication.setAttribute(disable_hidpi, False)
 
 # ========================================
 # STEP 3: Configure Matplotlib (BEFORE QtWidgets QApplication)
 # ========================================
 import matplotlib
-matplotlib.use('Qt5Agg')
+matplotlib.use('QtAgg')
 
 # ========================================
-# STEP 4: Import remaining PyQt5 modules
+# STEP 4: Import remaining Qt modules
 # ========================================
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtGui import QPalette, QColor
+from qtpy import QtCore, QtWidgets
+from qtpy.QtGui import QPalette, QColor
 
 # Standard library imports
 from io import StringIO
@@ -103,7 +113,7 @@ def excepthook(exc_type, exc_value, traceback_obj):
     error_message = str(msg)
     errorbox = ErrorMessageBox()
     errorbox.setText(error_message)
-    errorbox.exec_()
+    errorbox.exec()
 
 
 sys.excepthook = excepthook
@@ -151,6 +161,6 @@ app.processEvents()
 # ========================================
 # Run Event Loop
 # ========================================
-ret = app.exec_()
+ret = app.exec()
 controller.write_setting()
 sys.exit(ret)

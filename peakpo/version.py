@@ -7,8 +7,9 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.9.5a"
+__version__ = "7.10.0"
 """
+7.10.0 Pyqt6 transition
 7.9.5: Solving dpp input problem for old dpp files
 7.9.3: Pip installable version
 7.9.2: Bug fix for DIOPTAS JCPDS Crash in windows.
