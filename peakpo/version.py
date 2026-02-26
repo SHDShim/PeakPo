@@ -7,8 +7,9 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.9.4"
+__version__ = "7.9.5a"
 """
+7.9.5: Solving dpp input problem for old dpp files
 7.9.3: Pip installable version
 7.9.2: Bug fix for DIOPTAS JCPDS Crash in windows.
 7.9.1: Bug fix for multiple opens of color picker found at APS

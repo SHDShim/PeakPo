@@ -1,9 +1,9 @@
 import os
-import dill
 from PyQt5 import QtWidgets
 from .mplcontroller import MplController
 from .peakfittablecontroller import PeakfitTableController
 from ..utils import make_filename, get_temp_dir
+from ..compat_pickle import PeakPoCompatDillUnpickler
 
 
 class PeakFitController(object):
@@ -62,7 +62,7 @@ class PeakFitController(object):
         '''
         try:
             with open(filen_dpp, 'rb') as f:
-                model_dpp = dill.load(f)
+                model_dpp = PeakPoCompatDillUnpickler(f).load()
         except Exception as inst:
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning", str(inst))
