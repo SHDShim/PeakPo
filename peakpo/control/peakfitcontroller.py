@@ -1,4 +1,5 @@
 import os
+import traceback
 from PyQt5 import QtWidgets
 from .mplcontroller import MplController
 from .peakfittablecontroller import PeakfitTableController
@@ -64,8 +65,10 @@ class PeakFitController(object):
             with open(filen_dpp, 'rb') as f:
                 model_dpp = PeakPoCompatDillUnpickler(f).load()
         except Exception as inst:
+            err = traceback.format_exc()
+            print(err)
             QtWidgets.QMessageBox.warning(
-                self.widget, "Warning", str(inst))
+                self.widget, "Warning", str(inst) + "\n\n" + err)
             return False
         self.model.import_section_list(model_dpp)
         return True

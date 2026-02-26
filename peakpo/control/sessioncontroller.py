@@ -1,12 +1,14 @@
 import os
 import sys
 import dill
+import traceback
 from importlib.metadata import entry_points
 #from pkg_resources import add_activation_listener
 import datetime
 import pyFAI
 import zipfile
 import copy
+import dill._dill as _dill_impl
 from PyQt5 import QtWidgets
 from .mplcontroller import MplController
 from .waterfalltablecontroller import WaterfallTableController
@@ -127,11 +129,32 @@ class SessionController(object):
         internal method for reading dilled dpp file
         '''
         try:
+            from .. import compat_pickle as _compat_pickle_module
+            debug_info = (
+                f"compat_pickle: {_compat_pickle_module.__file__}\n"
+                f"dill._create_code: {_dill_impl._create_code} "
+                f"[{getattr(_dill_impl._create_code, '__module__', '?')}]\n"
+                f"dill.CodeType: {_dill_impl.CodeType} "
+                f"[{getattr(_dill_impl.CodeType, '__module__', '?')}]\n"
+                f"types.CodeType: {__import__('types').CodeType} "
+                f"[{getattr(__import__('types').CodeType, '__module__', '?')}]\n"
+                f"builtins.code: {getattr(__import__('builtins'), 'code', None)}\n"
+                f"compat_code_ctor_calls(before): "
+                f"{getattr(_compat_pickle_module, '_compat_code_ctor_calls', 'n/a')}"
+            )
+            print(debug_info)
             with open(filen_dpp, 'rb') as f:
                 model_dpp = PeakPoCompatDillUnpickler(f).load()
         except Exception as inst:
+            from .. import compat_pickle as _compat_pickle_module
+            err = traceback.format_exc()
+            print(err)
+            debug_info = debug_info + "\n" + (
+                "compat_code_ctor_calls(after): "
+                f"{getattr(_compat_pickle_module, '_compat_code_ctor_calls', 'n/a')}"
+            )
             QtWidgets.QMessageBox.warning(
-                self.widget, "Warning", str(inst))
+                self.widget, "Warning", str(inst) + "\n\n" + debug_info + "\n\n" + err)
             return False
         # inspect the paths of baseptn and update all file paths
         if (model_dpp.chi_path != os.path.dirname(filen_dpp)):
