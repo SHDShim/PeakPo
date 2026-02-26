@@ -1,11 +1,12 @@
 - [x] test excel output functions
 - [ ] self.mask should be defined clearly whether for cake or original data.  for speed it should be better for cake.  then later when mask file from dioptas is read, which is for original image, it can be confusing.  But intensity mask can be still maintained for cake, not for original.  The decision depends on whether sectional integration is happening for existing cake or for original image file.
 - [ ] `dpp` read error particularly with old `pyFAI` related issues.
-- [ ] `pip install` setup
+- [x] `pip install` setup
 - [x] make an installation instruction 
 - [ ] Not sure but can we add background subtraction function for cake images?
-- [ ] can we solve long cake processing time issue with H5?  Search for methods using LLMs.
-- [ ] Update jnb-tools folder contents
-- [ ] Update environments folder contents for windows pkpo2026
+- [x] can we solve long cake processing time issue with H5?  Search for methods using LLMs.
+- [ ] Update jnb-tools folder contents for import peakpo
+- [x] Update environments folder contents for windows pkpo2026
 - [ ] Update scripts folder contents
 - [x] Update shortcuts folder contents
+- [ ] upgrade to latest pyqt6, matplotlib, etc
