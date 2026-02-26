@@ -1,4 +1,5 @@
 import pickle
+import importlib
 
 import dill
 
@@ -6,6 +7,8 @@ try:
     import uncertainties.core as _unc_core
 except Exception:  # pragma: no cover
     _unc_core = None
+
+_compat_azimuthal_integrator_cls = None
 
 
 _LEGACY_ROOTS = {
@@ -68,7 +71,86 @@ def _resolve_compat_class(module, name):
         if _unc_core is not None and hasattr(_unc_core, "CallableStdDev"):
             return getattr(_unc_core, "CallableStdDev")
         return _CompatCallableStdDev
+    if name == "AzimuthalIntegrator" and module in {
+        "pyFAI.azimuthalIntegrator",
+        "pyFAI.integrator.azimuthal",
+    }:
+        return _get_compat_azimuthal_integrator_class()
     return None
+
+
+def _sanitize_pyfai_state(state):
+    """Drop known legacy attributes that became read-only in newer pyFAI."""
+    readonly_keys = {"_dssa"}
+    if isinstance(state, dict):
+        return {
+            k: _sanitize_pyfai_state(v)
+            for k, v in state.items()
+            if k not in readonly_keys
+        }
+    if isinstance(state, tuple):
+        return tuple(_sanitize_pyfai_state(v) for v in state)
+    if isinstance(state, list):
+        return [_sanitize_pyfai_state(v) for v in state]
+    return state
+
+
+def _apply_state_fallback(obj, state):
+    """Best-effort state restore that tolerates read-only attributes."""
+    if isinstance(state, dict):
+        for key, value in state.items():
+            try:
+                setattr(obj, key, value)
+            except Exception:
+                pass
+        return
+    if isinstance(state, tuple):
+        for item in state:
+            _apply_state_fallback(obj, item)
+
+
+def _build_compat_azimuthal_integrator_class():
+    base_cls = None
+    for module_name in ("pyFAI.azimuthalIntegrator", "pyFAI.integrator.azimuthal"):
+        try:
+            module = importlib.import_module(module_name)
+            base_cls = getattr(module, "AzimuthalIntegrator", None)
+        except Exception:
+            base_cls = None
+        if base_cls is not None:
+            break
+    if base_cls is None:
+        return None
+
+    class _CompatAzimuthalIntegrator(base_cls):
+        # Keep legacy pickles from failing when trying to set _dssa.
+        @property
+        def _dssa(self):
+            return getattr(self, "__peakpo_compat_dssa", None)
+
+        @_dssa.setter
+        def _dssa(self, value):
+            self.__peakpo_compat_dssa = value
+
+        def __setstate__(self, state):
+            cleaned_state = _sanitize_pyfai_state(state)
+            try:
+                parent_setstate = getattr(super(), "__setstate__", None)
+                if parent_setstate is not None:
+                    return parent_setstate(cleaned_state)
+            except Exception as inst:
+                if "_dssa" not in str(inst):
+                    raise
+            _apply_state_fallback(self, cleaned_state)
+
+    return _CompatAzimuthalIntegrator
+
+
+def _get_compat_azimuthal_integrator_class():
+    global _compat_azimuthal_integrator_cls
+    if _compat_azimuthal_integrator_cls is None:
+        _compat_azimuthal_integrator_cls = _build_compat_azimuthal_integrator_class()
+    return _compat_azimuthal_integrator_cls
 
 
 class PeakPoCompatPickleUnpickler(pickle.Unpickler):
