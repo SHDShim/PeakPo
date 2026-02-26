@@ -34,6 +34,30 @@ Install `PeakPo`:
 pip install peakpo
 ```
 
+## How to upgrade
+
+Make sure to change environment:
+
+```
+conda activate peakpo
+```
+
+```
+python -m pip install --upgrade peakpo
+```
+
+## How to reinstall
+
+Make sure to change environment:
+
+```
+conda activate peakpo
+```
+
+
+```
+python -m pip install --force-reinstall peakpo
+```
 
 ## How to install before 7.9.x
 
