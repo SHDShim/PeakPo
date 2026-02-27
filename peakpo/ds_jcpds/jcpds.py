@@ -843,17 +843,34 @@ class JCPDSplt(JCPDS):
         self.twk_thermal_expansion = 1.0
         self.twk_int = 1.0
 
+    def _sync_org_from_current(self):
+        """Cache untweaked baseline values after any load/set operation."""
+        self.k0_org = self.k0
+        self.k0p_org = self.k0p
+        self.v0_org = self.v0
+        self.thermal_expansion_org = self.thermal_expansion
+
     def read_file(self, file):
         '''
         *_twk are tweaked parameters, and twk_* are tweaking coefficients
         a0, b0, c0, alpha, beta, gamma, v0 should not be tweaked
         '''
         super(JCPDSplt, self).read_file(file)
-        # make originals
-        self.k0_org = self.k0
-        self.k0p_org = self.k0p
-        self.v0_org = self.v0
-        self.thermal_expansion_org = self.thermal_expansion
+        self._sync_org_from_current()
+
+    def set_from_cif(self, fn_cif, k0, k0p, file=None, name='', version=4,
+                     comments='', int_min=0.1, thermal_expansion=0.):
+        """
+        Ensure CIF-created cards also initialize *_org tweak baselines.
+        """
+        success = super(JCPDSplt, self).set_from_cif(
+            fn_cif, k0, k0p, file=file, name=name, version=version,
+            comments=comments, int_min=int_min,
+            thermal_expansion=thermal_expansion
+        )
+        if success:
+            self._sync_org_from_current()
+        return success
 
     def cal_dsp(self, pressure, temperature, b_a=None, c_a=None,
                 use_table_for_0GPa=True):

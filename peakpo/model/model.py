@@ -289,13 +289,17 @@ class PeakPoModel(object):
             new_waterfall_ptn.append(pattern)
         self.waterfall_ptn = new_waterfall_ptn
 
-    def append_a_jcpds(self, filen, color):
+    def append_a_jcpds(self, filen, color, cif_k0=200.0, cif_k0p=4.0,
+                       cif_alpha=1e-5):
         try:
             phase = JCPDSplt()
-            ext = extract_extension(filen)
+            ext = extract_extension(filen).lower()
             if ext == 'cif':
-                success = phase.set_from_cif(filen, 200., 4.,
-                                   comments='Created from '+filen)  # phase.file = f
+                cif_name = os.path.splitext(os.path.basename(filen))[0]
+                success = phase.set_from_cif(
+                    filen, cif_k0, cif_k0p, file=filen, name=cif_name,
+                    comments='Created from ' + filen,
+                    thermal_expansion=cif_alpha)  # phase.file = f
                 if not success:
                     return False
             else:

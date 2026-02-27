@@ -119,16 +119,78 @@ class JcpdsController(object):
         """
         files = QtWidgets.QFileDialog.getOpenFileNames(
             self.widget, "Choose JPCDS Files", self.model.jcpds_path,
-            "(*.jcpds)")[0]
+            "JCPDS/CIF files (*.jcpds *.JCPDS *.cif *.CIF)")[0]
         if files == []:
             return
         self.model.set_jcpds_path(os.path.split(str(files[0]))[0])
         self._make_jlist(files, append=append)
 
+    def _get_cif_input_params(self):
+        dialog = QtWidgets.QDialog(self.widget)
+        dialog.setWindowTitle("CIF to JCPDS Parameters")
+        layout = QtWidgets.QFormLayout(dialog)
+
+        spin_k0 = QtWidgets.QDoubleSpinBox(dialog)
+        spin_k0.setRange(0.0, 10000.0)
+        spin_k0.setDecimals(3)
+        spin_k0.setValue(200.0)
+
+        spin_k0p = QtWidgets.QDoubleSpinBox(dialog)
+        spin_k0p.setRange(0.0, 100.0)
+        spin_k0p.setDecimals(3)
+        spin_k0p.setValue(4.0)
+
+        spin_alpha = QtWidgets.QDoubleSpinBox(dialog)
+        spin_alpha.setRange(0.0, 1.0)
+        spin_alpha.setDecimals(8)
+        spin_alpha.setSingleStep(1e-6)
+        spin_alpha.setValue(1e-5)
+
+        layout.addRow("K0 (GPa)", spin_k0)
+        layout.addRow("K0p", spin_k0p)
+        layout.addRow("alpha (1/K)", spin_alpha)
+
+        buttons = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel,
+            QtCore.Qt.Horizontal, dialog
+        )
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addRow(buttons)
+
+        while True:
+            if dialog.exec() != QtWidgets.QDialog.Accepted:
+                return None
+
+            k0 = spin_k0.value()
+            k0p = spin_k0p.value()
+            alpha = spin_alpha.value()
+
+            if not (1.0 < k0 < 600.0):
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Invalid K0",
+                    "K0 must be greater than 1 and smaller than 600.")
+                continue
+            if not (0.0 < k0p < 10.0):
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Invalid K0p",
+                    "K0p must be greater than 0 and smaller than 10.")
+                continue
+
+            return k0, k0p, alpha
+
     def _make_jlist(self, files, append=False):
         """
         Create or append to JCPDS list with automatic distinctive color selection
         """
+        has_cif = any(extract_extension(str(f)).lower() == 'cif' for f in files)
+        cif_k0, cif_k0p, cif_alpha = 200.0, 4.0, 1e-5
+        if has_cif:
+            cif_params = self._get_cif_input_params()
+            if cif_params is None:
+                return
+            cif_k0, cif_k0p, cif_alpha = cif_params
+
         n_color = 20
         jet = cmx.get_cmap('gist_rainbow')
         cNorm = mcolors.Normalize(vmin=0, vmax=n_color)
@@ -153,7 +215,9 @@ class JcpdsController(object):
             # ✅ Find most distinctive color from palette
             color = self.find_most_distinctive_color(existing_colors, color_palette)
             
-            if self.model.append_a_jcpds(str(f), color):
+            if self.model.append_a_jcpds(
+                    str(f), color, cif_k0=cif_k0, cif_k0p=cif_k0p,
+                    cif_alpha=cif_alpha):
                 # Add to existing colors list
                 existing_colors.append(color)
             else:

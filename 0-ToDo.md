@@ -12,5 +12,6 @@
 - [x] upgrade to latest pyqt6, matplotlib, etc
 - [x] Check box for "Ignore absence of raw data file in the folder", so that one can move around things.
 - [ ] transition to json, P-T in jcpds.json.  If Dpp exists, read and then convert to json's and then archive to PARAM folder. Only open button.  When Chi opens, all in PARAM opens. Backup PARAM for only changed file and develop logic to restore old PARAMS combined unchanged ones.  
-- [ ] Read dioptas JCPDS and cif.
+- [x] Read dioptas JCPDS 
+- [ ] Read cif.
 - [x] If "map" is detected in the name use the number right after it rather than at the end.

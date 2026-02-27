@@ -10,7 +10,8 @@ from ..ds_cake import DiffImg
 from ..ds_jcpds import JCPDSplt, Session
 from ..ds_powdiff import PatternPeakPo, get_DataSection
 from ..ds_section import Section
-from ..utils import samefilename, make_filename, change_file_path
+from ..utils import samefilename, make_filename, change_file_path, \
+    extract_extension
 from ..compat_pickle import PeakPoCompatPickleUnpickler
 
 
@@ -309,10 +310,21 @@ class PeakPoDirModel(object):
             new_waterfall_ptn.append(pattern)
         self.waterfall_ptn = new_waterfall_ptn
 
-    def append_a_jcpds(self, filen, color):
+    def append_a_jcpds(self, filen, color, cif_k0=200.0, cif_k0p=4.0,
+                       cif_alpha=1e-5):
         try:
             phase = JCPDSplt()
-            phase.read_file(filen)  # phase.file = f
+            ext = extract_extension(filen).lower()
+            if ext == 'cif':
+                cif_name = os.path.splitext(os.path.basename(filen))[0]
+                success = phase.set_from_cif(
+                    filen, cif_k0, cif_k0p, file=filen, name=cif_name,
+                    comments='Created from ' + filen,
+                    thermal_expansion=cif_alpha)
+                if not success:
+                    return False
+            else:
+                phase.read_file(filen)  # phase.file = f
             phase.color = color
         except Exception as e:
             print("append_a_jcpds failed for:", filen)
