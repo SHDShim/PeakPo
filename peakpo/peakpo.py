@@ -7,6 +7,9 @@ import faulthandler
 # ========================================
 if sys.platform == 'darwin':
     os.environ['MPLBACKEND'] = 'QtAgg'
+    # Reduce native GPU/driver crashes on macOS Qt6 (segfault/illegal instruction).
+    os.environ.setdefault('QT_OPENGL', 'software')
+    os.environ.setdefault('QT_QUICK_BACKEND', 'software')
 
 faulthandler.enable()
 
@@ -18,11 +21,12 @@ from qtpy.QtCore import Qt, QCoreApplication
 if sys.platform == 'darwin':
     # Qt6 moved/removed some AA_* flags; apply only when available.
     app_attr = getattr(Qt, "ApplicationAttribute", None)
-    share_gl = getattr(Qt, "AA_ShareOpenGLContexts", None)
-    if share_gl is None and app_attr is not None:
-        share_gl = getattr(app_attr, "AA_ShareOpenGLContexts", None)
-    if share_gl is not None:
-        QCoreApplication.setAttribute(share_gl, True)
+
+    use_sw_gl = getattr(Qt, "AA_UseSoftwareOpenGL", None)
+    if use_sw_gl is None and app_attr is not None:
+        use_sw_gl = getattr(app_attr, "AA_UseSoftwareOpenGL", None)
+    if use_sw_gl is not None:
+        QCoreApplication.setAttribute(use_sw_gl, True)
 
     disable_hidpi = getattr(Qt, "AA_EnableHighDpiScaling", None)
     if disable_hidpi is None and app_attr is not None:
@@ -154,13 +158,28 @@ app.setPalette(dark_palette)
 controller = MainController()
 controller.show_window()
 
-# ✅ Give Qt time to create the window and initialize canvas
-QtCore.QTimer.singleShot(200, lambda: print("Event loop running, canvas should be ready"))
-app.processEvents()
+_shutdown_done = {"value": False}
+
+def _safe_shutdown():
+    if _shutdown_done["value"]:
+        return
+    _shutdown_done["value"] = True
+    try:
+        # Keep shutdown minimal: avoid touching Qt/Matplotlib objects here,
+        # which can crash during native teardown on some macOS stacks.
+        controller.write_setting()
+    except Exception:
+        pass
+
+app.aboutToQuit.connect(_safe_shutdown)
 
 # ========================================
 # Run Event Loop
 # ========================================
 ret = app.exec()
-controller.write_setting()
-sys.exit(ret)
+if sys.platform == 'darwin':
+    # Avoid interpreter/module finalization crashes (segfault/bus error)
+    # caused by native extension teardown order.
+    os._exit(ret)
+else:
+    sys.exit(ret)

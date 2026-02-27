@@ -84,28 +84,37 @@ class MainController(object):
         
         self.clip = QtWidgets.QApplication.clipboard()
         print("  ✓ clipboard set")
+        self._shutdown_done = False
         
         print("MainController.__init__ - DONE\n")
 
     def show_window(self):
         """Show the main window and ensure it renders"""
-        # Just show - don't force draw yet
+        # Show and let Qt/Matplotlib render in normal event flow.
         self.widget.show()
         
         # Bring to front (important on macOS)
         self.widget.raise_()
         self.widget.activateWindow()
-        
-        # Let event loop initialize canvas, THEN draw
-        QtCore.QTimer.singleShot(100, self._initial_render)
 
-    def _initial_render(self):
-        """Perform initial render after event loop starts"""
+    def shutdown(self):
+        if self._shutdown_done:
+            return
+        self._shutdown_done = True
         try:
-            self.widget.mpl.canvas.draw()
-            print("  ✓ Initial canvas render complete")
-        except Exception as e:
-            print(f"  ⚠ Initial render failed: {e}")
+            self.write_setting()
+        except Exception:
+            pass
+        try:
+            if hasattr(self.widget, 'mpl') and hasattr(self.widget.mpl, 'shutdown'):
+                self.widget.mpl.shutdown()
+        except Exception:
+            pass
+        try:
+            if self.widget is not None:
+                self.widget.close()
+        except Exception:
+            pass
         
     def connect_channel(self):
         # connecting events

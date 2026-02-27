@@ -274,6 +274,9 @@ class MplController(object):
             cmap=cmap,
             vmin=climits[0], vmax=climits[1],
         )
+        if hasattr(self.widget, "cake_hist_widget"):
+            self.widget.cake_hist_widget.set_data(
+                int_new, vmin=float(climits[0]), vmax=float(climits[1]))
 
         # get gray scale color map and make sure masked data points are colored red
         """

@@ -35,6 +35,9 @@ class CakeController(object):
             self.reset_max_cake_scale)
         self.widget.checkBox_WhiteForPeak.clicked.connect(
             self._apply_changes_to_graph)
+        if hasattr(self.widget, "cake_hist_widget"):
+            self.widget.cake_hist_widget.boundChanged.connect(
+                self._set_cake_bound_from_hist)
         """
         self.widget.pushButton_Load_CakeFormatFile.clicked.connect(
             self.load_cake_format_file)
@@ -118,6 +121,35 @@ class CakeController(object):
 
     def _apply_changes_to_graph(self):
         self.plot_ctrl.update()
+
+    def _set_cake_bound_from_hist(self, bound_type, intensity_value):
+        prefactor = self.widget.spinBox_MaxCakeScale.value() / \
+            (10. ** self.widget.horizontalSlider_MaxScaleBars.value())
+        if prefactor <= 0:
+            return
+        current_min = self.widget.horizontalSlider_VMin.value()
+        current_max = self.widget.horizontalSlider_VMax.value()
+        slider_value = int(np.clip(round(intensity_value / prefactor * 100.0), 0, 1000))
+        if bound_type == "min":
+            if slider_value == current_min:
+                current_min_intensity = current_min / 100.0 * prefactor
+                if intensity_value < current_min_intensity:
+                    slider_value = max(0, current_min - 1)
+                elif intensity_value > current_min_intensity:
+                    slider_value = min(999, current_min + 1)
+            if slider_value >= current_max:
+                slider_value = max(0, current_max - 1)
+            self.widget.horizontalSlider_VMin.setValue(slider_value)
+        elif bound_type == "max":
+            if slider_value == current_max:
+                current_max_intensity = current_max / 100.0 * prefactor
+                if intensity_value < current_max_intensity:
+                    slider_value = max(1, current_max - 1)
+                elif intensity_value > current_max_intensity:
+                    slider_value = min(1000, current_max + 1)
+            if slider_value <= current_min:
+                slider_value = min(1000, current_min + 1)
+            self.widget.horizontalSlider_VMax.setValue(slider_value)
 
     def _ignore_raw_data_missing(self):
         return self.widget.checkBox_IgnoreRawDataExistence.isChecked()

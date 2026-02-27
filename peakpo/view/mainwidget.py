@@ -1,6 +1,7 @@
 import os
 from qtpy import QtWidgets
 from .qtd import Ui_MainWindow
+from .cakehistwidget import CakeHistogramWidget
 from ..utils import SpinBoxFixStyle
 from ..version import __version__
 from ..citation import __citation__
@@ -82,6 +83,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_Symmetry.setCurrentText('cubic')
         self.tableWidget_DiffImgAzi.\
             setHorizontalHeaderLabels(['Notes', '2th', 'Azi', '2th', 'Azi'])
+        # Gray scale panel now includes histogram controls; relax hard height cap
+        # from the UI file so top controls (e.g., Reset Scale) are not clipped.
+        self.groupBox_29.setMinimumHeight(340)
+        self.groupBox_29.setMaximumHeight(600)
+        # The top gray-scale row in qtd.py is constrained too tightly (25 px
+        # frame + vertical layout margins), which clips the Reset Scale button.
+        self.frame_8.setMinimumHeight(34)
+        self.horizontalLayout_8.setContentsMargins(0, 0, 0, 0)
+        self.pushButton_ResetCakeScale.setMinimumHeight(28)
+        self.spinBox_MaxCakeScale.setMinimumHeight(28)
+        self.verticalLayout_11.setSpacing(4)
+        self.label_19.setFixedHeight(18)
+        self.label_19.setContentsMargins(0, 0, 0, 0)
+        # Histogram controls replace manual Min/Max slider interaction.
+        self.label_8.setVisible(False)
+        self.horizontalSlider_VMin.setVisible(False)
+        self.label_9.setVisible(False)
+        self.horizontalSlider_VMax.setVisible(False)
+        self.cake_hist_widget = CakeHistogramWidget(self.groupBox_29)
+        self.cake_hist_widget.setMinimumHeight(140)
+        self.verticalLayout_11.insertWidget(1, self.cake_hist_widget)
+        self._fix_tab_clipping()
         # navigation toolbar modification
         """
         self.ntb_WholePtn = QtWidgets.QPushButton()
@@ -115,9 +138,38 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.mpl.ntb.addWidget(self.ntb_NightView)
         """
 
+    def _fix_tab_clipping(self):
+        # Keep native tab visuals while nudging tab size metrics to prevent
+        # clipped ascenders/descenders on some Qt style+font combinations.
+        class _NoClipTabStyle(QtWidgets.QProxyStyle):
+            def sizeFromContents(self, contents_type, option, size, widget=None):
+                sized = super().sizeFromContents(
+                    contents_type, option, size, widget)
+                if contents_type == QtWidgets.QStyle.CT_TabBarTab:
+                    sized.setHeight(sized.height() + 4)
+                return sized
+
+        self._tabbar_styles = []
+        tab_widgets = [
+            self.tabWidget, self.tabWidget_3, self.tabWidget1,
+            self.tabWidget_5, self.tabWidget_2, self.tabWidget_4,
+            self.tabWidget_PeakFit
+        ]
+        for tab_widget in tab_widgets:
+            bar = tab_widget.tabBar()
+            bar.setStyleSheet("")
+            bar.setExpanding(False)
+            tab_style = _NoClipTabStyle(bar.style())
+            self._tabbar_styles.append(tab_style)
+            bar.setStyle(tab_style)
+
     def closeEvent(self, event):
-        self.deleteLater()
-        event.accept()
+        try:
+            if hasattr(self, 'mpl') and hasattr(self.mpl, 'shutdown'):
+                self.mpl.shutdown()
+        except Exception:
+            pass
+        super().closeEvent(event)
 
     def connect_channel(self):
         self.pushButton_RoomT.clicked.connect(
