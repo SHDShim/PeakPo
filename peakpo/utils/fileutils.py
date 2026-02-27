@@ -65,7 +65,33 @@ def find_from_filelist(flist, filen):
 def get_sorted_filelist(path, search_ext='*.chi', sorted_by_name=True):
     filelist = glob.glob(os.path.join(path, search_ext))
     if sorted_by_name:
-        return sorted(filelist)
+        def _filename_sort_key(filename):
+            name = os.path.splitext(os.path.basename(filename))[0]
+            name_lower = name.lower()
+
+            # For map files, sort by the number right after "map_"
+            # (e.g., cell_map_31).
+            map_match = re.search(r'map_(\d+)', name_lower)
+            if map_match:
+                return (
+                    0,
+                    name_lower[:map_match.start()],
+                    int(map_match.group(1)),
+                    name_lower[map_match.end():]
+                )
+
+            # Default behavior: sort by trailing number in filename, if present.
+            tail_match = re.search(r'(\d+)$', name_lower)
+            if tail_match:
+                return (
+                    1,
+                    name_lower[:tail_match.start()],
+                    int(tail_match.group(1))
+                )
+
+            return (2, name_lower)
+
+        return sorted(filelist, key=_filename_sort_key)
     else:  # sorted by time
         return sorted(filelist, key=os.path.getmtime)
 

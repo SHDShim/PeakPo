@@ -1,6 +1,6 @@
 - [x] test excel output functions
 - [ ] self.mask should be defined clearly whether for cake or original data.  for speed it should be better for cake.  then later when mask file from dioptas is read, which is for original image, it can be confusing.  But intensity mask can be still maintained for cake, not for original.  The decision depends on whether sectional integration is happening for existing cake or for original image file.
-- [ ] `dpp` read error particularly with old `pyFAI` related issues.
+- [x] `dpp` read error particularly with old `pyFAI` related issues.
 - [x] `pip install` setup
 - [x] make an installation instruction 
 - [ ] Not sure but can we add background subtraction function for cake images?
@@ -11,3 +11,6 @@
 - [x] Update shortcuts folder contents
 - [x] upgrade to latest pyqt6, matplotlib, etc
 - [x] Check box for "Ignore absence of raw data file in the folder", so that one can move around things.
+- [ ] transition to json, P-T in jcpds.json.  If Dpp exists, read and then convert to json's and then archive to PARAM folder. Only open button.  When Chi opens, all in PARAM opens. Backup PARAM for only changed file and develop logic to restore old PARAMS combined unchanged ones.  
+- [ ] Read dioptas JCPDS and cif.
+- [x] If "map" is detected in the name use the number right after it rather than at the end.
