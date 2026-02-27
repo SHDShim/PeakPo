@@ -1,9 +1,17 @@
 --------------------------------------------------------------------------------
-2026-02-26, 15:46:27
+2026-02-26, 18:21:54
 --------------------------------------------------------------------------------
-<class 'AttributeError'>: 
-'matplotlib.backends._backend_agg.BufferRegion' object has no attribute 'to_string_argb'
+<class 'UnboundLocalError'>: 
+cannot access local variable 'filen_toload' where it is not associated with a value
 --------------------------------------------------------------------------------
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/view/mplwidget.py", line 104, in paintEvent
-    buf = reg.to_string_argb()
-          ^^^^^^^^^^^^^^^^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/sessioncontroller.py", line 73, in load_dpp
+    success = self._load_dpp(fn, jlistonly=False)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/sessioncontroller.py", line 226, in _load_dpp
+    return self._set_from_dpp(filen_dpp, model_dpp,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/sessioncontroller.py", line 281, in _set_from_dpp
+    self.model.load_associated_img()
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/model/model.py", line 387, in load_associated_img
+    self.diff_img.load(filen_toload)
+                       ^^^^^^^^^^^^

@@ -277,9 +277,11 @@ class SessionController(object):
         else:
             self.model.set_from(model_dpp, new_chi_path=new_folder,
                                 jlistonly=jlistonly)
-        if self.model.poni_exist() and (not self.model.diff_img_exist()):
-            self.model.load_associated_img()
-            self.cakemake_ctrl.cook()
+        if self.model.poni_exist() and (not self.model.diff_img_exist()) and \
+                self.model.associated_image_exists():
+            success_img = self.model.load_associated_img()
+            if success_img:
+                self.cakemake_ctrl.cook()
         self.widget.textEdit_Jlist.setText(str(filen_dpp))
         # self.widget.textEdit_DiffractionPatternFileName.setText(
         #    '1D pattern: ' + str(self.model.base_ptn.fname))
@@ -436,10 +438,13 @@ class SessionController(object):
     def _dump_dpp(self, filen_dpp):
         # Write atomically to avoid creating partial/empty .dpp on failures.
         model_dill = copy.deepcopy(self.model.to_model7())
+        # Keep DPP lean: do not embed raw/cake image data in session files.
+        model_dill.diff_img = None
         try:
             payload = dill.dumps(model_dill)
         except Exception:
-            model_dill.diff_img = None
+            # Fallback: strip transient lmfit runtime objects.
+            self._strip_runtime_fit_objects(model_dill)
             payload = dill.dumps(model_dill)
 
         target_dir = os.path.dirname(os.path.abspath(filen_dpp)) or "."
@@ -455,7 +460,30 @@ class SessionController(object):
             if tmp_path is not None and os.path.exists(tmp_path):
                 os.remove(tmp_path)
 
-        self.model.save_to_txtdata(get_temp_dir(self.model.get_base_ptn_filename()))
+        try:
+            self.model.save_to_txtdata(get_temp_dir(self.model.get_base_ptn_filename()))
+        except Exception as inst:
+            # Text export is auxiliary; do not fail DPP save when this fails.
+            print(str(datetime.datetime.now())[:-7],
+                  ": Warning: save_to_txtdata failed, DPP is still saved.")
+            print("            ", str(inst))
+
+    def _strip_runtime_fit_objects(self, model_dill):
+        def _clean_section(section):
+            if section is None:
+                return
+            if hasattr(section, 'fit_result'):
+                section.fit_result = None
+            if hasattr(section, 'fit_model'):
+                section.fit_model = None
+            if hasattr(section, 'parameters'):
+                section.parameters = None
+
+        if hasattr(model_dill, 'section_lst') and (model_dill.section_lst is not None):
+            for section in model_dill.section_lst:
+                _clean_section(section)
+        if hasattr(model_dill, 'current_section'):
+            _clean_section(model_dill.current_section)
 
     def _dump_ppss(self, fsession):
         """

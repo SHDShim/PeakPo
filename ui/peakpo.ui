@@ -1532,7 +1532,7 @@
                       <item row="0" column="0">
                        <widget class="QCheckBox" name="checkBox_IgnoreRawDataExistence">
                         <property name="text">
-                         <string>Ignore raw data existence in the folder</string>
+                         <string>Ignore raw data absence in the folder</string>
                         </property>
                         <property name="checked">
                          <bool>true</bool>

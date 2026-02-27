@@ -1,6 +1,7 @@
 import pickle
 import os
 import copy
+import types
 import xlwt
 import numpy
 import base64
@@ -373,6 +374,7 @@ class PeakPoModel(object):
         filen_cbf = self.make_filename('cbf', original=True)
         filen_h5 = self.make_filename('h5', original=True)
         self.reset_diff_img()
+        filen_toload = None
         if os.path.exists(filen_tif):
             filen_toload = filen_tif
         elif os.path.exists(filen_tiff):
@@ -383,7 +385,10 @@ class PeakPoModel(object):
             filen_toload = filen_cbf
         elif os.path.exists(filen_h5):
             filen_toload = filen_h5
+        if filen_toload is None:
+            return False
         self.diff_img.load(filen_toload)
+        return True
 
     def section_list_exist(self):
         if self.section_lst == []:
@@ -641,8 +646,12 @@ class PeakPoEncoder(JSONEncoder):
             #            dtype=str(obj.dtype),
             #            shape=obj.shape)
             return obj.tolist()
-        else:
+        elif isinstance(obj, types.MappingProxyType):
+            return dict(obj)
+        elif hasattr(obj, "__dict__"):
             return obj.__dict__
+        else:
+            return str(obj)
         
 class PeakPoEncoder1(JSONEncoder):
     def default(self, obj):

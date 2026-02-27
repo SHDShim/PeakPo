@@ -3058,7 +3058,7 @@ class Ui_MainWindow(object):
         self.pushButton_SaveDPP.setText(_translate("MainWindow", "💾"))
         self.textEdit_SessionFileName.setToolTip(_translate("MainWindow", "Session file (read-only box, use the buttons)"))
         self.groupBox_36.setTitle(_translate("MainWindow", "Raw image handling"))
-        self.checkBox_IgnoreRawDataExistence.setText(_translate("MainWindow", "Ignore raw data existence in the folder"))
+        self.checkBox_IgnoreRawDataExistence.setText(_translate("MainWindow", "Ignore raw data absence in the folder"))
         self.tabWidget_3.setTabText(self.tabWidget_3.indexOf(self.tabWidget_3Page1), _translate("MainWindow", "Data"))
         self.pushButton_AboutPeakpo.setToolTip(_translate("MainWindow", "Information on PeakPo"))
         self.pushButton_AboutPeakpo.setText(_translate("MainWindow", "About PeakPo"))

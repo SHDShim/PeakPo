@@ -51,7 +51,9 @@ class PeakPoDirModel(object):
     def write_to_dir(self, tmp=False, overwrite=False):
         # check if directory exists and decide if overwrite or tmp, make new_folder
         # get path for base_ptn
+        proc_dir = self.make_proc_dir(tmp=tmp, overwrite=overwrite)
         if os.path.exists(proc_dir):
+            pass
 
             # make JSON file for basic info
             # copy jcpds files to jcpds_folder
@@ -383,7 +385,9 @@ class PeakPoDirModel(object):
         filen_tiff = self.make_filename('tiff', original=True)
         filen_mar3450 = self.make_filename('mar3450', original=True)
         filen_cbf = self.make_filename('cbf', original=True)
+        filen_h5 = self.make_filename('h5', original=True)
         self.reset_diff_img()
+        filen_toload = None
         if os.path.exists(filen_tif):
             filen_toload = filen_tif
         elif os.path.exists(filen_tiff):
@@ -392,7 +396,12 @@ class PeakPoDirModel(object):
             filen_toload = filen_mar3450
         elif os.path.exists(filen_cbf):
             filen_toload = filen_cbf
+        elif os.path.exists(filen_h5):
+            filen_toload = filen_h5
+        if filen_toload is None:
+            return False
         self.diff_img.load(filen_toload)
+        return True
 
     def section_list_exist(self):
         if self.section_lst == []:

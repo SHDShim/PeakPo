@@ -119,6 +119,24 @@ class UcfitController(object):
         i_section = index for a section
         """
         peaks = []
+        # Fallback for sessions where transient fit_result objects were
+        # stripped for robust DPP serialization.
+        if (not hasattr(section, 'fit_result')) or (section.fit_result is None):
+            for peak in section.peaks_in_queue:
+                twoth = peak['center']
+                dsp = self.model.get_base_ptn_wavelength() / 2. / \
+                    np.sin(np.deg2rad(twoth / 2.))
+                q = np.power((1./dsp), 2.)
+                peak_i = {'phase': peak['phasename'],
+                          'h': peak['h'],
+                          'k': peak['k'],
+                          'l': peak['l'],
+                          'display': True,
+                          'twoth': twoth,
+                          'dsp': dsp,
+                          'Q': q}
+                peaks.append(peak_i)
+            return peaks
         n_peaks = int(len(section.peakinfo) / 4)
         if verbose:
             print(str(datetime.datetime.now())[:-7], 
