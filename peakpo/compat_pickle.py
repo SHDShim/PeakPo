@@ -165,7 +165,7 @@ def _compat_dill_create_code(*args):
         lnotab = _to_bytes_if_needed(code_args[0])
         code_args = code_args[1:]
 
-    code_type = types.CodeType
+    code_type = _orig_code_type
     argc = len(code_args)
     if argc == 15:
         (
@@ -208,7 +208,7 @@ def _compat_dill_get_attr(obj, name):
     _get_attr(_import_module("types"), "CodeType")
     """
     value = getattr(obj, name, None) or getattr(builtins, name)
-    if value is types.CodeType:
+    if value is _orig_code_type:
         return _compat_code_type_ctor
     return value
 
@@ -244,14 +244,16 @@ def _patch_dill_create_code():
         _dill_impl.CodeType = _compat_code_type_ctor
     except Exception:
         pass
-    # Handle payloads that resolve via GLOBAL 'builtins code'.
+    # Handle payloads that resolve via GLOBAL 'builtins code' without touching
+    # stdlib types.CodeType (inspect/isinstance expect a real type there).
     try:
         builtins.code = _compat_code_type_ctor
     except Exception:
         pass
-    # Some payloads resolve CodeType via `types.CodeType` using dill helpers.
+    # Guard against previous runs that may have replaced types.CodeType.
     try:
-        types.CodeType = _compat_code_type_ctor
+        if types.CodeType is not _orig_code_type:
+            types.CodeType = _orig_code_type
     except Exception:
         pass
     _dill_code_patch_applied = True
