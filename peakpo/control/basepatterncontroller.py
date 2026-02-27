@@ -94,7 +94,8 @@ class BasePatternController(object):
             self._update_bgsub_from_current_values()
             print(str(datetime.datetime.now())[:-7], 
                 ': Temp chi ignored. Force new bgsub fit.')
-        if not self.model.associated_image_exists():
+        if (not self.model.associated_image_exists()) and \
+                (not self.widget.checkBox_IgnoreRawDataExistence.isChecked()):
             self.widget.checkBox_ShowCake.setChecked(False)
             return
         # self._update_bg_params_in_widget()
@@ -105,10 +106,16 @@ class BasePatternController(object):
             self.widget.lineEdit_PONI.setText(self.model.poni)
 
         if self.widget.checkBox_ShowCake.isChecked() and \
-                (self.model.poni is not None):
-            self.cake_ctrl.process_temp_cake()
-            # not sure this is correct.
-            # self.cake_ctrl.addremove_cake(update_plot=False)
+                ((self.model.poni is not None) or
+                 self.widget.checkBox_IgnoreRawDataExistence.isChecked()):
+            success = self.cake_ctrl.process_temp_cake()
+            if (not success) and \
+                    self.widget.checkBox_IgnoreRawDataExistence.isChecked() and \
+                    (not self.model.associated_image_exists()):
+                QtWidgets.QMessageBox.warning(
+                    self.widget, 'Warning',
+                    'PeakPo cannot process cake: no raw image and no existing cake files were found.')
+                self.widget.checkBox_ShowCake.setChecked(False)
 
     def _update_bg_params_in_widget(self):
         self.widget.spinBox_BGParam0.setValue(

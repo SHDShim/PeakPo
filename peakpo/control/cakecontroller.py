@@ -43,11 +43,30 @@ class CakeController(object):
         """
 
     def update_cake(self):
-        if self.model.poni_exist():
-            self.produce_cake()
-            temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
-            self.model.diff_img.write_temp_cakefiles(temp_dir=temp_dir)
-            self._apply_changes_to_graph()
+        if not self.model.base_ptn_exist():
+            QtWidgets.QMessageBox.warning(
+                self.widget, 'Warning', 'Choose CHI file first.')
+            return
+        if not self.model.poni_exist():
+            QtWidgets.QMessageBox.warning(
+                self.widget, 'Warning', 'Choose PONI file first.')
+            return
+        if not self.model.associated_image_exists():
+            self._set_image_file_box_missing()
+            QtWidgets.QMessageBox.warning(
+                self.widget, 'Warning',
+                'Raw XRD image file does not exist in the CHI folder.\n'
+                'Move the raw image file (e.g., h5, mar3450, tif, tiff, cbf) '
+                'into the same folder as the CHI file first.')
+            return
+
+        success = self.produce_cake()
+        if not success:
+            return
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
+        self.model.diff_img.write_temp_cakefiles(temp_dir=temp_dir)
+        self._set_image_file_box()
+        self._apply_changes_to_graph()
 
     """
     def load_cake_format_file(self):
@@ -99,6 +118,33 @@ class CakeController(object):
 
     def _apply_changes_to_graph(self):
         self.plot_ctrl.update()
+
+    def _ignore_raw_data_missing(self):
+        return self.widget.checkBox_IgnoreRawDataExistence.isChecked()
+
+    def _set_image_file_box_missing(self):
+        self.widget.textEdit_DiffractionImageFilename.setText(
+            'Image file is missing. Move the raw image file into the same folder as CHI.')
+
+    def _set_image_file_box(self):
+        if self.model.diff_img_exist() and (self.model.diff_img.img_filename is not None):
+            self.widget.textEdit_DiffractionImageFilename.setText(
+                self.model.diff_img.img_filename)
+        else:
+            self._set_image_file_box_missing()
+
+    def _warn_cannot_process_cake(self):
+        QtWidgets.QMessageBox.warning(
+            self.widget, 'Warning',
+            'PeakPo cannot process cake: no raw image and no existing cake files were found.')
+
+    def _load_cake_from_temp_without_raw_image(self, temp_dir):
+        # Temp cake files are named from the base pattern root name.
+        if self.model.diff_img is None:
+            self.model.reset_diff_img()
+        self.model.diff_img.img_filename = self.model.make_filename(
+            'tif', original=True)
+        return self.model.diff_img.read_cake_from_tempfile(temp_dir=temp_dir)
 
     def show_tif_header(self):
         if not self.model.base_ptn_exist():
@@ -169,11 +215,23 @@ class CakeController(object):
             self.widget.checkBox_ShowCake.setChecked(False)
             return False
         if not self.model.associated_image_exists():
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning',
-                'Cannot find image file.')
-            self.widget.checkBox_ShowCake.setChecked(False)
-            return False
+            if not self._ignore_raw_data_missing():
+                self._set_image_file_box_missing()
+                QtWidgets.QMessageBox.warning(
+                    self.widget, 'Warning',
+                    'Cannot find image file.')
+                self.widget.checkBox_ShowCake.setChecked(False)
+                return False
+            if self.model.poni is None:
+                poni_all = self.get_all_temp_poni()
+                if len(poni_all) == 1:
+                    self.model.poni = poni_all[0]
+                    self.widget.lineEdit_PONI.setText(self.model.poni)
+            if not self.process_temp_cake():
+                self._warn_cannot_process_cake()
+                self.widget.checkBox_ShowCake.setChecked(False)
+                return False
+            return True
 
         # if base pattern and image exist
         poni_all = self.get_all_temp_poni()
@@ -222,7 +280,10 @@ class CakeController(object):
                 self.model.diff_img.img_filename):
             return True
         """
-        self.process_temp_cake()
+        if not self.process_temp_cake():
+            self._warn_cannot_process_cake()
+            self.widget.checkBox_ShowCake.setChecked(False)
+            return False
         return True
 
     def _load_new_image(self):
@@ -231,9 +292,12 @@ class CakeController(object):
         no signal to update_graph
         """
         self.model.reset_diff_img()
+        if not self.model.associated_image_exists():
+            self._set_image_file_box_missing()
+            return False
         self.model.load_associated_img()
-        self.widget.textEdit_DiffractionImageFilename.setText(
-            self.model.diff_img.img_filename)
+        self._set_image_file_box()
+        return True
 
     def apply_mask(self):
         # self.produce_cake()
@@ -268,23 +332,33 @@ class CakeController(object):
         Reprocess to get cake.  Slower re - processing
         does not signal to update_graph
         """
-        self._load_new_image()
+        success = self._load_new_image()
+        if not success:
+            return False
         self.cakemake_ctrl.cook()
+        self._set_image_file_box()
+        return True
 
     def process_temp_cake(self):
         """
         load cake through either temporary file or make a new cake
         """
-        if not self.model.associated_image_exists():
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning",
-                "Image file for the base pattern does not exist.")
-            return
         temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
+        has_raw_image = self.model.associated_image_exists()
+        if not has_raw_image:
+            self._set_image_file_box_missing()
+            if not self._ignore_raw_data_missing():
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning",
+                    "Image file for the base pattern does not exist.")
+                return False
+            return self._load_cake_from_temp_without_raw_image(temp_dir)
         #temp_dir = os.path.join(self.model.chi_path, 'temporary_pkpo')
         if self.widget.checkBox_UseTempCake.isChecked():
             #if os.path.exists(temp_dir):
-            self._load_new_image()
+            success = self._load_new_image()
+            if not success:
+                return False
             success = self.model.diff_img.read_cake_from_tempfile(
                 temp_dir=temp_dir)
             if success:
@@ -295,14 +369,19 @@ class CakeController(object):
                 print(str(datetime.datetime.now())[:-7], 
                     ": Create new temporary file for cake image.")
                 self._update_temp_cake_files(temp_dir)
+                return True
             #else:
                 #os.makedirs(temp_dir)
                 #self._update_temp_cake_files(temp_dir)
+            return True
         else:
             self._update_temp_cake_files(temp_dir)
+            return True
 
     def _update_temp_cake_files(self, temp_dir):
-        self.produce_cake()
+        success = self.produce_cake()
+        if not success:
+            return
         self.model.diff_img.write_temp_cakefiles(temp_dir=temp_dir)
 
     def get_all_temp_poni(self):
@@ -398,4 +477,3 @@ class CakeController(object):
             else:
                 QtWidgets.QMessageBox.warning(
                     self.widget, 'Warning', 'The PONI file does not exist.')
-
