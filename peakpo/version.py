@@ -7,7 +7,7 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.9.5a"
+__version__ = "7.9.5b"
 """
 7.9.5: Solving dpp input problem for old dpp files
 7.9.3: Pip installable version
