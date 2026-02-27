@@ -130,6 +130,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_Symmetry.addItems(['cubic', 'tetragonal',
                                          'hexagonal', 'orthorhombic'])
         self.comboBox_Symmetry.setCurrentText('cubic')
+        self._setup_plot_subtabs()
         self.tableWidget_DiffImgAzi.\
             setHorizontalHeaderLabels(['Notes', '2th', 'Azi', '2th', 'Azi'])
         # Gray scale panel now includes histogram controls; relax hard height cap
@@ -204,6 +205,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tabWidget_5, self.tabWidget_2, self.tabWidget_4,
             self.tabWidget_PeakFit
         ]
+        if hasattr(self, "tabWidget_PlotSub"):
+            tab_widgets.append(self.tabWidget_PlotSub)
         for tab_widget in tab_widgets:
             bar = tab_widget.tabBar()
             bar.setStyleSheet("")
@@ -211,6 +214,75 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             tab_style = _NoClipTabStyle(bar.style())
             self._tabbar_styles.append(tab_style)
             bar.setStyle(tab_style)
+
+    def _setup_plot_subtabs(self):
+        # Build nested tabs inside Plot: Control / Config.
+        # Keep original widget IDs so existing controller wiring still works.
+        while self.verticalLayout_44.count():
+            item = self.verticalLayout_44.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.hide()
+                w.setParent(None)
+
+        self.tabWidget_PlotSub = QtWidgets.QTabWidget(self.tab_Plot)
+        self.tabWidget_PlotSub.setObjectName("tabWidget_PlotSub")
+
+        self.tab_PlotControl = QtWidgets.QWidget()
+        self.tab_PlotControl.setObjectName("tab_PlotControl")
+        self._plot_ctrl_layout = QtWidgets.QVBoxLayout(self.tab_PlotControl)
+        self._plot_ctrl_layout.setContentsMargins(0, 0, 0, 0)
+        self.scrollArea_PlotControl = QtWidgets.QScrollArea(self.tab_PlotControl)
+        self.scrollArea_PlotControl.setWidgetResizable(True)
+        self.scrollArea_PlotControl.setObjectName("scrollArea_PlotControl")
+        self.plotControlContents = QtWidgets.QWidget()
+        self.plotControlContents.setObjectName("plotControlContents")
+        self.verticalLayout_PlotControl = QtWidgets.QVBoxLayout(self.plotControlContents)
+        self.verticalLayout_PlotControl.setObjectName("verticalLayout_PlotControl")
+        self.scrollArea_PlotControl.setWidget(self.plotControlContents)
+        self._plot_ctrl_layout.addWidget(self.scrollArea_PlotControl)
+
+        self.tab_PlotConfig = QtWidgets.QWidget()
+        self.tab_PlotConfig.setObjectName("tab_PlotConfig")
+        self._plot_cfg_layout = QtWidgets.QVBoxLayout(self.tab_PlotConfig)
+        self._plot_cfg_layout.setContentsMargins(0, 0, 0, 0)
+        self.scrollArea_PlotConfig = QtWidgets.QScrollArea(self.tab_PlotConfig)
+        self.scrollArea_PlotConfig.setWidgetResizable(True)
+        self.scrollArea_PlotConfig.setObjectName("scrollArea_PlotConfig")
+        self.plotConfigContents = QtWidgets.QWidget()
+        self.plotConfigContents.setObjectName("plotConfigContents")
+        self.verticalLayout_PlotConfig = QtWidgets.QVBoxLayout(self.plotConfigContents)
+        self.verticalLayout_PlotConfig.setObjectName("verticalLayout_PlotConfig")
+        self.scrollArea_PlotConfig.setWidget(self.plotConfigContents)
+        self._plot_cfg_layout.addWidget(self.scrollArea_PlotConfig)
+
+        self.tabWidget_PlotSub.addTab(self.tab_PlotControl, "Control")
+        self.tabWidget_PlotSub.addTab(self.tab_PlotConfig, "Config")
+        self.verticalLayout_44.addWidget(self.tabWidget_PlotSub)
+
+        # Control tab: plot control + JCPDS bars + cake display controls
+        self.groupBox_34.setParent(self.plotControlContents)
+        self.groupBox_20.setParent(self.plotControlContents)
+        self.groupBox_29.setParent(self.plotControlContents)
+        self.groupBox_5.setParent(self.plotControlContents)
+        self.groupBox_23.setParent(self.plotControlContents)
+        self.verticalLayout_PlotControl.addWidget(self.groupBox_34)
+        self.verticalLayout_PlotControl.addWidget(self.groupBox_20)
+        self.verticalLayout_PlotControl.addWidget(self.groupBox_29)
+        self.verticalLayout_PlotControl.addWidget(self.groupBox_5)
+        self.verticalLayout_PlotControl.addWidget(self.groupBox_23)
+        self.verticalLayout_PlotControl.addStretch(1)
+
+        # Config tab: remaining plot config groups
+        self.groupBox_16.setParent(self.plotConfigContents)
+        self.groupBox_24.setParent(self.plotConfigContents)
+        self.groupBox_13.setParent(self.plotConfigContents)
+        self.groupBox_27.setParent(self.plotConfigContents)
+        self.verticalLayout_PlotConfig.addWidget(self.groupBox_16)
+        self.verticalLayout_PlotConfig.addWidget(self.groupBox_24)
+        self.verticalLayout_PlotConfig.addWidget(self.groupBox_13)
+        self.verticalLayout_PlotConfig.addWidget(self.groupBox_27)
+        self.verticalLayout_PlotConfig.addStretch(1)
 
     def closeEvent(self, event):
         try:
