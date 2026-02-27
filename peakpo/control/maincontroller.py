@@ -174,6 +174,12 @@ class MainController(object):
             self.apply_changes_to_graph)
         self.widget.comboBox_PnTFontSize.currentIndexChanged.connect(
             self.apply_changes_to_graph)
+        if hasattr(self.widget, "comboBox_LegendFontSize"):
+            self.widget.comboBox_LegendFontSize.currentIndexChanged.connect(
+                self.apply_changes_to_graph)
+        if hasattr(self.widget, "comboBox_WaterfallFontSize"):
+            self.widget.comboBox_WaterfallFontSize.currentIndexChanged.connect(
+                self.apply_changes_to_graph)
         self.widget.checkBox_ShortPlotTitle.clicked.connect(
             self.apply_changes_to_graph)
         self.widget.checkBox_ShowCakeLabels.clicked.connect(
@@ -464,6 +470,18 @@ class MainController(object):
         # print('write:' + self.model.chi_path)
         self.settings.setValue('chi_path', self.model.chi_path)
         self.settings.setValue('jcpds_path', self.model.jcpds_path)
+        self.settings.setValue(
+            'fontsize_pt_label', self.widget.comboBox_PnTFontSize.currentText())
+        self.settings.setValue(
+            'fontsize_miller', self.widget.comboBox_HKLFontSize.currentText())
+        if hasattr(self.widget, "comboBox_LegendFontSize"):
+            self.settings.setValue(
+                'fontsize_legend',
+                self.widget.comboBox_LegendFontSize.currentText())
+        if hasattr(self.widget, "comboBox_WaterfallFontSize"):
+            self.settings.setValue(
+                'fontsize_waterfall_label',
+                self.widget.comboBox_WaterfallFontSize.currentText())
         
 
     def read_setting(self):
@@ -474,6 +492,26 @@ class MainController(object):
         # self.settings.setFallbacksEnabled(False)
         self.model.set_chi_path(self.settings.value('chi_path'))
         self.model.set_jcpds_path(self.settings.value('jcpds_path'))
+        pnt_fs = str(self.settings.value(
+            'fontsize_pt_label', self.widget.comboBox_PnTFontSize.currentText()))
+        hkl_fs = str(self.settings.value(
+            'fontsize_miller', self.widget.comboBox_HKLFontSize.currentText()))
+        if self.widget.comboBox_PnTFontSize.findText(pnt_fs) >= 0:
+            self.widget.comboBox_PnTFontSize.setCurrentText(pnt_fs)
+        if self.widget.comboBox_HKLFontSize.findText(hkl_fs) >= 0:
+            self.widget.comboBox_HKLFontSize.setCurrentText(hkl_fs)
+        if hasattr(self.widget, "comboBox_LegendFontSize"):
+            leg_fs = str(self.settings.value(
+                'fontsize_legend',
+                self.widget.comboBox_LegendFontSize.currentText()))
+            if self.widget.comboBox_LegendFontSize.findText(leg_fs) >= 0:
+                self.widget.comboBox_LegendFontSize.setCurrentText(leg_fs)
+        if hasattr(self.widget, "comboBox_WaterfallFontSize"):
+            wf_fs = str(self.settings.value(
+                'fontsize_waterfall_label',
+                self.widget.comboBox_WaterfallFontSize.currentText()))
+            if self.widget.comboBox_WaterfallFontSize.findText(wf_fs) >= 0:
+                self.widget.comboBox_WaterfallFontSize.setCurrentText(wf_fs)
 
     """
     def closeEvent(self, event):

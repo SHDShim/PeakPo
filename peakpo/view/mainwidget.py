@@ -1,5 +1,5 @@
 import os
-from qtpy import QtWidgets
+from qtpy import QtCore, QtWidgets
 from .qtd import Ui_MainWindow
 from .cakehistwidget import CakeHistogramWidget
 from ..utils import SpinBoxFixStyle
@@ -78,6 +78,55 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_HKLFontSize.setCurrentText('8')
         self.comboBox_PnTFontSize.addItems(fontsizes)
         self.comboBox_PnTFontSize.setCurrentText('16')
+        self.label_LegendFontSize = QtWidgets.QLabel(self.groupBox_13)
+        self.label_LegendFontSize.setText("Legend")
+        self.comboBox_LegendFontSize = QtWidgets.QComboBox(self.groupBox_13)
+        self.comboBox_LegendFontSize.setMinimumSize(QtCore.QSize(0, 25))
+        self.comboBox_LegendFontSize.addItems(fontsizes)
+        self.comboBox_LegendFontSize.setCurrentText('12')
+        self.label_WaterfallFontSize = QtWidgets.QLabel(self.groupBox_13)
+        self.label_WaterfallFontSize.setText("Waterfall label")
+        self.comboBox_WaterfallFontSize = QtWidgets.QComboBox(self.groupBox_13)
+        self.comboBox_WaterfallFontSize.setMinimumSize(QtCore.QSize(0, 25))
+        self.comboBox_WaterfallFontSize.addItems(fontsizes)
+        self.comboBox_WaterfallFontSize.setCurrentText('12')
+        self.comboBox_PnTFontSize.setMinimumWidth(96)
+        self.comboBox_HKLFontSize.setMinimumWidth(96)
+        self.comboBox_LegendFontSize.setMinimumWidth(96)
+        self.comboBox_WaterfallFontSize.setMinimumWidth(96)
+        self.comboBox_PnTFontSize.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.comboBox_HKLFontSize.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.comboBox_LegendFontSize.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.comboBox_WaterfallFontSize.setLayoutDirection(QtCore.Qt.RightToLeft)
+        # Rebuild the original QtDesigner row layout to avoid inherited spacer
+        # artifacts and match the "Line thickness" left/right arrangement.
+        while self.horizontalLayout_4.count():
+            item = self.horizontalLayout_4.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.hide()
+        self._font_size_grid = QtWidgets.QGridLayout()
+        self._font_size_grid.setContentsMargins(0, 0, 0, 0)
+        self._font_size_grid.setHorizontalSpacing(18)
+        self._font_size_grid.setVerticalSpacing(8)
+        self._font_size_grid.setColumnStretch(2, 1)
+        self.label_15.show()
+        self.comboBox_PnTFontSize.show()
+        self.label_3.show()
+        self.comboBox_HKLFontSize.show()
+        self.label_LegendFontSize.show()
+        self.comboBox_LegendFontSize.show()
+        self.label_WaterfallFontSize.show()
+        self.comboBox_WaterfallFontSize.show()
+        self._font_size_grid.addWidget(self.label_15, 0, 0)
+        self._font_size_grid.addWidget(self.comboBox_PnTFontSize, 0, 1)
+        self._font_size_grid.addWidget(self.label_3, 0, 3)
+        self._font_size_grid.addWidget(self.comboBox_HKLFontSize, 0, 4)
+        self._font_size_grid.addWidget(self.label_LegendFontSize, 1, 0)
+        self._font_size_grid.addWidget(self.comboBox_LegendFontSize, 1, 1)
+        self._font_size_grid.addWidget(self.label_WaterfallFontSize, 1, 3)
+        self._font_size_grid.addWidget(self.comboBox_WaterfallFontSize, 1, 4)
+        self.horizontalLayout_4.addLayout(self._font_size_grid)
         self.comboBox_Symmetry.addItems(['cubic', 'tetragonal',
                                          'hexagonal', 'orthorhombic'])
         self.comboBox_Symmetry.setCurrentText('cubic')

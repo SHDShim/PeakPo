@@ -9,5 +9,5 @@
 - [x] Update environments folder contents for windows pkpo2026
 - [ ] Update scripts folder contents
 - [x] Update shortcuts folder contents
-- [ ] upgrade to latest pyqt6, matplotlib, etc
-- [ ] Check box for "Ignore absence of raw data file in the folder", so that one can move around things.
+- [x] upgrade to latest pyqt6, matplotlib, etc
+- [x] Check box for "Ignore absence of raw data file in the folder", so that one can move around things.

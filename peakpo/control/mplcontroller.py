@@ -254,16 +254,22 @@ class MplController(object):
                 int_new = ma.MaskedArray(int_plot)  # no mask
         """
 
-        # Colormap: masked ("bad") pixels in semi-transparent red
+        # Colormap: masked ("bad") pixels in subtle transparent tint
         cmap = (plt.cm.gray if self.widget.checkBox_WhiteForPeak.isChecked()
                 else plt.cm.gray_r).copy()
-
+        # 0-values are typically masked pixels in cake data. Always treat them
+        # as masked and render with a non-intrusive, high-transparency tint.
+        zero_mask = (int_plot == 0)
         mask = self.model.diff_img.get_mask()
-        if (self.widget.pushButton_ApplyMask.isChecked() and ((mask is not None) and np.any(mask))):
-            int_new = ma.masked_where(int_plot == 0, int_plot)
-            cmap.set_bad(color=(1.0, 0.0, 0.0, 1.0))  
+        use_user_mask = (self.widget.pushButton_ApplyMask.isChecked() and
+                         (mask is not None) and np.any(mask))
+        if use_user_mask:
+            combined_mask = zero_mask | mask
         else:
-            int_new = int_plot
+            combined_mask = zero_mask
+        int_new = ma.masked_where(combined_mask, int_plot, copy=False)
+        # Opaque pale yellow for masked pixels.
+        cmap.set_bad(color=(1.0, 0.97, 0.55, 1.0))
 
 
         self.widget.mpl.canvas.ax_cake.imshow(
@@ -423,8 +429,16 @@ class MplController(object):
                                 self.widget.comboBox_HKLFontSize.currentText()),
                             alpha=self.widget.doubleSpinBox_JCPDS_cake_Alpha.value())
         if self.widget.checkBox_JCPDSinPattern.isChecked():
+            legend_fontsize = 14
+            if hasattr(self.widget, "comboBox_LegendFontSize"):
+                try:
+                    legend_fontsize = int(
+                        self.widget.comboBox_LegendFontSize.currentText())
+                except Exception:
+                    pass
             leg_jcpds = self.widget.mpl.canvas.ax_pattern.legend(
-                loc=1, framealpha=0., #prop={'size': 14}, 
+                loc=1, framealpha=0.,
+                fontsize=legend_fontsize,
                 handlelength=1)
             for line, txt in zip(leg_jcpds.get_lines(), leg_jcpds.get_texts()):
                 txt.set_color(line.get_color())
@@ -484,11 +498,18 @@ class MplController(object):
                         self.widget.comboBox_WaterfallLineThickness.
                         currentText()))
                 if self.widget.checkBox_ShowWaterfallLabels.isChecked():
+                    wf_fontsize = 12
+                    if hasattr(self.widget, "comboBox_WaterfallFontSize"):
+                        try:
+                            wf_fontsize = int(
+                                self.widget.comboBox_WaterfallFontSize.currentText())
+                        except Exception:
+                            pass
                     self.widget.mpl.canvas.ax_pattern.text(
                         (x[-1] - x[0]) * 0.01 + x[0], y[0] + ygap,
                         os.path.basename(pattern.fname),
                         verticalalignment='bottom', horizontalalignment='left',
-                        color=pattern.color)
+                        color=pattern.color, fontsize=wf_fontsize)
         """
         self.widget.mpl.canvas.ax_pattern.text(
             0.01, 0.97 - n_display * 0.05,
