@@ -159,7 +159,8 @@ class JcpdsController(object):
             else:
                 QtWidgets.QMessageBox.warning(
                     self.widget, "Warning",
-                    f+" may be DIOPTAS JCPDS. Convert using JCPDSTools.")
+                    f + " could not be loaded as a JCPDS file.\n"
+                    "See terminal output for the traceback.")
         
         # Display on the QTableWidget
         self.jcpdstable_ctrl.update()

@@ -2,6 +2,7 @@ import pickle
 import os
 import copy
 import datetime
+import traceback
 import xlwt
 from ..ds_cake import DiffImg
 # do not change the module structure for ds_jcpds and ds_powdiff for
@@ -313,7 +314,10 @@ class PeakPoDirModel(object):
             phase = JCPDSplt()
             phase.read_file(filen)  # phase.file = f
             phase.color = color
-        except:
+        except Exception as e:
+            print("append_a_jcpds failed for:", filen)
+            print("error:", repr(e))
+            traceback.print_exc()
             return False
         self.jcpds_lst.append(phase)
         return True

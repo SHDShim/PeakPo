@@ -5,6 +5,7 @@ import types
 import xlwt
 import numpy
 import base64
+import traceback
 from json import JSONEncoder
 import json
 from ..ds_cake import DiffImg
@@ -300,7 +301,10 @@ class PeakPoModel(object):
             else:
                 phase.read_file(filen)
             phase.color = color
-        except:
+        except Exception as e:
+            print("append_a_jcpds failed for:", filen)
+            print("error:", repr(e))
+            traceback.print_exc()
             return False
         self.jcpds_lst.append(phase)
         return True
