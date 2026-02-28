@@ -24,6 +24,7 @@ from .diffcontroller import DiffController
 from .peakfitcontroller import PeakFitController
 from .peakfittablecontroller import PeakfitTableController
 from .cakeazicontroller import CakeAziController
+from .exportpythoncontroller import ExportPythonController
 from ..utils import dialog_savefile, writechi, extract_extension, \
     convert_wl_to_energy, get_sorted_filelist, find_from_filelist, \
     make_filename, get_directory, get_temp_dir
@@ -87,6 +88,10 @@ class MainController(object):
         
         self.peakfit_table_ctrl = PeakfitTableController(self.model, self.widget)
         print("  ✓ PeakfitTableController created")
+
+        self.export_py_ctrl = ExportPythonController(
+            self.model, self.widget, plot_ctrl=self.plot_ctrl)
+        print("  ✓ ExportPythonController created")
         
         self.read_setting()
         print("  ✓ read_setting() done")
@@ -151,6 +156,9 @@ class MainController(object):
         self.widget.doubleSpinBox_SetWavelength.valueChanged.connect(
             self.apply_wavelength)
         self.widget.pushButton_SaveBgSubCHI.clicked.connect(self.save_bgsubchi)
+        if hasattr(self.widget, "pushButton_ExportPythonView"):
+            self.widget.pushButton_ExportPythonView.clicked.connect(
+                self.export_py_ctrl.export_current_view)
         self.widget.pushButton_SetXEat30.clicked.connect(
             lambda: self.setXEat(0.4133))
         self.widget.pushButton_SetXEat37.clicked.connect(

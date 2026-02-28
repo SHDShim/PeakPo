@@ -131,7 +131,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                          'hexagonal', 'orthorhombic'])
         self.comboBox_Symmetry.setCurrentText('cubic')
         self._setup_plot_subtabs()
+        self._setup_plot_config_python_export()
         self._setup_diff_tab()
+        self._setup_toolbar_diff_toggle()
         # Legacy toolbar save icon is replaced by the session Save button.
         if hasattr(self, "pushButton_S_SaveSession"):
             self.pushButton_S_SaveSession.setVisible(False)
@@ -457,6 +459,44 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.verticalLayout_Diff.addWidget(self.groupBox_DiffExport)
         self.verticalLayout_Diff.addStretch(1)
         self.tabWidget_5.addTab(self.tab_Diff, "Diff")
+        # Diff mode toggle is shown in the top toolbar.
+        self.checkBox_UseDiffMode.setVisible(False)
+
+    def _setup_toolbar_diff_toggle(self):
+        if (not hasattr(self, "horizontalLayout_7")) or hasattr(self, "checkBox_Diff"):
+            return
+        self.checkBox_Diff = QtWidgets.QCheckBox(self.frame_2)
+        self.checkBox_Diff.setObjectName("checkBox_Diff")
+        self.checkBox_Diff.setMinimumSize(QtCore.QSize(0, 25))
+        self.checkBox_Diff.setChecked(False)
+        self.checkBox_Diff.setText("Diff")
+        self.checkBox_Diff.setToolTip("Enable Diff mode")
+        idx = self.horizontalLayout_7.indexOf(self.checkBox_LongCursor)
+        if idx < 0:
+            idx = self.horizontalLayout_7.count() - 1
+        self.horizontalLayout_7.insertWidget(idx + 1, self.checkBox_Diff)
+
+    def _setup_plot_config_python_export(self):
+        if not hasattr(self, "verticalLayout_PlotConfig"):
+            return
+        if hasattr(self, "pushButton_ExportPythonView"):
+            return
+        self.groupBox_PythonExport = QtWidgets.QGroupBox("Python Export", self.plotConfigContents)
+        self.groupBox_PythonExport.setObjectName("groupBox_PythonExport")
+        self.horizontalLayout_PythonExport = QtWidgets.QHBoxLayout(self.groupBox_PythonExport)
+        self.horizontalLayout_PythonExport.setContentsMargins(12, 12, 12, 12)
+        self.horizontalLayout_PythonExport.setObjectName("horizontalLayout_PythonExport")
+        self.pushButton_ExportPythonView = QtWidgets.QPushButton(self.groupBox_PythonExport)
+        self.pushButton_ExportPythonView.setObjectName("pushButton_ExportPythonView")
+        self.pushButton_ExportPythonView.setMinimumSize(QtCore.QSize(0, 25))
+        self.pushButton_ExportPythonView.setMaximumSize(QtCore.QSize(200, 16777215))
+        self.pushButton_ExportPythonView.setText("Export Python (Current View)")
+        self.pushButton_ExportPythonView.setToolTip(
+            "Export current on-screen view as a Python reproducible package")
+        self.horizontalLayout_PythonExport.addWidget(self.pushButton_ExportPythonView)
+        self.horizontalLayout_PythonExport.addStretch(1)
+        # place just below Plot setup in Plot > Config
+        self.verticalLayout_PlotConfig.insertWidget(1, self.groupBox_PythonExport)
 
     def closeEvent(self, event):
         try:

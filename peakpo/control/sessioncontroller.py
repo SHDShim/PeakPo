@@ -351,10 +351,16 @@ class SessionController(object):
         }
 
     def _collect_diff_ui_state(self):
-        if not hasattr(self.widget, "checkBox_UseDiffMode"):
+        if (not hasattr(self.widget, "checkBox_Diff")) and \
+                (not hasattr(self.widget, "checkBox_UseDiffMode")):
             return {}
+        enabled = False
+        if hasattr(self.widget, "checkBox_Diff"):
+            enabled = bool(self.widget.checkBox_Diff.isChecked())
+        elif hasattr(self.widget, "checkBox_UseDiffMode"):
+            enabled = bool(self.widget.checkBox_UseDiffMode.isChecked())
         diff = {
-            "enabled": bool(self.widget.checkBox_UseDiffMode.isChecked()),
+            "enabled": enabled,
             "ref_chi_path": str(self.widget.lineEdit_DiffRefChi.text()).strip(),
             "cmap_2d": str(self.widget.comboBox_DiffCmap.currentText()),
             "positive_side": "blue_cool"
@@ -418,12 +424,17 @@ class SessionController(object):
         self._apply_diff_ui_state((ui_state or {}).get("diff", {}))
 
     def _apply_diff_ui_state(self, diff):
-        if (not hasattr(self.widget, "checkBox_UseDiffMode")) or (diff == {}):
+        if ((not hasattr(self.widget, "checkBox_Diff")) and
+                (not hasattr(self.widget, "checkBox_UseDiffMode"))) or (diff == {}):
             return
         if "ref_chi_path" in diff:
             self.widget.lineEdit_DiffRefChi.setText(str(diff["ref_chi_path"] or ""))
         if "enabled" in diff:
-            self.widget.checkBox_UseDiffMode.setChecked(bool(diff["enabled"]))
+            enabled = bool(diff["enabled"])
+            if hasattr(self.widget, "checkBox_Diff"):
+                self.widget.checkBox_Diff.setChecked(enabled)
+            if hasattr(self.widget, "checkBox_UseDiffMode"):
+                self.widget.checkBox_UseDiffMode.setChecked(enabled)
         if "cmap_2d" in diff:
             cmap = str(diff["cmap_2d"])
             if self.widget.comboBox_DiffCmap.findText(cmap) >= 0:

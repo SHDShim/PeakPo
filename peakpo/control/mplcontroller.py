@@ -277,8 +277,8 @@ class MplController(object):
             zero_mask = np.zeros(np.shape(int_plot), dtype=bool)
             cmap.set_bad(color=(0.0, 0.0, 0.0, 0.0))
         else:
-            cmap = (plt.cm.gray if self.widget.checkBox_WhiteForPeak.isChecked()
-                    else plt.cm.gray_r).copy()
+            # Non-diff mode uses gray_r consistently.
+            cmap = plt.cm.gray_r.copy()
             # 0-values are typically masked pixels in cake data.
             zero_mask = (int_plot == 0)
             # Opaque pale yellow for masked pixels.

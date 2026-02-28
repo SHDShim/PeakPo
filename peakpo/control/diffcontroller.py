@@ -32,11 +32,15 @@ class DiffController(object):
         self._init_ui_from_state()
 
     def _connect_channel(self):
-        if not hasattr(self.widget, "checkBox_UseDiffMode"):
+        if (not hasattr(self.widget, "checkBox_Diff")) and \
+                (not hasattr(self.widget, "checkBox_UseDiffMode")):
             return
         self.widget.pushButton_DiffRefBrowse.clicked.connect(self._browse_ref_chi)
         self.widget.pushButton_DiffRefClear.clicked.connect(self._clear_reference)
-        self.widget.checkBox_UseDiffMode.toggled.connect(self._on_toggled)
+        if hasattr(self.widget, "checkBox_Diff"):
+            self.widget.checkBox_Diff.toggled.connect(self._on_toggled)
+        if hasattr(self.widget, "checkBox_UseDiffMode"):
+            self.widget.checkBox_UseDiffMode.toggled.connect(self._on_toggled)
         self.widget.lineEdit_DiffRefChi.editingFinished.connect(
             self._on_ref_path_changed_from_ui)
         self.widget.comboBox_DiffCmap.currentTextChanged.connect(self._on_cmap_changed)
@@ -49,11 +53,12 @@ class DiffController(object):
         self.widget.pushButton_ExportDiffCakeNpy.clicked.connect(self.export_diff_cake_npy)
 
     def _init_ui_from_state(self):
-        if not hasattr(self.widget, "checkBox_UseDiffMode"):
+        if (not hasattr(self.widget, "checkBox_Diff")) and \
+                (not hasattr(self.widget, "checkBox_UseDiffMode")):
             return
         st = self.model.diff_state
         self.widget.lineEdit_DiffRefChi.setText(str(st.ref_chi_path or ""))
-        self.widget.checkBox_UseDiffMode.setChecked(bool(st.enabled))
+        self._set_enabled_ui(bool(st.enabled))
         self.widget.comboBox_DiffCmap.clear()
         self.widget.comboBox_DiffCmap.addItems(self._CMAPS)
         cmap = st.cmap_2d if st.cmap_2d in self._CMAPS else "RdBu_r"
@@ -69,10 +74,11 @@ class DiffController(object):
         self._set_status()
 
     def sync_state_from_ui(self):
-        if not hasattr(self.widget, "checkBox_UseDiffMode"):
+        if (not hasattr(self.widget, "checkBox_Diff")) and \
+                (not hasattr(self.widget, "checkBox_UseDiffMode")):
             return
         st = self.model.diff_state
-        st.enabled = bool(self.widget.checkBox_UseDiffMode.isChecked())
+        st.enabled = self._is_enabled_ui()
         st.ref_chi_path = str(self.widget.lineEdit_DiffRefChi.text()).strip()
         st.cmap_2d = str(self.widget.comboBox_DiffCmap.currentText())
         st.positive_side = "blue_cool" \
@@ -83,10 +89,11 @@ class DiffController(object):
         st.vmax_2d = float(self.widget.doubleSpinBox_DiffVmax.value())
 
     def _sync_ui_from_state(self):
-        if not hasattr(self.widget, "checkBox_UseDiffMode"):
+        if (not hasattr(self.widget, "checkBox_Diff")) and \
+                (not hasattr(self.widget, "checkBox_UseDiffMode")):
             return
         st = self.model.diff_state
-        self.widget.checkBox_UseDiffMode.setChecked(bool(st.enabled))
+        self._set_enabled_ui(bool(st.enabled))
         self.widget.lineEdit_DiffRefChi.setText(str(st.ref_chi_path or ""))
         if self.widget.comboBox_DiffCmap.findText(str(st.cmap_2d)) >= 0:
             self.widget.comboBox_DiffCmap.setCurrentText(str(st.cmap_2d))
@@ -142,6 +149,23 @@ class DiffController(object):
             self._reload_reference_data(show_errors=True)
         self._set_status()
         self._trigger_plot_update()
+
+    def _is_enabled_ui(self):
+        if hasattr(self.widget, "checkBox_Diff"):
+            return bool(self.widget.checkBox_Diff.isChecked())
+        if hasattr(self.widget, "checkBox_UseDiffMode"):
+            return bool(self.widget.checkBox_UseDiffMode.isChecked())
+        return False
+
+    def _set_enabled_ui(self, enabled):
+        if hasattr(self.widget, "checkBox_Diff"):
+            old = self.widget.checkBox_Diff.blockSignals(True)
+            self.widget.checkBox_Diff.setChecked(bool(enabled))
+            self.widget.checkBox_Diff.blockSignals(old)
+        if hasattr(self.widget, "checkBox_UseDiffMode"):
+            old = self.widget.checkBox_UseDiffMode.blockSignals(True)
+            self.widget.checkBox_UseDiffMode.setChecked(bool(enabled))
+            self.widget.checkBox_UseDiffMode.blockSignals(old)
 
     def _on_ref_path_changed_from_ui(self):
         self.sync_state_from_ui()
