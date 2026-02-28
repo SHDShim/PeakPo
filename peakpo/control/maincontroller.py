@@ -585,13 +585,23 @@ class MainController(object):
                 return
         if (event.xdata is None) or (event.ydata is None):
             return
+        # Peak add/remove must come from the main 1D pattern axes.
+        if event.inaxes != self.widget.mpl.canvas.ax_pattern:
+            return
         if (event.button != 1) and (event.button != 3):
             return
         if event.button == 1:
             mouse_button = 'left'
         elif event.button == 3:
             mouse_button = 'right'
-        if (self.widget.tabWidget.currentIndex() == 4) and \
+        fits_active = False
+        if hasattr(self.widget, "tab_PkFt"):
+            fits_active = (self.widget.tabWidget.currentWidget() == self.widget.tab_PkFt)
+        else:
+            # Backward-compatible fallback for older/newer tab orders.
+            fits_active = (self.widget.tabWidget.currentIndex() in (4, 5))
+
+        if fits_active and \
                 (self.widget.pushButton_AddRemoveFromMouse.isChecked()):
             if not self.model.current_section_exist():
                 QtWidgets.QMessageBox.warning(
@@ -619,8 +629,19 @@ class MainController(object):
         """
         """
         if mouse_button == 'left':  # left click
+            if (self.model.current_section is None) or \
+                    (self.model.current_section.x is None) or \
+                    (len(self.model.current_section.x) == 0):
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning", "Set section first.")
+                return
+            # Robust against tiny range mismatches: map click to nearest x
+            # sample in the current section and use that as initial center.
+            x_arr = np.asarray(self.model.current_section.x, dtype=float)
+            idx = int(np.abs(x_arr - float(xdata)).argmin())
+            x_center = float(x_arr[idx])
             success = self.model.current_section.set_single_peak(
-                float(xdata),
+                x_center,
                 self.widget.doubleSpinBox_InitialFWHM.value())
             if not success:
                 QtWidgets.QMessageBox.warning(

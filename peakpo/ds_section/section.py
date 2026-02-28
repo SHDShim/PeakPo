@@ -59,8 +59,19 @@ class Section(object):
 
     def set_single_peak(self, x_center, fwhm, hkl=[0, 0, 0],
                         phase_name='unknown'):
-        if (x_center > self.x.max()) or (x_center < self.x.min()):
+        if self.x is None or len(self.x) == 0:
             return False
+        x_min = float(np.min(self.x))
+        x_max = float(np.max(self.x))
+        # Allow small numerical mismatch at boundaries.
+        if len(self.x) > 1:
+            tol = 0.5 * float(np.min(np.abs(np.diff(self.x))))
+        else:
+            tol = 0.0
+        if (x_center > x_max + tol) or (x_center < x_min - tol):
+            return False
+        # Clamp near-boundary clicks into the valid section range.
+        x_center = min(max(float(x_center), x_min), x_max)
         y_center = self.get_nearest_intensity(x_center)
         peak = {}
         peak['center'] = x_center

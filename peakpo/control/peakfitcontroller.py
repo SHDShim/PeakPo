@@ -129,6 +129,12 @@ class PeakFitController(object):
             else:
                 pass
         x_range = self.model.current_section.get_xrange()
+        # Keep queue consistent with current section bounds.
+        x_min, x_max = min(x_range), max(x_range)
+        self.model.current_section.peaks_in_queue = [
+            p for p in self.model.current_section.peaks_in_queue
+            if (p.get('center', x_min) >= x_min) and (p.get('center', x_max) <= x_max)
+        ]
         peaks = []
         int_threshold = float(
             self.widget.spinBox_PeaksFromJlistIntensity.value())
@@ -138,7 +144,7 @@ class PeakFitController(object):
                     self.widget.doubleSpinBox_SetWavelength.value())
                 for ii in range(tths.__len__()):
                     tth = float(tths[ii])
-                    if (tth >= x_range[0]) and (tth <= x_range[1]) and \
+                    if (tth >= x_min) and (tth <= x_max) and \
                             (intensities[ii] >= int_threshold):
                         """
                         height = \
