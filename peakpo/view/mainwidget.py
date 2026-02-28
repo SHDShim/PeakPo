@@ -131,6 +131,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                          'hexagonal', 'orthorhombic'])
         self.comboBox_Symmetry.setCurrentText('cubic')
         self._setup_plot_subtabs()
+        # Legacy toolbar save icon is replaced by the session Save button.
+        if hasattr(self, "pushButton_S_SaveSession"):
+            self.pushButton_S_SaveSession.setVisible(False)
         self.tableWidget_DiffImgAzi.\
             setHorizontalHeaderLabels(['Notes', '2th', 'Azi', '2th', 'Azi'])
         # Gray scale panel now includes histogram controls; relax hard height cap

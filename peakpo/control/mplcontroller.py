@@ -617,6 +617,19 @@ class MplController(object):
                     y_shift, residue + y_shift, facecolor='r')
             i += 1
 
+    def _fits_tab_active(self):
+        """
+        Determine if the Fits tab is currently active.
+        Avoid hardcoded tab indices because UI tab order can change.
+        """
+        if hasattr(self.widget, "tab_PkFt"):
+            try:
+                return self.widget.tabWidget.currentWidget() == self.widget.tab_PkFt
+            except Exception:
+                pass
+        # Backward-compatible fallback.
+        return self.widget.tabWidget.currentIndex() in (4, 5)
+
     def update(self, limits=None, gsas_style=False, cake_ylimits=None):
         """Updates the graph"""
         import matplotlib.pyplot as plt
@@ -682,7 +695,7 @@ class MplController(object):
                 if self.model.waterfall_exist():
                     self._plot_waterfallpatterns()
             
-            if (self.widget.tabWidget.currentIndex() == 4):
+            if self._fits_tab_active():
                 if gsas_style:
                     self._plot_peakfit_in_gsas_style()
                 else:

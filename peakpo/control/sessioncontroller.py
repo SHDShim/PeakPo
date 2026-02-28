@@ -9,6 +9,7 @@ import datetime
 import pyFAI
 import zipfile
 import copy
+import shutil
 import dill._dill as _dill_impl
 from qtpy import QtWidgets
 from .mplcontroller import MplController
@@ -17,8 +18,14 @@ from .jcpdstablecontroller import JcpdsTableController
 from .peakfittablecontroller import PeakfitTableController
 from .cakemakecontroller import CakemakeController
 from ..utils import dialog_savefile, convert_wl_to_energy, get_temp_dir, \
-    make_filename, extract_filename, get_unique_filename, backup_copy
+    make_filename, extract_filename
 from ..compat_pickle import PeakPoCompatDillUnpickler
+from ..model.param_session_io import (
+    save_model_to_param,
+    load_model_from_param,
+    list_backup_events,
+    is_new_param_folder,
+)
 
 class SessionController(object):
 
@@ -38,12 +45,74 @@ class SessionController(object):
         self.widget.pushButton_SaveDPP.clicked.connect(self.save_dpp)
         self.widget.pushButton_SavePPSS.clicked.connect(self.save_ppss)
         self.widget.pushButton_LoadPPSS.clicked.connect(self.load_ppss)
-        self.widget.pushButton_LoadDPP.clicked.connect(self.load_dpp)
+        self.widget.pushButton_LoadDPP.clicked.connect(self.save_dpp)
+        if hasattr(self.widget, "pushButton_OpenBackupInfo"):
+            self.widget.pushButton_OpenBackupInfo.clicked.connect(
+                self.open_backup_info)
         self.widget.pushButton_ZipSession.clicked.connect(self.zip_ppss)
         self.widget.pushButton_SaveJlist.clicked.connect(self.save_dpp)
         self.widget.pushButton_SaveDPPandPPSS.clicked.connect(
             self.save_dpp_ppss)
-        self.widget.pushButton_S_SaveSession.clicked.connect(self.save_dpp_ppss)
+        self.widget.pushButton_S_SaveSession.clicked.connect(self.save_dpp)
+
+    def _archive_legacy_dpp(self, filen_dpp, base_chi_file):
+        """
+        Move migrated legacy DPP into PARAM archive folder.
+        """
+        if not os.path.exists(filen_dpp):
+            return None
+        param_dir = get_temp_dir(base_chi_file)
+        archive_dir = os.path.join(param_dir, "archive-dpp")
+        os.makedirs(archive_dir, exist_ok=True)
+        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        base = os.path.basename(filen_dpp)
+        archived = os.path.join(archive_dir, f"{base}.{timestamp}.dpp")
+        shutil.move(filen_dpp, archived)
+        return archived
+
+    def migrate_dpp_for_chi_if_exists(self, chi_file):
+        """
+        For CHI-first workflow:
+        - if matching legacy DPP exists, open it
+        - convert to PARAM session
+        - archive original DPP
+        Returns True when migration path was used successfully.
+        """
+        filen_dpp = os.path.splitext(chi_file)[0] + ".dpp"
+        if not os.path.exists(filen_dpp):
+            return False
+        QtWidgets.QMessageBox.information(
+            self.widget,
+            "Legacy DPP Detected",
+            "A legacy DPP session file was detected and will be used to "
+            "populate PeakPo information for this CHI.\n\n"
+            f"DPP: {filen_dpp}\n\n"
+            "After conversion, this DPP will be moved into the PARAM archive."
+        )
+        success = self._load_dpp(filen_dpp, jlistonly=False)
+        if not success:
+            return False
+        result = save_model_to_param(
+            self.model,
+            ui_state=self._collect_ui_state(),
+            reason="auto-convert-from-dpp",
+        )
+        archived = self._archive_legacy_dpp(filen_dpp, chi_file)
+        if archived is not None:
+            print(str(datetime.datetime.now())[:-7],
+                  ": Archived migrated DPP:", archived)
+            QtWidgets.QMessageBox.information(
+                self.widget,
+                "DPP Archived",
+                "Legacy DPP conversion completed.\n\n"
+                "The original DPP has been moved to archive:\n"
+                f"{archived}"
+            )
+        self._sync_ui_from_model(
+            manifest_path=str(result.manifest_path),
+            ui_state=self._collect_ui_state(),
+        )
+        return True
 
     def load_ppss(self):
         """
@@ -65,12 +134,30 @@ class SessionController(object):
         """
         fn = QtWidgets.QFileDialog.getOpenFileName(
             self.widget, "Choose A Session File",
-            self.model.chi_path, "(*.dpp)")[0]
+            self.model.chi_path,
+            "Session files (*.dpp *.chi *peakpo_manifest.json)")[0]
         # options=QtWidgets.QFileDialog.DontUseNativeDialog
 #       replaceing chi_path with '' does not work
         if fn == '':
             return
-        success = self._load_dpp(fn, jlistonly=False)
+        ext = os.path.splitext(fn)[1].lower()
+        if ext == ".dpp":
+            success = self._load_dpp(fn, jlistonly=False)
+            if success:
+                try:
+                    result = save_model_to_param(
+                        self.model,
+                        ui_state=self._collect_ui_state(),
+                        reason="auto-convert-from-dpp",
+                    )
+                    print(str(datetime.datetime.now())[:-7],
+                          ": Converted DPP to PARAM session:", result.manifest_path)
+                except Exception as inst:
+                    print(str(datetime.datetime.now())[:-7],
+                          ": Warning: DPP opened but PARAM auto-conversion failed.")
+                    print("            ", str(inst))
+        else:
+            success = self._load_new_param_session(fn)
         if success:
             if self.model.exist_in_waterfall(self.model.base_ptn.fname):
                 self.widget.pushButton_AddBasePtn.setChecked(True)
@@ -82,7 +169,256 @@ class SessionController(object):
             self.update_inputs()
         else:
             QtWidgets.QMessageBox.warning(
-                self.widget, "Warning", "DPP loading was not successful.")
+                self.widget, "Warning", "Session loading was not successful.")
+
+    def _collect_ui_state(self):
+        return {
+            "pt_controls": {
+                "p_step": self.widget.doubleSpinBox_PStep.value(),
+                "t_step": self.widget.spinBox_TStep.value(),
+                "jcpds_step": self.widget.doubleSpinBox_JCPDSStep.value(),
+            },
+            "cake": {
+                "azi_shift": self.widget.spinBox_AziShift.value(),
+                "int_max": self.widget.spinBox_MaxCakeScale.value(),
+                "min_bar": self.widget.horizontalSlider_VMin.value(),
+                "max_bar": self.widget.horizontalSlider_VMax.value(),
+                "scale_bar": self.widget.horizontalSlider_MaxScaleBars.value(),
+            }
+        }
+
+    def _apply_ui_state(self, ui_state):
+        pt = (ui_state or {}).get("pt_controls", {})
+        if pt != {}:
+            if "p_step" in pt:
+                self.widget.doubleSpinBox_PStep.setValue(float(pt["p_step"]))
+            if "t_step" in pt:
+                self.widget.spinBox_TStep.setValue(int(pt["t_step"]))
+            if "jcpds_step" in pt:
+                self.widget.doubleSpinBox_JCPDSStep.setValue(float(pt["jcpds_step"]))
+        cake = (ui_state or {}).get("cake", {})
+        if cake == {}:
+            return
+        if "azi_shift" in cake:
+            self.widget.spinBox_AziShift.setValue(int(cake["azi_shift"]))
+        if "int_max" in cake:
+            self.widget.spinBox_MaxCakeScale.setValue(int(cake["int_max"]))
+        if "min_bar" in cake:
+            self.widget.horizontalSlider_VMin.setValue(int(cake["min_bar"]))
+        if "max_bar" in cake:
+            self.widget.horizontalSlider_VMax.setValue(int(cake["max_bar"]))
+        if "scale_bar" in cake:
+            self.widget.horizontalSlider_MaxScaleBars.setValue(int(cake["scale_bar"]))
+
+    def _sync_ui_from_model(self, manifest_path="", ui_state=None):
+        """
+        Repopulate GUI state from current model after session load/restore.
+        """
+        if self.model.base_ptn_exist():
+            self.widget.lineEdit_DiffractionPatternFileName.setText(
+                str(self.model.base_ptn.fname))
+            self.widget.doubleSpinBox_SetWavelength.setValue(
+                self.model.get_base_ptn_wavelength())
+            xray_energy = convert_wl_to_energy(self.model.get_base_ptn_wavelength())
+            self.widget.label_XRayEnergy.setText("({:.3f} keV)".format(xray_energy))
+            if self.model.exist_in_waterfall(self.model.base_ptn.fname):
+                self.widget.pushButton_AddBasePtn.setChecked(True)
+            else:
+                self.widget.pushButton_AddBasePtn.setChecked(False)
+        self.widget.textEdit_Jlist.setText(str(manifest_path))
+        self.widget.textEdit_SessionFileName.setText(str(manifest_path))
+        if self.model.poni_exist():
+            self.widget.lineEdit_PONI.setText(self.model.poni)
+        else:
+            self.widget.lineEdit_PONI.setText('')
+        if self.model.diff_img_exist():
+            self.widget.textEdit_DiffractionImageFilename.setText(
+                self.model.diff_img.img_filename)
+        else:
+            self.widget.textEdit_DiffractionImageFilename.setText(
+                'Image file must have the same name ' +
+                'as base ptn in the same folder.')
+        self.widget.doubleSpinBox_Pressure.setValue(self.model.get_saved_pressure())
+        self.widget.doubleSpinBox_Temperature.setValue(self.model.get_saved_temperature())
+        self._apply_ui_state(ui_state or {})
+        self.update_inputs()
+        self._sync_peakfit_selection_to_current_section()
+        self.plot_ctrl.zoom_out_graph()
+
+    def _sync_peakfit_selection_to_current_section(self):
+        if not self.model.current_section_exist():
+            self.widget.tableWidget_PkFtSections.clearSelection()
+            return
+        current_ts = self.model.current_section.get_timestamp()
+        if current_ts is None:
+            self.widget.tableWidget_PkFtSections.clearSelection()
+            return
+        for i, sec in enumerate(self.model.section_lst):
+            if sec.get_timestamp() == current_ts:
+                self.widget.tableWidget_PkFtSections.selectRow(i)
+                return
+
+    def _infer_base_chi_from_manifest(self, manifest_file):
+        param_dir = os.path.dirname(manifest_file)
+        basename = os.path.basename(param_dir)
+        if not basename.endswith("-param"):
+            return None
+        base_no_ext = basename[:-6]
+        candidate = os.path.join(os.path.dirname(param_dir), base_no_ext + ".chi")
+        if os.path.exists(candidate):
+            return candidate
+        return None
+
+    def _load_new_param_session(self, selected_file):
+        ext = os.path.splitext(selected_file)[1].lower()
+        if ext == ".chi":
+            base_chi = selected_file
+            param_dir = os.path.join(
+                os.path.dirname(base_chi),
+                os.path.splitext(os.path.basename(base_chi))[0] + "-param",
+            )
+        else:
+            base_chi = self._infer_base_chi_from_manifest(selected_file)
+            param_dir = os.path.dirname(selected_file)
+            if base_chi is None:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning",
+                    "Cannot infer base .chi file from selected manifest.")
+                return False
+        if not is_new_param_folder(param_dir):
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "No valid new-format session manifest found in PARAM folder.")
+            return False
+
+        backup_events = list_backup_events(param_dir)
+        backup_idx = None
+        if backup_events:
+            items = ["Current (latest)"]
+            labels_to_idx = {}
+            for idx, event in reversed(list(enumerate(backup_events))):
+                label = (
+                    f"{event.get('id')} | "
+                    f"{event.get('timestamp', '')} | "
+                    f"{event.get('reason', 'save')}"
+                )
+                items.append(label)
+                labels_to_idx[label] = idx
+            selected, ok = QtWidgets.QInputDialog.getItem(
+                self.widget,
+                "Load Session Version",
+                "Choose setup timestamp:",
+                items, 0, False)
+            if not ok:
+                return False
+            if selected != "Current (latest)":
+                backup_idx = labels_to_idx.get(selected)
+
+        success, meta = load_model_from_param(
+            self.model,
+            base_chi,
+            backup_event_index=backup_idx,
+        )
+        if not success:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Failed to load PARAM session: " + str(meta.get("reason")))
+            return False
+
+        self._sync_ui_from_model(
+            manifest_path=str(meta.get("manifest", "")),
+            ui_state=meta.get("ui_state", {}),
+        )
+        return True
+
+    def autoload_param_for_chi(self, base_chi_file):
+        """
+        Automatically load PARAM session data for an opened CHI file, if found.
+        Returns True when PARAM session is loaded, False otherwise.
+        """
+        param_dir = os.path.join(
+            os.path.dirname(base_chi_file),
+            os.path.splitext(os.path.basename(base_chi_file))[0] + "-param",
+        )
+        if not is_new_param_folder(param_dir):
+            return False
+        success, meta = load_model_from_param(self.model, base_chi_file)
+        if not success:
+            print(str(datetime.datetime.now())[:-7],
+                  ": PARAM autoload failed:", str(meta.get("reason")))
+            return False
+        self._sync_ui_from_model(
+            manifest_path=str(meta.get("manifest", "")),
+            ui_state=meta.get("ui_state", {}),
+        )
+        return True
+
+    def open_backup_info(self):
+        if not self.model.base_ptn_exist():
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Open a CHI file first.")
+            return
+        param_dir = get_temp_dir(self.model.get_base_ptn_filename())
+        if not is_new_param_folder(param_dir):
+            QtWidgets.QMessageBox.information(
+                self.widget, "Backup Info",
+                "No new-format PARAM session was found for this CHI.")
+            return
+        events = list_backup_events(param_dir)
+        if not events:
+            QtWidgets.QMessageBox.information(
+                self.widget, "Backup Info",
+                "No backup snapshots were recorded yet.")
+            return
+        items = []
+        labels_to_idx = {}
+        for idx, ev in reversed(list(enumerate(events))):
+            label = (
+                f"{ev.get('id')} | {ev.get('reason', 'save')} | "
+                f"{ev.get('timestamp', '')} | "
+                f"{len(ev.get('changed_files', []))} files"
+            )
+            items.append(label)
+            labels_to_idx[label] = idx
+        selected, ok = QtWidgets.QInputDialog.getItem(
+            self.widget,
+            "Restore Backup Snapshot",
+            "Select a backup to restore:",
+            items, 0, False)
+        if not ok:
+            return
+        backup_idx = labels_to_idx.get(selected)
+        if backup_idx is None:
+            return
+        backup_id = events[backup_idx].get("id")
+        # Sync model scalar state from GUI before creating pre-restore backup.
+        self.model.save_pressure(self.widget.doubleSpinBox_Pressure.value())
+        self.model.save_temperature(self.widget.doubleSpinBox_Temperature.value())
+        # Before restore, backup current setup.
+        pre = save_model_to_param(
+            self.model,
+            ui_state=self._collect_ui_state(),
+            reason=f"pre-restore-{backup_id}",
+        )
+        base_chi = self.model.get_base_ptn_filename()
+        success, meta = load_model_from_param(
+            self.model, base_chi, backup_event_index=backup_idx)
+        if not success:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Backup restore failed: " + str(meta.get("reason")))
+            return
+        self._sync_ui_from_model(
+            manifest_path=str(meta.get("manifest", "")),
+            ui_state=meta.get("ui_state", {}),
+        )
+        msg = (
+            f"Restored backup: {backup_id}\n\n"
+            f"Current setup was backed up first as: {pre.backup_id}"
+        )
+        QtWidgets.QMessageBox.information(
+            self.widget, "Backup Restored", msg)
 
     def _update_ppss(self):
         if not self.model.base_ptn_exist():
@@ -496,9 +832,12 @@ class SessionController(object):
     def update_inputs(self):
         self.reset_bgsub()
         self.waterfalltable_ctrl.update()
-        self.jcpdstable_ctrl.update()
+        step = float(self.widget.doubleSpinBox_JCPDSStep.value())
+        self.jcpdstable_ctrl.update(step=step)
         self.peakfit_table_ctrl.update_sections()
         self.peakfit_table_ctrl.update_peak_parameters()
+        self.peakfit_table_ctrl.update_baseline_constraints()
+        self.peakfit_table_ctrl.update_peak_constraints()
 
     def zip_ppss(self):
         """
@@ -574,75 +913,55 @@ class SessionController(object):
 
     def save_dpp(self, quiet=False):
         if not self.model.base_ptn_exist():
-            fsession = os.path.join(self.model.chi_path, 'default.dpp')
-        else:
-            fsession = self.model.make_filename('dpp')
-        if self.widget.checkBox_ForceOverwite.isChecked():
-            new_filename = fsession
-            if os.path.exists(fsession) and (not quiet):
-                msg_box = QtWidgets.QMessageBox(self.widget)
-                msg_box.setWindowTitle("Question")
-                msg_box.setText("DPP with default name already exist. Overwrite?\n\n" + \
-                    "For Backup, a copy of the existing DPP will be made\n" + \
-                    "and then the default named DPP will be created."    )
-                overwrite_button = msg_box.addButton("Overwrite", 
-                                                     QtWidgets.QMessageBox.YesRole)
-                backup_button = msg_box.addButton("Backup", 
-                                                  QtWidgets.QMessageBox.NoRole)
-                cancel_button = msg_box.addButton("Cancel", 
-                                                  QtWidgets.QMessageBox.RejectRole)
-
-                msg_box.setDefaultButton(overwrite_button)
-                msg_box.exec()
-                reply = msg_box.clickedButton()
-                if reply == backup_button:
-                    backup_file_name = backup_copy(new_filename)
-                    if backup_file_name == None:
-                        QtWidgets.QMessageBox.warning(
-                            self.widget, "Warning",
-                            "More than 99 backup files were found.\n" +
-                            "Delete some unused backup files and try again.")
-                    else:
-                        print(str(datetime.datetime.now())[:-7],
-                            ": Existing DPP file copied to: " + 
-                            backup_file_name)
-                elif reply == cancel_button:
-                    return 
-        else:
-            new_filename = dialog_savefile(self.widget, fsession)
-        if new_filename != '':
-            self.model.save_pressure(
-                self.widget.doubleSpinBox_Pressure.value())
-            self.model.save_temperature(
-                self.widget.doubleSpinBox_Temperature.value())
-            self._dump_dpp(new_filename)
-            print(str(datetime.datetime.now())[:-7], 
-                    ": Save ", new_filename)
-            if self.widget.checkBox_ShowCake.isChecked():
-                self._save_cake_format_file()
-                print(str(datetime.datetime.now())[:-7], 
-                    ": Update temporary cake image file.")
-            # save version information for key modules
-            try:
-                env = os.environ['CONDA_DEFAULT_ENV']
-            except:
-                env = 'unknown'            
-            temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
-            ext = "sysinfo.txt"
-            #filen_t = self.model.make_filename(ext)
-            filen = make_filename(self.model.base_ptn.fname, ext,
-                                  temp_dir=temp_dir)
-            with open(filen, "w") as f:
-                f.write('OS: ' + os.name + '\n')
-                f.write('Python ver.: ' + sys.version + '\n')
-                f.write("Environment: " + env + '\n')
-                f.write("dill ver.: " + dill.__version__ + '\n')
-                f.write("pyFAI ver.: " + pyFAI.version + '\n')
-            print(str(datetime.datetime.now())[:-7], 
-                    ": Save ", filen)
-            self.widget.textEdit_SessionFileName.setText(str(new_filename))
-            self.widget.tableWidget_PkFtSections.setStyleSheet(
-                "Background-color:None;color:rgb(0,0,0);")
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Open a base chi file before saving a session.")
+            return
+        self.model.save_pressure(
+            self.widget.doubleSpinBox_Pressure.value())
+        self.model.save_temperature(
+            self.widget.doubleSpinBox_Temperature.value())
+        try:
+            result = save_model_to_param(
+                self.model,
+                ui_state=self._collect_ui_state(),
+                reason="manual-save",
+            )
+        except Exception as inst:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Saving PARAM session failed:\n" + str(inst))
+            return
+        print(str(datetime.datetime.now())[:-7],
+              ": Save PARAM session:", result.manifest_path)
+        if result.backup_id is not None:
+            print(str(datetime.datetime.now())[:-7],
+                  f": Backup snapshot created: {result.backup_id} "
+                  f"({len(result.changed_files)} changed files)")
+        if self.widget.checkBox_ShowCake.isChecked():
+            self._save_cake_format_file()
+            print(str(datetime.datetime.now())[:-7],
+                ": Update temporary cake image file.")
+        # save version information for key modules
+        try:
+            env = os.environ['CONDA_DEFAULT_ENV']
+        except:
+            env = 'unknown'
+        temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
+        ext = "sysinfo.txt"
+        filen = make_filename(self.model.base_ptn.fname, ext,
+                              temp_dir=temp_dir)
+        with open(filen, "w") as f:
+            f.write('OS: ' + os.name + '\n')
+            f.write('Python ver.: ' + sys.version + '\n')
+            f.write("Environment: " + env + '\n')
+            f.write("dill ver.: " + dill.__version__ + '\n')
+            f.write("pyFAI ver.: " + pyFAI.version + '\n')
+        print(str(datetime.datetime.now())[:-7],
+                ": Save ", filen)
+        self.widget.textEdit_SessionFileName.setText(str(result.manifest_path))
+        self.widget.tableWidget_PkFtSections.setStyleSheet(
+            "Background-color:None;color:rgb(0,0,0);")
 
     def save_ppss(self, quiet=False):
         """

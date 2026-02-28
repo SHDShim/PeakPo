@@ -533,10 +533,10 @@
               </font>
              </property>
              <property name="toolTip">
-              <string>Load session from a dpp file</string>
+              <string>Save session to PARAM files</string>
              </property>
              <property name="text">
-              <string>Open DPP</string>
+              <string>Save</string>
              </property>
             </widget>
            </item>
@@ -1413,7 +1413,7 @@
                        </sizepolicy>
                       </property>
                       <property name="title">
-                       <string>Session (dpp only)</string>
+                       <string>Session (PARAM)</string>
                       </property>
                       <property name="flat">
                        <bool>false</bool>
@@ -1464,10 +1464,38 @@
                           </font>
                          </property>
                          <property name="toolTip">
-                          <string>Save session to a dpp file</string>
+                          <string>Save session to PARAM files</string>
                          </property>
                          <property name="text">
                           <string>💾</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="1" column="4">
+                        <widget class="QPushButton" name="pushButton_OpenBackupInfo">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>25</height>
+                          </size>
+                         </property>
+                         <property name="maximumSize">
+                          <size>
+                           <width>40</width>
+                           <height>16777215</height>
+                          </size>
+                         </property>
+                         <property name="toolTip">
+                          <string>Show backup snapshot information</string>
+                         </property>
+                         <property name="text">
+                          <string>🕘</string>
                          </property>
                         </widget>
                        </item>

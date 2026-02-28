@@ -10,9 +10,10 @@ from .cakecontroller import CakeController
 
 class BasePatternController(object):
 
-    def __init__(self, model, widget):
+    def __init__(self, model, widget, session_ctrl=None):
         self.model = model
         self.widget = widget
+        self.session_ctrl = session_ctrl
         self.plot_ctrl = MplController(self.model, self.widget)
         self.cake_ctrl = CakeController(self.model, self.widget)
         self.connect_channel()
@@ -43,6 +44,12 @@ class BasePatternController(object):
         """
         if os.path.exists(filen):
             self.model.set_chi_path(os.path.split(filen)[0])
+            if self.session_ctrl is not None:
+                migrated = self.session_ctrl.migrate_dpp_for_chi_if_exists(filen)
+                if migrated:
+                    print(str(datetime.datetime.now())[:-7],
+                          ': Loaded legacy DPP, converted to PARAM, and archived DPP.')
+                    return
             if self.model.base_ptn_exist():
                 old_filename = self.model.get_base_ptn_filename()
             else:
@@ -69,6 +76,13 @@ class BasePatternController(object):
         #    '1D Pattern: ' + self.model.get_base_ptn_filename())
         self.widget.lineEdit_DiffractionPatternFileName.setText(
             str(self.model.get_base_ptn_filename()))
+        # Prefer loading full PARAM session state when available for this CHI.
+        if self.session_ctrl is not None:
+            loaded_param = self.session_ctrl.autoload_param_for_chi(new_filename)
+            if loaded_param:
+                print(str(datetime.datetime.now())[:-7],
+                    ': Loaded PARAM session for this CHI.')
+                return
         print(str(datetime.datetime.now())[:-7], 
                 ": Receive request to open ", 
                 str(self.model.get_base_ptn_filename()))

@@ -42,8 +42,12 @@ class MainController(object):
 
         self.model = PeakPoModel8()
         print("  ✓ PeakPoModel8 created")
-        
-        self.base_ptn_ctrl = BasePatternController(self.model, self.widget)
+
+        self.session_ctrl = SessionController(self.model, self.widget)
+        print("  ✓ SessionController created")
+
+        self.base_ptn_ctrl = BasePatternController(
+            self.model, self.widget, session_ctrl=self.session_ctrl)
         print("  ✓ BasePatternController created")
         
         self.plot_ctrl = MplController(self.model, self.widget)
@@ -66,9 +70,6 @@ class MainController(object):
         
         self.jcpdstable_ctrl = JcpdsTableController(self.model, self.widget)
         print("  ✓ JcpdsTableController created")
-        
-        self.session_ctrl = SessionController(self.model, self.widget)
-        print("  ✓ SessionController created")
         
         self.peakfit_ctrl = PeakFitController(self.model, self.widget)
         print("  ✓ PeakFitController created")
