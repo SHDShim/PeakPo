@@ -346,8 +346,27 @@ class SessionController(object):
                 "mask_min": self.widget.spinBox_MaskMin.value(),
                 "mask_max": self.widget.spinBox_MaskMax.value(),
                 "hist": cake_hist,
-            }
+            },
+            "diff": self._collect_diff_ui_state(),
         }
+
+    def _collect_diff_ui_state(self):
+        if not hasattr(self.widget, "checkBox_UseDiffMode"):
+            return {}
+        diff = {
+            "enabled": bool(self.widget.checkBox_UseDiffMode.isChecked()),
+            "ref_chi_path": str(self.widget.lineEdit_DiffRefChi.text()).strip(),
+            "cmap_2d": str(self.widget.comboBox_DiffCmap.currentText()),
+            "positive_side": "blue_cool"
+            if (self.widget.comboBox_DiffPositiveSide.currentIndex() == 1)
+            else "red_warm",
+            "auto_range": bool(self.widget.checkBox_DiffAutoRange.isChecked()),
+            "vmin": float(self.widget.doubleSpinBox_DiffVmin.value()),
+            "vmax": float(self.widget.doubleSpinBox_DiffVmax.value()),
+        }
+        if hasattr(self.model, "diff_state") and (self.model.diff_state is not None):
+            self.model.diff_state.apply_ui_dict(diff)
+        return diff
 
     def _apply_ui_state(self, ui_state):
         pt = (ui_state or {}).get("pt_controls", {})
@@ -371,32 +390,55 @@ class SessionController(object):
             if "n_iteration" in bg:
                 self.widget.spinBox_BGParam2.setValue(int(bg["n_iteration"]))
         cake = (ui_state or {}).get("cake", {})
-        if cake == {}:
+        if cake != {}:
+            if "azi_shift" in cake:
+                self.widget.spinBox_AziShift.setValue(int(cake["azi_shift"]))
+            if "int_max" in cake:
+                self.widget.spinBox_MaxCakeScale.setValue(int(cake["int_max"]))
+            if "min_bar" in cake:
+                self.widget.horizontalSlider_VMin.setValue(int(cake["min_bar"]))
+            if "max_bar" in cake:
+                self.widget.horizontalSlider_VMax.setValue(int(cake["max_bar"]))
+            if "scale_bar" in cake:
+                self.widget.horizontalSlider_MaxScaleBars.setValue(int(cake["scale_bar"]))
+            if "mask_min" in cake:
+                self.widget.spinBox_MaskMin.setValue(int(cake["mask_min"]))
+            if "mask_max" in cake:
+                self.widget.spinBox_MaskMax.setValue(int(cake["mask_max"]))
+            hist = cake.get("hist", {})
+            if hasattr(self.widget, "cake_hist_widget") and hist != {}:
+                if "log_y" in hist:
+                    self.widget.cake_hist_widget.check_log.setChecked(bool(hist["log_y"]))
+                if "focus_range" in hist:
+                    self.widget.cake_hist_widget.check_focus.setChecked(bool(hist["focus_range"]))
+                if "low_pct" in hist:
+                    self.widget.cake_hist_widget.spin_low_pct.setValue(float(hist["low_pct"]))
+                if "high_pct" in hist:
+                    self.widget.cake_hist_widget.spin_high_pct.setValue(float(hist["high_pct"]))
+        self._apply_diff_ui_state((ui_state or {}).get("diff", {}))
+
+    def _apply_diff_ui_state(self, diff):
+        if (not hasattr(self.widget, "checkBox_UseDiffMode")) or (diff == {}):
             return
-        if "azi_shift" in cake:
-            self.widget.spinBox_AziShift.setValue(int(cake["azi_shift"]))
-        if "int_max" in cake:
-            self.widget.spinBox_MaxCakeScale.setValue(int(cake["int_max"]))
-        if "min_bar" in cake:
-            self.widget.horizontalSlider_VMin.setValue(int(cake["min_bar"]))
-        if "max_bar" in cake:
-            self.widget.horizontalSlider_VMax.setValue(int(cake["max_bar"]))
-        if "scale_bar" in cake:
-            self.widget.horizontalSlider_MaxScaleBars.setValue(int(cake["scale_bar"]))
-        if "mask_min" in cake:
-            self.widget.spinBox_MaskMin.setValue(int(cake["mask_min"]))
-        if "mask_max" in cake:
-            self.widget.spinBox_MaskMax.setValue(int(cake["mask_max"]))
-        hist = cake.get("hist", {})
-        if hasattr(self.widget, "cake_hist_widget") and hist != {}:
-            if "log_y" in hist:
-                self.widget.cake_hist_widget.check_log.setChecked(bool(hist["log_y"]))
-            if "focus_range" in hist:
-                self.widget.cake_hist_widget.check_focus.setChecked(bool(hist["focus_range"]))
-            if "low_pct" in hist:
-                self.widget.cake_hist_widget.spin_low_pct.setValue(float(hist["low_pct"]))
-            if "high_pct" in hist:
-                self.widget.cake_hist_widget.spin_high_pct.setValue(float(hist["high_pct"]))
+        if "ref_chi_path" in diff:
+            self.widget.lineEdit_DiffRefChi.setText(str(diff["ref_chi_path"] or ""))
+        if "enabled" in diff:
+            self.widget.checkBox_UseDiffMode.setChecked(bool(diff["enabled"]))
+        if "cmap_2d" in diff:
+            cmap = str(diff["cmap_2d"])
+            if self.widget.comboBox_DiffCmap.findText(cmap) >= 0:
+                self.widget.comboBox_DiffCmap.setCurrentText(cmap)
+        if "positive_side" in diff:
+            self.widget.comboBox_DiffPositiveSide.setCurrentIndex(
+                1 if str(diff["positive_side"]) == "blue_cool" else 0)
+        if "auto_range" in diff:
+            self.widget.checkBox_DiffAutoRange.setChecked(bool(diff["auto_range"]))
+        if "vmin" in diff:
+            self.widget.doubleSpinBox_DiffVmin.setValue(float(diff["vmin"]))
+        if "vmax" in diff:
+            self.widget.doubleSpinBox_DiffVmax.setValue(float(diff["vmax"]))
+        if hasattr(self.model, "diff_state") and (self.model.diff_state is not None):
+            self.model.diff_state.apply_ui_dict(diff)
 
     def _sync_ui_from_model(self, manifest_path="", ui_state=None):
         """

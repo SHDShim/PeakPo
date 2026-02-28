@@ -20,6 +20,7 @@ from .waterfalltablecontroller import WaterfallTableController
 from .jcpdstablecontroller import JcpdsTableController
 #from .ucfittablecontroller import UcfitTableController
 from .sessioncontroller import SessionController
+from .diffcontroller import DiffController
 from .peakfitcontroller import PeakFitController
 from .peakfittablecontroller import PeakfitTableController
 from .cakeazicontroller import CakeAziController
@@ -53,6 +54,10 @@ class MainController(object):
         
         self.plot_ctrl = MplController(self.model, self.widget)
         print("  ✓ MplController created")
+
+        self.diff_ctrl = DiffController(self.model, self.widget, self.plot_ctrl)
+        self.plot_ctrl.set_diff_controller(self.diff_ctrl)
+        print("  ✓ DiffController created")
         
         self.cakeazi_ctrl = CakeAziController(self.model, self.widget)
         print("  ✓ CakeAziController created")

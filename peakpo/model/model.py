@@ -14,6 +14,7 @@ from ..ds_cake import DiffImg
 from ..ds_jcpds import JCPDSplt, Session
 from ..ds_powdiff import PatternPeakPo, get_DataSection
 from ..ds_section import Section
+from .diff_state import DiffState
 from ..utils import samefilename, make_filename, change_file_path, \
     cal_dspacing, extract_extension
 from ..compat_pickle import PeakPoCompatPickleUnpickler
@@ -562,6 +563,7 @@ class PeakPoModel8(PeakPoModel):
         self.saved_pressure = 10.
         self.saved_temperature = 300.
         self.dum = None
+        self.diff_state = DiffState()
 
     def from_model7(self, model7):
         self.base_ptn = model7.base_ptn
@@ -577,6 +579,7 @@ class PeakPoModel8(PeakPoModel):
         self.section_lst = model7.section_lst
         self.saved_pressure = model7.saved_pressure
         self.saved_temperature = model7.saved_temperature
+        self.diff_state = DiffState()
 
     def to_model7(self):
         model7 = PeakPoModel()

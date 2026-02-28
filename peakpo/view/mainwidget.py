@@ -131,6 +131,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                          'hexagonal', 'orthorhombic'])
         self.comboBox_Symmetry.setCurrentText('cubic')
         self._setup_plot_subtabs()
+        self._setup_diff_tab()
         # Legacy toolbar save icon is replaced by the session Save button.
         if hasattr(self, "pushButton_S_SaveSession"):
             self.pushButton_S_SaveSession.setVisible(False)
@@ -356,6 +357,106 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.verticalLayout_PlotConfig.addWidget(self.groupBox_13)
         self.verticalLayout_PlotConfig.addWidget(self.groupBox_27)
         self.verticalLayout_PlotConfig.addStretch(1)
+
+    def _setup_diff_tab(self):
+        # Add Diff sub-tab under Pattern controls (Background/Waterfall/Diff).
+        if not hasattr(self, "tabWidget_5"):
+            return
+        if hasattr(self, "tab_Diff"):
+            return
+        self.tab_Diff = QtWidgets.QWidget()
+        self.tab_Diff.setObjectName("tab_Diff")
+        self.verticalLayout_Diff = QtWidgets.QVBoxLayout(self.tab_Diff)
+        self.verticalLayout_Diff.setObjectName("verticalLayout_Diff")
+        self.verticalLayout_Diff.setContentsMargins(8, 8, 8, 8)
+        self.verticalLayout_Diff.setSpacing(8)
+
+        # Reference picker.
+        self.groupBox_DiffRef = QtWidgets.QGroupBox("Reference", self.tab_Diff)
+        self.groupBox_DiffRef.setObjectName("groupBox_DiffRef")
+        self.gridLayout_DiffRef = QtWidgets.QGridLayout(self.groupBox_DiffRef)
+        self.gridLayout_DiffRef.setObjectName("gridLayout_DiffRef")
+        self.lineEdit_DiffRefChi = QtWidgets.QLineEdit(self.groupBox_DiffRef)
+        self.lineEdit_DiffRefChi.setObjectName("lineEdit_DiffRefChi")
+        self.pushButton_DiffRefBrowse = QtWidgets.QPushButton("Browse...", self.groupBox_DiffRef)
+        self.pushButton_DiffRefBrowse.setObjectName("pushButton_DiffRefBrowse")
+        self.pushButton_DiffRefClear = QtWidgets.QPushButton("Clear", self.groupBox_DiffRef)
+        self.pushButton_DiffRefClear.setObjectName("pushButton_DiffRefClear")
+        self.checkBox_UseDiffMode = QtWidgets.QCheckBox("Enable Diff mode", self.groupBox_DiffRef)
+        self.checkBox_UseDiffMode.setObjectName("checkBox_UseDiffMode")
+        self.label_DiffStatus = QtWidgets.QLabel("No reference selected", self.groupBox_DiffRef)
+        self.label_DiffStatus.setObjectName("label_DiffStatus")
+        self.gridLayout_DiffRef.addWidget(self.lineEdit_DiffRefChi, 0, 0, 1, 1)
+        self.gridLayout_DiffRef.addWidget(self.pushButton_DiffRefBrowse, 0, 1, 1, 1)
+        self.gridLayout_DiffRef.addWidget(self.pushButton_DiffRefClear, 0, 2, 1, 1)
+        self.gridLayout_DiffRef.addWidget(self.checkBox_UseDiffMode, 1, 0, 1, 1)
+        self.gridLayout_DiffRef.addWidget(self.label_DiffStatus, 1, 1, 1, 2)
+
+        # 2D rendering controls for diff cake.
+        self.groupBox_DiffCake = QtWidgets.QGroupBox("Diff 2D Scale", self.tab_Diff)
+        self.groupBox_DiffCake.setObjectName("groupBox_DiffCake")
+        self.gridLayout_DiffCake = QtWidgets.QGridLayout(self.groupBox_DiffCake)
+        self.gridLayout_DiffCake.setObjectName("gridLayout_DiffCake")
+        self.label_DiffCmap = QtWidgets.QLabel("Colormap", self.groupBox_DiffCake)
+        self.label_DiffCmap.setObjectName("label_DiffCmap")
+        self.comboBox_DiffCmap = QtWidgets.QComboBox(self.groupBox_DiffCake)
+        self.comboBox_DiffCmap.setObjectName("comboBox_DiffCmap")
+        self.label_DiffPolarity = QtWidgets.QLabel("Positive side", self.groupBox_DiffCake)
+        self.label_DiffPolarity.setObjectName("label_DiffPolarity")
+        self.comboBox_DiffPositiveSide = QtWidgets.QComboBox(self.groupBox_DiffCake)
+        self.comboBox_DiffPositiveSide.setObjectName("comboBox_DiffPositiveSide")
+        self.comboBox_DiffPositiveSide.addItems([
+            "Red/Warm (Gray=Light)",
+            "Blue/Cool (Gray=Dark)",
+        ])
+        self.checkBox_DiffAutoRange = QtWidgets.QCheckBox("Auto range", self.groupBox_DiffCake)
+        self.checkBox_DiffAutoRange.setObjectName("checkBox_DiffAutoRange")
+        self.checkBox_DiffAutoRange.setChecked(True)
+        self.label_DiffVmin = QtWidgets.QLabel("Min", self.groupBox_DiffCake)
+        self.label_DiffVmin.setObjectName("label_DiffVmin")
+        self.doubleSpinBox_DiffVmin = QtWidgets.QDoubleSpinBox(self.groupBox_DiffCake)
+        self.doubleSpinBox_DiffVmin.setObjectName("doubleSpinBox_DiffVmin")
+        self.doubleSpinBox_DiffVmin.setDecimals(2)
+        self.doubleSpinBox_DiffVmin.setMinimum(-1e9)
+        self.doubleSpinBox_DiffVmin.setMaximum(1e9)
+        self.doubleSpinBox_DiffVmin.setSingleStep(10.0)
+        self.doubleSpinBox_DiffVmin.setValue(-1000.0)
+        self.label_DiffVmax = QtWidgets.QLabel("Max", self.groupBox_DiffCake)
+        self.label_DiffVmax.setObjectName("label_DiffVmax")
+        self.doubleSpinBox_DiffVmax = QtWidgets.QDoubleSpinBox(self.groupBox_DiffCake)
+        self.doubleSpinBox_DiffVmax.setObjectName("doubleSpinBox_DiffVmax")
+        self.doubleSpinBox_DiffVmax.setDecimals(2)
+        self.doubleSpinBox_DiffVmax.setMinimum(-1e9)
+        self.doubleSpinBox_DiffVmax.setMaximum(1e9)
+        self.doubleSpinBox_DiffVmax.setSingleStep(10.0)
+        self.doubleSpinBox_DiffVmax.setValue(1000.0)
+        self.gridLayout_DiffCake.addWidget(self.label_DiffCmap, 0, 0, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.comboBox_DiffCmap, 0, 1, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.label_DiffPolarity, 0, 2, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.comboBox_DiffPositiveSide, 0, 3, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.checkBox_DiffAutoRange, 1, 0, 1, 2)
+        self.gridLayout_DiffCake.addWidget(self.label_DiffVmin, 1, 2, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.doubleSpinBox_DiffVmin, 1, 3, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.label_DiffVmax, 2, 2, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.doubleSpinBox_DiffVmax, 2, 3, 1, 1)
+
+        # Export outputs only on demand.
+        self.groupBox_DiffExport = QtWidgets.QGroupBox("Export", self.tab_Diff)
+        self.groupBox_DiffExport.setObjectName("groupBox_DiffExport")
+        self.horizontalLayout_DiffExport = QtWidgets.QHBoxLayout(self.groupBox_DiffExport)
+        self.horizontalLayout_DiffExport.setObjectName("horizontalLayout_DiffExport")
+        self.pushButton_ExportDiffChi = QtWidgets.QPushButton("Export Diff CHI", self.groupBox_DiffExport)
+        self.pushButton_ExportDiffChi.setObjectName("pushButton_ExportDiffChi")
+        self.pushButton_ExportDiffCakeNpy = QtWidgets.QPushButton("Export Diff Cake NPY", self.groupBox_DiffExport)
+        self.pushButton_ExportDiffCakeNpy.setObjectName("pushButton_ExportDiffCakeNpy")
+        self.horizontalLayout_DiffExport.addWidget(self.pushButton_ExportDiffChi)
+        self.horizontalLayout_DiffExport.addWidget(self.pushButton_ExportDiffCakeNpy)
+
+        self.verticalLayout_Diff.addWidget(self.groupBox_DiffRef)
+        self.verticalLayout_Diff.addWidget(self.groupBox_DiffCake)
+        self.verticalLayout_Diff.addWidget(self.groupBox_DiffExport)
+        self.verticalLayout_Diff.addStretch(1)
+        self.tabWidget_5.addTab(self.tab_Diff, "Diff")
 
     def closeEvent(self, event):
         try:

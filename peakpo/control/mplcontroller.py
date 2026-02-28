@@ -20,6 +20,7 @@ class MplController(object):
         self.model = model
         self.widget = widget
         self.obj_color = 'k'
+        self.diff_ctrl = None
         self._cached_title = None
         self._cached_filename = None
         self._is_drawing = False
@@ -73,6 +74,9 @@ class MplController(object):
             toolbar.home = home_wrapper
             toolbar.back = back_wrapper
             toolbar.forward = forward_wrapper
+
+    def set_diff_controller(self, diff_ctrl):
+        self.diff_ctrl = diff_ctrl
 
     def _set_nightday_view(self):
         if not self.widget.checkBox_NightView.isChecked():
@@ -143,6 +147,11 @@ class MplController(object):
             x, y = self.model.base_ptn.get_bgsub()
         else:
             x, y = self.model.base_ptn.get_raw()
+        if self.diff_ctrl is not None:
+            try:
+                x, y = self.diff_ctrl.get_display_pattern(x, y)
+            except Exception:
+                pass
         return (x.min(), x.max(),
                 y.min() - (y.max() - y.min()) * y_margin,
                 y.max() + (y.max() - y.min()) * y_margin)
@@ -211,7 +220,28 @@ class MplController(object):
         # intensity_cake_plot = ma.masked_equal(intensity_cake, 0.0, copy=False)
         #intensity_cake_plot = ma.array(intensity_cake, mask=self.model.diff_img.mask)
 
-        # Get image contrast parameters from UI
+        # Get cake data
+        intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
+        int_plot = np.array(intensity_cake, copy=True)
+
+        # Shift cake image if necessary
+        mid_angle = self.widget.spinBox_AziShift.value()
+        if mid_angle != 0:
+            int_shift = np.array(int_plot, copy=True)
+            int_shift[0:mid_angle] = int_plot[360 - mid_angle:361]
+            int_shift[mid_angle:361] = int_plot[0:360 - mid_angle]
+            int_plot = int_shift
+
+        diff_mode = False
+        if self.diff_ctrl is not None:
+            try:
+                int_plot, tth_cake, chi_cake = self.diff_ctrl.get_display_cake(
+                    int_plot, tth_cake, chi_cake)
+                diff_mode = self.diff_ctrl.is_diff_mode_active()
+            except Exception:
+                diff_mode = False
+
+        # Get image contrast parameters from UI unless diff mode overrides.
         min_slider_pos = self.widget.horizontalSlider_VMin.value()
         max_slider_pos = self.widget.horizontalSlider_VMax.value()
         if (max_slider_pos <= min_slider_pos):
@@ -219,25 +249,10 @@ class MplController(object):
             self.widget.horizontalSlider_VMax.setValue(99)
         prefactor = self.widget.spinBox_MaxCakeScale.value() / \
             (10. ** self.widget.horizontalSlider_MaxScaleBars.value())
-        # intensity_cake_plot.max() / \
         climits = np.asarray([
             self.widget.horizontalSlider_VMin.value(),
             self.widget.horizontalSlider_VMax.value()]) / \
             100. * prefactor
-
-        # get azimuthal angle shift parameter mid_angle and apply to the data.
-        # if intensity_cake, intensity_cake_plot, int_new are all temporary, it is better to merge them into one variable to save memory?
-
-        # Get cake data
-        intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
-
-        # Shift cake image if necessary
-        mid_angle = self.widget.spinBox_AziShift.value()
-        int_plot = intensity_cake
-        if mid_angle != 0:
-            #int_new = np.array(intensity_cake_plot)
-            int_plot[0:mid_angle] = intensity_cake[360 - mid_angle:361]
-            int_plot[mid_angle:361] = intensity_cake[0:360 - mid_angle]
 
         # Check if ApplyMask is on
         # If so, get mask range from UI and set mask, then process cake for new mask.  Note that if mask from UI is for entire range of data, do not re-integrate.
@@ -254,22 +269,29 @@ class MplController(object):
                 int_new = ma.MaskedArray(int_plot)  # no mask
         """
 
-        # Colormap: masked ("bad") pixels in subtle transparent tint
-        cmap = (plt.cm.gray if self.widget.checkBox_WhiteForPeak.isChecked()
-                else plt.cm.gray_r).copy()
-        # 0-values are typically masked pixels in cake data. Always treat them
-        # as masked and render with a non-intrusive, high-transparency tint.
-        zero_mask = (int_plot == 0)
+        # Colormap + mask handling.
+        if diff_mode and (self.diff_ctrl is not None):
+            cfg = self.diff_ctrl.get_cake_render_config(int_plot) or {}
+            cmap = plt.get_cmap(cfg.get("cmap", "RdBu_r")).copy()
+            climits = np.asarray([cfg.get("vmin", -1.0), cfg.get("vmax", 1.0)])
+            zero_mask = np.zeros(np.shape(int_plot), dtype=bool)
+            cmap.set_bad(color=(0.0, 0.0, 0.0, 0.0))
+        else:
+            cmap = (plt.cm.gray if self.widget.checkBox_WhiteForPeak.isChecked()
+                    else plt.cm.gray_r).copy()
+            # 0-values are typically masked pixels in cake data.
+            zero_mask = (int_plot == 0)
+            # Opaque pale yellow for masked pixels.
+            cmap.set_bad(color=(1.0, 0.97, 0.55, 1.0))
+
         mask = self.model.diff_img.get_mask()
         use_user_mask = (self.widget.pushButton_ApplyMask.isChecked() and
                          (mask is not None) and np.any(mask))
         if use_user_mask:
-            combined_mask = zero_mask | mask
+            combined_mask = zero_mask | mask | ~np.isfinite(int_plot)
         else:
-            combined_mask = zero_mask
+            combined_mask = zero_mask | ~np.isfinite(int_plot)
         int_new = ma.masked_where(combined_mask, int_plot, copy=False)
-        # Opaque pale yellow for masked pixels.
-        cmap.set_bad(color=(1.0, 0.97, 0.55, 1.0))
 
 
         self.widget.mpl.canvas.ax_cake.imshow(
@@ -521,28 +543,28 @@ class MplController(object):
     def _plot_diffpattern(self, gsas_style=False):
         if self.widget.checkBox_BgSub.isChecked():
             x, y = self.model.base_ptn.get_bgsub()
-            if gsas_style:
-                self.widget.mpl.canvas.ax_pattern.plot(
-                    x, y, c=self.model.base_ptn.color, marker='o',
-                    linestyle='None', ms=3)
-            else:
-                self.widget.mpl.canvas.ax_pattern.plot(
-                    x, y, c=self.model.base_ptn.color,
-                    lw=float(
-                        self.widget.comboBox_BasePtnLineThickness.
-                        currentText()))
         else:
             x, y = self.model.base_ptn.get_raw()
-            if gsas_style:
-                self.widget.mpl.canvas.ax_pattern.plot(
-                    x, y, c=self.model.base_ptn.color, marker='o',
-                    linestyle='None', ms=3)
-            else:
-                self.widget.mpl.canvas.ax_pattern.plot(
-                    x, y, c=self.model.base_ptn.color,
-                    lw=float(
-                        self.widget.comboBox_BasePtnLineThickness.
-                        currentText()))
+        if self.diff_ctrl is not None:
+            try:
+                x, y = self.diff_ctrl.get_display_pattern(x, y)
+            except Exception:
+                pass
+        if gsas_style:
+            self.widget.mpl.canvas.ax_pattern.plot(
+                x, y, c=self.model.base_ptn.color, marker='o',
+                linestyle='None', ms=3)
+        else:
+            self.widget.mpl.canvas.ax_pattern.plot(
+                x, y, c=self.model.base_ptn.color,
+                lw=float(
+                    self.widget.comboBox_BasePtnLineThickness.
+                    currentText()))
+        if self.diff_ctrl is not None and self.diff_ctrl.is_diff_mode_active():
+            self.widget.mpl.canvas.ax_pattern.axhline(
+                0.0, ls='--', c='tab:red', lw=0.8)
+            return
+        if not self.widget.checkBox_BgSub.isChecked():
             x_bg, y_bg = self.model.base_ptn.get_background()
             self.widget.mpl.canvas.ax_pattern.plot(
                 x_bg, y_bg, c=self.model.base_ptn.color, ls='--',
