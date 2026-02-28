@@ -14,24 +14,51 @@ Major features include:
 - Visual unit-cell fitting
 - Generation of Excel files containing all calculation results
 
-## How to install (under development, may be unstable)
+## How to install
+
+For `PeakPo 7.10.x`, start with a clean environment (recommended), especially if you already use `PeakPo 7.9.x`.
 
 Open a terminal and create a new conda environment:
 
 ```
-conda create -n peakpo python=3.11 -y
+conda create -n peakpo710 python=3.11 -y
 ```
+
+If you want to keep `PeakPo 7.9.x` (PyQt5) and also use `PeakPo 7.10.x` (PyQt6), use separate environments.
 
 Activate the environment:
 
 ```
-conda activate peakpo
+conda activate <name of environment>
 ```
 
 Install `PeakPo`:
 
 ```
-pip install peakpo
+python -m pip install --upgrade pip
+python -m pip install peakpo
+```
+
+## Upgrading from 7.9.x to 7.10.x
+
+`PeakPo 7.9.x` is based on `PyQt5`, while `PeakPo 7.10.x` is based on `PyQt6`.
+
+Because of this Qt transition, do not only upgrade `peakpo` alone in an old 7.9 environment. You should also upgrade related modules (Qt stack and other dependencies) or create a fresh environment.
+
+Recommended (clean install):
+
+```
+conda create -n peakpo710 python=3.11 -y
+conda activate peakpo710
+python -m pip install --upgrade pip
+python -m pip install peakpo
+```
+
+If you must reuse an existing environment:
+
+```
+conda activate <name of environment>
+python -m pip install --upgrade --upgrade-strategy eager peakpo
 ```
 
 ## How to upgrade
@@ -39,11 +66,11 @@ pip install peakpo
 Make sure to change environment:
 
 ```
-conda activate peakpo
+conda activate <name of environment>
 ```
 
 ```
-python -m pip install --upgrade peakpo
+python -m pip install --upgrade --upgrade-strategy eager peakpo
 ```
 
 ## How to reinstall
@@ -51,7 +78,7 @@ python -m pip install --upgrade peakpo
 Make sure to change environment:
 
 ```
-conda activate peakpo
+conda activate <name of environment>
 ```
 
 
