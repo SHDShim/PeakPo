@@ -26,6 +26,7 @@ BACKUP_INDEX_FILE = "pkpo_backup_index.json"
 
 FORMAT_FAMILY = "peakpo-session"
 FORMAT_VERSION = 1
+BACKUP_KEEP_LAST = 20
 
 
 @dataclass
@@ -320,6 +321,23 @@ def _compute_np_payload(arr):
 def _get_backup_index(path):
     if not os.path.exists(path):
         return {"format_family": FORMAT_FAMILY, "events": []}
+
+
+def _prune_backup_events(param_dir, index, keep_last=BACKUP_KEEP_LAST):
+    events = index.get("events", [])
+    if len(events) <= keep_last:
+        return index
+    to_remove = events[:-keep_last]
+    to_keep = events[-keep_last:]
+    for evt in to_remove:
+        backup_id = evt.get("id")
+        if not backup_id:
+            continue
+        snap_dir = os.path.join(param_dir, "backups", backup_id)
+        if os.path.isdir(snap_dir):
+            shutil.rmtree(snap_dir, ignore_errors=True)
+    index["events"] = to_keep
+    return index
     try:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
@@ -524,6 +542,7 @@ def save_model_to_param(model, ui_state=None, reason="manual-save"):
                 "changed_files": changed_files,
             }
         )
+        index = _prune_backup_events(param_dir, index, keep_last=BACKUP_KEEP_LAST)
     _atomic_write_json(index_path, index)
 
     return SaveResult(
