@@ -26,7 +26,6 @@ BACKUP_INDEX_FILE = "pkpo_backup_index.json"
 
 FORMAT_FAMILY = "peakpo-session"
 FORMAT_VERSION = 1
-BACKUP_KEEP_LAST = 20
 
 
 @dataclass
@@ -321,34 +320,44 @@ def _compute_np_payload(arr):
 def _get_backup_index(path):
     if not os.path.exists(path):
         return {"format_family": FORMAT_FAMILY, "events": []}
-
-
-def _prune_backup_events(param_dir, index, keep_last=BACKUP_KEEP_LAST):
-    events = index.get("events", [])
-    if len(events) <= keep_last:
-        return index
-    to_remove = events[:-keep_last]
-    to_keep = events[-keep_last:]
-    for evt in to_remove:
-        backup_id = evt.get("id")
-        if not backup_id:
-            continue
-        snap_dir = os.path.join(param_dir, "backups", backup_id)
-        if os.path.isdir(snap_dir):
-            shutil.rmtree(snap_dir, ignore_errors=True)
-    index["events"] = to_keep
-    return index
     try:
         with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            if not isinstance(data, dict):
+                return {"format_family": FORMAT_FAMILY, "events": []}
+            if "events" not in data or not isinstance(data.get("events"), list):
+                data["events"] = []
+            if "format_family" not in data:
+                data["format_family"] = FORMAT_FAMILY
+            return data
     except Exception:
         return {"format_family": FORMAT_FAMILY, "events": []}
 
 
-def _make_backup_id():
-    # Include microseconds to avoid collisions when multiple saves happen
-    # within the same second (e.g., pre-restore backup + restore load).
-    return datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+
+def _make_backup_id(param_dir):
+    index_path = os.path.join(param_dir, BACKUP_INDEX_FILE)
+    index = _get_backup_index(index_path)
+    used = set()
+    for evt in index.get("events", []):
+        bid = evt.get("id")
+        if bid is None:
+            continue
+        try:
+            used.add(int(str(bid)))
+        except Exception:
+            continue
+    backups_dir = os.path.join(param_dir, "backups")
+    if os.path.isdir(backups_dir):
+        for name in os.listdir(backups_dir):
+            try:
+                used.add(int(str(name)))
+            except Exception:
+                continue
+    next_id = 0 if not used else (max(used) + 1)
+    while next_id in used:
+        next_id += 1
+    return str(next_id)
 
 
 def _collect_companion_files(param_dir):
@@ -428,17 +437,42 @@ def _prepare_payloads(model, ui_state=None):
     return session_data, sections_data, jcpds_data, ui_data
 
 
-def save_model_to_param(model, ui_state=None, reason="manual-save"):
+def _highlight_changed_files(changed_files):
+    highlights = []
+    if JCPDS_FILE in changed_files:
+        highlights.append("JCPDS")
+    if SECTIONS_FILE in changed_files:
+        highlights.append("Fits")
+    if SESSION_FILE in changed_files:
+        highlights.append("Session")
+    if UI_STATE_FILE in changed_files:
+        highlights.append("UI")
+    if not highlights and changed_files:
+        highlights.append("Files")
+    return highlights
+
+
+def save_model_to_param(model, ui_state=None, reason="manual-save", force_backup=False):
     if model is None or (not model.base_ptn_exist()):
         raise ValueError("Base pattern must exist before saving PARAM session.")
     param_dir = get_temp_dir(model.get_base_ptn_filename(), branch="-param")
     os.makedirs(param_dir, exist_ok=True)
 
     session_data, sections_data, jcpds_data, ui_data = _prepare_payloads(model, ui_state=ui_state)
+    existing_created_at = None
+    existing_manifest_path = os.path.join(param_dir, MANIFEST_FILE)
+    if os.path.exists(existing_manifest_path):
+        try:
+            existing_manifest = _load_json(existing_manifest_path)
+            existing_created_at = existing_manifest.get("created_at")
+        except Exception:
+            existing_created_at = None
+
     manifest = {
         "format_family": FORMAT_FAMILY,
         "format_version": FORMAT_VERSION,
-        "created_at": datetime.datetime.now().isoformat(timespec="seconds"),
+        # Keep created_at stable across saves so no-op saves do not look changed.
+        "created_at": existing_created_at or datetime.datetime.now().isoformat(timespec="seconds"),
         "files": {
             "session": SESSION_FILE,
             "sections": SECTIONS_FILE,
@@ -514,11 +548,14 @@ def save_model_to_param(model, ui_state=None, reason="manual-save"):
         old_bytes = _file_bytes(full_path) if os.path.exists(full_path) else None
         if old_bytes != new_bytes:
             changed_files.append(rel_path)
+    if force_backup and (not changed_files):
+        # Force a recoverable snapshot (used for pre-restore safety).
+        changed_files = sorted(payload_map.keys())
 
     backup_id = None
     backup_root = None
     if changed_files:
-        backup_id = _make_backup_id()
+        backup_id = _make_backup_id(param_dir)
         backup_root = os.path.join(param_dir, "backups", backup_id)
         for rel_path in changed_files:
             src = os.path.join(param_dir, rel_path)
@@ -534,15 +571,16 @@ def save_model_to_param(model, ui_state=None, reason="manual-save"):
     index_path = os.path.join(param_dir, BACKUP_INDEX_FILE)
     index = _get_backup_index(index_path)
     if changed_files:
+        highlights = _highlight_changed_files(changed_files)
         index["events"].append(
             {
                 "id": backup_id,
                 "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
                 "reason": reason,
                 "changed_files": changed_files,
+                "highlights": highlights,
             }
         )
-        index = _prune_backup_events(param_dir, index, keep_last=BACKUP_KEEP_LAST)
     _atomic_write_json(index_path, index)
 
     return SaveResult(
@@ -593,9 +631,9 @@ def restore_to_backup_event(param_dir, event_id=None, event_index=None):
 
     # Snapshot semantics:
     # each backup event stores file versions *before* that save.
-    # "Restore event X" should reconstruct state *after* X was saved, so apply
-    # snapshots for events newer than X (latest ... X+1), not X itself.
-    for i in range(len(events) - 1, target_pos, -1):
+    # "Restore event X" should restore that snapshot itself, so apply
+    # snapshots from latest down to X (inclusive).
+    for i in range(len(events) - 1, target_pos - 1, -1):
         evt = events[i]
         snap_dir = os.path.join(param_dir, "backups", evt.get("id", ""))
         for rel_path in evt.get("changed_files", []):

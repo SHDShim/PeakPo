@@ -15,6 +15,42 @@ class JcpdsTableController(object):
     def _apply_changes_to_graph(self, limits=None):
         self.plot_ctrl.update(limits=limits)
 
+    def sync_model_from_table(self):
+        """
+        Commit any in-progress table spinbox edits to model values before save.
+        """
+        table = self.widget.tableWidget_JCPDS
+        n_rows = min(table.rowCount(), len(self.model.jcpds_lst))
+        for row in range(n_rows):
+            phase = self.model.jcpds_lst[row]
+            item0 = table.item(row, 0)
+            if item0 is not None:
+                phase.display = (item0.checkState() == QtCore.Qt.Checked)
+
+            item_color = table.item(row, 1)
+            if item_color is not None and item_color.background() is not None:
+                color = item_color.background().color()
+                if color.isValid():
+                    phase.color = str(color.name())
+
+            def _commit_spin(col, attr):
+                box = table.cellWidget(row, col)
+                if box is None:
+                    return
+                try:
+                    box.interpretText()
+                except Exception:
+                    pass
+                setattr(phase, attr, float(box.value()))
+
+            _commit_spin(2, "twk_v0")
+            _commit_spin(3, "twk_b_a")
+            _commit_spin(4, "twk_c_a")
+            _commit_spin(5, "twk_int")
+            _commit_spin(6, "twk_k0")
+            _commit_spin(7, "twk_k0p")
+            _commit_spin(8, "twk_thermal_expansion")
+
     def update(self, step=0.001):
         """
         show jcpds cards in the QTableWidget

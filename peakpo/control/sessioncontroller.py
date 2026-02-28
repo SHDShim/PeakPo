@@ -297,10 +297,14 @@ class SessionController(object):
             items = ["Current (latest)"]
             labels_to_idx = {}
             for idx, event in reversed(list(enumerate(backup_events))):
+                highlights = ", ".join(event.get("highlights", []))
+                if highlights == "":
+                    highlights = "none"
                 label = (
                     f"{event.get('id')} | "
                     f"{event.get('timestamp', '')} | "
-                    f"{event.get('reason', 'save')}"
+                    f"{event.get('reason', 'save')} | "
+                    f"{highlights}"
                 )
                 items.append(label)
                 labels_to_idx[label] = idx
@@ -374,10 +378,14 @@ class SessionController(object):
         items = []
         labels_to_idx = {}
         for idx, ev in reversed(list(enumerate(events))):
+            highlights = ", ".join(ev.get("highlights", []))
+            if highlights == "":
+                highlights = "none"
             label = (
                 f"{ev.get('id')} | {ev.get('reason', 'save')} | "
                 f"{ev.get('timestamp', '')} | "
-                f"{len(ev.get('changed_files', []))} files"
+                f"{len(ev.get('changed_files', []))} files | "
+                f"{highlights}"
             )
             items.append(label)
             labels_to_idx[label] = idx
@@ -392,6 +400,10 @@ class SessionController(object):
         if backup_idx is None:
             return
         backup_id = events[backup_idx].get("id")
+        # Ensure in-progress spinbox text is committed before pre-restore save.
+        self.jcpdstable_ctrl.sync_model_from_table()
+        self.widget.doubleSpinBox_Pressure.interpretText()
+        self.widget.doubleSpinBox_Temperature.interpretText()
         # Sync model scalar state from GUI before creating pre-restore backup.
         self.model.save_pressure(self.widget.doubleSpinBox_Pressure.value())
         self.model.save_temperature(self.widget.doubleSpinBox_Temperature.value())
@@ -400,6 +412,7 @@ class SessionController(object):
             self.model,
             ui_state=self._collect_ui_state(),
             reason=f"pre-restore-{backup_id}",
+            force_backup=True,
         )
         base_chi = self.model.get_base_ptn_filename()
         success, meta = load_model_from_param(
@@ -413,9 +426,12 @@ class SessionController(object):
             manifest_path=str(meta.get("manifest", "")),
             ui_state=meta.get("ui_state", {}),
         )
+        if pre.backup_id is None:
+            pre_text = "No pre-restore backup was created (no file changes)."
+        else:
+            pre_text = f"Current setup was backed up first as: {pre.backup_id}"
         msg = (
-            f"Restored backup: {backup_id}\n\n"
-            f"Current setup was backed up first as: {pre.backup_id}"
+            f"Restored backup: {backup_id}\n\n{pre_text}"
         )
         QtWidgets.QMessageBox.information(
             self.widget, "Backup Restored", msg)
@@ -917,6 +933,10 @@ class SessionController(object):
                 self.widget, "Warning",
                 "Open a base chi file before saving a session.")
             return
+        # Ensure in-progress table/field edits are committed before save.
+        self.jcpdstable_ctrl.sync_model_from_table()
+        self.widget.doubleSpinBox_Pressure.interpretText()
+        self.widget.doubleSpinBox_Temperature.interpretText()
         self.model.save_pressure(
             self.widget.doubleSpinBox_Pressure.value())
         self.model.save_temperature(
@@ -935,9 +955,18 @@ class SessionController(object):
         print(str(datetime.datetime.now())[:-7],
               ": Save PARAM session:", result.manifest_path)
         if result.backup_id is not None:
+            events = list_backup_events(result.param_dir)
+            highlights = []
+            if events:
+                highlights = events[-1].get("highlights", [])
+            highlights_text = ", ".join(highlights) if highlights else "none"
             print(str(datetime.datetime.now())[:-7],
                   f": Backup snapshot created: {result.backup_id} "
-                  f"({len(result.changed_files)} changed files)")
+                  f"({len(result.changed_files)} changed files; "
+                  f"highlights: {highlights_text})")
+        else:
+            print(str(datetime.datetime.now())[:-7],
+                  ": No backup snapshot created (no file changes detected).")
         if self.widget.checkBox_ShowCake.isChecked():
             self._save_cake_format_file()
             print(str(datetime.datetime.now())[:-7],
