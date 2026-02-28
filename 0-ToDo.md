@@ -15,3 +15,4 @@
 - [x] Read dioptas JCPDS 
 - [x] Read cif.
 - [x] If "map" is detected in the name use the number right after it rather than at the end.
+- [x] snapshot backup takes up a lot of space because it copies cake files even if there are no changes. 

@@ -1,6 +1,7 @@
 import os
 import glob
 import numpy as np
+import copy
 #from matplotlib.backend_bases import key_press_handler
 from qtpy import QtWidgets
 from qtpy import QtCore
@@ -57,6 +58,11 @@ class MainController(object):
         print("  ✓ CakeAziController created")
         
         self.waterfall_ctrl = WaterfallController(self.model, self.widget)
+        self.waterfall_ctrl.set_navigation_helpers(
+            base_ptn_ctrl=self.base_ptn_ctrl,
+            capture_nav_state_cb=self._capture_nav_carry_state,
+            apply_nav_state_cb=self._apply_nav_carry_state,
+        )
         print("  ✓ WaterfallController created")
         
         self.ucfit_ctrl = UcfitController(self.model, self.widget)
@@ -483,6 +489,20 @@ class MainController(object):
             self.settings.setValue(
                 'fontsize_waterfall_label',
                 self.widget.comboBox_WaterfallFontSize.currentText())
+        # CHI navigation carry-over policy
+        nav_keys = [
+            ("carry_nav_jcpds", "checkBox_CarryNavJCPDS"),
+            ("carry_nav_pressure", "checkBox_CarryNavPressure"),
+            ("carry_nav_temperature", "checkBox_CarryNavTemperature"),
+            ("carry_nav_cake_z_scale", "checkBox_CarryNavCakeZScale"),
+            ("carry_nav_background", "checkBox_CarryNavBackground"),
+            ("carry_nav_waterfall_list", "checkBox_CarryNavWaterfall"),
+            ("carry_nav_poni", "checkBox_CarryNavPONI"),
+            ("carry_nav_fits_information", "checkBox_CarryNavFits"),
+        ]
+        for key, attr in nav_keys:
+            if hasattr(self.widget, attr):
+                self.settings.setValue(key, bool(getattr(self.widget, attr).isChecked()))
         
 
     def read_setting(self):
@@ -513,6 +533,152 @@ class MainController(object):
                 self.widget.comboBox_WaterfallFontSize.currentText()))
             if self.widget.comboBox_WaterfallFontSize.findText(wf_fs) >= 0:
                 self.widget.comboBox_WaterfallFontSize.setCurrentText(wf_fs)
+        nav_defaults = {
+            "checkBox_CarryNavJCPDS": True,
+            "checkBox_CarryNavPressure": True,
+            "checkBox_CarryNavTemperature": True,
+            "checkBox_CarryNavCakeZScale": False,
+            "checkBox_CarryNavBackground": False,
+            "checkBox_CarryNavWaterfall": True,
+            "checkBox_CarryNavPONI": False,
+            "checkBox_CarryNavFits": False,
+        }
+        nav_keys = {
+            "checkBox_CarryNavJCPDS": "carry_nav_jcpds",
+            "checkBox_CarryNavPressure": "carry_nav_pressure",
+            "checkBox_CarryNavTemperature": "carry_nav_temperature",
+            "checkBox_CarryNavCakeZScale": "carry_nav_cake_z_scale",
+            "checkBox_CarryNavBackground": "carry_nav_background",
+            "checkBox_CarryNavWaterfall": "carry_nav_waterfall_list",
+            "checkBox_CarryNavPONI": "carry_nav_poni",
+            "checkBox_CarryNavFits": "carry_nav_fits_information",
+        }
+        for attr, key in nav_keys.items():
+            if hasattr(self.widget, attr):
+                raw = self.settings.value(key, nav_defaults[attr])
+                val = str(raw).lower() in ("1", "true", "yes") if isinstance(raw, str) else bool(raw)
+                getattr(self.widget, attr).setChecked(val)
+
+    def _capture_nav_carry_state(self):
+        source_chi = None
+        if self.model.base_ptn_exist():
+            source_chi = os.path.basename(self.model.get_base_ptn_filename())
+        cake_hist = {}
+        if hasattr(self.widget, "cake_hist_widget"):
+            hist = self.widget.cake_hist_widget
+            cake_hist = {
+                "log_y": bool(hist.check_log.isChecked()),
+                "focus_range": bool(hist.check_focus.isChecked()),
+                "low_pct": float(hist.spin_low_pct.value()),
+                "high_pct": float(hist.spin_high_pct.value()),
+            }
+        return {
+            "source_chi": source_chi,
+            "jcpds_lst": copy.deepcopy(self.model.jcpds_lst),
+            "pressure": float(self.model.get_saved_pressure()),
+            "temperature": float(self.model.get_saved_temperature()),
+            "cake_z_scale": {
+                "int_max": int(self.widget.spinBox_MaxCakeScale.value()),
+                "min_bar": int(self.widget.horizontalSlider_VMin.value()),
+                "max_bar": int(self.widget.horizontalSlider_VMax.value()),
+                "scale_bar": int(self.widget.horizontalSlider_MaxScaleBars.value()),
+                "hist": cake_hist,
+            },
+            "background": {
+                "roi_min": float(self.widget.doubleSpinBox_Background_ROI_min.value()),
+                "roi_max": float(self.widget.doubleSpinBox_Background_ROI_max.value()),
+                "n_points": int(self.widget.spinBox_BGParam0.value()),
+                "n_order": int(self.widget.spinBox_BGParam1.value()),
+                "n_iteration": int(self.widget.spinBox_BGParam2.value()),
+            },
+            "waterfall_list": copy.deepcopy(self.model.waterfall_ptn),
+            "poni": self.model.poni,
+            "fits_information": {
+                "section_lst": copy.deepcopy(self.model.section_lst),
+                "current_section": copy.deepcopy(self.model.current_section),
+            },
+        }
+
+    def _should_carry_nav_category(self, key, checkbox_attr):
+        presence = self.session_ctrl.get_last_param_category_presence()
+        if not bool(presence.get(key, False)):
+            # If target CHI has no existing info, always carry from current.
+            return True
+        if not hasattr(self.widget, checkbox_attr):
+            return True
+        return bool(getattr(self.widget, checkbox_attr).isChecked())
+
+    def _apply_nav_carry_state(self, snap):
+        carried_any = False
+        if self._should_carry_nav_category("jcpds", "checkBox_CarryNavJCPDS"):
+            self.model.jcpds_lst = copy.deepcopy(snap["jcpds_lst"])
+            self.jcpdstable_ctrl.update()
+            carried_any = True
+
+        if self._should_carry_nav_category("pressure", "checkBox_CarryNavPressure"):
+            self.model.save_pressure(float(snap["pressure"]))
+            self.widget.doubleSpinBox_Pressure.setValue(float(snap["pressure"]))
+            carried_any = True
+
+        if self._should_carry_nav_category("temperature", "checkBox_CarryNavTemperature"):
+            self.model.save_temperature(float(snap["temperature"]))
+            self.widget.doubleSpinBox_Temperature.setValue(float(snap["temperature"]))
+            carried_any = True
+
+        if self._should_carry_nav_category("cake_z_scale", "checkBox_CarryNavCakeZScale"):
+            cake = snap["cake_z_scale"]
+            self.widget.spinBox_MaxCakeScale.setValue(int(cake["int_max"]))
+            self.widget.horizontalSlider_VMin.setValue(int(cake["min_bar"]))
+            self.widget.horizontalSlider_VMax.setValue(int(cake["max_bar"]))
+            self.widget.horizontalSlider_MaxScaleBars.setValue(int(cake["scale_bar"]))
+            hist = cake.get("hist", {})
+            if hasattr(self.widget, "cake_hist_widget") and hist != {}:
+                self.widget.cake_hist_widget.check_log.setChecked(bool(hist.get("log_y", True)))
+                self.widget.cake_hist_widget.check_focus.setChecked(bool(hist.get("focus_range", True)))
+                self.widget.cake_hist_widget.spin_low_pct.setValue(float(hist.get("low_pct", 40.0)))
+                self.widget.cake_hist_widget.spin_high_pct.setValue(float(hist.get("high_pct", 99.95)))
+            carried_any = True
+
+        if self._should_carry_nav_category("background", "checkBox_CarryNavBackground"):
+            bg = snap["background"]
+            self.widget.doubleSpinBox_Background_ROI_min.setValue(float(bg["roi_min"]))
+            self.widget.doubleSpinBox_Background_ROI_max.setValue(float(bg["roi_max"]))
+            self.widget.spinBox_BGParam0.setValue(int(bg["n_points"]))
+            self.widget.spinBox_BGParam1.setValue(int(bg["n_order"]))
+            self.widget.spinBox_BGParam2.setValue(int(bg["n_iteration"]))
+            if self.model.base_ptn_exist():
+                self.update_bgsub()
+            carried_any = True
+
+        if self._should_carry_nav_category("waterfall_list", "checkBox_CarryNavWaterfall"):
+            self.model.waterfall_ptn = copy.deepcopy(snap["waterfall_list"])
+            self.waterfalltable_ctrl.update()
+            carried_any = True
+
+        if self._should_carry_nav_category("poni", "checkBox_CarryNavPONI"):
+            self.model.poni = snap["poni"]
+            self.widget.lineEdit_PONI.setText('' if snap["poni"] is None else str(snap["poni"]))
+            carried_any = True
+
+        if self._should_carry_nav_category("fits_information", "checkBox_CarryNavFits"):
+            self.model.section_lst = copy.deepcopy(snap["fits_information"]["section_lst"])
+            self.model.current_section = copy.deepcopy(snap["fits_information"]["current_section"])
+            self.peakfit_table_ctrl.update_sections()
+            self.peakfit_table_ctrl.update_peak_parameters()
+            self.peakfit_table_ctrl.update_baseline_constraints()
+            self.peakfit_table_ctrl.update_peak_constraints()
+            carried_any = True
+
+        if carried_any:
+            self.session_ctrl.set_carryover_source_chi(snap.get("source_chi"))
+        else:
+            self.session_ctrl.set_carryover_source_chi(None)
+
+        # Never carry over backup information across CHI navigation.
+        # Always show backup info for the newly loaded file.
+        if hasattr(self.widget, "tabWidget_3") and hasattr(self.widget, "tabWidget_3Page3"):
+            if self.widget.tabWidget_3.currentWidget() == self.widget.tabWidget_3Page3:
+                self.session_ctrl.refresh_backup_table()
 
     """
     def closeEvent(self, event):
@@ -847,6 +1013,7 @@ class MainController(object):
         return
 
     def _goto_chi_next_file(self, move):
+        nav_state = self._capture_nav_carry_state()
         filelist_chi = get_sorted_filelist(
             self.model.chi_path,
             sorted_by_name=self.widget.radioButton_SortbyNme.isChecked(),
@@ -894,6 +1061,7 @@ class MainController(object):
         new_filename_chi = filelist_chi[idx_chi_new]
         if os.path.exists(new_filename_chi):
             self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
+            self._apply_nav_carry_state(nav_state)
             # self.model.set_base_ptn_color(self.obj_color)
             self.plot_ctrl.update()
         else:

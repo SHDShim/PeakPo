@@ -13,10 +13,20 @@ class WaterfallController(object):
     def __init__(self, model, widget):
         self.model = model
         self.widget = widget
+        self.base_ptn_ctrl = None
+        self.capture_nav_state_cb = None
+        self.apply_nav_state_cb = None
         self.waterfall_table_ctrl = \
             WaterfallTableController(self.model, self.widget)
         self.plot_ctrl = MplController(self.model, self.widget)
         self.connect_channel()
+
+    def set_navigation_helpers(
+            self, base_ptn_ctrl=None, capture_nav_state_cb=None,
+            apply_nav_state_cb=None):
+        self.base_ptn_ctrl = base_ptn_ctrl
+        self.capture_nav_state_cb = capture_nav_state_cb
+        self.apply_nav_state_cb = apply_nav_state_cb
 
     def connect_channel(self):
         self.widget.pushButton_MakeBasePtn.clicked.connect(self.make_base_ptn)
@@ -51,32 +61,38 @@ class WaterfallController(object):
             return
 
         i = idx_selected
-        # make a deep copy of current model
-        model_temp = copy.deepcopy(self.model)
-        # save the old base pattern
-        old_base_ptn = copy.deepcopy(self.model.get_base_ptn())
-        new_base_ptn = copy.deepcopy(self.model.waterfall_ptn[i])
-        old_color = new_base_ptn.color
-        old_base_ptn.color = old_color
-        # switch the base pattern
-        self.model.set_base_ptn(new_base_ptn.fname, new_base_ptn.wavelength)
-        bg_roi = [self.widget.doubleSpinBox_Background_ROI_min.value(),
-                  self.widget.doubleSpinBox_Background_ROI_max.value()]
-        bg_params = [self.widget.spinBox_BGParam0.value(),
-                     self.widget.spinBox_BGParam1.value(),
-                     self.widget.spinBox_BGParam2.value()]
-        self.model.base_ptn.get_chbg(bg_roi, bg_params, yshift=0)
-        # self.model.load_associated_img()
-        self.widget.checkBox_ShowCake.setChecked(False)
-        self.model.replace_a_waterfall(old_base_ptn, i)
-        self.widget.lineEdit_DiffractionPatternFileName.setText(
-            str(self.model.get_base_ptn_filename()))
-        self.widget.doubleSpinBox_SetWavelength.setValue(
-            self.model.get_base_ptn_wavelength())
-        xray_energy = convert_wl_to_energy(self.model.get_base_ptn_wavelength())
-        self.widget.label_XRayEnergy.setText("({:.3f} keV)".format(xray_energy))
+        target = copy.deepcopy(self.model.waterfall_ptn[i])
+        original_fname = getattr(target, "_pkpo_original_fname", None) or target.fname
+        if (original_fname is None) or (not os.path.exists(original_fname)):
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Set base is not allowed for fallback waterfall entries.\n"
+                "Original waterfall file path is missing:\n"
+                + str(original_fname)
+            )
+            return
+        nav_state = None
+        if callable(self.capture_nav_state_cb):
+            nav_state = self.capture_nav_state_cb()
+        # Preserve selected waterfall wavelength for no-PARAM fallback path.
+        self.widget.doubleSpinBox_SetWavelength.setValue(target.wavelength)
+
+        if (self.base_ptn_ctrl is not None) and hasattr(self.base_ptn_ctrl, "_load_a_new_pattern"):
+            self.base_ptn_ctrl._load_a_new_pattern(original_fname)
+        else:
+            self.model.set_base_ptn(original_fname, target.wavelength)
+            self.widget.lineEdit_DiffractionPatternFileName.setText(
+                str(self.model.get_base_ptn_filename()))
+            self.widget.doubleSpinBox_SetWavelength.setValue(
+                self.model.get_base_ptn_wavelength())
+            xray_energy = convert_wl_to_energy(self.model.get_base_ptn_wavelength())
+            self.widget.label_XRayEnergy.setText("({:.3f} keV)".format(xray_energy))
+
+        if callable(self.apply_nav_state_cb) and (nav_state is not None):
+            self.apply_nav_state_cb(nav_state)
+
         self.waterfall_table_ctrl.update()
-        self._apply_changes_to_graph()
+        self._apply_changes_to_graph(reinforced=True)
 
     def check_all_waterfall(self):
         if not self.model.waterfall_exist():

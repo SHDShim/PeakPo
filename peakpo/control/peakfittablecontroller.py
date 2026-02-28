@@ -86,8 +86,16 @@ class PeakfitTableController(object):
 
     def update_sections(self):
         '''show a list of sections'''
+        valid_sections = []
+        for section in self.model.section_lst:
+            x = getattr(section, "x", None)
+            if (x is None) or (len(x) == 0):
+                continue
+            valid_sections.append(section)
+        if len(valid_sections) != len(self.model.section_lst):
+            self.model.section_lst = valid_sections
         n_columns = 3
-        n_rows = self.model.get_number_of_section()  # count for number of jcpds
+        n_rows = len(valid_sections)  # count for number of sections
         if n_rows == 0:
             self.widget.tableWidget_PkFtSections.clearContents()
             return
@@ -98,7 +106,7 @@ class PeakfitTableController(object):
         self.widget.tableWidget_PkFtSections.setHorizontalHeaderLabels(
             ['Time', 'xmin', 'xmax'])
         i = 0
-        for section in self.model.section_lst:
+        for section in valid_sections:
             # column 0 - time
             item1 = QtWidgets.QTableWidgetItem(section.get_timestamp())
             item1.setFlags(QtCore.Qt.ItemIsEnabled |

@@ -1,17 +1,22 @@
 --------------------------------------------------------------------------------
-2026-02-26, 18:21:54
+2026-02-28, 11:25:21
 --------------------------------------------------------------------------------
-<class 'UnboundLocalError'>: 
-cannot access local variable 'filen_toload' where it is not associated with a value
+<class 'IndexError'>: 
+index 0 is out of bounds for axis 0 with size 0
 --------------------------------------------------------------------------------
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/sessioncontroller.py", line 73, in load_dpp
-    success = self._load_dpp(fn, jlistonly=False)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/sessioncontroller.py", line 226, in _load_dpp
-    return self._set_from_dpp(filen_dpp, model_dpp,
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/sessioncontroller.py", line 281, in _set_from_dpp
-    self.model.load_associated_img()
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/model/model.py", line 387, in load_associated_img
-    self.diff_img.load(filen_toload)
-                       ^^^^^^^^^^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/basepatterncontroller.py", line 34, in select_base_ptn
+    self._setshow_new_base_ptn(str(filen))
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/basepatterncontroller.py", line 58, in _setshow_new_base_ptn
+    self._load_a_new_pattern(new_filename)
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/basepatterncontroller.py", line 81, in _load_a_new_pattern
+    loaded_param = self.session_ctrl.autoload_param_for_chi(new_filename)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/sessioncontroller.py", line 507, in autoload_param_for_chi
+    self._sync_ui_from_model(
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/sessioncontroller.py", line 397, in _sync_ui_from_model
+    self.update_inputs()
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/sessioncontroller.py", line 934, in update_inputs
+    self.peakfit_table_ctrl.update_sections()
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/peakfittablecontroller.py", line 108, in update_sections
+    item2 = QtWidgets.QTableWidgetItem("{:.2f}".format(section.x[0]))
+                                                       ~~~~~~~~~^^^

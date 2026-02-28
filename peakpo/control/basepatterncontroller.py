@@ -70,6 +70,9 @@ class BasePatternController(object):
         """
         load and process base pattern.  does not signal to update_graph
         """
+        if self.session_ctrl is not None:
+            # Reset carry-over provenance for generic/manual loads.
+            self.session_ctrl.set_carryover_source_chi(None)
         self.model.set_base_ptn(
             new_filename, self.widget.doubleSpinBox_SetWavelength.value())
         # self.widget.textEdit_DiffractionPatternFileName.setText(

@@ -150,6 +150,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         ):
             if hasattr(self, name):
                 getattr(self, name).setEnabled(False)
+        self._setup_nav_carryover_config()
         self.tableWidget_DiffImgAzi.\
             setHorizontalHeaderLabels(['Notes', '2th', 'Azi', '2th', 'Azi'])
         # Gray scale panel now includes histogram controls; relax hard height cap
@@ -206,6 +207,59 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.ntb_NightView.setText("Night")
         self.mpl.ntb.addWidget(self.ntb_NightView)
         """
+
+    def _setup_nav_carryover_config(self):
+        if not hasattr(self, "scrollAreaWidgetContents_2") or \
+                (not hasattr(self, "verticalLayout_31")):
+            return
+        self.groupBox_NavCarry = QtWidgets.QGroupBox(
+            "CHI Navigation Carry-over", self.scrollAreaWidgetContents_2)
+        self.groupBox_NavCarry.setObjectName("groupBox_NavCarry")
+        self.gridLayout_NavCarry = QtWidgets.QGridLayout(self.groupBox_NavCarry)
+        self.gridLayout_NavCarry.setContentsMargins(12, 12, 12, 12)
+        self.gridLayout_NavCarry.setVerticalSpacing(8)
+
+        self.checkBox_CarryNavJCPDS = QtWidgets.QCheckBox("JCPDS")
+        self.checkBox_CarryNavPressure = QtWidgets.QCheckBox("Pressure")
+        self.checkBox_CarryNavTemperature = QtWidgets.QCheckBox("Temperature")
+        self.checkBox_CarryNavCakeZScale = QtWidgets.QCheckBox("Cake z scale")
+        self.checkBox_CarryNavBackground = QtWidgets.QCheckBox("Background")
+        self.checkBox_CarryNavWaterfall = QtWidgets.QCheckBox("Waterfall list")
+        self.checkBox_CarryNavPONI = QtWidgets.QCheckBox("PONI")
+        self.checkBox_CarryNavFits = QtWidgets.QCheckBox("Fits information")
+
+        # Default non-carry-over categories:
+        # backup, cake z scale, background, poni, fits
+        self.checkBox_CarryNavJCPDS.setChecked(True)
+        self.checkBox_CarryNavPressure.setChecked(True)
+        self.checkBox_CarryNavTemperature.setChecked(True)
+        self.checkBox_CarryNavCakeZScale.setChecked(False)
+        self.checkBox_CarryNavBackground.setChecked(False)
+        self.checkBox_CarryNavWaterfall.setChecked(True)
+        self.checkBox_CarryNavPONI.setChecked(False)
+        self.checkBox_CarryNavFits.setChecked(False)
+
+        items = [
+            self.checkBox_CarryNavJCPDS,
+            self.checkBox_CarryNavPressure,
+            self.checkBox_CarryNavTemperature,
+            self.checkBox_CarryNavCakeZScale,
+            self.checkBox_CarryNavBackground,
+            self.checkBox_CarryNavWaterfall,
+            self.checkBox_CarryNavPONI,
+            self.checkBox_CarryNavFits,
+        ]
+        for i, cb in enumerate(items):
+            r = i // 2
+            c = i % 2
+            self.gridLayout_NavCarry.addWidget(cb, r, c, 1, 1)
+
+        insert_idx = self.verticalLayout_31.count()
+        if hasattr(self, "groupBox_17"):
+            idx = self.verticalLayout_31.indexOf(self.groupBox_17)
+            if idx >= 0:
+                insert_idx = idx
+        self.verticalLayout_31.insertWidget(insert_idx, self.groupBox_NavCarry)
 
     def _fix_tab_clipping(self):
         # Keep native tab visuals while nudging tab size metrics to prevent

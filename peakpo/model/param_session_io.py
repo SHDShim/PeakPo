@@ -6,6 +6,7 @@ import datetime
 import io
 import glob
 import hashlib
+import re
 from dataclasses import dataclass
 from typing import Optional
 
@@ -133,12 +134,18 @@ def _bg_temp_names(pattern):
     return f"{base}.bgsub.chi", f"{base}.bg.chi"
 
 
-def _serialize_pattern(pattern, chi_root):
+def _serialize_pattern(
+        pattern, chi_root, fallback_relpath=None, force_abs_fname=False):
     if pattern is None:
         return None
     bgsub_name, bg_name = _bg_temp_names(pattern)
+    stored_fname = getattr(pattern, "_pkpo_original_fname", None) or getattr(pattern, "fname", None)
+    if fallback_relpath is None:
+        fallback_relpath = getattr(pattern, "_pkpo_fallback_relpath", None)
+    stored_fname_out = str(stored_fname) if force_abs_fname else _relpath_or_abs(stored_fname, chi_root)
     return {
-        "fname": _relpath_or_abs(getattr(pattern, "fname", None), chi_root),
+        "fname": stored_fname_out,
+        "fallback_fname": fallback_relpath,
         "wavelength": getattr(pattern, "wavelength", None),
         "color": getattr(pattern, "color", None),
         "display": getattr(pattern, "display", None),
@@ -151,16 +158,34 @@ def _load_pattern(payload, chi_root, temp_dir):
     if payload is None:
         return None
     ptn = PatternPeakPo()
-    fname = _resolve_path(payload.get("fname"), chi_root)
-    if fname and os.path.exists(fname):
-        ptn.read_file(fname)
+    fname_primary = _resolve_path(payload.get("fname"), chi_root)
+    fallback_stored = payload.get("fallback_fname")
+    if fallback_stored is None:
+        fname_fallback = None
+    elif os.path.isabs(str(fallback_stored)):
+        fname_fallback = str(fallback_stored)
     else:
-        ptn.fname = fname
+        fname_fallback = os.path.normpath(os.path.join(temp_dir, str(fallback_stored)))
+
+    used_fallback = False
+    if fname_primary and os.path.exists(fname_primary):
+        ptn.read_file(fname_primary)
+        ptn.fname = fname_primary
+    elif fname_fallback and os.path.exists(fname_fallback):
+        ptn.read_file(fname_fallback)
+        ptn.fname = fname_fallback
+        used_fallback = True
+    else:
+        ptn.fname = fname_primary
         ptn.x_raw = None
         ptn.y_raw = None
     ptn.wavelength = payload.get("wavelength", 0.3344)
     ptn.color = payload.get("color", "white")
     ptn.display = payload.get("display", False)
+    ptn._pkpo_original_fname = fname_primary
+    ptn._pkpo_fallback_fname = fname_fallback
+    ptn._pkpo_fallback_relpath = fallback_stored
+    ptn._pkpo_fallback_in_use = used_fallback
     # Keep background-subtracted state in legacy chi files.
     if ptn.fname is not None:
         ptn.read_bg_from_tempfile(temp_dir=temp_dir)
@@ -283,29 +308,218 @@ def _fit_result_to_dict(section):
     return out
 
 
-def _section_to_dict(section):
+def _sanitize_name(name):
+    return re.sub(r"[^A-Za-z0-9_.-]", "_", str(name))
+
+
+def _trim_trailing_nan(arr):
+    arr = np.asarray(arr, dtype=float).reshape(-1)
+    if arr.size == 0:
+        return arr
+    valid = np.where(~np.isnan(arr))[0]
+    if valid.size == 0:
+        return np.asarray([], dtype=float)
+    return arr[: valid[-1] + 1]
+
+
+def _component_sort_key(name):
+    key = str(name).strip().lower()
+    m = re.fullmatch(r"p(\d+)", key)
+    if m is not None:
+        return (0, int(m.group(1)))
+    if key == "b":
+        return (2, 0)
+    return (1, key)
+
+
+def _compute_section_csv_payload(columns):
+    if not columns:
+        return b""
+    col_names = [name for name, _ in columns]
+    n_rows = max(np.asarray(values, dtype=float).reshape(-1).size for _, values in columns)
+    matrix = np.full((n_rows, len(columns)), np.nan, dtype=float)
+    for idx, (_, values) in enumerate(columns):
+        vals = np.asarray(values, dtype=float).reshape(-1)
+        matrix[:vals.size, idx] = vals
+    buf = io.StringIO()
+    np.savetxt(
+        buf,
+        matrix,
+        fmt="%.18g",
+        delimiter=",",
+        header=",".join(col_names),
+        comments="",
+    )
+    return buf.getvalue().encode("utf-8")
+
+
+def _load_section_csv_columns(path):
+    try:
+        if (path is None) or (not os.path.exists(path)):
+            return {}
+        data = np.genfromtxt(path, delimiter=",", names=True, dtype=float, encoding="utf-8")
+        if data is None:
+            return {}
+        names = getattr(getattr(data, "dtype", None), "names", None)
+        if not names:
+            return {}
+        out = {}
+        for name in names:
+            col = data[name]
+            arr = np.asarray([float(col)], dtype=float) if np.isscalar(col) else np.asarray(col, dtype=float)
+            out[name] = _trim_trailing_nan(arr)
+        return out
+    except Exception:
+        return {}
+
+
+def _load_csv_array_legacy(path):
+    try:
+        if (path is None) or (not os.path.exists(path)):
+            return np.asarray([], dtype=float)
+        with open(path, "r", encoding="utf-8") as f:
+            text = f.read().strip()
+        if text == "":
+            return np.asarray([], dtype=float)
+        return np.loadtxt(io.StringIO(text), delimiter=",", dtype=float, ndmin=1)
+    except Exception:
+        return np.asarray([], dtype=float)
+
+
+def _fit_result_to_dict_with_csv(section):
+    fit = getattr(section, "fit_result", None)
+    if fit is None:
+        return None
+    out = {
+        "chisqr": getattr(fit, "chisqr", None),
+        "redchi": getattr(fit, "redchi", None),
+        "aic": getattr(fit, "aic", None),
+        "bic": getattr(fit, "bic", None),
+        "params": {},
+        "best_fit_column": None,
+        "component_columns": {},
+    }
+    params = getattr(fit, "params", {}) or {}
+    for key, prm in params.items():
+        out["params"][key] = {
+            "value": getattr(prm, "value", None),
+            "stderr": getattr(prm, "stderr", None),
+            "vary": getattr(prm, "vary", True),
+        }
+    return out
+
+
+def _section_to_dict(section, section_tag, section_payloads):
+    columns = []
+    if section.x is not None:
+        columns.append(("x", section.x))
+    if section.y_bgsub is not None:
+        columns.append(("y_bgsub", section.y_bgsub))
+    if section.y_bg is not None:
+        columns.append(("y_bg", section.y_bg))
+
+    fit_payload = _fit_result_to_dict_with_csv(section)
+    fit = getattr(section, "fit_result", None)
+    if fit is not None:
+        best_fit = getattr(fit, "best_fit", None)
+        if best_fit is not None:
+            columns.append(("fit_best", best_fit))
+            fit_payload["best_fit_column"] = "fit_best"
+        try:
+            comps = fit.eval_components(x=section.x) or {}
+        except Exception:
+            comps = {}
+        for comp_name in sorted(comps.keys(), key=_component_sort_key):
+            col_name = f"comp_{_sanitize_name(comp_name)}"
+            columns.append((col_name, comps[comp_name]))
+            fit_payload["component_columns"][comp_name] = col_name
+
+    section_csv_file = None
+    section_csv_columns = [name for name, _ in columns]
+    if columns:
+        section_csv_file = os.path.join("sections", f"{section_tag}.csv")
+        section_payloads[section_csv_file] = _compute_section_csv_payload(columns)
+
     return {
-        "x": None if section.x is None else np.asarray(section.x).tolist(),
-        "y_bgsub": None if section.y_bgsub is None else np.asarray(section.y_bgsub).tolist(),
-        "y_bg": None if section.y_bg is None else np.asarray(section.y_bg).tolist(),
+        "section_csv_file": section_csv_file,
+        "section_csv_columns": section_csv_columns,
         "timestamp": section.timestamp,
         "baseline_in_queue": section.baseline_in_queue,
         "peaks_in_queue": section.peaks_in_queue,
         "peakinfo": section.peakinfo,
-        "fit_result": _fit_result_to_dict(section),
+        "fit_result": fit_payload,
     }
 
 
-def _dict_to_section(payload):
+def _dict_to_section(payload, param_dir, missing_files=None):
     section = Section()
-    section.x = None if payload.get("x") is None else np.asarray(payload.get("x"), dtype=float)
-    section.y_bgsub = None if payload.get("y_bgsub") is None else np.asarray(payload.get("y_bgsub"), dtype=float)
-    section.y_bg = None if payload.get("y_bg") is None else np.asarray(payload.get("y_bg"), dtype=float)
+    section_cols = {}
+    section_csv_file = payload.get("section_csv_file")
+    if section_csv_file is not None:
+        full_csv = os.path.join(param_dir, section_csv_file)
+        section_cols = _load_section_csv_columns(full_csv)
+        if (section_cols == {}) and (not os.path.exists(full_csv)) and (missing_files is not None):
+            missing_files.append(section_csv_file)
+
+    if "x" in section_cols:
+        section.x = section_cols.get("x")
+    else:
+        x_file = payload.get("x_file")
+        if x_file is not None:
+            section.x = _load_csv_array_legacy(os.path.join(param_dir, x_file))
+        else:
+            section.x = None if payload.get("x") is None else np.asarray(payload.get("x"), dtype=float)
+
+    if "y_bgsub" in section_cols:
+        section.y_bgsub = section_cols.get("y_bgsub")
+    else:
+        y_bgsub_file = payload.get("y_bgsub_file")
+        if y_bgsub_file is not None:
+            section.y_bgsub = _load_csv_array_legacy(os.path.join(param_dir, y_bgsub_file))
+        else:
+            section.y_bgsub = None if payload.get("y_bgsub") is None else np.asarray(payload.get("y_bgsub"), dtype=float)
+
+    if "y_bg" in section_cols:
+        section.y_bg = section_cols.get("y_bg")
+    else:
+        y_bg_file = payload.get("y_bg_file")
+        if y_bg_file is not None:
+            section.y_bg = _load_csv_array_legacy(os.path.join(param_dir, y_bg_file))
+        else:
+            section.y_bg = None if payload.get("y_bg") is None else np.asarray(payload.get("y_bg"), dtype=float)
     section.timestamp = payload.get("timestamp")
     section.baseline_in_queue = payload.get("baseline_in_queue", [])
     section.peaks_in_queue = payload.get("peaks_in_queue", [])
     section.peakinfo = payload.get("peakinfo", {})
     fit_payload = payload.get("fit_result")
+    if isinstance(fit_payload, dict):
+        best_col = fit_payload.get("best_fit_column", "fit_best")
+        if best_col in section_cols:
+            fit_payload["best_fit"] = np.asarray(section_cols.get(best_col), dtype=float).tolist()
+        else:
+            best_fit_file = fit_payload.get("best_fit_file")
+            if best_fit_file is not None:
+                old_arr = _load_csv_array_legacy(os.path.join(param_dir, best_fit_file))
+                fit_payload["best_fit"] = np.asarray(old_arr, dtype=float).tolist()
+
+        comps = {}
+        comp_cols = fit_payload.get("component_columns", {})
+        if isinstance(comp_cols, dict) and comp_cols:
+            for comp_name, col_name in comp_cols.items():
+                if col_name in section_cols:
+                    comps[comp_name] = np.asarray(section_cols.get(col_name), dtype=float).tolist()
+        elif section_cols:
+            for col_name, values in section_cols.items():
+                if col_name.startswith("comp_"):
+                    comps[col_name[5:]] = np.asarray(values, dtype=float).tolist()
+        else:
+            comp_files = fit_payload.get("components_files", {})
+            if isinstance(comp_files, dict) and comp_files:
+                for k, rel in comp_files.items():
+                    old_arr = _load_csv_array_legacy(os.path.join(param_dir, rel))
+                    comps[k] = np.asarray(old_arr, dtype=float).tolist()
+        if comps:
+            fit_payload["components"] = comps
     section.fit_result = None if fit_payload is None else _FitResultLite(fit_payload)
     section.parameters = None
     section.fit_model = None
@@ -381,7 +595,7 @@ def _collect_companion_files(param_dir):
     return sorted(rel_files)
 
 
-def _prepare_payloads(model, ui_state=None):
+def _prepare_payloads(model, param_dir, ui_state=None):
     chi_root = model.chi_path
     cake_tth_file = None
     cake_azi_file = None
@@ -398,15 +612,34 @@ def _prepare_payloads(model, ui_state=None):
         cake_int_file = f"{base}.int.cake.npy" if model.diff_img.intensity_cake is not None else None
         mask_file = f"{base}.mask.npy" if model.diff_img.mask is not None else None
 
+    waterfall_payloads = {}
+    waterfall_patterns = []
+    for i, ptn in enumerate(model.waterfall_ptn):
+        fallback_rel = None
+        src = getattr(ptn, "_pkpo_original_fname", None) or getattr(ptn, "fname", None)
+        if (src is not None) and os.path.exists(src):
+            rel = os.path.join("waterfall", f"{i:04d}_{os.path.basename(src)}")
+            try:
+                waterfall_payloads[rel] = _file_bytes(src)
+                fallback_rel = rel
+            except Exception:
+                fallback_rel = None
+        waterfall_patterns.append(
+            _serialize_pattern(
+                ptn,
+                chi_root,
+                fallback_relpath=fallback_rel,
+                force_abs_fname=True,
+            )
+        )
+
     session_data = {
         "schema": 1,
-        "saved_pressure": model.saved_pressure,
-        "saved_temperature": model.saved_temperature,
         "chi_path": ".",
         "jcpds_path": _relpath_or_abs(model.jcpds_path, chi_root),
         "poni": _relpath_or_abs(model.poni, chi_root),
         "base_pattern": _serialize_pattern(model.base_ptn, chi_root),
-        "waterfall_patterns": [_serialize_pattern(p, chi_root) for p in model.waterfall_ptn],
+        "waterfall_patterns": waterfall_patterns,
         "diff_img": {
             "img_filename": _relpath_or_abs(getattr(model.diff_img, "img_filename", None), chi_root),
             "mask_file": mask_file,
@@ -423,24 +656,34 @@ def _prepare_payloads(model, ui_state=None):
                 session_data["current_section_index"] = i
                 break
 
+    section_payloads = {}
     sections_data = {
         "schema": 1,
-        "sections": [_section_to_dict(s) for s in model.section_lst],
+        "sections": [
+            _section_to_dict(s, section_tag=f"sec_{i:04d}", section_payloads=section_payloads)
+            for i, s in enumerate(model.section_lst)
+        ],
         # Preserve in-progress/unsaved fit-section edits as part of state.
         "current_section": (
-            _section_to_dict(model.current_section)
+            _section_to_dict(
+                model.current_section,
+                section_tag="current_section",
+                section_payloads=section_payloads,
+            )
             if model.current_section is not None else None
         ),
     }
     jcpds_data = {
         "schema": 1,
+        "saved_pressure": model.saved_pressure,
+        "saved_temperature": model.saved_temperature,
         "phases": [_serialize_jcpds_item(j, chi_root) for j in model.jcpds_lst],
     }
     ui_data = {
         "schema": 1,
         "ui_state": ui_state or {},
     }
-    return session_data, sections_data, jcpds_data, ui_data
+    return session_data, sections_data, jcpds_data, ui_data, section_payloads, waterfall_payloads
 
 
 def _highlight_changed_files(changed_files):
@@ -527,13 +770,21 @@ def _known_state_hashes(index):
     return hashes
 
 
-def save_model_to_param(model, ui_state=None, reason="manual-save", force_backup=False):
+def _exclude_from_backup(rel_path):
+    rp = str(rel_path).lower()
+    return rp.endswith(".chi") or rp.endswith(".npy")
+
+
+def save_model_to_param(
+        model, ui_state=None, reason="manual-save",
+        force_backup=False, create_backup=True):
     if model is None or (not model.base_ptn_exist()):
         raise ValueError("Base pattern must exist before saving PARAM session.")
     param_dir = get_temp_dir(model.get_base_ptn_filename(), branch="-param")
     os.makedirs(param_dir, exist_ok=True)
 
-    session_data, sections_data, jcpds_data, ui_data = _prepare_payloads(model, ui_state=ui_state)
+    session_data, sections_data, jcpds_data, ui_data, section_payloads, waterfall_payloads = _prepare_payloads(
+        model, param_dir=param_dir, ui_state=ui_state)
     existing_created_at = None
     existing_manifest_path = os.path.join(param_dir, MANIFEST_FILE)
     if os.path.exists(existing_manifest_path):
@@ -566,6 +817,8 @@ def save_model_to_param(model, ui_state=None, reason="manual-save", force_backup
         UI_STATE_FILE: json.dumps(ui_data, indent=2, sort_keys=True, default=_json_default).encode("utf-8"),
         MANIFEST_FILE: json.dumps(manifest, indent=2, sort_keys=True, default=_json_default).encode("utf-8"),
     }
+    payload_map.update(section_payloads)
+    payload_map.update(waterfall_payloads)
 
     # Keep background information as chi files in PARAM.
     if model.base_ptn is not None:
@@ -617,16 +870,23 @@ def save_model_to_param(model, ui_state=None, reason="manual-save", force_backup
         if os.path.exists(full):
             payload_map[rel] = _file_bytes(full)
 
-    changed_files = []
+    changed_files_all = []
     for rel_path, new_bytes in payload_map.items():
         full_path = os.path.join(param_dir, rel_path)
         old_bytes = _file_bytes(full_path) if os.path.exists(full_path) else None
         if old_bytes != new_bytes:
-            changed_files.append(rel_path)
+            changed_files_all.append(rel_path)
+
+    backup_payload_map = {
+        rel_path: payload
+        for rel_path, payload in payload_map.items()
+        if not _exclude_from_backup(rel_path)
+    }
+    changed_files = [p for p in changed_files_all if p in backup_payload_map]
     delta_files = list(changed_files)
     semantic_flags = _semantic_change_flags(
         param_dir, session_data, sections_data, jcpds_data, ui_data)
-    state_hash = _compute_state_hash(payload_map)
+    state_hash = _compute_state_hash(backup_payload_map)
 
     backup_id = None
     backup_root = None
@@ -635,7 +895,7 @@ def save_model_to_param(model, ui_state=None, reason="manual-save", force_backup
     known_hashes = _known_state_hashes(index)
     state_already_known = state_hash in known_hashes
 
-    create_backup_event = (changed_files != []) or force_backup
+    create_backup_event = create_backup and ((changed_files != []) or force_backup)
     if create_backup_event and state_already_known and (not force_backup):
         # Avoid duplicate backups for states that already exist in history.
         create_backup_event = False
@@ -643,12 +903,12 @@ def save_model_to_param(model, ui_state=None, reason="manual-save", force_backup
     if create_backup_event:
         # Store full post-save snapshot so each backup row maps 1:1 to
         # what gets restored (avoids pre/post mismatch confusion).
-        snapshot_files = sorted(payload_map.keys())
+        snapshot_files = sorted(backup_payload_map.keys())
         backup_id = _make_backup_id(param_dir)
         backup_root = os.path.join(param_dir, "backups", backup_id)
         for rel_path in snapshot_files:
             dst = os.path.join(backup_root, rel_path)
-            _atomic_write_bytes(dst, payload_map[rel_path])
+            _atomic_write_bytes(dst, backup_payload_map[rel_path])
 
     for rel_path, payload in payload_map.items():
         _atomic_write_bytes(os.path.join(param_dir, rel_path), payload)
@@ -673,7 +933,7 @@ def save_model_to_param(model, ui_state=None, reason="manual-save", force_backup
         param_dir=param_dir,
         manifest_path=os.path.join(param_dir, MANIFEST_FILE),
         backup_id=backup_id,
-        changed_files=changed_files,
+        changed_files=changed_files_all,
     )
 
 
@@ -776,28 +1036,54 @@ def load_model_from_param(model, base_chi_file, backup_event_id=None, backup_eve
         _load_pattern(p, chi_root, param_dir)
         for p in session_data.get("waterfall_patterns", [])
     ]
+    fallback_waterfall = []
+    for ptn in model.waterfall_ptn:
+        if bool(getattr(ptn, "_pkpo_fallback_in_use", False)):
+            fallback_waterfall.append(
+                os.path.basename(
+                    getattr(ptn, "_pkpo_original_fname", None) or getattr(ptn, "fname", "") or ""
+                )
+            )
     phase_payloads = jcpds_data.get("phases", jcpds_data.get("items", []))
     model.jcpds_lst = [_load_jcpds_item(p, chi_root) for p in phase_payloads]
-    model.section_lst = [_dict_to_section(s) for s in sections_data.get("sections", [])]
+    missing_section_csv_files = []
+    loaded_sections = []
+    old_to_new_idx = {}
+    for old_idx, sec_payload in enumerate(sections_data.get("sections", [])):
+        sec_obj = _dict_to_section(sec_payload, param_dir, missing_files=missing_section_csv_files)
+        x_arr = getattr(sec_obj, "x", None)
+        if (x_arr is None) or (len(x_arr) == 0):
+            continue
+        old_to_new_idx[old_idx] = len(loaded_sections)
+        loaded_sections.append(sec_obj)
+    model.section_lst = loaded_sections
 
     current_idx = session_data.get("current_section_index")
     current_payload = sections_data.get("current_section")
     model.current_section = None
     if current_payload is not None:
-        current_section = _dict_to_section(current_payload)
-        if isinstance(current_idx, int) and (0 <= current_idx < len(model.section_lst)):
-            listed = model.section_lst[current_idx]
+        current_section = _dict_to_section(
+            current_payload, param_dir, missing_files=missing_section_csv_files)
+        if (getattr(current_section, "x", None) is None) or (len(current_section.x) == 0):
+            current_section = None
+        mapped_idx = old_to_new_idx.get(current_idx) if isinstance(current_idx, int) else None
+        if (current_section is not None) and isinstance(mapped_idx, int) and (0 <= mapped_idx < len(model.section_lst)):
+            listed = model.section_lst[mapped_idx]
             if getattr(listed, "timestamp", None) == getattr(current_section, "timestamp", None):
                 model.current_section = listed
             else:
                 model.current_section = current_section
         else:
             model.current_section = current_section
-    elif isinstance(current_idx, int) and (0 <= current_idx < len(model.section_lst)):
-        model.current_section = model.section_lst[current_idx]
+    elif isinstance(current_idx, int):
+        mapped_idx = old_to_new_idx.get(current_idx)
+        if isinstance(mapped_idx, int) and (0 <= mapped_idx < len(model.section_lst)):
+            model.current_section = model.section_lst[mapped_idx]
 
-    model.saved_pressure = session_data.get("saved_pressure", model.saved_pressure)
-    model.saved_temperature = session_data.get("saved_temperature", model.saved_temperature)
+    model.saved_pressure = jcpds_data.get(
+        "saved_pressure", session_data.get("saved_pressure", model.saved_pressure))
+    model.saved_temperature = jcpds_data.get(
+        "saved_temperature", session_data.get("saved_temperature", model.saved_temperature))
     model.chi_path = chi_root
     model.jcpds_path = _resolve_path(session_data.get("jcpds_path"), chi_root) or ""
     model.poni = _resolve_path(session_data.get("poni"), chi_root)
@@ -839,4 +1125,43 @@ def load_model_from_param(model, base_chi_file, backup_event_id=None, backup_eve
         "param_dir": param_dir,
         "manifest": os.path.join(param_dir, MANIFEST_FILE),
         "ui_state": ui_data.get("ui_state", {}),
+        "missing_section_csv_files": sorted(set(missing_section_csv_files)),
+        "fallback_waterfall_files": sorted(set([x for x in fallback_waterfall if x])),
+        "category_presence": {
+            "backup_information": (len(list_backup_events(param_dir)) > 0),
+            "jcpds": (len(phase_payloads) > 0),
+            "pressure": (("saved_pressure" in jcpds_data) or ("saved_pressure" in session_data)),
+            "temperature": (("saved_temperature" in jcpds_data) or ("saved_temperature" in session_data)),
+            "cake_z_scale": (ui_data.get("ui_state", {}).get("cake", {}) != {}),
+            "background": (ui_data.get("ui_state", {}).get("background", {}) != {}),
+            "waterfall_list": (len(session_data.get("waterfall_patterns", [])) > 0),
+            "poni": (session_data.get("poni") not in (None, "")),
+            "fits_information": (
+                (len(sections_data.get("sections", [])) > 0) or
+                (sections_data.get("current_section") is not None)
+            ),
+        },
     }
+
+
+def load_section_from_param(base_chi_file, section_index):
+    """
+    Load one saved section by index from PARAM session files.
+    Returns Section object on success, or None if unavailable/invalid.
+    """
+    if base_chi_file is None:
+        return None
+    param_dir = get_temp_dir(base_chi_file, branch="-param")
+    if not is_new_param_folder(param_dir):
+        return None
+    try:
+        manifest = _load_json(os.path.join(param_dir, MANIFEST_FILE))
+        files = manifest.get("files", {})
+        sections_data = _load_json(os.path.join(param_dir, files.get("sections", SECTIONS_FILE)))
+        sections = sections_data.get("sections", [])
+        idx = int(section_index)
+        if (idx < 0) or (idx >= len(sections)):
+            return None
+        return _dict_to_section(sections[idx], param_dir)
+    except Exception:
+        return None

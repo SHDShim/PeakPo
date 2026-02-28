@@ -5,6 +5,7 @@ from .mplcontroller import MplController
 from .peakfittablecontroller import PeakfitTableController
 from ..utils import make_filename, get_temp_dir
 from ..compat_pickle import PeakPoCompatDillUnpickler
+from ..model.param_session_io import load_section_from_param
 
 
 class PeakFitController(object):
@@ -209,6 +210,22 @@ class PeakFitController(object):
             pass
         idx = self.widget.tableWidget_PkFtSections.selectionModel().\
             selectedRows()[0].row()
+        # Reload selected section from PARAM CSV on demand so graph updates
+        # reflect persisted section data (not stale in-memory copies).
+        if self.model.base_ptn_exist():
+            try:
+                section_disk = load_section_from_param(
+                    self.model.get_base_ptn_filename(), idx)
+            except Exception:
+                section_disk = None
+            if section_disk is not None:
+                self.model.section_lst[idx] = section_disk
+            else:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Missing Section CSV",
+                    "Saved section CSV for the selected row was not found.\n"
+                    "Using in-memory section data instead."
+                )
         self.model.set_this_section_current(idx)
         self.peakfit_table_ctrl.update_peak_parameters()
         self.peakfit_table_ctrl.update_sections()

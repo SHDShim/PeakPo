@@ -32,6 +32,18 @@ class SessionController(object):
     def __init__(self, model, widget):
         self.model = model
         self.widget = widget
+        self._carryover_source_chi = None
+        self._last_param_category_presence = {
+            "backup_information": False,
+            "jcpds": False,
+            "pressure": False,
+            "temperature": False,
+            "cake_z_scale": False,
+            "background": False,
+            "waterfall_list": False,
+            "poni": False,
+            "fits_information": False,
+        }
         self.plot_ctrl = MplController(self.model, self.widget)
         self.waterfalltable_ctrl = \
             WaterfallTableController(self.model, self.widget)
@@ -108,9 +120,12 @@ class SessionController(object):
         events = list_backup_events(param_dir)
         table.setRowCount(len(events))
         for row, (idx, ev) in enumerate(reversed(list(enumerate(events)))):
+            reason = str(ev.get("reason", ""))
+            if reason in ("manual-save", "save", ""):
+                reason = "snapshot"
             values = [
                 str(ev.get("id", "")),
-                str(ev.get("reason", "")),
+                reason,
                 ", ".join(ev.get("highlights", [])) or "none",
                 str(ev.get("timestamp", "")),
                 str(len(ev.get("changed_files", []))),
@@ -175,13 +190,6 @@ class SessionController(object):
             return
         backup_id = events[backup_idx].get("id")
         self._commit_inputs_before_save()
-        # Before restore, backup current setup.
-        pre = save_model_to_param(
-            self.model,
-            ui_state=self._collect_ui_state(),
-            reason=f"pre-restore-{backup_id}",
-            force_backup=True,
-        )
         base_chi = self.model.get_base_ptn_filename()
         success, meta = load_model_from_param(
             self.model, base_chi, backup_event_index=backup_idx)
@@ -194,17 +202,17 @@ class SessionController(object):
             manifest_path=str(meta.get("manifest", "")),
             ui_state=meta.get("ui_state", {}),
         )
-        self.refresh_backup_table()
-        if pre.backup_id is None:
-            pre_text = (
-                "No pre-restore backup was created "
-                "(state already exists in backups or no file changes)."
+        missing_csv = meta.get("missing_section_csv_files", []) or []
+        if missing_csv:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Missing Section CSV",
+                "Some saved section CSV files were missing, so those sections "
+                "were skipped.\n\n"
+                "Missing files:\n" + "\n".join(map(str, missing_csv[:20])) +
+                ("\n..." if len(missing_csv) > 20 else "")
             )
-        else:
-            pre_text = f"Current setup was backed up first as: {pre.backup_id}"
-        msg = (
-            f"Restored backup: {backup_id}\n\n{pre_text}"
-        )
+        self.refresh_backup_table()
+        msg = f"Restored backup: {backup_id}"
         QtWidgets.QMessageBox.information(
             self.widget, "Backup Restored", msg)
 
@@ -245,11 +253,6 @@ class SessionController(object):
         success = self._load_dpp(filen_dpp, jlistonly=False)
         if not success:
             return False
-        result = save_model_to_param(
-            self.model,
-            ui_state=self._collect_ui_state(),
-            reason="auto-convert-from-dpp",
-        )
         archived = self._archive_legacy_dpp(filen_dpp, chi_file)
         if archived is not None:
             print(str(datetime.datetime.now())[:-7],
@@ -262,7 +265,7 @@ class SessionController(object):
                 f"{archived}"
             )
         self._sync_ui_from_model(
-            manifest_path=str(result.manifest_path),
+            manifest_path="",
             ui_state=self._collect_ui_state(),
         )
         return True
@@ -296,19 +299,6 @@ class SessionController(object):
         ext = os.path.splitext(fn)[1].lower()
         if ext == ".dpp":
             success = self._load_dpp(fn, jlistonly=False)
-            if success:
-                try:
-                    result = save_model_to_param(
-                        self.model,
-                        ui_state=self._collect_ui_state(),
-                        reason="auto-convert-from-dpp",
-                    )
-                    print(str(datetime.datetime.now())[:-7],
-                          ": Converted DPP to PARAM session:", result.manifest_path)
-                except Exception as inst:
-                    print(str(datetime.datetime.now())[:-7],
-                          ": Warning: DPP opened but PARAM auto-conversion failed.")
-                    print("            ", str(inst))
         else:
             success = self._load_new_param_session(fn)
         if success:
@@ -325,11 +315,27 @@ class SessionController(object):
                 self.widget, "Warning", "Session loading was not successful.")
 
     def _collect_ui_state(self):
+        cake_hist = {}
+        if hasattr(self.widget, "cake_hist_widget"):
+            hist = self.widget.cake_hist_widget
+            cake_hist = {
+                "log_y": bool(hist.check_log.isChecked()),
+                "focus_range": bool(hist.check_focus.isChecked()),
+                "low_pct": float(hist.spin_low_pct.value()),
+                "high_pct": float(hist.spin_high_pct.value()),
+            }
         return {
             "pt_controls": {
                 "p_step": self.widget.doubleSpinBox_PStep.value(),
                 "t_step": self.widget.spinBox_TStep.value(),
                 "jcpds_step": self.widget.doubleSpinBox_JCPDSStep.value(),
+            },
+            "background": {
+                "roi_min": float(self.widget.doubleSpinBox_Background_ROI_min.value()),
+                "roi_max": float(self.widget.doubleSpinBox_Background_ROI_max.value()),
+                "n_points": int(self.widget.spinBox_BGParam0.value()),
+                "n_order": int(self.widget.spinBox_BGParam1.value()),
+                "n_iteration": int(self.widget.spinBox_BGParam2.value()),
             },
             "cake": {
                 "azi_shift": self.widget.spinBox_AziShift.value(),
@@ -337,6 +343,9 @@ class SessionController(object):
                 "min_bar": self.widget.horizontalSlider_VMin.value(),
                 "max_bar": self.widget.horizontalSlider_VMax.value(),
                 "scale_bar": self.widget.horizontalSlider_MaxScaleBars.value(),
+                "mask_min": self.widget.spinBox_MaskMin.value(),
+                "mask_max": self.widget.spinBox_MaskMax.value(),
+                "hist": cake_hist,
             }
         }
 
@@ -349,6 +358,18 @@ class SessionController(object):
                 self.widget.spinBox_TStep.setValue(int(pt["t_step"]))
             if "jcpds_step" in pt:
                 self.widget.doubleSpinBox_JCPDSStep.setValue(float(pt["jcpds_step"]))
+        bg = (ui_state or {}).get("background", {})
+        if bg != {}:
+            if "roi_min" in bg:
+                self.widget.doubleSpinBox_Background_ROI_min.setValue(float(bg["roi_min"]))
+            if "roi_max" in bg:
+                self.widget.doubleSpinBox_Background_ROI_max.setValue(float(bg["roi_max"]))
+            if "n_points" in bg:
+                self.widget.spinBox_BGParam0.setValue(int(bg["n_points"]))
+            if "n_order" in bg:
+                self.widget.spinBox_BGParam1.setValue(int(bg["n_order"]))
+            if "n_iteration" in bg:
+                self.widget.spinBox_BGParam2.setValue(int(bg["n_iteration"]))
         cake = (ui_state or {}).get("cake", {})
         if cake == {}:
             return
@@ -362,6 +383,20 @@ class SessionController(object):
             self.widget.horizontalSlider_VMax.setValue(int(cake["max_bar"]))
         if "scale_bar" in cake:
             self.widget.horizontalSlider_MaxScaleBars.setValue(int(cake["scale_bar"]))
+        if "mask_min" in cake:
+            self.widget.spinBox_MaskMin.setValue(int(cake["mask_min"]))
+        if "mask_max" in cake:
+            self.widget.spinBox_MaskMax.setValue(int(cake["mask_max"]))
+        hist = cake.get("hist", {})
+        if hasattr(self.widget, "cake_hist_widget") and hist != {}:
+            if "log_y" in hist:
+                self.widget.cake_hist_widget.check_log.setChecked(bool(hist["log_y"]))
+            if "focus_range" in hist:
+                self.widget.cake_hist_widget.check_focus.setChecked(bool(hist["focus_range"]))
+            if "low_pct" in hist:
+                self.widget.cake_hist_widget.spin_low_pct.setValue(float(hist["low_pct"]))
+            if "high_pct" in hist:
+                self.widget.cake_hist_widget.spin_high_pct.setValue(float(hist["high_pct"]))
 
     def _sync_ui_from_model(self, manifest_path="", ui_state=None):
         """
@@ -486,6 +521,24 @@ class SessionController(object):
             manifest_path=str(meta.get("manifest", "")),
             ui_state=meta.get("ui_state", {}),
         )
+        missing_csv = meta.get("missing_section_csv_files", []) or []
+        if missing_csv:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Missing Section CSV",
+                "Some saved section CSV files were missing, so those sections "
+                "were skipped.\n\n"
+                "Missing files:\n" + "\n".join(map(str, missing_csv[:20])) +
+                ("\n..." if len(missing_csv) > 20 else "")
+            )
+        fallback_wf = meta.get("fallback_waterfall_files", []) or []
+        if fallback_wf:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Waterfall Fallback Used",
+                "Some waterfall files were missing at their original paths.\n"
+                "PeakPo loaded fallback copies from PARAM/waterfall.\n\n"
+                "Files:\n" + "\n".join(map(str, fallback_wf[:20])) +
+                ("\n..." if len(fallback_wf) > 20 else "")
+            )
         return True
 
     def autoload_param_for_chi(self, base_chi_file):
@@ -498,17 +551,80 @@ class SessionController(object):
             os.path.splitext(os.path.basename(base_chi_file))[0] + "-param",
         )
         if not is_new_param_folder(param_dir):
+            self._last_param_category_presence = {
+                "backup_information": False,
+                "jcpds": False,
+                "pressure": False,
+                "temperature": False,
+                "cake_z_scale": False,
+                "background": False,
+                "waterfall_list": False,
+                "poni": False,
+                "fits_information": False,
+            }
             return False
         success, meta = load_model_from_param(self.model, base_chi_file)
         if not success:
             print(str(datetime.datetime.now())[:-7],
                   ": PARAM autoload failed:", str(meta.get("reason")))
+            self._last_param_category_presence = {
+                "backup_information": False,
+                "jcpds": False,
+                "pressure": False,
+                "temperature": False,
+                "cake_z_scale": False,
+                "background": False,
+                "waterfall_list": False,
+                "poni": False,
+                "fits_information": False,
+            }
             return False
+        self._last_param_category_presence = meta.get("category_presence", {}) or {
+            "backup_information": False,
+            "jcpds": False,
+            "pressure": False,
+            "temperature": False,
+            "cake_z_scale": False,
+            "background": False,
+            "waterfall_list": False,
+            "poni": False,
+            "fits_information": False,
+        }
         self._sync_ui_from_model(
             manifest_path=str(meta.get("manifest", "")),
             ui_state=meta.get("ui_state", {}),
         )
+        missing_csv = meta.get("missing_section_csv_files", []) or []
+        if missing_csv:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Missing Section CSV",
+                "Some saved section CSV files were missing, so those sections "
+                "were skipped.\n\n"
+                "Missing files:\n" + "\n".join(map(str, missing_csv[:20])) +
+                ("\n..." if len(missing_csv) > 20 else "")
+            )
+        fallback_wf = meta.get("fallback_waterfall_files", []) or []
+        if fallback_wf:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Waterfall Fallback Used",
+                "Some waterfall files were missing at their original paths.\n"
+                "PeakPo loaded fallback copies from PARAM/waterfall.\n\n"
+                "Files:\n" + "\n".join(map(str, fallback_wf[:20])) +
+                ("\n..." if len(fallback_wf) > 20 else "")
+            )
         return True
+
+    def get_last_param_category_presence(self):
+        return dict(self._last_param_category_presence)
+
+    def set_carryover_source_chi(self, chi_filename):
+        if chi_filename in (None, ""):
+            self._carryover_source_chi = None
+        else:
+            self._carryover_source_chi = str(chi_filename)
+
+    def get_carryover_source_chi(self):
+        return self._carryover_source_chi
 
     def open_backup_info(self):
         self.refresh_backup_table()
@@ -1009,17 +1125,26 @@ class SessionController(object):
         self.save_ppss()
 
     def save_dpp(self, quiet=False):
+        if quiet:
+            # Do not auto-save. Only explicit user-triggered saves are allowed.
+            return
         if not self.model.base_ptn_exist():
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning",
                 "Open a base chi file before saving a session.")
             return
         self._commit_inputs_before_save()
+        reason = "snapshot"
+        carry_src = self.get_carryover_source_chi()
+        if carry_src not in (None, ""):
+            reason = f"snapshot from {carry_src}"
         try:
             result = save_model_to_param(
                 self.model,
                 ui_state=self._collect_ui_state(),
-                reason="manual-save",
+                reason=reason,
+                create_backup=True,
+                force_backup=True,
             )
         except Exception as inst:
             QtWidgets.QMessageBox.warning(
