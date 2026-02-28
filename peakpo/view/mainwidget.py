@@ -134,6 +134,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Legacy toolbar save icon is replaced by the session Save button.
         if hasattr(self, "pushButton_S_SaveSession"):
             self.pushButton_S_SaveSession.setVisible(False)
+        # Session save/backup icon buttons are replaced by the File>Backup tab.
+        if hasattr(self, "pushButton_SaveDPP"):
+            self.pushButton_SaveDPP.setVisible(False)
+        if hasattr(self, "pushButton_OpenBackupInfo"):
+            self.pushButton_OpenBackupInfo.setVisible(False)
+        if hasattr(self, "groupBox_2"):
+            self.groupBox_2.setVisible(False)
+        # Legacy DPP options are retained for compatibility only; gray out.
+        for name in (
+            "groupBox_17", "groupBox_22",
+            "checkBox_NavDPP", "checkBox_AutoGenDPP", "checkBox_SaveDPPMove",
+            "checkBox_ForceOverwite", "checkBox_IgnoreDirChange",
+            "checkBox_AutogenMissing",
+        ):
+            if hasattr(self, name):
+                getattr(self, name).setEnabled(False)
         self.tableWidget_DiffImgAzi.\
             setHorizontalHeaderLabels(['Notes', '2th', 'Azi', '2th', 'Azi'])
         # Gray scale panel now includes histogram controls; relax hard height cap

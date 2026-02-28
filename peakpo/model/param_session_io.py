@@ -5,6 +5,7 @@ import tempfile
 import datetime
 import io
 import glob
+import hashlib
 from dataclasses import dataclass
 from typing import Optional
 
@@ -425,6 +426,11 @@ def _prepare_payloads(model, ui_state=None):
     sections_data = {
         "schema": 1,
         "sections": [_section_to_dict(s) for s in model.section_lst],
+        # Preserve in-progress/unsaved fit-section edits as part of state.
+        "current_section": (
+            _section_to_dict(model.current_section)
+            if model.current_section is not None else None
+        ),
     }
     jcpds_data = {
         "schema": 1,
@@ -450,6 +456,75 @@ def _highlight_changed_files(changed_files):
     if not highlights and changed_files:
         highlights.append("Files")
     return highlights
+
+
+def _safe_load_json(path):
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def _semantic_change_flags(param_dir, session_data, sections_data, jcpds_data, ui_data):
+    old_session = _safe_load_json(os.path.join(param_dir, SESSION_FILE))
+    old_sections = _safe_load_json(os.path.join(param_dir, SECTIONS_FILE))
+    old_jcpds = _safe_load_json(os.path.join(param_dir, JCPDS_FILE))
+    old_ui = _safe_load_json(os.path.join(param_dir, UI_STATE_FILE))
+
+    # Fits significance: compare only saved sections list, not current_section.
+    old_sections_list = [] if old_sections is None else old_sections.get("sections", [])
+    new_sections_list = sections_data.get("sections", [])
+    # JCPDS significance with backward compatibility.
+    old_phases = []
+    if old_jcpds is not None:
+        old_phases = old_jcpds.get("phases", old_jcpds.get("items", []))
+    new_phases = jcpds_data.get("phases", [])
+
+    return {
+        "session": (old_session != session_data),
+        "fits": (old_sections_list != new_sections_list),
+        "jcpds": (old_phases != new_phases),
+        "ui": (old_ui != ui_data),
+    }
+
+
+def _highlights_from_flags(flags, force_backup=False):
+    highlights = []
+    if flags.get("jcpds", False):
+        highlights.append("JCPDS")
+    if flags.get("fits", False):
+        highlights.append("Fits")
+    if flags.get("session", False):
+        highlights.append("Session")
+    if flags.get("ui", False):
+        highlights.append("UI")
+    if not highlights and force_backup:
+        highlights.append("Snapshot")
+    elif not highlights:
+        highlights.append("none")
+    return highlights
+
+
+def _compute_state_hash(payload_map):
+    h = hashlib.sha256()
+    for rel_path in sorted(payload_map.keys()):
+        h.update(rel_path.encode("utf-8"))
+        h.update(b"\0")
+        h.update(hashlib.sha256(payload_map[rel_path]).digest())
+        h.update(b"\0")
+    return h.hexdigest()
+
+
+def _known_state_hashes(index):
+    hashes = set()
+    for ev in index.get("events", []):
+        state_hash = ev.get("state_hash")
+        if isinstance(state_hash, str) and state_hash != "":
+            hashes.add(state_hash)
+    return hashes
 
 
 def save_model_to_param(model, ui_state=None, reason="manual-save", force_backup=False):
@@ -548,37 +623,48 @@ def save_model_to_param(model, ui_state=None, reason="manual-save", force_backup
         old_bytes = _file_bytes(full_path) if os.path.exists(full_path) else None
         if old_bytes != new_bytes:
             changed_files.append(rel_path)
-    if force_backup and (not changed_files):
-        # Force a recoverable snapshot (used for pre-restore safety).
-        changed_files = sorted(payload_map.keys())
+    delta_files = list(changed_files)
+    semantic_flags = _semantic_change_flags(
+        param_dir, session_data, sections_data, jcpds_data, ui_data)
+    state_hash = _compute_state_hash(payload_map)
 
     backup_id = None
     backup_root = None
-    if changed_files:
+    index_path = os.path.join(param_dir, BACKUP_INDEX_FILE)
+    index = _get_backup_index(index_path)
+    known_hashes = _known_state_hashes(index)
+    state_already_known = state_hash in known_hashes
+
+    create_backup_event = (changed_files != []) or force_backup
+    if create_backup_event and state_already_known and (not force_backup):
+        # Avoid duplicate backups for states that already exist in history.
+        create_backup_event = False
+
+    if create_backup_event:
+        # Store full post-save snapshot so each backup row maps 1:1 to
+        # what gets restored (avoids pre/post mismatch confusion).
+        snapshot_files = sorted(payload_map.keys())
         backup_id = _make_backup_id(param_dir)
         backup_root = os.path.join(param_dir, "backups", backup_id)
-        for rel_path in changed_files:
-            src = os.path.join(param_dir, rel_path)
-            if not os.path.exists(src):
-                continue
+        for rel_path in snapshot_files:
             dst = os.path.join(backup_root, rel_path)
-            os.makedirs(os.path.dirname(dst), exist_ok=True)
-            shutil.copy2(src, dst)
+            _atomic_write_bytes(dst, payload_map[rel_path])
 
     for rel_path, payload in payload_map.items():
         _atomic_write_bytes(os.path.join(param_dir, rel_path), payload)
 
-    index_path = os.path.join(param_dir, BACKUP_INDEX_FILE)
-    index = _get_backup_index(index_path)
-    if changed_files:
-        highlights = _highlight_changed_files(changed_files)
+    if create_backup_event:
+        highlights = _highlights_from_flags(semantic_flags, force_backup=force_backup)
         index["events"].append(
             {
                 "id": backup_id,
                 "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
                 "reason": reason,
-                "changed_files": changed_files,
+                "changed_files": delta_files,
+                "snapshot_files": snapshot_files,
+                "snapshot_mode": "full",
                 "highlights": highlights,
+                "state_hash": state_hash,
             }
         )
     _atomic_write_json(index_path, index)
@@ -629,14 +715,27 @@ def restore_to_backup_event(param_dir, event_id=None, event_index=None):
         # matching one for deterministic behavior.
         target_pos = max(i for i, _id in enumerate(ids) if _id == event_id)
 
-    # Snapshot semantics:
-    # each backup event stores file versions *before* that save.
-    # "Restore event X" should restore that snapshot itself, so apply
-    # snapshots from latest down to X (inclusive).
+    target_evt = events[target_pos]
+    target_mode = target_evt.get("snapshot_mode", "")
+    if target_mode == "full":
+        snap_dir = os.path.join(param_dir, "backups", target_evt.get("id", ""))
+        rel_files = target_evt.get("snapshot_files", [])
+        for rel_path in rel_files:
+            src = os.path.join(snap_dir, rel_path)
+            dst = os.path.join(param_dir, rel_path)
+            if os.path.exists(src):
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.copy2(src, dst)
+        return True
+
+    # Legacy fallback for older pre/post mixed snapshots.
     for i in range(len(events) - 1, target_pos - 1, -1):
         evt = events[i]
         snap_dir = os.path.join(param_dir, "backups", evt.get("id", ""))
-        for rel_path in evt.get("changed_files", []):
+        rel_files = evt.get("snapshot_files")
+        if not isinstance(rel_files, list):
+            rel_files = evt.get("changed_files", [])
+        for rel_path in rel_files:
             src = os.path.join(snap_dir, rel_path)
             dst = os.path.join(param_dir, rel_path)
             if os.path.exists(src):
@@ -682,8 +781,19 @@ def load_model_from_param(model, base_chi_file, backup_event_id=None, backup_eve
     model.section_lst = [_dict_to_section(s) for s in sections_data.get("sections", [])]
 
     current_idx = session_data.get("current_section_index")
+    current_payload = sections_data.get("current_section")
     model.current_section = None
-    if isinstance(current_idx, int) and (0 <= current_idx < len(model.section_lst)):
+    if current_payload is not None:
+        current_section = _dict_to_section(current_payload)
+        if isinstance(current_idx, int) and (0 <= current_idx < len(model.section_lst)):
+            listed = model.section_lst[current_idx]
+            if getattr(listed, "timestamp", None) == getattr(current_section, "timestamp", None):
+                model.current_section = listed
+            else:
+                model.current_section = current_section
+        else:
+            model.current_section = current_section
+    elif isinstance(current_idx, int) and (0 <= current_idx < len(model.section_lst)):
         model.current_section = model.section_lst[current_idx]
 
     model.saved_pressure = session_data.get("saved_pressure", model.saved_pressure)

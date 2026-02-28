@@ -27,12 +27,6 @@ class JcpdsTableController(object):
             if item0 is not None:
                 phase.display = (item0.checkState() == QtCore.Qt.Checked)
 
-            item_color = table.item(row, 1)
-            if item_color is not None and item_color.background() is not None:
-                color = item_color.background().color()
-                if color.isValid():
-                    phase.color = str(color.name())
-
             def _commit_spin(col, attr):
                 box = table.cellWidget(row, col)
                 if box is None:

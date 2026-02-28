@@ -11,7 +11,7 @@ import zipfile
 import copy
 import shutil
 import dill._dill as _dill_impl
-from qtpy import QtWidgets
+from qtpy import QtWidgets, QtCore
 from .mplcontroller import MplController
 from .waterfalltablecontroller import WaterfallTableController
 from .jcpdstablecontroller import JcpdsTableController
@@ -54,6 +54,159 @@ class SessionController(object):
         self.widget.pushButton_SaveDPPandPPSS.clicked.connect(
             self.save_dpp_ppss)
         self.widget.pushButton_S_SaveSession.clicked.connect(self.save_dpp)
+        if hasattr(self.widget, "pushButton_BackupRestore"):
+            self.widget.pushButton_BackupRestore.clicked.connect(
+                self.restore_selected_backup)
+        if hasattr(self.widget, "tabWidget_3"):
+            self.widget.tabWidget_3.currentChanged.connect(
+                self._handle_file_subtab_changed)
+
+    def _commit_inputs_before_save(self):
+        # Commit any active spinbox editor text first (e.g., JCPDS twk cells).
+        fw = QtWidgets.QApplication.focusWidget()
+        if fw is not None:
+            try:
+                fw.clearFocus()
+            except Exception:
+                pass
+        if isinstance(fw, QtWidgets.QAbstractSpinBox):
+            try:
+                fw.interpretText()
+            except Exception:
+                pass
+        QtWidgets.QApplication.processEvents()
+        # Sync all JCPDS table widgets to model.
+        self.jcpdstable_ctrl.sync_model_from_table()
+        # Commit P/T editor text and mirror to model scalars.
+        self.widget.doubleSpinBox_Pressure.interpretText()
+        self.widget.doubleSpinBox_Temperature.interpretText()
+        self.model.save_pressure(self.widget.doubleSpinBox_Pressure.value())
+        self.model.save_temperature(self.widget.doubleSpinBox_Temperature.value())
+
+    def _handle_file_subtab_changed(self, idx):
+        if (not hasattr(self.widget, "tabWidget_3Page3")) or \
+                (not hasattr(self.widget, "tabWidget_3")):
+            return
+        if self.widget.tabWidget_3.widget(idx) == self.widget.tabWidget_3Page3:
+            self.refresh_backup_table()
+
+    def refresh_backup_table(self):
+        if not hasattr(self.widget, "tableWidget_BackupInfo"):
+            return
+        table = self.widget.tableWidget_BackupInfo
+        headers = ["Backup ID", "Reason", "Changes", "Timestamp", "Files"]
+        table.clear()
+        table.setColumnCount(len(headers))
+        table.setHorizontalHeaderLabels(headers)
+        table.setRowCount(0)
+        table.verticalHeader().setVisible(False)
+        if not self.model.base_ptn_exist():
+            return
+        param_dir = get_temp_dir(self.model.get_base_ptn_filename())
+        if not is_new_param_folder(param_dir):
+            return
+        events = list_backup_events(param_dir)
+        table.setRowCount(len(events))
+        for row, (idx, ev) in enumerate(reversed(list(enumerate(events)))):
+            values = [
+                str(ev.get("id", "")),
+                str(ev.get("reason", "")),
+                ", ".join(ev.get("highlights", [])) or "none",
+                str(ev.get("timestamp", "")),
+                str(len(ev.get("changed_files", []))),
+            ]
+            for col, txt in enumerate(values):
+                item = QtWidgets.QTableWidgetItem(txt)
+                item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                if col == 0:
+                    item.setData(QtCore.Qt.UserRole, idx)
+                table.setItem(row, col, item)
+        table.resizeColumnsToContents()
+        table.resizeRowsToContents()
+        if table.rowCount() > 0:
+            table.selectRow(0)
+
+    def _selected_backup_index_from_table(self):
+        if not hasattr(self.widget, "tableWidget_BackupInfo"):
+            return None
+        table = self.widget.tableWidget_BackupInfo
+        rows = table.selectionModel().selectedRows()
+        if len(rows) != 1:
+            return None
+        item = table.item(rows[0].row(), 0)
+        if item is None:
+            return None
+        idx = item.data(QtCore.Qt.UserRole)
+        if idx is None:
+            return None
+        return int(idx)
+
+    def restore_selected_backup(self):
+        # Do not refresh here: it resets selection to row 0 and can restore
+        # a different backup than the user highlighted.
+        if hasattr(self.widget, "tableWidget_BackupInfo") and \
+                self.widget.tableWidget_BackupInfo.rowCount() == 0:
+            self.refresh_backup_table()
+        backup_idx = self._selected_backup_index_from_table()
+        if backup_idx is None:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Select one backup row first.")
+            return
+        self._restore_backup_by_index(backup_idx)
+
+    def _restore_backup_by_index(self, backup_idx):
+        if not self.model.base_ptn_exist():
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Open a CHI file first.")
+            return
+        param_dir = get_temp_dir(self.model.get_base_ptn_filename())
+        if not is_new_param_folder(param_dir):
+            QtWidgets.QMessageBox.information(
+                self.widget, "Backup Info",
+                "No new-format PARAM session was found for this CHI.")
+            return
+        events = list_backup_events(param_dir)
+        if (backup_idx < 0) or (backup_idx >= len(events)):
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Selected backup index is no longer valid.")
+            return
+        backup_id = events[backup_idx].get("id")
+        self._commit_inputs_before_save()
+        # Before restore, backup current setup.
+        pre = save_model_to_param(
+            self.model,
+            ui_state=self._collect_ui_state(),
+            reason=f"pre-restore-{backup_id}",
+            force_backup=True,
+        )
+        base_chi = self.model.get_base_ptn_filename()
+        success, meta = load_model_from_param(
+            self.model, base_chi, backup_event_index=backup_idx)
+        if not success:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Backup restore failed: " + str(meta.get("reason")))
+            return
+        self._sync_ui_from_model(
+            manifest_path=str(meta.get("manifest", "")),
+            ui_state=meta.get("ui_state", {}),
+        )
+        self.refresh_backup_table()
+        if pre.backup_id is None:
+            pre_text = (
+                "No pre-restore backup was created "
+                "(state already exists in backups or no file changes)."
+            )
+        else:
+            pre_text = f"Current setup was backed up first as: {pre.backup_id}"
+        msg = (
+            f"Restored backup: {backup_id}\n\n{pre_text}"
+        )
+        QtWidgets.QMessageBox.information(
+            self.widget, "Backup Restored", msg)
 
     def _archive_legacy_dpp(self, filen_dpp, base_chi_file):
         """
@@ -358,83 +511,11 @@ class SessionController(object):
         return True
 
     def open_backup_info(self):
-        if not self.model.base_ptn_exist():
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning",
-                "Open a CHI file first.")
+        self.refresh_backup_table()
+        if hasattr(self.widget, "tabWidget_3Page3") and hasattr(self.widget, "tabWidget_3"):
+            self.widget.tabWidget_3.setCurrentWidget(self.widget.tabWidget_3Page3)
             return
-        param_dir = get_temp_dir(self.model.get_base_ptn_filename())
-        if not is_new_param_folder(param_dir):
-            QtWidgets.QMessageBox.information(
-                self.widget, "Backup Info",
-                "No new-format PARAM session was found for this CHI.")
-            return
-        events = list_backup_events(param_dir)
-        if not events:
-            QtWidgets.QMessageBox.information(
-                self.widget, "Backup Info",
-                "No backup snapshots were recorded yet.")
-            return
-        items = []
-        labels_to_idx = {}
-        for idx, ev in reversed(list(enumerate(events))):
-            highlights = ", ".join(ev.get("highlights", []))
-            if highlights == "":
-                highlights = "none"
-            label = (
-                f"{ev.get('id')} | {ev.get('reason', 'save')} | "
-                f"{ev.get('timestamp', '')} | "
-                f"{len(ev.get('changed_files', []))} files | "
-                f"{highlights}"
-            )
-            items.append(label)
-            labels_to_idx[label] = idx
-        selected, ok = QtWidgets.QInputDialog.getItem(
-            self.widget,
-            "Restore Backup Snapshot",
-            "Select a backup to restore:",
-            items, 0, False)
-        if not ok:
-            return
-        backup_idx = labels_to_idx.get(selected)
-        if backup_idx is None:
-            return
-        backup_id = events[backup_idx].get("id")
-        # Ensure in-progress spinbox text is committed before pre-restore save.
-        self.jcpdstable_ctrl.sync_model_from_table()
-        self.widget.doubleSpinBox_Pressure.interpretText()
-        self.widget.doubleSpinBox_Temperature.interpretText()
-        # Sync model scalar state from GUI before creating pre-restore backup.
-        self.model.save_pressure(self.widget.doubleSpinBox_Pressure.value())
-        self.model.save_temperature(self.widget.doubleSpinBox_Temperature.value())
-        # Before restore, backup current setup.
-        pre = save_model_to_param(
-            self.model,
-            ui_state=self._collect_ui_state(),
-            reason=f"pre-restore-{backup_id}",
-            force_backup=True,
-        )
-        base_chi = self.model.get_base_ptn_filename()
-        success, meta = load_model_from_param(
-            self.model, base_chi, backup_event_index=backup_idx)
-        if not success:
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning",
-                "Backup restore failed: " + str(meta.get("reason")))
-            return
-        self._sync_ui_from_model(
-            manifest_path=str(meta.get("manifest", "")),
-            ui_state=meta.get("ui_state", {}),
-        )
-        if pre.backup_id is None:
-            pre_text = "No pre-restore backup was created (no file changes)."
-        else:
-            pre_text = f"Current setup was backed up first as: {pre.backup_id}"
-        msg = (
-            f"Restored backup: {backup_id}\n\n{pre_text}"
-        )
-        QtWidgets.QMessageBox.information(
-            self.widget, "Backup Restored", msg)
+        self.restore_selected_backup()
 
     def _update_ppss(self):
         if not self.model.base_ptn_exist():
@@ -933,14 +1014,7 @@ class SessionController(object):
                 self.widget, "Warning",
                 "Open a base chi file before saving a session.")
             return
-        # Ensure in-progress table/field edits are committed before save.
-        self.jcpdstable_ctrl.sync_model_from_table()
-        self.widget.doubleSpinBox_Pressure.interpretText()
-        self.widget.doubleSpinBox_Temperature.interpretText()
-        self.model.save_pressure(
-            self.widget.doubleSpinBox_Pressure.value())
-        self.model.save_temperature(
-            self.widget.doubleSpinBox_Temperature.value())
+        self._commit_inputs_before_save()
         try:
             result = save_model_to_param(
                 self.model,
@@ -967,6 +1041,7 @@ class SessionController(object):
         else:
             print(str(datetime.datetime.now())[:-7],
                   ": No backup snapshot created (no file changes detected).")
+        self.refresh_backup_table()
         if self.widget.checkBox_ShowCake.isChecked():
             self._save_cake_format_file()
             print(str(datetime.datetime.now())[:-7],
