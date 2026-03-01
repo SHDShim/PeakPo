@@ -9,7 +9,9 @@ Todo:
 """
 __version__ = "7.10.0"
 """
-7.10.0 Pyqt6 transition
+7.10.0: Pyqt6 transition.  Fix navigation issues for map files.  New diff function added.
+        Backup log added.  Cake z scale control improvement.  Transition from DPP to JSON.
+        More color scales for CAKE.
 7.9.5: Solving dpp input problem for old dpp files
 7.9.3: Pip installable version
 7.9.2: Bug fix for DIOPTAS JCPDS Crash in windows.
