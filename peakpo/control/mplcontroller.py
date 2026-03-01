@@ -715,19 +715,38 @@ class MplController(object):
             self._set_nightday_view()
             
             if self.model.base_ptn_exist():
+                title_font_size = 12
+                if hasattr(self.widget, "spinBox_TitleFontSize"):
+                    try:
+                        title_font_size = int(self.widget.spinBox_TitleFontSize.value())
+                    except Exception:
+                        title_font_size = 12
+                max_title_chars = 140
+                if hasattr(self.widget, "spinBox_TitleMaxLength"):
+                    try:
+                        max_title_chars = int(self.widget.spinBox_TitleMaxLength.value())
+                    except Exception:
+                        max_title_chars = 140
+
                 if self.widget.checkBox_ShortPlotTitle.isChecked():
-                    title = os.path.basename(self.model.base_ptn.fname)
+                    raw_title = os.path.basename(self.model.base_ptn.fname)
                 else:
-                    temp_title = self.model.base_ptn.fname
-                    title_font_size = plt.rcParams["axes.titlesize"]
-                    fig_width_pixels = \
-                        self.widget.mpl.canvas.fig.get_size_inches()[0] * \
-                            self.widget.mpl.canvas.fig.dpi
-                    max_width = 0.5 * fig_width_pixels
-                    title = truncate_title(temp_title, title_font_size, max_width)
+                    raw_title = self.model.base_ptn.fname
+
+                truncate_middle = True
+                if hasattr(self.widget, "checkBox_TitleTruncateMiddle"):
+                    truncate_middle = bool(
+                        self.widget.checkBox_TitleTruncateMiddle.isChecked())
+                title = truncate_title_by_chars(
+                    raw_title, max_title_chars, truncate_middle=truncate_middle)
+                fig_width_pixels = \
+                    self.widget.mpl.canvas.fig.get_size_inches()[0] * \
+                    self.widget.mpl.canvas.fig.dpi
+                max_width = 0.85 * fig_width_pixels
+                title = truncate_title(title, title_font_size, max_width)
                 
                 self.widget.mpl.canvas.fig.suptitle(
-                    title, color=self.obj_color)
+                    title, color=self.obj_color, fontsize=title_font_size)
                 
                 self._plot_diffpattern(gsas_style)
                 
@@ -933,6 +952,29 @@ class MplController(object):
         return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I={}, d-sp={:.4f}\u212B".format(x, y, z_text, dsp)
 
 from matplotlib.textpath import TextPath
+
+def truncate_title_by_chars(title, max_chars, truncate_middle=True):
+    if title is None:
+        return ""
+    title = str(title)
+    try:
+        max_chars = int(max_chars)
+    except Exception:
+        max_chars = 140
+    if max_chars < 20:
+        max_chars = 20
+    if len(title) <= max_chars:
+        return title
+    if not truncate_middle:
+        tail_len = max_chars - 4
+        if tail_len < 1:
+            tail_len = 1
+        return "... " + title[-tail_len:]
+    head = int(max_chars * 0.45)
+    tail = max_chars - head - 5
+    if tail < 1:
+        tail = 1
+    return title[:head] + " ... " + title[-tail:]
 
 def truncate_title(title, font_size, max_width):
     """Fast truncation without expensive TextPath calculations"""

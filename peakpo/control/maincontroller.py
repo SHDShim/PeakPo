@@ -229,6 +229,15 @@ class MainController(object):
                 self.apply_changes_to_graph)
         self.widget.checkBox_ShortPlotTitle.clicked.connect(
             self.apply_changes_to_graph)
+        if hasattr(self.widget, "spinBox_TitleFontSize"):
+            self.widget.spinBox_TitleFontSize.valueChanged.connect(
+                self.apply_changes_to_graph)
+        if hasattr(self.widget, "spinBox_TitleMaxLength"):
+            self.widget.spinBox_TitleMaxLength.valueChanged.connect(
+                self.apply_changes_to_graph)
+        if hasattr(self.widget, "checkBox_TitleTruncateMiddle"):
+            self.widget.checkBox_TitleTruncateMiddle.clicked.connect(
+                self.apply_changes_to_graph)
         self.widget.checkBox_ShowCakeLabels.clicked.connect(
             self.apply_changes_to_graph)
         self.widget.checkBox_ShowLargePnT.clicked.connect(
@@ -550,6 +559,10 @@ class MainController(object):
         for key, attr in nav_keys:
             if hasattr(self.widget, attr):
                 self.settings.setValue(key, bool(getattr(self.widget, attr).isChecked()))
+
+        for key, attr in self._plot_config_setting_bindings():
+            if hasattr(self.widget, attr):
+                self._save_widget_to_settings(key, getattr(self.widget, attr))
         
 
     def read_setting(self):
@@ -616,6 +629,74 @@ class MainController(object):
                 raw = self.settings.value(key, nav_defaults[attr])
                 val = str(raw).lower() in ("1", "true", "yes") if isinstance(raw, str) else bool(raw)
                 getattr(self.widget, attr).setChecked(val)
+
+        for key, attr in self._plot_config_setting_bindings():
+            if hasattr(self.widget, attr):
+                self._load_widget_from_settings(
+                    key, getattr(self.widget, attr))
+
+    def _plot_config_setting_bindings(self):
+        return [
+            ("plot_cfg/night_view", "checkBox_NightView"),
+            ("plot_cfg/night_cake", "checkBox_WhiteForPeak"),
+            ("plot_cfg/show_large_pt", "checkBox_ShowLargePnT"),
+            ("plot_cfg/title_filename_only", "checkBox_ShortPlotTitle"),
+            ("plot_cfg/title_truncate_middle", "checkBox_TitleTruncateMiddle"),
+            ("plot_cfg/title_font_size", "spinBox_TitleFontSize"),
+            ("plot_cfg/title_max_length", "spinBox_TitleMaxLength"),
+            ("plot_cfg/base_line_thickness", "comboBox_BasePtnLineThickness"),
+            ("plot_cfg/background_line_thickness", "comboBox_BkgnLineThickness"),
+            ("plot_cfg/waterfall_line_thickness", "comboBox_WaterfallLineThickness"),
+            ("plot_cfg/vcursor_thickness", "comboBox_VertCursorThickness"),
+            ("plot_cfg/fontsize_pt_label", "comboBox_PnTFontSize"),
+            ("plot_cfg/fontsize_miller", "comboBox_HKLFontSize"),
+            ("plot_cfg/fontsize_legend", "comboBox_LegendFontSize"),
+            ("plot_cfg/fontsize_waterfall_label", "comboBox_WaterfallFontSize"),
+            ("plot_cfg/jcpds_alpha_pattern", "doubleSpinBox_JCPDS_ptn_Alpha"),
+            ("plot_cfg/jcpds_alpha_cake", "doubleSpinBox_JCPDS_cake_Alpha"),
+            ("plot_cfg/jcpds_thickness_pattern", "comboBox_PtnJCPDSBarThickness"),
+            ("plot_cfg/jcpds_thickness_cake", "comboBox_CakeJCPDSBarThickness"),
+        ]
+
+    def _save_widget_to_settings(self, key, widget):
+        if isinstance(widget, QtWidgets.QCheckBox):
+            self.settings.setValue(key, bool(widget.isChecked()))
+            return
+        if isinstance(widget, QtWidgets.QComboBox):
+            self.settings.setValue(key, str(widget.currentText()))
+            return
+        if isinstance(widget, QtWidgets.QSpinBox):
+            self.settings.setValue(key, int(widget.value()))
+            return
+        if isinstance(widget, QtWidgets.QDoubleSpinBox):
+            self.settings.setValue(key, float(widget.value()))
+            return
+
+    def _load_widget_from_settings(self, key, widget):
+        if isinstance(widget, QtWidgets.QCheckBox):
+            raw = self.settings.value(key, widget.isChecked())
+            val = str(raw).lower() in ("1", "true", "yes") if isinstance(raw, str) else bool(raw)
+            widget.setChecked(val)
+            return
+        if isinstance(widget, QtWidgets.QComboBox):
+            raw = str(self.settings.value(key, widget.currentText()))
+            if widget.findText(raw) >= 0:
+                widget.setCurrentText(raw)
+            return
+        if isinstance(widget, QtWidgets.QSpinBox):
+            raw = self.settings.value(key, widget.value())
+            try:
+                widget.setValue(int(raw))
+            except Exception:
+                pass
+            return
+        if isinstance(widget, QtWidgets.QDoubleSpinBox):
+            raw = self.settings.value(key, widget.value())
+            try:
+                widget.setValue(float(raw))
+            except Exception:
+                pass
+            return
 
     def _capture_nav_carry_state(self):
         source_chi = None

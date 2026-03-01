@@ -131,6 +131,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                          'hexagonal', 'orthorhombic'])
         self.comboBox_Symmetry.setCurrentText('cubic')
         self._setup_plot_subtabs()
+        self._setup_title_config_group()
+        self._setup_plot_setup_group()
         self._setup_cake_colormap_control()
         self._setup_plot_config_python_export()
         self._setup_backup_comment_button()
@@ -438,6 +440,80 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.verticalLayout_PlotConfig.addWidget(self.groupBox_13)
         self.verticalLayout_PlotConfig.addWidget(self.groupBox_27)
         self.verticalLayout_PlotConfig.addStretch(1)
+
+    def _setup_title_config_group(self):
+        if not hasattr(self, "verticalLayout_PlotConfig"):
+            return
+        if hasattr(self, "groupBox_TitleConfig"):
+            return
+        if not hasattr(self, "checkBox_ShortPlotTitle"):
+            return
+
+        self.groupBox_TitleConfig = QtWidgets.QGroupBox("Title", self.plotConfigContents)
+        self.groupBox_TitleConfig.setObjectName("groupBox_TitleConfig")
+        self.groupBox_TitleConfig.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        self.gridLayout_TitleConfig = QtWidgets.QGridLayout(self.groupBox_TitleConfig)
+        self.gridLayout_TitleConfig.setContentsMargins(12, 12, 12, 12)
+        self.gridLayout_TitleConfig.setHorizontalSpacing(12)
+        self.gridLayout_TitleConfig.setVerticalSpacing(10)
+
+        # Move existing title mode checkbox into the dedicated title group.
+        self.checkBox_ShortPlotTitle.setParent(self.groupBox_TitleConfig)
+        self.checkBox_ShortPlotTitle.setText("Filename only")
+        self.checkBox_ShortPlotTitle.setToolTip(
+            "Use filename (without path) as the plot title")
+        self.gridLayout_TitleConfig.addWidget(self.checkBox_ShortPlotTitle, 0, 0, 1, 2)
+
+        self.checkBox_TitleTruncateMiddle = QtWidgets.QCheckBox(
+            "Truncate middle", self.groupBox_TitleConfig)
+        self.checkBox_TitleTruncateMiddle.setObjectName("checkBox_TitleTruncateMiddle")
+        self.checkBox_TitleTruncateMiddle.setChecked(True)
+        self.checkBox_TitleTruncateMiddle.setToolTip(
+            "If checked, truncate long title in the middle. If unchecked, truncate from the left.")
+        self.gridLayout_TitleConfig.addWidget(self.checkBox_TitleTruncateMiddle, 0, 2, 1, 2)
+
+        self.label_TitleFontSize = QtWidgets.QLabel("Font size", self.groupBox_TitleConfig)
+        self.label_TitleFontSize.setObjectName("label_TitleFontSize")
+        self.spinBox_TitleFontSize = QtWidgets.QSpinBox(self.groupBox_TitleConfig)
+        self.spinBox_TitleFontSize.setObjectName("spinBox_TitleFontSize")
+        self.spinBox_TitleFontSize.setMinimum(6)
+        self.spinBox_TitleFontSize.setMaximum(72)
+        self.spinBox_TitleFontSize.setValue(12)
+        self.spinBox_TitleFontSize.setMinimumHeight(25)
+        self.spinBox_TitleFontSize.setKeyboardTracking(False)
+        self.spinBox_TitleFontSize.setStyle(SpinBoxFixStyle())
+
+        self.label_TitleMaxLength = QtWidgets.QLabel("Max length", self.groupBox_TitleConfig)
+        self.label_TitleMaxLength.setObjectName("label_TitleMaxLength")
+        self.spinBox_TitleMaxLength = QtWidgets.QSpinBox(self.groupBox_TitleConfig)
+        self.spinBox_TitleMaxLength.setObjectName("spinBox_TitleMaxLength")
+        self.spinBox_TitleMaxLength.setMinimum(20)
+        self.spinBox_TitleMaxLength.setMaximum(500)
+        self.spinBox_TitleMaxLength.setValue(140)
+        self.spinBox_TitleMaxLength.setMinimumHeight(25)
+        self.spinBox_TitleMaxLength.setKeyboardTracking(False)
+        self.spinBox_TitleMaxLength.setStyle(SpinBoxFixStyle())
+
+        self.gridLayout_TitleConfig.addWidget(self.label_TitleFontSize, 1, 0, 1, 1)
+        self.gridLayout_TitleConfig.addWidget(self.spinBox_TitleFontSize, 1, 1, 1, 1)
+        self.gridLayout_TitleConfig.addWidget(self.label_TitleMaxLength, 1, 2, 1, 1)
+        self.gridLayout_TitleConfig.addWidget(self.spinBox_TitleMaxLength, 1, 3, 1, 1)
+        self.gridLayout_TitleConfig.setColumnStretch(1, 1)
+        self.gridLayout_TitleConfig.setColumnStretch(3, 1)
+
+        # Put title controls near the top of Plot > Config.
+        self.verticalLayout_PlotConfig.insertWidget(0, self.groupBox_TitleConfig)
+
+    def _setup_plot_setup_group(self):
+        if not hasattr(self, "gridLayout_7"):
+            return
+        if hasattr(self, "checkBox_NightView"):
+            self.checkBox_NightView.setText("Dark mode")
+            self.checkBox_NightView.setToolTip("Show in dark background")
+            self.gridLayout_7.addWidget(self.checkBox_NightView, 0, 1, 1, 1)
+        if hasattr(self, "checkBox_ShowLargePnT"):
+            self.gridLayout_7.addWidget(self.checkBox_ShowLargePnT, 0, 0, 1, 1)
 
     def _setup_cake_colormap_control(self):
         if not hasattr(self, "verticalLayout_PlotControl"):
