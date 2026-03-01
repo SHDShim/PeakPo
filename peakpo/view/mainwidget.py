@@ -131,9 +131,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                          'hexagonal', 'orthorhombic'])
         self.comboBox_Symmetry.setCurrentText('cubic')
         self._setup_plot_subtabs()
+        self._setup_cake_colormap_control()
         self._setup_plot_config_python_export()
+        self._setup_backup_comment_button()
+        self._layout_backup_buttons()
         self._setup_diff_tab()
         self._setup_toolbar_diff_toggle()
+        self._spread_top_toolbar_even()
+        if hasattr(self, "checkBox_BgSub"):
+            self.checkBox_BgSub.setText("Bg")
+            self.checkBox_BgSub.setToolTip("Subtract background from 1D pattern")
+        if hasattr(self, "checkBox_LongCursor"):
+            self.checkBox_LongCursor.setText("VCursor")
+            self.checkBox_LongCursor.setToolTip("Change cursor to a vertical bar")
         # Legacy toolbar save icon is replaced by the session Save button.
         if hasattr(self, "pushButton_S_SaveSession"):
             self.pushButton_S_SaveSession.setVisible(False)
@@ -144,7 +154,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.pushButton_OpenBackupInfo.setVisible(False)
         if hasattr(self, "groupBox_2"):
             self.groupBox_2.setVisible(False)
-        # Legacy DPP options are retained for compatibility only; gray out.
+        if hasattr(self, "groupBox_14"):
+            self.groupBox_14.setVisible(False)
+        # Night,cake checkbox is replaced by explicit cake colormap selector
+        # under Plot > Control.
+        if hasattr(self, "checkBox_WhiteForPeak"):
+            self.checkBox_WhiteForPeak.setVisible(False)
+        # Legacy DPP options are removed from UI; keep safe defaults in code.
         for name in (
             "groupBox_17", "groupBox_22",
             "checkBox_NavDPP", "checkBox_AutoGenDPP", "checkBox_SaveDPPMove",
@@ -152,21 +168,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "checkBox_AutogenMissing",
         ):
             if hasattr(self, name):
-                getattr(self, name).setEnabled(False)
+                getattr(self, name).setVisible(False)
         self._setup_nav_carryover_config()
         self.tableWidget_DiffImgAzi.\
             setHorizontalHeaderLabels(['Notes', '2th', 'Azi', '2th', 'Azi'])
         # Gray scale panel now includes histogram controls; relax hard height cap
         # from the UI file so top controls (e.g., Reset Scale) are not clipped.
-        self.groupBox_29.setMinimumHeight(340)
-        self.groupBox_29.setMaximumHeight(600)
+        self.groupBox_29.setTitle("2D Cake scale")
+        self.groupBox_29.setMinimumHeight(250)
+        self.groupBox_29.setMaximumHeight(340)
         # The top gray-scale row in qtd.py is constrained too tightly (25 px
         # frame + vertical layout margins), which clips the Reset Scale button.
         self.frame_8.setMinimumHeight(34)
         self.horizontalLayout_8.setContentsMargins(0, 0, 0, 0)
-        self.pushButton_ResetCakeScale.setMinimumHeight(28)
-        self.spinBox_MaxCakeScale.setMinimumHeight(28)
-        self.verticalLayout_11.setSpacing(4)
+        self.pushButton_ResetCakeScale.setText("Reset")
+        self.pushButton_ResetCakeScale.setMinimumHeight(25)
+        self.pushButton_ResetCakeScale.setMaximumHeight(25)
+        self.pushButton_ResetCakeScale.setMaximumWidth(100)
+        self.pushButton_ResetCakeScale.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self.spinBox_MaxCakeScale.setMinimumHeight(25)
+        self.spinBox_MaxCakeScale.setMaximumHeight(25)
+        self.verticalLayout_11.setSpacing(2)
         self.label_19.setFixedHeight(18)
         self.label_19.setContentsMargins(0, 0, 0, 0)
         # Histogram controls replace manual Min/Max slider interaction.
@@ -175,8 +198,55 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.label_9.setVisible(False)
         self.horizontalSlider_VMax.setVisible(False)
         self.cake_hist_widget = CakeHistogramWidget(self.groupBox_29)
-        self.cake_hist_widget.setMinimumHeight(140)
+        # Increase histogram vertical size by ~1.5x from the compact layout.
+        self.cake_hist_widget.setMinimumHeight(150)
+        self.cake_hist_widget.setMaximumHeight(165)
         self.verticalLayout_11.insertWidget(1, self.cake_hist_widget)
+        # Move LogY/Focus controls to top row with Reset button.
+        if hasattr(self.cake_hist_widget, "check_log"):
+            self.cake_hist_widget.check_log.setParent(self.frame_8)
+        if hasattr(self.cake_hist_widget, "check_focus"):
+            self.cake_hist_widget.check_focus.setParent(self.frame_8)
+        # Rebuild top row order: Log Y, Focus range, max-value box, Reset.
+        self.spinBox_MaxCakeScale.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.pushButton_ResetCakeScale.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        if hasattr(self.cake_hist_widget, "check_log"):
+            self.cake_hist_widget.check_log.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        if hasattr(self.cake_hist_widget, "check_focus"):
+            self.cake_hist_widget.check_focus.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        while self.horizontalLayout_8.count():
+            item = self.horizontalLayout_8.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.setParent(self.frame_8)
+        if hasattr(self.cake_hist_widget, "check_log"):
+            self.horizontalLayout_8.addWidget(self.cake_hist_widget.check_log, 1)
+        if hasattr(self.cake_hist_widget, "check_focus"):
+            self.horizontalLayout_8.addWidget(self.cake_hist_widget.check_focus, 1)
+        self.horizontalLayout_8.addWidget(self.spinBox_MaxCakeScale, 1)
+        self.horizontalLayout_8.addWidget(self.pushButton_ResetCakeScale, 1)
+        # Keep Scale label + slider on the same row.
+        if (self.verticalLayout_11.indexOf(self.label_19) >= 0) and \
+                (self.verticalLayout_11.indexOf(self.horizontalSlider_MaxScaleBars) >= 0):
+            self.verticalLayout_11.removeWidget(self.label_19)
+            self.verticalLayout_11.removeWidget(self.horizontalSlider_MaxScaleBars)
+            self.frame_ScaleRow = QtWidgets.QFrame(self.groupBox_29)
+            self.frame_ScaleRow.setObjectName("frame_ScaleRow")
+            self.horizontalLayout_ScaleRow = QtWidgets.QHBoxLayout(self.frame_ScaleRow)
+            self.horizontalLayout_ScaleRow.setContentsMargins(0, 0, 0, 0)
+            self.horizontalLayout_ScaleRow.setSpacing(10)
+            self.label_19.setFixedWidth(48)
+            self.label_19.setAlignment(
+                QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
+            self.horizontalLayout_ScaleRow.addWidget(self.label_19)
+            self.horizontalLayout_ScaleRow.addWidget(self.horizontalSlider_MaxScaleBars, 1)
+            self.verticalLayout_11.addWidget(self.frame_ScaleRow)
+        # Remove extra dead vertical space around scale row.
+        self.verticalLayout_11.setContentsMargins(0, 0, 0, 0)
         self._fix_tab_clipping()
         # navigation toolbar modification
         """
@@ -218,9 +288,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.groupBox_NavCarry = QtWidgets.QGroupBox(
             "CHI Navigation Carry-over", self.scrollAreaWidgetContents_2)
         self.groupBox_NavCarry.setObjectName("groupBox_NavCarry")
+        self.groupBox_NavCarry.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         self.gridLayout_NavCarry = QtWidgets.QGridLayout(self.groupBox_NavCarry)
         self.gridLayout_NavCarry.setContentsMargins(12, 12, 12, 12)
-        self.gridLayout_NavCarry.setVerticalSpacing(8)
+        self.gridLayout_NavCarry.setVerticalSpacing(0)
 
         self.checkBox_CarryNavJCPDS = QtWidgets.QCheckBox("JCPDS")
         self.checkBox_CarryNavPressure = QtWidgets.QCheckBox("Pressure")
@@ -253,9 +325,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.checkBox_CarryNavFits,
         ]
         for i, cb in enumerate(items):
-            r = i // 2
+            r = (i // 2) * 2
             c = i % 2
             self.gridLayout_NavCarry.addWidget(cb, r, c, 1, 1)
+        # Controlled vertical spacing between checkbox rows.
+        for r in (1, 3, 5):
+            spacer = QtWidgets.QSpacerItem(
+                20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+            self.gridLayout_NavCarry.addItem(spacer, r, 0, 1, 2)
+        for r in range(0, 7):
+            self.gridLayout_NavCarry.setRowStretch(r, 0)
 
         insert_idx = self.verticalLayout_31.count()
         if hasattr(self, "groupBox_17"):
@@ -360,6 +439,36 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.verticalLayout_PlotConfig.addWidget(self.groupBox_27)
         self.verticalLayout_PlotConfig.addStretch(1)
 
+    def _setup_cake_colormap_control(self):
+        if not hasattr(self, "verticalLayout_PlotControl"):
+            return
+        if hasattr(self, "groupBox_CakeColormap"):
+            return
+        self.groupBox_CakeColormap = QtWidgets.QGroupBox(
+            "2D Cake colormap", self.plotControlContents)
+        self.groupBox_CakeColormap.setObjectName("groupBox_CakeColormap")
+        self.horizontalLayout_CakeColormap = QtWidgets.QHBoxLayout(
+            self.groupBox_CakeColormap)
+        self.horizontalLayout_CakeColormap.setObjectName("horizontalLayout_CakeColormap")
+        self.label_CakeColormap = QtWidgets.QLabel("Colormap", self.groupBox_CakeColormap)
+        self.label_CakeColormap.setObjectName("label_CakeColormap")
+        self.comboBox_CakeColormap = QtWidgets.QComboBox(self.groupBox_CakeColormap)
+        self.comboBox_CakeColormap.setObjectName("comboBox_CakeColormap")
+        self.comboBox_CakeColormap.addItems([
+            "inferno", "inferno_r",
+            "magma", "magma_r",
+            "gray", "gray_r",
+            "viridis", "viridis_r",
+        ])
+        self.comboBox_CakeColormap.setCurrentText("gray_r")
+        self.horizontalLayout_CakeColormap.addWidget(self.label_CakeColormap)
+        self.horizontalLayout_CakeColormap.addWidget(self.comboBox_CakeColormap, 1)
+        idx_gray = self.verticalLayout_PlotControl.indexOf(self.groupBox_29)
+        if idx_gray < 0:
+            self.verticalLayout_PlotControl.insertWidget(0, self.groupBox_CakeColormap)
+        else:
+            self.verticalLayout_PlotControl.insertWidget(idx_gray + 1, self.groupBox_CakeColormap)
+
     def _setup_diff_tab(self):
         # Add Diff sub-tab under Pattern controls (Background/Waterfall/Diff).
         if not hasattr(self, "tabWidget_5"):
@@ -382,65 +491,72 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.lineEdit_DiffRefChi.setObjectName("lineEdit_DiffRefChi")
         self.pushButton_DiffRefBrowse = QtWidgets.QPushButton("Browse...", self.groupBox_DiffRef)
         self.pushButton_DiffRefBrowse.setObjectName("pushButton_DiffRefBrowse")
+        self.pushButton_DiffRefBrowse.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.pushButton_DiffRefClear = QtWidgets.QPushButton("Clear", self.groupBox_DiffRef)
         self.pushButton_DiffRefClear.setObjectName("pushButton_DiffRefClear")
+        self.pushButton_DiffRefClear.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.checkBox_UseDiffMode = QtWidgets.QCheckBox("Enable Diff mode", self.groupBox_DiffRef)
         self.checkBox_UseDiffMode.setObjectName("checkBox_UseDiffMode")
         self.label_DiffStatus = QtWidgets.QLabel("No reference selected", self.groupBox_DiffRef)
         self.label_DiffStatus.setObjectName("label_DiffStatus")
-        self.gridLayout_DiffRef.addWidget(self.lineEdit_DiffRefChi, 0, 0, 1, 1)
-        self.gridLayout_DiffRef.addWidget(self.pushButton_DiffRefBrowse, 0, 1, 1, 1)
-        self.gridLayout_DiffRef.addWidget(self.pushButton_DiffRefClear, 0, 2, 1, 1)
-        self.gridLayout_DiffRef.addWidget(self.checkBox_UseDiffMode, 1, 0, 1, 1)
-        self.gridLayout_DiffRef.addWidget(self.label_DiffStatus, 1, 1, 1, 2)
+        self.gridLayout_DiffRef.addWidget(self.lineEdit_DiffRefChi, 0, 0, 1, 3)
+        self.horizontalLayout_DiffRefButtons = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_DiffRefButtons.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_DiffRefButtons.setSpacing(8)
+        self.horizontalLayout_DiffRefButtons.addWidget(self.pushButton_DiffRefBrowse, 1)
+        self.horizontalLayout_DiffRefButtons.addWidget(self.pushButton_DiffRefClear, 1)
+        self.gridLayout_DiffRef.addLayout(self.horizontalLayout_DiffRefButtons, 1, 0, 1, 3)
+        self.gridLayout_DiffRef.addWidget(self.checkBox_UseDiffMode, 2, 0, 1, 1)
+        self.gridLayout_DiffRef.addWidget(self.label_DiffStatus, 2, 1, 1, 2)
+        self.gridLayout_DiffRef.setColumnStretch(0, 1)
+        self.gridLayout_DiffRef.setColumnStretch(1, 1)
+        self.gridLayout_DiffRef.setColumnStretch(2, 1)
 
         # 2D rendering controls for diff cake.
         self.groupBox_DiffCake = QtWidgets.QGroupBox("Diff 2D Scale", self.tab_Diff)
         self.groupBox_DiffCake.setObjectName("groupBox_DiffCake")
         self.gridLayout_DiffCake = QtWidgets.QGridLayout(self.groupBox_DiffCake)
         self.gridLayout_DiffCake.setObjectName("gridLayout_DiffCake")
+        self.label_DiffScaleMode = QtWidgets.QLabel("Mode", self.groupBox_DiffCake)
+        self.label_DiffScaleMode.setObjectName("label_DiffScaleMode")
+        self.comboBox_DiffScaleMode = QtWidgets.QComboBox(self.groupBox_DiffCake)
+        self.comboBox_DiffScaleMode.setObjectName("comboBox_DiffScaleMode")
+        self.comboBox_DiffScaleMode.addItems([
+            "0 Centered",
+            "Free range",
+        ])
         self.label_DiffCmap = QtWidgets.QLabel("Colormap", self.groupBox_DiffCake)
         self.label_DiffCmap.setObjectName("label_DiffCmap")
         self.comboBox_DiffCmap = QtWidgets.QComboBox(self.groupBox_DiffCake)
         self.comboBox_DiffCmap.setObjectName("comboBox_DiffCmap")
-        self.label_DiffPolarity = QtWidgets.QLabel("Positive side", self.groupBox_DiffCake)
-        self.label_DiffPolarity.setObjectName("label_DiffPolarity")
-        self.comboBox_DiffPositiveSide = QtWidgets.QComboBox(self.groupBox_DiffCake)
-        self.comboBox_DiffPositiveSide.setObjectName("comboBox_DiffPositiveSide")
-        self.comboBox_DiffPositiveSide.addItems([
-            "Red/Warm (Gray=Light)",
-            "Blue/Cool (Gray=Dark)",
-        ])
-        self.checkBox_DiffAutoRange = QtWidgets.QCheckBox("Auto range", self.groupBox_DiffCake)
-        self.checkBox_DiffAutoRange.setObjectName("checkBox_DiffAutoRange")
-        self.checkBox_DiffAutoRange.setChecked(True)
         self.label_DiffVmin = QtWidgets.QLabel("Min", self.groupBox_DiffCake)
         self.label_DiffVmin.setObjectName("label_DiffVmin")
         self.doubleSpinBox_DiffVmin = QtWidgets.QDoubleSpinBox(self.groupBox_DiffCake)
         self.doubleSpinBox_DiffVmin.setObjectName("doubleSpinBox_DiffVmin")
-        self.doubleSpinBox_DiffVmin.setDecimals(2)
+        self.doubleSpinBox_DiffVmin.setDecimals(0)
         self.doubleSpinBox_DiffVmin.setMinimum(-1e9)
         self.doubleSpinBox_DiffVmin.setMaximum(1e9)
-        self.doubleSpinBox_DiffVmin.setSingleStep(10.0)
+        self.doubleSpinBox_DiffVmin.setSingleStep(1.0)
         self.doubleSpinBox_DiffVmin.setValue(-1000.0)
         self.label_DiffVmax = QtWidgets.QLabel("Max", self.groupBox_DiffCake)
         self.label_DiffVmax.setObjectName("label_DiffVmax")
         self.doubleSpinBox_DiffVmax = QtWidgets.QDoubleSpinBox(self.groupBox_DiffCake)
         self.doubleSpinBox_DiffVmax.setObjectName("doubleSpinBox_DiffVmax")
-        self.doubleSpinBox_DiffVmax.setDecimals(2)
+        self.doubleSpinBox_DiffVmax.setDecimals(0)
         self.doubleSpinBox_DiffVmax.setMinimum(-1e9)
         self.doubleSpinBox_DiffVmax.setMaximum(1e9)
-        self.doubleSpinBox_DiffVmax.setSingleStep(10.0)
+        self.doubleSpinBox_DiffVmax.setSingleStep(1.0)
         self.doubleSpinBox_DiffVmax.setValue(1000.0)
-        self.gridLayout_DiffCake.addWidget(self.label_DiffCmap, 0, 0, 1, 1)
-        self.gridLayout_DiffCake.addWidget(self.comboBox_DiffCmap, 0, 1, 1, 1)
-        self.gridLayout_DiffCake.addWidget(self.label_DiffPolarity, 0, 2, 1, 1)
-        self.gridLayout_DiffCake.addWidget(self.comboBox_DiffPositiveSide, 0, 3, 1, 1)
-        self.gridLayout_DiffCake.addWidget(self.checkBox_DiffAutoRange, 1, 0, 1, 2)
-        self.gridLayout_DiffCake.addWidget(self.label_DiffVmin, 1, 2, 1, 1)
-        self.gridLayout_DiffCake.addWidget(self.doubleSpinBox_DiffVmin, 1, 3, 1, 1)
-        self.gridLayout_DiffCake.addWidget(self.label_DiffVmax, 2, 2, 1, 1)
-        self.gridLayout_DiffCake.addWidget(self.doubleSpinBox_DiffVmax, 2, 3, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.label_DiffScaleMode, 0, 0, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.comboBox_DiffScaleMode, 0, 1, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.label_DiffCmap, 0, 2, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.comboBox_DiffCmap, 0, 3, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.label_DiffVmin, 1, 0, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.doubleSpinBox_DiffVmin, 1, 1, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.label_DiffVmax, 1, 2, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.doubleSpinBox_DiffVmax, 1, 3, 1, 1)
 
         # Export outputs only on demand.
         self.groupBox_DiffExport = QtWidgets.QGroupBox("Export", self.tab_Diff)
@@ -461,6 +577,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tabWidget_5.addTab(self.tab_Diff, "Diff")
         # Diff mode toggle is shown in the top toolbar.
         self.checkBox_UseDiffMode.setVisible(False)
+        self.checkBox_UseDiffMode.setChecked(False)
+        self.checkBox_UseDiffMode.setEnabled(False)
 
     def _setup_toolbar_diff_toggle(self):
         if (not hasattr(self, "horizontalLayout_7")) or hasattr(self, "checkBox_Diff"):
@@ -469,12 +587,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.checkBox_Diff.setObjectName("checkBox_Diff")
         self.checkBox_Diff.setMinimumSize(QtCore.QSize(0, 25))
         self.checkBox_Diff.setChecked(False)
+        self.checkBox_Diff.setEnabled(False)
         self.checkBox_Diff.setText("Diff")
         self.checkBox_Diff.setToolTip("Enable Diff mode")
-        idx = self.horizontalLayout_7.indexOf(self.checkBox_LongCursor)
+        idx = self.horizontalLayout_7.indexOf(self.checkBox_ShowCake)
         if idx < 0:
             idx = self.horizontalLayout_7.count() - 1
         self.horizontalLayout_7.insertWidget(idx + 1, self.checkBox_Diff)
+
+    def _spread_top_toolbar_even(self):
+        if not hasattr(self, "horizontalLayout_7"):
+            return
+        layout = self.horizontalLayout_7
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            w = item.widget()
+            if w is None:
+                layout.setStretch(i, 0)
+                continue
+            w.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+            w.setMinimumWidth(0)
+            w.setMaximumWidth(16777215)
+            layout.setStretch(i, 1)
 
     def _setup_plot_config_python_export(self):
         if not hasattr(self, "verticalLayout_PlotConfig"):
@@ -489,14 +624,57 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_ExportPythonView = QtWidgets.QPushButton(self.groupBox_PythonExport)
         self.pushButton_ExportPythonView.setObjectName("pushButton_ExportPythonView")
         self.pushButton_ExportPythonView.setMinimumSize(QtCore.QSize(0, 25))
-        self.pushButton_ExportPythonView.setMaximumSize(QtCore.QSize(200, 16777215))
+        self.pushButton_ExportPythonView.setMaximumSize(QtCore.QSize(16777215, 16777215))
+        self.pushButton_ExportPythonView.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.pushButton_ExportPythonView.setText("Export Python (Current View)")
         self.pushButton_ExportPythonView.setToolTip(
             "Export current on-screen view as a Python reproducible package")
-        self.horizontalLayout_PythonExport.addWidget(self.pushButton_ExportPythonView)
-        self.horizontalLayout_PythonExport.addStretch(1)
-        # place just below Plot setup in Plot > Config
-        self.verticalLayout_PlotConfig.insertWidget(1, self.groupBox_PythonExport)
+        self.horizontalLayout_PythonExport.addWidget(self.pushButton_ExportPythonView, 1)
+        # place at the top in Plot > Config
+        self.verticalLayout_PlotConfig.insertWidget(0, self.groupBox_PythonExport)
+
+    def _setup_backup_comment_button(self):
+        if (not hasattr(self, "horizontalLayout_BackupTools")) or \
+                hasattr(self, "pushButton_BackupEditComment"):
+            return
+        self.pushButton_BackupEditComment = QtWidgets.QPushButton(self.frame_BackupTools)
+        self.pushButton_BackupEditComment.setObjectName("pushButton_BackupEditComment")
+        self.pushButton_BackupEditComment.setMinimumSize(QtCore.QSize(95, 25))
+        self.pushButton_BackupEditComment.setMaximumSize(QtCore.QSize(140, 16777215))
+        self.pushButton_BackupEditComment.setText("Edit Comment")
+        self.pushButton_BackupEditComment.setToolTip("Edit comment for selected backup row")
+        idx_restore = self.horizontalLayout_BackupTools.indexOf(self.pushButton_BackupRestore)
+        if idx_restore < 0:
+            self.horizontalLayout_BackupTools.addWidget(self.pushButton_BackupEditComment)
+        else:
+            self.horizontalLayout_BackupTools.insertWidget(
+                idx_restore, self.pushButton_BackupEditComment)
+
+    def _layout_backup_buttons(self):
+        if not hasattr(self, "horizontalLayout_BackupTools"):
+            return
+        if (not hasattr(self, "pushButton_BackupEditComment")) or \
+                (not hasattr(self, "pushButton_BackupRestore")):
+            return
+        self.pushButton_BackupRestore.setText("Restore")
+        common_h = 30
+        for btn in (self.pushButton_BackupEditComment, self.pushButton_BackupRestore):
+            btn.setMinimumHeight(common_h)
+            btn.setMaximumHeight(common_h)
+            btn.setMinimumWidth(0)
+            btn.setMaximumWidth(16777215)
+            btn.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+
+        # Rebuild row to remove spacer and spread both buttons horizontally.
+        while self.horizontalLayout_BackupTools.count():
+            item = self.horizontalLayout_BackupTools.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.setParent(None)
+        self.horizontalLayout_BackupTools.addWidget(self.pushButton_BackupEditComment, 1)
+        self.horizontalLayout_BackupTools.addWidget(self.pushButton_BackupRestore, 1)
 
     def closeEvent(self, event):
         try:

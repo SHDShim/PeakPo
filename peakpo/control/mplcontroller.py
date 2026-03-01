@@ -212,6 +212,7 @@ class MplController(object):
         """
         import matplotlib.patches as patches
         import matplotlib.pyplot as plt
+        import matplotlib.colors as mcolors
 
         #print(str(datetime.datetime.now())[:-7], ': Num of tth points = {0:.0f}, azi strips = {1:.0f}'.format(len(tth_cake), len(chi_cake)))
 
@@ -224,14 +225,6 @@ class MplController(object):
         intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
         int_plot = np.array(intensity_cake, copy=True)
 
-        # Shift cake image if necessary
-        mid_angle = self.widget.spinBox_AziShift.value()
-        if mid_angle != 0:
-            int_shift = np.array(int_plot, copy=True)
-            int_shift[0:mid_angle] = int_plot[360 - mid_angle:361]
-            int_shift[mid_angle:361] = int_plot[0:360 - mid_angle]
-            int_plot = int_shift
-
         diff_mode = False
         if self.diff_ctrl is not None:
             try:
@@ -240,6 +233,15 @@ class MplController(object):
                 diff_mode = self.diff_ctrl.is_diff_mode_active()
             except Exception:
                 diff_mode = False
+
+        # Apply azimuthal shift after diff subtraction so the same shift is
+        # effectively applied to both current and reference cake images.
+        mid_angle = self.widget.spinBox_AziShift.value()
+        if mid_angle != 0:
+            int_shift = np.array(int_plot, copy=True)
+            int_shift[0:mid_angle] = int_plot[360 - mid_angle:361]
+            int_shift[mid_angle:361] = int_plot[0:360 - mid_angle]
+            int_plot = int_shift
 
         # Get image contrast parameters from UI unless diff mode overrides.
         min_slider_pos = self.widget.horizontalSlider_VMin.value()
@@ -274,11 +276,22 @@ class MplController(object):
             cfg = self.diff_ctrl.get_cake_render_config(int_plot) or {}
             cmap = plt.get_cmap(cfg.get("cmap", "RdBu_r")).copy()
             climits = np.asarray([cfg.get("vmin", -1.0), cfg.get("vmax", 1.0)])
+            norm = None
+            if bool(cfg.get("center_zero", False)):
+                try:
+                    norm = mcolors.TwoSlopeNorm(
+                        vmin=float(climits[0]), vcenter=0.0, vmax=float(climits[1]))
+                except Exception:
+                    norm = None
             zero_mask = np.zeros(np.shape(int_plot), dtype=bool)
             cmap.set_bad(color=(0.0, 0.0, 0.0, 0.0))
         else:
-            # Non-diff mode uses gray_r consistently.
-            cmap = plt.cm.gray_r.copy()
+            # Non-diff mode uses user-selected colormap from Plot > Control.
+            cmap_name = "gray_r"
+            if hasattr(self.widget, "comboBox_CakeColormap"):
+                cmap_name = str(self.widget.comboBox_CakeColormap.currentText() or "gray_r")
+            cmap = plt.get_cmap(cmap_name).copy()
+            norm = None
             # 0-values are typically masked pixels in cake data.
             zero_mask = (int_plot == 0)
             # Opaque pale yellow for masked pixels.
@@ -294,14 +307,18 @@ class MplController(object):
         int_new = ma.masked_where(combined_mask, int_plot, copy=False)
 
 
-        self.widget.mpl.canvas.ax_cake.imshow(
-            int_new,
-            origin="lower",
-            extent=[tth_cake.min(), tth_cake.max(), chi_cake.min(), chi_cake.max()],
-            aspect="auto",
-            cmap=cmap,
-            vmin=climits[0], vmax=climits[1],
-        )
+        imshow_kwargs = {
+            "origin": "lower",
+            "extent": [tth_cake.min(), tth_cake.max(), chi_cake.min(), chi_cake.max()],
+            "aspect": "auto",
+            "cmap": cmap,
+        }
+        if norm is None:
+            imshow_kwargs["vmin"] = climits[0]
+            imshow_kwargs["vmax"] = climits[1]
+        else:
+            imshow_kwargs["norm"] = norm
+        self.widget.mpl.canvas.ax_cake.imshow(int_new, **imshow_kwargs)
         if hasattr(self.widget, "cake_hist_widget"):
             self.widget.cake_hist_widget.set_data(
                 int_new, vmin=float(climits[0]), vmax=float(climits[1]))

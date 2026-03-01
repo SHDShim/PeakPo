@@ -19,10 +19,10 @@ class ExportPythonController(object):
             QtWidgets.QMessageBox.warning(self.widget, "Warning", "Plot canvas is not available.")
             return
 
-        # Ensure figure matches current UI state before snapshot.
+        # Capture exactly what is currently visible on screen.
+        # Do not force a controller replot here: that can drop fit overlays
+        # depending on current tab/state just before export.
         try:
-            if self.plot_ctrl is not None:
-                self.plot_ctrl.update()
             self.widget.mpl.canvas.draw()
         except Exception:
             pass

@@ -58,6 +58,7 @@ class MainController(object):
 
         self.diff_ctrl = DiffController(self.model, self.widget, self.plot_ctrl)
         self.plot_ctrl.set_diff_controller(self.diff_ctrl)
+        self._propagate_diff_controller()
         print("  ✓ DiffController created")
         
         self.cakeazi_ctrl = CakeAziController(self.model, self.widget)
@@ -92,6 +93,7 @@ class MainController(object):
         self.export_py_ctrl = ExportPythonController(
             self.model, self.widget, plot_ctrl=self.plot_ctrl)
         print("  ✓ ExportPythonController created")
+        self._propagate_diff_controller()
         
         self.read_setting()
         print("  ✓ read_setting() done")
@@ -104,6 +106,31 @@ class MainController(object):
         self._shutdown_done = False
         
         print("MainController.__init__ - DONE\n")
+
+    def _propagate_diff_controller(self):
+        # Multiple controllers keep their own MplController instances.
+        # Keep Diff behavior consistent across all redraw paths.
+        for ctrl_name in (
+            "session_ctrl",
+            "base_ptn_ctrl",
+            "waterfall_ctrl",
+            "ucfit_ctrl",
+            "jcpds_ctrl",
+            "waterfalltable_ctrl",
+            "jcpdstable_ctrl",
+            "peakfit_ctrl",
+            "peakfit_table_ctrl",
+            "cakeazi_ctrl",
+        ):
+            ctrl = getattr(self, ctrl_name, None)
+            plot_ctrl = getattr(ctrl, "plot_ctrl", None)
+            if (plot_ctrl is not None) and hasattr(plot_ctrl, "set_diff_controller"):
+                plot_ctrl.set_diff_controller(self.diff_ctrl)
+        # Nested cake controller under base pattern controller.
+        if hasattr(self, "base_ptn_ctrl") and hasattr(self.base_ptn_ctrl, "cake_ctrl"):
+            cake_plot_ctrl = getattr(self.base_ptn_ctrl.cake_ctrl, "plot_ctrl", None)
+            if (cake_plot_ctrl is not None) and hasattr(cake_plot_ctrl, "set_diff_controller"):
+                cake_plot_ctrl.set_diff_controller(self.diff_ctrl)
 
     def show_window(self):
         """Show the main window and ensure it renders"""
@@ -211,6 +238,9 @@ class MainController(object):
         #self.widget.pushButton_toPkFt.clicked.connect(self.to_PkFt)
         #self.widget.pushButton_fromPkFt.clicked.connect(self.from_PkFt)
         self.widget.checkBox_NightView.clicked.connect(self.set_nightday_view)
+        if hasattr(self.widget, "comboBox_CakeColormap"):
+            self.widget.comboBox_CakeColormap.currentIndexChanged.connect(
+                self.apply_changes_to_graph)
         self.widget.pushButton_S_Zoom.clicked.connect(self.plot_new_graph)
         self.widget.checkBox_AutoY.clicked.connect(self.apply_changes_to_graph)
         self.widget.checkBox_BgSub.clicked.connect(self.apply_changes_to_graph)
@@ -502,6 +532,10 @@ class MainController(object):
             self.settings.setValue(
                 'fontsize_waterfall_label',
                 self.widget.comboBox_WaterfallFontSize.currentText())
+        # Persist azimuthal shift across app restarts.
+        self.settings.setValue(
+            'azi_shift',
+            int(self.widget.spinBox_AziShift.value()))
         # CHI navigation carry-over policy
         nav_keys = [
             ("carry_nav_jcpds", "checkBox_CarryNavJCPDS"),
@@ -546,6 +580,17 @@ class MainController(object):
                 self.widget.comboBox_WaterfallFontSize.currentText()))
             if self.widget.comboBox_WaterfallFontSize.findText(wf_fs) >= 0:
                 self.widget.comboBox_WaterfallFontSize.setCurrentText(wf_fs)
+        if hasattr(self.widget, "comboBox_CakeColormap"):
+            # Always start with gray_r regardless of previous sessions/settings.
+            self.widget.comboBox_CakeColormap.setCurrentText("gray_r")
+        raw_azi_shift = self.settings.value(
+            'azi_shift',
+            int(self.widget.spinBox_AziShift.value()))
+        try:
+            azi_shift = int(raw_azi_shift)
+        except Exception:
+            azi_shift = int(self.widget.spinBox_AziShift.value())
+        self.widget.spinBox_AziShift.setValue(azi_shift)
         nav_defaults = {
             "checkBox_CarryNavJCPDS": True,
             "checkBox_CarryNavPressure": True,
@@ -1019,7 +1064,10 @@ class MainController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning", "Choose a base pattern first.")
             return
-        if self.widget.checkBox_NavDPP.isChecked():
+        use_dpp_nav = bool(
+            hasattr(self.widget, "checkBox_NavDPP") and
+            self.widget.checkBox_NavDPP.isChecked())
+        if use_dpp_nav:
             self._goto_dpp_next_file(move)
         else:
             self._goto_chi_next_file(move)
@@ -1143,7 +1191,10 @@ class MainController(object):
                     self.widget, "Warning", "It is already the first file.")
                 return
 
-        if self.widget.checkBox_SaveDPPMove.isChecked():
+        auto_save_move = True
+        if hasattr(self.widget, "checkBox_SaveDPPMove"):
+            auto_save_move = bool(self.widget.checkBox_SaveDPPMove.isChecked())
+        if auto_save_move:
             self.session_ctrl.save_dpp(quiet=True)
         else:
             reply = QtWidgets.QMessageBox.question(
@@ -1162,7 +1213,10 @@ class MainController(object):
         if idx == -1:
             # no pre-existing dpp
             # check the checkbox for autogenerate
-            if self.widget.checkBox_AutoGenDPP.isChecked():
+            auto_gen_dpp = False
+            if hasattr(self.widget, "checkBox_AutoGenDPP"):
+                auto_gen_dpp = bool(self.widget.checkBox_AutoGenDPP.isChecked())
+            if auto_gen_dpp:
                 self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
                 self.session_ctrl.save_dpp(quiet=True)
                 self.model.clear_section_list()
@@ -1180,8 +1234,13 @@ class MainController(object):
         else:
             # pre-existing dpp
             # question if overwrite or not
-            if self.widget.checkBox_AutoGenDPP.isChecked() and \
-                (not self.widget.checkBox_AutogenMissing.isChecked()):
+            auto_gen_dpp = False
+            if hasattr(self.widget, "checkBox_AutoGenDPP"):
+                auto_gen_dpp = bool(self.widget.checkBox_AutoGenDPP.isChecked())
+            auto_gen_only_missing = True
+            if hasattr(self.widget, "checkBox_AutogenMissing"):
+                auto_gen_only_missing = bool(self.widget.checkBox_AutogenMissing.isChecked())
+            if auto_gen_dpp and (not auto_gen_only_missing):
                 reply = QtWidgets.QMessageBox.question(
                     self.widget, 'Message',
                     "The next pattern already has a dpp.\n" +

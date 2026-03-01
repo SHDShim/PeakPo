@@ -33,8 +33,9 @@ class CakeController(object):
             self.load_new_poni_from_name)
         self.widget.pushButton_ResetCakeScale.clicked.connect(
             self.reset_max_cake_scale)
-        self.widget.checkBox_WhiteForPeak.clicked.connect(
-            self._apply_changes_to_graph)
+        if hasattr(self.widget, "comboBox_CakeColormap"):
+            self.widget.comboBox_CakeColormap.currentIndexChanged.connect(
+                self._apply_changes_to_graph)
         if hasattr(self.widget, "cake_hist_widget"):
             self.widget.cake_hist_widget.boundChanged.connect(
                 self._set_cake_bound_from_hist)
@@ -115,6 +116,8 @@ class CakeController(object):
     """
 
     def reset_max_cake_scale(self):
+        if hasattr(self.widget, "checkBox_Diff") and self.widget.checkBox_Diff.isChecked():
+            return
         intensity_cake, _, _ = self.model.diff_img.get_cake()
         self.widget.spinBox_MaxCakeScale.setValue(int(intensity_cake.max()))
         self._apply_changes_to_graph()

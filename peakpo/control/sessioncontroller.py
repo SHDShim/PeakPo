@@ -3,6 +3,7 @@ import sys
 import dill
 import traceback
 import tempfile
+import json
 from importlib.metadata import entry_points
 #from pkg_resources import add_activation_listener
 import datetime
@@ -25,6 +26,7 @@ from ..model.param_session_io import (
     load_model_from_param,
     list_backup_events,
     is_new_param_folder,
+    BACKUP_INDEX_FILE,
 )
 
 class SessionController(object):
@@ -69,6 +71,9 @@ class SessionController(object):
         if hasattr(self.widget, "pushButton_BackupRestore"):
             self.widget.pushButton_BackupRestore.clicked.connect(
                 self.restore_selected_backup)
+        if hasattr(self.widget, "pushButton_BackupEditComment"):
+            self.widget.pushButton_BackupEditComment.clicked.connect(
+                self.edit_selected_backup_comment)
         if hasattr(self.widget, "tabWidget_3"):
             self.widget.tabWidget_3.currentChanged.connect(
                 self._handle_file_subtab_changed)
@@ -106,7 +111,7 @@ class SessionController(object):
         if not hasattr(self.widget, "tableWidget_BackupInfo"):
             return
         table = self.widget.tableWidget_BackupInfo
-        headers = ["Backup ID", "Reason", "Changes", "Timestamp", "Files"]
+        headers = ["ID", "Comment", "Changes", "Timestamp", "Files"]
         table.clear()
         table.setColumnCount(len(headers))
         table.setHorizontalHeaderLabels(headers)
@@ -120,9 +125,7 @@ class SessionController(object):
         events = list_backup_events(param_dir)
         table.setRowCount(len(events))
         for row, (idx, ev) in enumerate(reversed(list(enumerate(events)))):
-            reason = str(ev.get("reason", ""))
-            if reason in ("manual-save", "save", ""):
-                reason = "snapshot"
+            reason = self._format_backup_comment(ev.get("reason", ""))
             values = [
                 str(ev.get("id", "")),
                 reason,
@@ -141,6 +144,12 @@ class SessionController(object):
         if table.rowCount() > 0:
             table.selectRow(0)
 
+    def _format_backup_comment(self, reason):
+        comment = str(reason or "").strip()
+        if comment in ("manual-save", "save", ""):
+            comment = "snapshot"
+        return comment
+
     def _selected_backup_index_from_table(self):
         if not hasattr(self.widget, "tableWidget_BackupInfo"):
             return None
@@ -155,6 +164,93 @@ class SessionController(object):
         if idx is None:
             return None
         return int(idx)
+
+    def _selected_backup_id_from_table(self):
+        if not hasattr(self.widget, "tableWidget_BackupInfo"):
+            return None
+        table = self.widget.tableWidget_BackupInfo
+        rows = table.selectionModel().selectedRows()
+        if len(rows) != 1:
+            return None
+        item = table.item(rows[0].row(), 0)
+        if item is None:
+            return None
+        return str(item.text() or "")
+
+    def _write_json_atomic(self, path, payload):
+        dname = os.path.dirname(path)
+        os.makedirs(dname, exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+                "w", delete=False, dir=dname, encoding="utf-8") as tmpf:
+            json.dump(payload, tmpf, indent=2)
+            tmp_path = tmpf.name
+        os.replace(tmp_path, path)
+
+    def edit_selected_backup_comment(self):
+        backup_idx = self._selected_backup_index_from_table()
+        backup_id = self._selected_backup_id_from_table()
+        if backup_idx is None:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Select one backup row first.")
+            return
+        if not self.model.base_ptn_exist():
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Open a CHI file first.")
+            return
+        param_dir = get_temp_dir(self.model.get_base_ptn_filename())
+        index_path = os.path.join(param_dir, BACKUP_INDEX_FILE)
+        if not os.path.exists(index_path):
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Backup index file not found.")
+            return
+        try:
+            with open(index_path, "r", encoding="utf-8") as f:
+                index_data = json.load(f)
+        except Exception as exc:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Cannot read backup index:\n" + str(exc))
+            return
+        events = index_data.get("events", [])
+        if (backup_idx < 0) or (backup_idx >= len(events)):
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Selected backup row is no longer valid.")
+            return
+        ev = events[backup_idx]
+        current_comment = self._format_backup_comment(ev.get("reason", ""))
+        new_comment, ok = QtWidgets.QInputDialog.getText(
+            self.widget,
+            "Edit Backup Comment",
+            "Comment:",
+            text=current_comment,
+        )
+        if not ok:
+            return
+        updated_comment = str(new_comment or "").strip()
+        if updated_comment == "":
+            updated_comment = "snapshot"
+        events[backup_idx]["reason"] = updated_comment
+        index_data["events"] = events
+        try:
+            self._write_json_atomic(index_path, index_data)
+        except Exception as exc:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Cannot update backup comment:\n" + str(exc))
+            return
+        self.refresh_backup_table()
+        # Restore selection to edited backup id when possible.
+        if hasattr(self.widget, "tableWidget_BackupInfo") and (backup_id not in (None, "")):
+            table = self.widget.tableWidget_BackupInfo
+            for r in range(table.rowCount()):
+                it = table.item(r, 0)
+                if (it is not None) and (str(it.text()) == backup_id):
+                    table.selectRow(r)
+                    break
 
     def restore_selected_backup(self):
         # Do not refresh here: it resets selection to row 0 and can restore
@@ -355,18 +451,10 @@ class SessionController(object):
                 (not hasattr(self.widget, "checkBox_UseDiffMode")):
             return {}
         enabled = False
-        if hasattr(self.widget, "checkBox_Diff"):
-            enabled = bool(self.widget.checkBox_Diff.isChecked())
-        elif hasattr(self.widget, "checkBox_UseDiffMode"):
-            enabled = bool(self.widget.checkBox_UseDiffMode.isChecked())
         diff = {
-            "enabled": enabled,
             "ref_chi_path": str(self.widget.lineEdit_DiffRefChi.text()).strip(),
             "cmap_2d": str(self.widget.comboBox_DiffCmap.currentText()),
-            "positive_side": "blue_cool"
-            if (self.widget.comboBox_DiffPositiveSide.currentIndex() == 1)
-            else "red_warm",
-            "auto_range": bool(self.widget.checkBox_DiffAutoRange.isChecked()),
+            "scale_mode": str(self.widget.comboBox_DiffScaleMode.currentText()),
             "vmin": float(self.widget.doubleSpinBox_DiffVmin.value()),
             "vmax": float(self.widget.doubleSpinBox_DiffVmax.value()),
         }
@@ -429,21 +517,23 @@ class SessionController(object):
             return
         if "ref_chi_path" in diff:
             self.widget.lineEdit_DiffRefChi.setText(str(diff["ref_chi_path"] or ""))
-        if "enabled" in diff:
-            enabled = bool(diff["enabled"])
-            if hasattr(self.widget, "checkBox_Diff"):
-                self.widget.checkBox_Diff.setChecked(enabled)
-            if hasattr(self.widget, "checkBox_UseDiffMode"):
-                self.widget.checkBox_UseDiffMode.setChecked(enabled)
+        # Diff toggle status is not loaded from JSON; always start unchecked.
+        if hasattr(self.widget, "checkBox_Diff"):
+            self.widget.checkBox_Diff.setChecked(False)
+        if hasattr(self.widget, "checkBox_UseDiffMode"):
+            self.widget.checkBox_UseDiffMode.setChecked(False)
         if "cmap_2d" in diff:
             cmap = str(diff["cmap_2d"])
             if self.widget.comboBox_DiffCmap.findText(cmap) >= 0:
                 self.widget.comboBox_DiffCmap.setCurrentText(cmap)
-        if "positive_side" in diff:
-            self.widget.comboBox_DiffPositiveSide.setCurrentIndex(
-                1 if str(diff["positive_side"]) == "blue_cool" else 0)
-        if "auto_range" in diff:
-            self.widget.checkBox_DiffAutoRange.setChecked(bool(diff["auto_range"]))
+        if "scale_mode" in diff:
+            mode = str(diff["scale_mode"])
+            if mode in ("Symmetric (0 centered)", "Asymmetric (0 centered)", "0 centered"):
+                mode = "0 Centered"
+            elif mode in ("Cake-like free range", "Positive only (0 as min)", "Negative only (0 as max)"):
+                mode = "Free range"
+            if self.widget.comboBox_DiffScaleMode.findText(mode) >= 0:
+                self.widget.comboBox_DiffScaleMode.setCurrentText(mode)
         if "vmin" in diff:
             self.widget.doubleSpinBox_DiffVmin.setValue(float(diff["vmin"]))
         if "vmax" in diff:
@@ -786,7 +876,10 @@ class SessionController(object):
         # inspect the paths of baseptn and update all file paths
         if (model_dpp.chi_path != os.path.dirname(filen_dpp)):
             if os.path.exists(model_dpp.chi_path):
-                if self.widget.checkBox_IgnoreDirChange.isChecked():
+                ignore_dir_change = True
+                if hasattr(self.widget, "checkBox_IgnoreDirChange"):
+                    ignore_dir_change = bool(self.widget.checkBox_IgnoreDirChange.isChecked())
+                if ignore_dir_change:
                     return self._set_from_dpp(filen_dpp, model_dpp,
                                               jlistonly=jlistonly)
                 else:
@@ -803,7 +896,10 @@ class SessionController(object):
                     else:
                         return False
             else:  # file no longer exist in the original location
-                if self.widget.checkBox_IgnoreDirChange.isChecked():
+                ignore_dir_change = True
+                if hasattr(self.widget, "checkBox_IgnoreDirChange"):
+                    ignore_dir_change = bool(self.widget.checkBox_IgnoreDirChange.isChecked())
+                if ignore_dir_change:
                     return self._set_from_dpp(
                         filen_dpp, model_dpp,
                         new_folder=os.path.dirname(filen_dpp),
@@ -1253,7 +1349,10 @@ class SessionController(object):
             fsession = os.path.join(self.model.chi_path, 'dum.ppss')
         else:
             fsession = self.model.make_filename('ppss')
-        if self.widget.checkBox_ForceOverwite.isChecked():
+        force_overwrite = True
+        if hasattr(self.widget, "checkBox_ForceOverwite"):
+            force_overwrite = bool(self.widget.checkBox_ForceOverwite.isChecked())
+        if force_overwrite:
             new_filename = fsession
             """
             if not quiet:
