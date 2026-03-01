@@ -238,6 +238,7 @@ def _serialize_jcpds_item(phase, chi_root):
         "twk_k0p": getattr(phase, "twk_k0p", 1.0),
         "twk_thermal_expansion": getattr(phase, "twk_thermal_expansion", 1.0),
         "twk_int": getattr(phase, "twk_int", 1.0),
+        "locked": bool(getattr(phase, "_pkpo_locked", False)),
         "k0_org": getattr(phase, "k0_org", None),
         "k0p_org": getattr(phase, "k0p_org", None),
         "v0_org": getattr(phase, "v0_org", None),
@@ -274,6 +275,7 @@ def _load_jcpds_item(payload, chi_root):
         phase.v0_org = getattr(phase, "v0", 0.0)
     if getattr(phase, "thermal_expansion_org", None) is None:
         phase.thermal_expansion_org = getattr(phase, "thermal_expansion", 0.0)
+    phase._pkpo_locked = bool(payload.get("locked", False))
     return phase
 
 

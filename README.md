@@ -16,23 +16,28 @@ Major features include:
 
 ## How to install
 
-For `PeakPo 7.10.x`, start with a clean environment (recommended), especially if you already use `PeakPo 7.9.x`.
+For `PeakPo 7.10.x`, use a separate environment from `PeakPo 7.9.x`.
 
-Open a terminal and create a new conda environment:
-
-```
-conda create -n peakpo710 python=3.11 -y
-```
-
-If you want to keep `PeakPo 7.9.x` (PyQt5) and also use `PeakPo 7.10.x` (PyQt6), use separate environments.
-
-Activate the environment:
+If you already installed `PeakPo 7.9.x` with pip in an environment named `peakpo`, rename that environment to `pkpo709` first:
 
 ```
-conda activate <name of environment>
+conda create -n pkpo709 --clone peakpo -y
+conda remove -n peakpo --all -y
 ```
 
-Install `PeakPo`:
+Then create a new environment for `PeakPo 7.10.x`:
+
+```
+conda create -n pkpo710 python=3.11 -y
+```
+
+Activate `pkpo710`:
+
+```
+conda activate pkpo710
+```
+
+Install `PeakPo 7.10.x`:
 
 ```
 python -m pip install --upgrade pip
@@ -43,30 +48,33 @@ python -m pip install peakpo
 
 `PeakPo 7.9.x` is based on `PyQt5`, while `PeakPo 7.10.x` is based on `PyQt6`.
 
-Because of this Qt transition, do not only upgrade `peakpo` alone in an old 7.9 environment. You should also upgrade related modules (Qt stack and other dependencies) or create a fresh environment.
+Because of this Qt transition, do not upgrade in-place in your old `7.9.x` environment.
+Keep `7.9.x` in `pkpo709`, and install `7.10.x` in `pkpo710`.
 
-Recommended (clean install):
+Recommended setup:
 
 ```
-conda create -n peakpo710 python=3.11 -y
-conda activate peakpo710
+conda create -n pkpo709 --clone peakpo -y
+conda remove -n peakpo --all -y
+conda create -n pkpo710 python=3.11 -y
+conda activate pkpo710
 python -m pip install --upgrade pip
 python -m pip install peakpo
 ```
 
-If you must reuse an existing environment:
+Use environments like this:
 
 ```
-conda activate <name of environment>
-python -m pip install --upgrade --upgrade-strategy eager peakpo
+conda activate pkpo709   # old 7.9.x
+conda activate pkpo710   # new 7.10.x
 ```
 
 ## How to upgrade
 
-Make sure to change environment:
+Upgrade inside the target environment:
 
 ```
-conda activate <name of environment>
+conda activate pkpo710
 ```
 
 ```
@@ -75,10 +83,10 @@ python -m pip install --upgrade --upgrade-strategy eager peakpo
 
 ## How to reinstall
 
-Make sure to change environment:
+Reinstall inside the target environment:
 
 ```
-conda activate <name of environment>
+conda activate pkpo710
 ```
 
 

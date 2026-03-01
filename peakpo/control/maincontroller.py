@@ -200,6 +200,9 @@ class MainController(object):
             self.load_jlist_from_session)
         self.widget.pushButton_UpdateBackground.clicked.connect(
             self.update_bgsub)
+        if hasattr(self.widget, "pushButton_ResetBGParams"):
+            self.widget.pushButton_ResetBGParams.clicked.connect(
+                self.reset_bg_params_to_default)
         self.widget.checkBox_LongCursor.stateChanged.connect(
             self._handle_cursor_toggle)  # Changed from clicked to stateChanged
         # ✅ ADD: Connect checkbox to deactivate toolbar
@@ -815,9 +818,7 @@ class MainController(object):
 
         # Never carry over backup information across CHI navigation.
         # Always show backup info for the newly loaded file.
-        if hasattr(self.widget, "tabWidget_3") and hasattr(self.widget, "tabWidget_3Page3"):
-            if self.widget.tabWidget_3.currentWidget() == self.widget.tabWidget_3Page3:
-                self.session_ctrl.refresh_backup_table()
+        self.session_ctrl.refresh_backup_table()
 
     """
     def closeEvent(self, event):
@@ -1005,17 +1006,25 @@ class MainController(object):
             QtWidgets.QMessageBox.warning(self.widget, "Warning",
                                           "Load a base pattern first.")
             return
+        x_raw_base = getattr(self.model.base_ptn, "x_raw", None)
+        y_raw_base = getattr(self.model.base_ptn, "y_raw", None)
+        if (x_raw_base is None) or (y_raw_base is None) or \
+                (len(x_raw_base) == 0) or (len(y_raw_base) == 0):
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Base pattern has no raw data for background fitting.")
+            return
         """receive new bg parameters and update the graph"""
         bg_params = [self.widget.spinBox_BGParam0.value(),
                      self.widget.spinBox_BGParam1.value(),
                      self.widget.spinBox_BGParam2.value()]
         bg_roi = [self.widget.doubleSpinBox_Background_ROI_min.value(),
                   self.widget.doubleSpinBox_Background_ROI_max.value()]
-        if (bg_roi[0] <= self.model.base_ptn.x_raw.min()):
-            bg_roi[0] = self.model.base_ptn.x_raw.min()
+        if (bg_roi[0] <= x_raw_base.min()):
+            bg_roi[0] = x_raw_base.min()
             self.widget.doubleSpinBox_Background_ROI_min.setValue(bg_roi[0])
-        if (bg_roi[1] >= self.model.base_ptn.x_raw.max()):
-            bg_roi[1] = self.model.base_ptn.x_raw.max()
+        if (bg_roi[1] >= x_raw_base.max()):
+            bg_roi[1] = x_raw_base.max()
             self.widget.doubleSpinBox_Background_ROI_max.setValue(bg_roi[1])
         self.model.base_ptn.subtract_bg(bg_roi, bg_params, yshift=0)
         temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
@@ -1024,9 +1033,25 @@ class MainController(object):
             print(str(datetime.datetime.now())[:-7], 
                 ": BGfit and BGsub for waterfall patterns even if they are displayed.\n",
                 "Yes this is a bit of waste.  Future fix needed.")
+            n_skipped = 0
             for pattern in self.model.waterfall_ptn:
+                x_raw = getattr(pattern, "x_raw", None)
+                y_raw = getattr(pattern, "y_raw", None)
+                if (x_raw is None) or (y_raw is None) or \
+                        (len(x_raw) == 0) or (len(y_raw) == 0):
+                    n_skipped += 1
+                    continue
                 pattern.subtract_bg(bg_roi, bg_params, yshift=0)
+            if n_skipped > 0:
+                print(str(datetime.datetime.now())[:-7],
+                    ": Skipped BG subtraction for {0:d} waterfall item(s) "
+                    "without raw data.".format(n_skipped))
         self.plot_new_graph()
+
+    def reset_bg_params_to_default(self):
+        self.widget.spinBox_BGParam0.setValue(20)
+        self.widget.spinBox_BGParam1.setValue(10)
+        self.widget.spinBox_BGParam2.setValue(20)
 
     def apply_pt_to_graph(self):
         """

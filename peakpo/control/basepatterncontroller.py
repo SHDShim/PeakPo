@@ -83,6 +83,9 @@ class BasePatternController(object):
         if self.session_ctrl is not None:
             loaded_param = self.session_ctrl.autoload_param_for_chi(new_filename)
             if loaded_param:
+                # Ensure File > Data backup table reflects the newly loaded CHI
+                # immediately, without requiring tab changes.
+                self.session_ctrl.refresh_backup_table()
                 print(str(datetime.datetime.now())[:-7],
                     ': Loaded PARAM session for this CHI.')
                 return
@@ -133,6 +136,9 @@ class BasePatternController(object):
                     self.widget, 'Warning',
                     'PeakPo cannot process cake: no raw image and no existing cake files were found.')
                 self.widget.checkBox_ShowCake.setChecked(False)
+        # Keep backup table in File > Data synchronized right after CHI load.
+        if self.session_ctrl is not None:
+            self.session_ctrl.refresh_backup_table()
 
     def _update_bg_params_in_widget(self):
         self.widget.spinBox_BGParam0.setValue(

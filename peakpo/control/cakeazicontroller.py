@@ -180,15 +180,29 @@ class CakeAziController(object):
             return None
         azi_list = []
         for i in range(n_row):
-            tth_min = float(
-                self.widget.tableWidget_DiffImgAzi.item(i, 1).text())
-            azi_min = float(
-                self.widget.tableWidget_DiffImgAzi.item(i, 2).text())
-            tth_max = float(
-                self.widget.tableWidget_DiffImgAzi.item(i, 3).text())
-            azi_max = float(
-                self.widget.tableWidget_DiffImgAzi.item(i, 4).text())
-            comment = self.widget.tableWidget_DiffImgAzi.item(i, 0).text()
+            item_tth_min = self.widget.tableWidget_DiffImgAzi.item(i, 1)
+            item_azi_min = self.widget.tableWidget_DiffImgAzi.item(i, 2)
+            item_tth_max = self.widget.tableWidget_DiffImgAzi.item(i, 3)
+            item_azi_max = self.widget.tableWidget_DiffImgAzi.item(i, 4)
+            item_comment = self.widget.tableWidget_DiffImgAzi.item(i, 0)
+            if (item_tth_min is None) or (item_azi_min is None) or \
+                    (item_tth_max is None) or (item_azi_max is None):
+                QtWidgets.QMessageBox.warning(
+                    self.widget, 'Warning',
+                    'Cake integration row is incomplete. '
+                    'Fill all 2th/Azi values or remove the row.')
+                return None
+            try:
+                tth_min = float(item_tth_min.text())
+                azi_min = float(item_azi_min.text())
+                tth_max = float(item_tth_max.text())
+                azi_max = float(item_azi_max.text())
+            except (TypeError, ValueError):
+                QtWidgets.QMessageBox.warning(
+                    self.widget, 'Warning',
+                    'Cake integration row has invalid numeric values.')
+                return None
+            comment = '' if item_comment is None else item_comment.text()
             azi_list.append([comment, tth_min, azi_min, tth_max, azi_max])
         return azi_list
 
@@ -210,6 +224,38 @@ class CakeAziController(object):
         if azi_list is None:
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'No azimuthal ranges in the queue.')
+            return None
+        # Integration uses raw detector image + calibration.
+        if (not hasattr(self.model, "diff_img")) or (self.model.diff_img is None):
+            QtWidgets.QMessageBox.warning(
+                self.widget, 'Warning',
+                'No diffraction image object is available for integration.')
+            return None
+        if getattr(self.model.diff_img, "img", None) is None and \
+                hasattr(self.model, "load_associated_img"):
+            # Try to load the associated raw image on demand.
+            try:
+                self.model.load_associated_img()
+            except Exception:
+                pass
+        if getattr(self.model.diff_img, "img", None) is None:
+            expected = []
+            if hasattr(self.model, "get_associated_image_candidates"):
+                expected = self.model.get_associated_image_candidates()
+            expected_text = "\n".join(expected[:6])
+            if expected_text != "":
+                expected_text = "\nExpected filenames include:\n" + expected_text
+            QtWidgets.QMessageBox.warning(
+                self.widget, 'Warning',
+                'Raw image is not loaded. '
+                'Integration requires raw image data (not only cached cake).\n'
+                'To make this work, copy the raw image file into the same '
+                'folder as the CHI file.' + expected_text)
+            return None
+        if (not hasattr(self.model, "poni")) or (self.model.poni is None):
+            QtWidgets.QMessageBox.warning(
+                self.widget, 'Warning',
+                'PONI calibration is missing. Choose/load PONI first.')
             return None
         # self.produce_cake()
         self.cakemake_ctrl.read_settings()
@@ -235,8 +281,14 @@ class CakeAziController(object):
                     azi_real.append(azi_conv_i - 360)
                 else:
                     azi_real.append(azi_conv_i)
-            tth_i, intensity_i = self.model.diff_img.integrate_to_1d(
-                azimuth_range=(azi_real[0], azi_real[1]))
+            try:
+                tth_i, intensity_i = self.model.diff_img.integrate_to_1d(
+                    azimuth_range=(azi_real[0], azi_real[1]))
+            except Exception as exc:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, 'Warning',
+                    'Cake integration failed:\n' + str(exc))
+                return None
             tth.append(tth_i)
             intensity.append(intensity_i)
         intensity_merged = np.zeros_like(intensity[0])

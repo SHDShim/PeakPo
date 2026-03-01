@@ -101,11 +101,8 @@ class SessionController(object):
         self.model.save_temperature(self.widget.doubleSpinBox_Temperature.value())
 
     def _handle_file_subtab_changed(self, idx):
-        if (not hasattr(self.widget, "tabWidget_3Page3")) or \
-                (not hasattr(self.widget, "tabWidget_3")):
-            return
-        if self.widget.tabWidget_3.widget(idx) == self.widget.tabWidget_3Page3:
-            self.refresh_backup_table()
+        # Backup table is shown in File > Data; keep it current on tab changes.
+        self.refresh_backup_table()
 
     def refresh_backup_table(self):
         if not hasattr(self.widget, "tableWidget_BackupInfo"):
@@ -771,10 +768,8 @@ class SessionController(object):
 
     def open_backup_info(self):
         self.refresh_backup_table()
-        if hasattr(self.widget, "tabWidget_3Page3") and hasattr(self.widget, "tabWidget_3"):
-            self.widget.tabWidget_3.setCurrentWidget(self.widget.tabWidget_3Page3)
-            return
-        self.restore_selected_backup()
+        if hasattr(self.widget, "tabWidget_3Page1") and hasattr(self.widget, "tabWidget_3"):
+            self.widget.tabWidget_3.setCurrentWidget(self.widget.tabWidget_3Page1)
 
     def _update_ppss(self):
         if not self.model.base_ptn_exist():

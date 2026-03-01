@@ -1,22 +1,18 @@
 --------------------------------------------------------------------------------
-2026-02-28, 11:25:21
+2026-03-01, 12:48:27
 --------------------------------------------------------------------------------
-<class 'IndexError'>: 
-index 0 is out of bounds for axis 0 with size 0
+<class 'AttributeError'>: 
+'NoneType' object has no attribute 'shape'
 --------------------------------------------------------------------------------
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/basepatterncontroller.py", line 34, in select_base_ptn
-    self._setshow_new_base_ptn(str(filen))
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/basepatterncontroller.py", line 58, in _setshow_new_base_ptn
-    self._load_a_new_pattern(new_filename)
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/basepatterncontroller.py", line 81, in _load_a_new_pattern
-    loaded_param = self.session_ctrl.autoload_param_for_chi(new_filename)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/sessioncontroller.py", line 507, in autoload_param_for_chi
-    self._sync_ui_from_model(
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/sessioncontroller.py", line 397, in _sync_ui_from_model
-    self.update_inputs()
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/sessioncontroller.py", line 934, in update_inputs
-    self.peakfit_table_ctrl.update_sections()
-  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/peakfittablecontroller.py", line 108, in update_sections
-    item2 = QtWidgets.QTableWidgetItem("{:.2f}".format(section.x[0]))
-                                                       ~~~~~~~~~^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/maincontroller.py", line 363, in integrate_to_1d
+    filen = self.cakeazi_ctrl.integrate_to_1d()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/control/cakeazicontroller.py", line 238, in integrate_to_1d
+    tth_i, intensity_i = self.model.diff_img.integrate_to_1d(
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/ds_cake/DiffractionImage.py", line 111, in integrate_to_1d
+    n_azi_pnts = self.calculate_n_azi_pnts()  # * 2 reduced number for Mar345 data
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danshim/ASU Dropbox/Sang-Heon Shim/Python/PeakPo/PeakPo-7.9.x/peakpo/ds_cake/DiffractionImage.py", line 76, in calculate_n_azi_pnts
+    x_dim = self.img.shape[0]
+            ^^^^^^^^^^^^^^

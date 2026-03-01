@@ -259,6 +259,20 @@ class PeakPoDirModel(object):
         """
         return make_filename(self.base_ptn.fname, extension, original=original)
 
+    def get_associated_image_candidates(self):
+        """
+        Candidate raw-image filenames expected for current CHI.
+        Includes both legacy (original=True) and exact-stem naming.
+        """
+        exts = ("tif", "tiff", "mar3450", "cbf", "h5")
+        candidates = []
+        for ext in exts:
+            for original in (True, False):
+                filen = self.make_filename(ext, original=original)
+                if filen not in candidates:
+                    candidates.append(filen)
+        return candidates
+
     def same_filename_as_base_ptn(self, filename):
         return samefilename(self.base_ptn.fname, filename)
 
@@ -382,42 +396,18 @@ class PeakPoDirModel(object):
         self.base_ptn.color = color
 
     def associated_image_exists(self):
-        filen_tif = self.make_filename('tif', original=True)
-        filen_tiff = self.make_filename('tiff', original=True)
-        filen_mar3450 = self.make_filename('mar3450', original=True)
-        filen_cbf = self.make_filename('cbf', original=True)
-        filen_h5 = self.make_filename('h5', original=True)
-        if os.path.exists(filen_tif) or \
-                os.path.exists(filen_tiff) or \
-                os.path.exists(filen_mar3450) or \
-                os.path.exists(filen_h5) or \
-                os.path.exists(filen_cbf):
-            return True
-        else:
-            return False
+        for filen in self.get_associated_image_candidates():
+            if os.path.exists(filen):
+                return True
+        return False
 
     def load_associated_img(self):
-        filen_tif = self.make_filename('tif', original=True)
-        filen_tiff = self.make_filename('tiff', original=True)
-        filen_mar3450 = self.make_filename('mar3450', original=True)
-        filen_cbf = self.make_filename('cbf', original=True)
-        filen_h5 = self.make_filename('h5', original=True)
         self.reset_diff_img()
-        filen_toload = None
-        if os.path.exists(filen_tif):
-            filen_toload = filen_tif
-        elif os.path.exists(filen_tiff):
-            filen_toload = filen_tiff
-        elif os.path.exists(filen_mar3450):
-            filen_toload = filen_mar3450
-        elif os.path.exists(filen_cbf):
-            filen_toload = filen_cbf
-        elif os.path.exists(filen_h5):
-            filen_toload = filen_h5
-        if filen_toload is None:
-            return False
-        self.diff_img.load(filen_toload)
-        return True
+        for filen_toload in self.get_associated_image_candidates():
+            if os.path.exists(filen_toload):
+                self.diff_img.load(filen_toload)
+                return True
+        return False
 
     def section_list_exist(self):
         if self.section_lst == []:
