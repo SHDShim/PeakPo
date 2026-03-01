@@ -94,6 +94,26 @@ conda activate pkpo710
 python -m pip install --force-reinstall peakpo
 ```
 
+## How to run PeakPo (pip install)
+
+Activate the environment where `peakpo` is installed:
+
+```
+conda activate pkpo710
+```
+
+Run PeakPo:
+
+```
+peakpo
+```
+
+If the `peakpo` command is not found, run:
+
+```
+python -m peakpo
+```
+
 ## How to install before 7.9.x
 
 [Installation wiki page](https://github.com/SHDShim/PeakPo/wiki/Installation-and-Update) 
