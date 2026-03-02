@@ -154,12 +154,23 @@ class JCPDS(object):
         self.beta = 0.
         self.gamma = 0.
         self.v = 0.
+        self._cache_cal_dsp_key = None
+        self._cache_tth = {}
+        self._cache_hkl_key = None
+        self._cache_hkl_text = None
+
+    def _invalidate_plot_cache(self):
+        self._cache_cal_dsp_key = None
+        self._cache_tth = {}
+        self._cache_hkl_key = None
+        self._cache_hkl_text = None
 
     def read_file(self, file):
         """
         read a jcpds file
         """
         self.file = file
+        self._invalidate_plot_cache()
         # Construct base name = file without path and without extension
         name = os.path.splitext(os.path.basename(self.file))[0]
         self.name = name
@@ -179,6 +190,27 @@ class JCPDS(object):
         self.alpha = self.alpha0
         self.beta = self.beta0
         self.gamma = self.gamma0
+
+    def _make_cal_dsp_key(self, pressure, temperature, b_a, c_a, use_table_for_0GPa):
+        return (
+            float(pressure),
+            float(temperature),
+            None if b_a is None else float(b_a),
+            None if c_a is None else float(c_a),
+            bool(use_table_for_0GPa),
+            str(self.symmetry),
+            float(self.k0),
+            float(self.k0p),
+            float(self.v0),
+            float(self.thermal_expansion),
+            float(self.a0),
+            float(self.b0),
+            float(self.c0),
+            float(self.alpha0),
+            float(self.beta0),
+            float(self.gamma0),
+            len(self.DiffLines),
+        )
 
     def _read_peakpo_style(self, file):
         inp = open(file, 'r').readlines()
@@ -428,6 +460,10 @@ class JCPDS(object):
         recalculate_zero = False: use the table d-spacing value for 0 GPa
         """
 
+        cal_key = self._make_cal_dsp_key(
+            pressure, temperature, b_a, c_a, use_table_for_0GPa)
+        if cal_key == self._cache_cal_dsp_key:
+            return
         # angles are always set to original values, so no need to reset
         # self.alpha = self.alpha0;
         # self.beta = self.beta0; self.gamma = self.gamma0
@@ -479,6 +515,8 @@ class JCPDS(object):
             # due to the referencing or copy issue in python list
             self.DiffLines = DLines[:]
         """
+        self._cache_cal_dsp_key = cal_key
+        self._cache_tth = {}
 
     def get_DiffractionLines(self):
         """
@@ -494,26 +532,32 @@ class JCPDS(object):
         If P, T, b_a, c_a have changed, run cal_dsp first for update
         """
 #        self.cal_dsp(pressure, temperature, b_a, c_a)
+        cache_key = (float(wavelength), self._cache_cal_dsp_key, len(self.DiffLines))
+        cached = self._cache_tth.get(cache_key)
+        if cached is not None:
+            return cached
         DLines = self.get_DiffractionLines()
-
-        dsp = []
-        intensity = []
-        for line in DLines:
-            d = line.dsp
-            i = line.intensity
-            dsp.append(d)
-            intensity.append(i)
-        reciprocal_d = wavelength / 2. / np.array(dsp)
-        tth = 2. * np.degrees(np.arcsin(reciprocal_d))
+        dsp = np.fromiter((float(line.dsp) for line in DLines), dtype=float, count=len(DLines))
+        intensity = np.fromiter((float(line.intensity) for line in DLines), dtype=float, count=len(DLines))
+        reciprocal_d = wavelength / 2. / dsp
+        with np.errstate(invalid="ignore"):
+            tth = 2. * np.degrees(np.arcsin(reciprocal_d))
         if np.any(reciprocal_d > 1.0):
             print(str(datetime.datetime.now())[:-7], 
                 ": Ignore arcsin warning. Some dsp in jcpds are too small.")
-        return tth, np.array(intensity)
+        out = (tth, intensity)
+        self._cache_tth[cache_key] = out
+        return out
 
     def get_hkl_in_text(self):
+        hkl_key = tuple((line.h, line.k, line.l) for line in self.DiffLines)
+        if hkl_key == self._cache_hkl_key and self._cache_hkl_text is not None:
+            return self._cache_hkl_text
         hkl = []
         for line in self.DiffLines:
             hkl.append("{0:.0f} {1:.0f} {2:.0f}".format(line.h, line.k, line.l))
+        self._cache_hkl_key = hkl_key
+        self._cache_hkl_text = hkl
         return hkl
 
     def find_DiffLine(self, tth_c, wavelength):

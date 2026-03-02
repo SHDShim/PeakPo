@@ -3,6 +3,7 @@ import time
 import datetime
 import numpy as np
 import numpy.ma as ma
+from matplotlib.widgets import MultiCursor
 #from matplotlib.widgets import MultiCursor
 #import matplotlib.transforms as transforms
 #import matplotlib.colors as colors
@@ -25,6 +26,11 @@ class MplController(object):
         self._cached_filename = None
         self._is_drawing = False
         self._toolbar_active = False
+        self._update_delay_ms = 25
+        self._pending_update_args = None
+        self._update_timer = QtCore.QTimer(self.widget)
+        self._update_timer.setSingleShot(True)
+        self._update_timer.timeout.connect(self._flush_update_request)
         
         # ✅ Wrap toolbar methods to track state
         toolbar = self.widget.mpl.canvas.toolbar
@@ -393,31 +399,35 @@ class MplController(object):
         cakerange = self.widget.mpl.canvas.ax_cake.axis()
         bar_scale = 1. / 100. * axisrange[3] * \
             self.widget.horizontalSlider_JCPDSBarScale.value() / 100.
+        bar_pos = self.widget.horizontalSlider_JCPDSBarPosition.value() / 100.
+        show_intensity = self.widget.checkBox_Intensity.isChecked()
+        if not show_intensity:
+            data_limits = self._get_data_limits()
+            start_intensity = data_limits[2] + bar_pos * axisrange[3]
         pressure = self.widget.doubleSpinBox_Pressure.value()
+        temperature = self.widget.doubleSpinBox_Temperature.value()
+        wavelength = self.widget.doubleSpinBox_SetWavelength.value()
+        use_table_0gpa = self.widget.checkBox_UseJCPDSTable1bar.isChecked()
         for i, phase in enumerate(selected_phases):
 #            try:
             phase.cal_dsp(pressure,
-                            self.widget.doubleSpinBox_Temperature.value(),
-                            use_table_for_0GPa=self.widget.checkBox_UseJCPDSTable1bar.isChecked())
+                            temperature,
+                            use_table_for_0GPa=use_table_0gpa)
 #            except:
 #                QtWidgets.QMessageBox.warning(
 #                    self.widget, "Warning",
 #                    phase.name+" created issues with pressure calculation.")
 #                break
             tth, inten = phase.get_tthVSint(
-                self.widget.doubleSpinBox_SetWavelength.value())
+                wavelength)
             if self.widget.checkBox_JCPDSinPattern.isChecked():
                 intensity = inten * phase.twk_int
-                if self.widget.checkBox_Intensity.isChecked():
+                if show_intensity:
                     bar_min = np.ones_like(tth) * axisrange[2] + \
-                        self.widget.horizontalSlider_JCPDSBarPosition.\
-                        value() / 100. * axisrange[3]
+                        bar_pos * axisrange[3]
                     bar_max = intensity * bar_scale + bar_min
                 else:
-                    data_limits = self._get_data_limits()
-                    starting_intensity = np.ones_like(tth) * data_limits[2] + \
-                        self.widget.horizontalSlider_JCPDSBarPosition.\
-                        value() / 100. * axisrange[3]
+                    starting_intensity = np.ones_like(tth) * start_intensity
                     bar_max = starting_intensity - \
                         i * 100. * bar_scale / n_displayed_jcpds
                     bar_min = starting_intensity - \
@@ -670,14 +680,27 @@ class MplController(object):
         return self.widget.tabWidget.currentIndex() in (4, 5)
 
     def update(self, limits=None, gsas_style=False, cake_ylimits=None):
+        if limits is not None:
+            limits = tuple(limits)
+        if cake_ylimits is not None:
+            cake_ylimits = tuple(cake_ylimits)
+        self._pending_update_args = (limits, bool(gsas_style), cake_ylimits)
+        self._update_timer.start(self._update_delay_ms)
+
+    def _flush_update_request(self):
+        if self._pending_update_args is None:
+            return
+        if self._is_drawing or self._toolbar_active:
+            self._update_timer.start(self._update_delay_ms)
+            return
+        limits, gsas_style, cake_ylimits = self._pending_update_args
+        self._pending_update_args = None
+        self._update_impl(limits=limits, gsas_style=gsas_style, cake_ylimits=cake_ylimits)
+        if self._pending_update_args is not None:
+            self._update_timer.start(self._update_delay_ms)
+
+    def _update_impl(self, limits=None, gsas_style=False, cake_ylimits=None):
         """Updates the graph"""
-        import matplotlib.pyplot as plt
-        from qtpy.QtCore import QTimer
-        from matplotlib.widgets import MultiCursor
-        import matplotlib.transforms as transforms  # ✅ UNCOMMENTED
-        import matplotlib.patches as patches       # ✅ UNCOMMENTED
-        from matplotlib.textpath import TextPath   # ✅ UNCOMMENTED
-        
         # ✅ Block updates during drawing OR toolbar interaction
         if self._is_drawing or self._toolbar_active:
             return
@@ -844,8 +867,7 @@ class MplController(object):
                     self.widget.cursor = None
             
             # ✅ Draw canvas (deferred to Qt event loop)
-            from qtpy.QtCore import QTimer
-            QTimer.singleShot(0, self.widget.mpl.canvas.draw)
+            QtCore.QTimer.singleShot(0, self.widget.mpl.canvas.draw)
             
             print(str(datetime.datetime.now())[:-7], 
                 ": Plot takes {0:.2f}s".format(time.time() - t_start))
@@ -859,6 +881,8 @@ class MplController(object):
         finally:
             self._is_drawing = False
             self.widget.unsetCursor()
+            if self._pending_update_args is not None:
+                self._update_timer.start(0)
 
     def _format_coord_x_y_z_dsp(self, x, y):
         """

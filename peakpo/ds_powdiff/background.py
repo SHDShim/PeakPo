@@ -27,27 +27,24 @@ def fit_bg_cheb_auto(x, y_obs, n_points=20, n_iteration=10, n_cheborder=20,
 
 
 def smooth_bruckner(x, y_obs, n_smooth, n_iter):
-    y_original = y_obs
-
-    n_data = y_obs.size
-    n = n_smooth
-    y = np.empty(n_data + n + n)
-
-    y[n:n + n_data] = y_original[0:n_data]
-    y[0:n].fill(y_original[n])
-    y[n + n_data:n_data + n + n].fill(y_original[-1])
-    y_new = y
-
+    y_original = np.asarray(y_obs, dtype=float)
+    n_data = y_original.size
+    if n_data == 0:
+        return y_original
+    n = max(int(n_smooth), 1)
+    n_iter = max(int(n_iter), 0)
+    y = np.empty(n_data + 2 * n, dtype=float)
+    y[n:n + n_data] = y_original
+    left_idx = min(n, n_data - 1)
+    y[:n].fill(y_original[left_idx])
+    y[n + n_data:].fill(y_original[-1])
     y_avg = np.average(y)
     y_min = np.min(y)
-
-    y_c = y_avg + 2. * (y_avg - y_min)
-
-    y[np.where(y > y_c)] = y_c
-
-    for j in range(0, n_iter):
-        for i in range(n, n_data - 1 - n - 1):
-            y_new[i] = np.min([y[i], np.average(y[i - n:i + n + 1])])
-        y = y_new
-
-    return y[n:n + n_data]
+    y_c = y_avg + 2.0 * (y_avg - y_min)
+    y = np.minimum(y, y_c)
+    kernel = np.ones(2 * n + 1, dtype=float) / float(2 * n + 1)
+    core_slice = slice(n, n + n_data)
+    for _ in range(n_iter):
+        y_avg_window = np.convolve(y, kernel, mode="same")
+        y[core_slice] = np.minimum(y[core_slice], y_avg_window[core_slice])
+    return y[core_slice]
