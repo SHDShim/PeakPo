@@ -11,6 +11,7 @@ import pyFAI
 import zipfile
 import copy
 import shutil
+from contextlib import contextmanager
 import dill._dill as _dill_impl
 from qtpy import QtWidgets, QtCore
 from .mplcontroller import MplController
@@ -542,36 +543,86 @@ class SessionController(object):
         """
         Repopulate GUI state from current model after session load/restore.
         """
-        if self.model.base_ptn_exist():
-            self.widget.lineEdit_DiffractionPatternFileName.setText(
-                str(self.model.base_ptn.fname))
-            self.widget.doubleSpinBox_SetWavelength.setValue(
-                self.model.get_base_ptn_wavelength())
-            xray_energy = convert_wl_to_energy(self.model.get_base_ptn_wavelength())
-            self.widget.label_XRayEnergy.setText("({:.3f} keV)".format(xray_energy))
-            if self.model.exist_in_waterfall(self.model.base_ptn.fname):
-                self.widget.pushButton_AddBasePtn.setChecked(True)
+        with self._block_plot_ui_signals():
+            if self.model.base_ptn_exist():
+                self.widget.lineEdit_DiffractionPatternFileName.setText(
+                    str(self.model.base_ptn.fname))
+                self.widget.doubleSpinBox_SetWavelength.setValue(
+                    self.model.get_base_ptn_wavelength())
+                xray_energy = convert_wl_to_energy(self.model.get_base_ptn_wavelength())
+                self.widget.label_XRayEnergy.setText("({:.3f} keV)".format(xray_energy))
+                if self.model.exist_in_waterfall(self.model.base_ptn.fname):
+                    self.widget.pushButton_AddBasePtn.setChecked(True)
+                else:
+                    self.widget.pushButton_AddBasePtn.setChecked(False)
+            self.widget.textEdit_Jlist.setText(str(manifest_path))
+            self.widget.textEdit_SessionFileName.setText(str(manifest_path))
+            if self.model.poni_exist():
+                self.widget.lineEdit_PONI.setText(self.model.poni)
             else:
-                self.widget.pushButton_AddBasePtn.setChecked(False)
-        self.widget.textEdit_Jlist.setText(str(manifest_path))
-        self.widget.textEdit_SessionFileName.setText(str(manifest_path))
-        if self.model.poni_exist():
-            self.widget.lineEdit_PONI.setText(self.model.poni)
-        else:
-            self.widget.lineEdit_PONI.setText('')
-        if self.model.diff_img_exist():
-            self.widget.textEdit_DiffractionImageFilename.setText(
-                self.model.diff_img.img_filename)
-        else:
-            self.widget.textEdit_DiffractionImageFilename.setText(
-                'Image file must have the same name ' +
-                'as base ptn in the same folder.')
-        self.widget.doubleSpinBox_Pressure.setValue(self.model.get_saved_pressure())
-        self.widget.doubleSpinBox_Temperature.setValue(self.model.get_saved_temperature())
-        self._apply_ui_state(ui_state or {})
-        self.update_inputs()
+                self.widget.lineEdit_PONI.setText('')
+            if self.model.diff_img_exist():
+                self.widget.textEdit_DiffractionImageFilename.setText(
+                    self.model.diff_img.img_filename)
+            else:
+                self.widget.textEdit_DiffractionImageFilename.setText(
+                    'Image file must have the same name ' +
+                    'as base ptn in the same folder.')
+            self.widget.doubleSpinBox_Pressure.setValue(self.model.get_saved_pressure())
+            self.widget.doubleSpinBox_Temperature.setValue(self.model.get_saved_temperature())
+            self._apply_ui_state(ui_state or {})
+            self.update_inputs()
         self._sync_peakfit_selection_to_current_section()
         self.plot_ctrl.zoom_out_graph()
+
+    @contextmanager
+    def _block_plot_ui_signals(self):
+        blockers = []
+        for w in self._plot_signal_widgets():
+            try:
+                blockers.append(QtCore.QSignalBlocker(w))
+            except Exception:
+                continue
+        try:
+            yield
+        finally:
+            # Keep blocker objects alive until context exit.
+            del blockers
+
+    def _plot_signal_widgets(self):
+        names = [
+            "doubleSpinBox_SetWavelength",
+            "doubleSpinBox_Pressure",
+            "doubleSpinBox_Temperature",
+            "doubleSpinBox_Background_ROI_min",
+            "doubleSpinBox_Background_ROI_max",
+            "spinBox_BGParam0",
+            "spinBox_BGParam1",
+            "spinBox_BGParam2",
+            "spinBox_AziShift",
+            "spinBox_MaxCakeScale",
+            "horizontalSlider_VMin",
+            "horizontalSlider_VMax",
+            "horizontalSlider_MaxScaleBars",
+            "spinBox_MaskMin",
+            "spinBox_MaskMax",
+            "checkBox_Diff",
+            "checkBox_UseDiffMode",
+            "comboBox_DiffCmap",
+            "comboBox_DiffScaleMode",
+            "doubleSpinBox_DiffVmin",
+            "doubleSpinBox_DiffVmax",
+        ]
+        widgets = []
+        for name in names:
+            if hasattr(self.widget, name):
+                widgets.append(getattr(self.widget, name))
+        if hasattr(self.widget, "cake_hist_widget"):
+            hist = self.widget.cake_hist_widget
+            for name in ("check_log", "check_focus", "spin_low_pct", "spin_high_pct"):
+                if hasattr(hist, name):
+                    widgets.append(getattr(hist, name))
+        return widgets
 
     def _sync_peakfit_selection_to_current_section(self):
         if not self.model.current_section_exist():

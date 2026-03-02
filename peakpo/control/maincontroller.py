@@ -7,6 +7,7 @@ from qtpy import QtWidgets
 from qtpy import QtCore
 import gc
 import datetime
+from contextlib import contextmanager
 from ..view import MainWindow
 from ..model import PeakPoModel, PeakPoModel8
 from .basepatterncontroller import BasePatternController
@@ -104,6 +105,7 @@ class MainController(object):
         self.clip = QtWidgets.QApplication.clipboard()
         print("  ✓ clipboard set")
         self._shutdown_done = False
+        self._defer_plot_update_count = 0
         
         print("MainController.__init__ - DONE\n")
 
@@ -436,6 +438,8 @@ class MainController(object):
             self.apply_changes_to_graph()
 
     def apply_changes_to_graph(self):
+        if self._plot_update_deferred():
+            return
         self.plot_ctrl.update()
 
     def plot_new_graph(self):
@@ -996,6 +1000,8 @@ class MainController(object):
         xray_energy = convert_wl_to_energy(self.model.base_ptn.wavelength)
         self.widget.label_XRayEnergy.setText(
             "({:.3f} keV)".format(xray_energy))
+        if self._plot_update_deferred():
+            return
         self.plot_ctrl.update()
 
     def update_bgsub(self):
@@ -1046,6 +1052,8 @@ class MainController(object):
                 print(str(datetime.datetime.now())[:-7],
                     ": Skipped BG subtraction for {0:d} waterfall item(s) "
                     "without raw data.".format(n_skipped))
+        if self._plot_update_deferred():
+            return
         self.plot_new_graph()
 
     def reset_bg_params_to_default(self):
@@ -1059,7 +1067,20 @@ class MainController(object):
             self.plot_ctrl.update_jcpds_only()
         else:
         """
+        if self._plot_update_deferred():
+            return
         self.plot_ctrl.update()
+
+    def _plot_update_deferred(self):
+        return self._defer_plot_update_count > 0
+
+    @contextmanager
+    def _defer_plot_updates(self):
+        self._defer_plot_update_count += 1
+        try:
+            yield
+        finally:
+            self._defer_plot_update_count -= 1
 
     def _find_closestjcpds(self, x):
         jcount = 0
@@ -1227,8 +1248,9 @@ class MainController(object):
                 return
         new_filename_chi = filelist_chi[idx_chi_new]
         if os.path.exists(new_filename_chi):
-            self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
-            self._apply_nav_carry_state(nav_state)
+            with self._defer_plot_updates():
+                self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
+                self._apply_nav_carry_state(nav_state)
             # self.model.set_base_ptn_color(self.obj_color)
             self.plot_ctrl.update()
         else:
