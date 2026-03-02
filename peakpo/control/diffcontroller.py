@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from qtpy import QtWidgets
+from scipy.interpolate import interp1d
 
 from ..model import PeakPoModel8
 from ..model.diff_state import DiffState
@@ -45,10 +46,16 @@ class DiffController(object):
         self.widget = widget
         self.plot_ctrl = plot_ctrl
         self._in_ref_reload = False
+        self._ref2d_sort_cache = {}
+        self._ref2d_interp_cache = {}
         if not hasattr(self.model, "diff_state") or (self.model.diff_state is None):
             self.model.diff_state = DiffState()
         self._connect_channel()
         self._init_ui_from_state()
+
+    def _clear_interp_cache(self):
+        self._ref2d_sort_cache = {}
+        self._ref2d_interp_cache = {}
 
     def _connect_channel(self):
         if (not hasattr(self.widget, "checkBox_Diff")) and \
@@ -177,6 +184,7 @@ class DiffController(object):
         self.widget.lineEdit_DiffRefChi.setText("")
         self.model.diff_state.ref_chi_path = ""
         self.model.diff_state.clear_reference_data()
+        self._clear_interp_cache()
         self.model.diff_state.enabled = False
         self._set_enabled_ui(False)
         self._refresh_toggle_enabled_state()
@@ -330,6 +338,7 @@ class DiffController(object):
     def _reload_reference_data(self, show_errors=False):
         st = self.model.diff_state
         self._in_ref_reload = True
+        self._clear_interp_cache()
         ref_path = str(st.ref_chi_path or "")
         st.clear_reference_data()
         if ref_path == "":
@@ -377,6 +386,21 @@ class DiffController(object):
         self._refresh_toggle_enabled_state()
         self._in_ref_reload = False
         self._update_diff_minmax_labels()
+
+    def _ref2d_token(self, ref_int, ref_tth, ref_chi):
+        return (
+            id(ref_int),
+            id(ref_tth),
+            id(ref_chi),
+            ref_int.shape,
+            ref_tth.shape,
+            ref_chi.shape,
+        )
+
+    def _curve_token(self, arr):
+        if arr.size == 0:
+            return (id(arr), 0, None, None)
+        return (id(arr), int(arr.size), float(arr[0]), float(arr[-1]))
 
     def _set_status(self, explicit=""):
         if not hasattr(self.widget, "label_DiffStatus"):
@@ -454,24 +478,44 @@ class DiffController(object):
         if ref_int.ndim != 2:
             return None
 
-        order_t = np.argsort(ref_tth)
-        ref_tth = ref_tth[order_t]
-        ref_int = ref_int[:, order_t]
-
-        order_c = np.argsort(ref_chi)
-        ref_chi = ref_chi[order_c]
-        ref_int = ref_int[order_c, :]
-
         tth_cur = np.asarray(tth_cur, dtype=float)
         chi_cur = np.asarray(chi_cur, dtype=float)
-
-        tmp = np.empty((ref_int.shape[0], tth_cur.size), dtype=float)
-        for i in range(ref_int.shape[0]):
-            tmp[i, :] = np.interp(tth_cur, ref_tth, ref_int[i, :], left=np.nan, right=np.nan)
-
-        out = np.empty((chi_cur.size, tth_cur.size), dtype=float)
-        for j in range(tth_cur.size):
-            out[:, j] = np.interp(chi_cur, ref_chi, tmp[:, j], left=np.nan, right=np.nan)
+        ref_token = self._ref2d_token(ref_int, ref_tth, ref_chi)
+        sorted_ref = self._ref2d_sort_cache.get(ref_token)
+        if sorted_ref is None:
+            order_t = np.argsort(ref_tth)
+            ref_tth_sorted = ref_tth[order_t]
+            ref_int_sorted = ref_int[:, order_t]
+            order_c = np.argsort(ref_chi)
+            ref_chi_sorted = ref_chi[order_c]
+            ref_int_sorted = ref_int_sorted[order_c, :]
+            sorted_ref = (ref_tth_sorted, ref_chi_sorted, ref_int_sorted)
+            self._ref2d_sort_cache = {ref_token: sorted_ref}
+            self._ref2d_interp_cache = {}
+        ref_tth_sorted, ref_chi_sorted, ref_int_sorted = sorted_ref
+        interp_key = (ref_token, self._curve_token(tth_cur), self._curve_token(chi_cur))
+        cached = self._ref2d_interp_cache.get(interp_key)
+        if cached is not None:
+            return cached
+        interp_t = interp1d(
+            ref_tth_sorted,
+            ref_int_sorted,
+            axis=1,
+            bounds_error=False,
+            fill_value=np.nan,
+            assume_sorted=True,
+        )
+        tmp = interp_t(tth_cur)
+        interp_c = interp1d(
+            ref_chi_sorted,
+            tmp,
+            axis=0,
+            bounds_error=False,
+            fill_value=np.nan,
+            assume_sorted=True,
+        )
+        out = interp_c(chi_cur)
+        self._ref2d_interp_cache = {interp_key: out}
         return out
 
     def get_display_cake(self, int_cur, tth_cur, chi_cur):

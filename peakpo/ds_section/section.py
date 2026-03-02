@@ -15,6 +15,9 @@ class Section(object):
         self.fit_result = None
         self.peaks_in_queue = []  # list of dic, value, constraints
         self.peakinfo = {}
+        self._component_cache_token = None
+        self._component_cache_bgsub = None
+        self._component_cache_with_bg = None
 
     def get_xrange(self):
         return (self.x.min(), self.x.max())
@@ -56,6 +59,21 @@ class Section(object):
         self.x = x
         self.y_bgsub = y_bgsub
         self.y_bg = y_bg
+        self._invalidate_component_cache()
+
+    def _invalidate_component_cache(self):
+        self._component_cache_token = None
+        self._component_cache_bgsub = None
+        self._component_cache_with_bg = None
+
+    def _get_component_cache_token(self):
+        return (
+            id(self.fit_result),
+            id(self.x),
+            id(self.y_bg),
+            None if self.x is None else len(self.x),
+            None if self.y_bg is None else len(self.y_bg),
+        )
 
     def set_single_peak(self, x_center, fwhm, hkl=[0, 0, 0],
                         phase_name='unknown'):
@@ -170,6 +188,7 @@ class Section(object):
         out = self.fit_model.fit(
             self.y_bgsub, self.parameters, x=self.x)
         self.fit_result = copy.deepcopy(out)
+        self._invalidate_component_cache()
         self.timestamp = str(datetime.datetime.now())[:-7]
         self.copy_fit_result_to_queue()
         if self.fit_result is None:
@@ -215,14 +234,20 @@ class Section(object):
         return_value['p1_']
         return_value['b_']
         """
-        comps = self.fit_result.eval_components(x=self.x)
+        token = self._get_component_cache_token()
+        if token != self._component_cache_token:
+            comps = self.fit_result.eval_components(x=self.x)
+            self._component_cache_bgsub = comps
+            self._component_cache_with_bg = None
+            self._component_cache_token = token
         if bgsub:
-            return comps
-        else:
+            return self._component_cache_bgsub
+        if self._component_cache_with_bg is None:
             bg_comps = {}
-            for key, value in comps.items():
+            for key, value in self._component_cache_bgsub.items():
                 bg_comps[key] = value + self.y_bg
-            return bg_comps
+            self._component_cache_with_bg = bg_comps
+        return self._component_cache_with_bg
 
     def get_fit_profile(self, bgsub=False):
         if bgsub:

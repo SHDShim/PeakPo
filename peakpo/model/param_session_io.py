@@ -4,7 +4,6 @@ import shutil
 import tempfile
 import datetime
 import io
-import glob
 import hashlib
 import re
 from dataclasses import dataclass
@@ -106,6 +105,26 @@ def _atomic_write_json(path, data):
 def _file_bytes(path):
     with open(path, "rb") as f:
         return f.read()
+
+
+def _file_differs_from_payload(path, payload, chunk_size=1024 * 1024):
+    if not os.path.exists(path):
+        return True
+    try:
+        if os.path.getsize(path) != len(payload):
+            return True
+        with open(path, "rb") as f:
+            offset = 0
+            payload_len = len(payload)
+            while offset < payload_len:
+                end = min(offset + chunk_size, payload_len)
+                chunk = f.read(end - offset)
+                if chunk != payload[offset:end]:
+                    return True
+                offset = end
+        return False
+    except Exception:
+        return True
 
 
 def _relpath_or_abs(path, root):
@@ -582,18 +601,14 @@ def _collect_companion_files(param_dir):
     Track legacy/session companion files in PARAM so their changes are included
     in backup snapshots as well.
     """
-    patterns = [
-        "*.poni",
-        "*.cake.npy",
-        "*.bg.chi",
-        "*.bgsub.chi",
-        "*.cakeformat",
-    ]
+    suffixes = (".poni", ".cake.npy", ".bg.chi", ".bgsub.chi", ".cakeformat")
     rel_files = set()
-    for pat in patterns:
-        for full in glob.glob(os.path.join(param_dir, pat)):
-            if os.path.isfile(full):
-                rel_files.add(os.path.basename(full))
+    if not os.path.isdir(param_dir):
+        return []
+    for entry in os.scandir(param_dir):
+        if (not entry.is_file()) or (not entry.name.endswith(suffixes)):
+            continue
+        rel_files.add(entry.name)
     return sorted(rel_files)
 
 
@@ -875,8 +890,7 @@ def save_model_to_param(
     changed_files_all = []
     for rel_path, new_bytes in payload_map.items():
         full_path = os.path.join(param_dir, rel_path)
-        old_bytes = _file_bytes(full_path) if os.path.exists(full_path) else None
-        if old_bytes != new_bytes:
+        if _file_differs_from_payload(full_path, new_bytes):
             changed_files_all.append(rel_path)
 
     backup_payload_map = {
@@ -912,8 +926,11 @@ def save_model_to_param(
             dst = os.path.join(backup_root, rel_path)
             _atomic_write_bytes(dst, backup_payload_map[rel_path])
 
-    for rel_path, payload in payload_map.items():
-        _atomic_write_bytes(os.path.join(param_dir, rel_path), payload)
+    for rel_path in changed_files_all:
+        _atomic_write_bytes(
+            os.path.join(param_dir, rel_path),
+            payload_map[rel_path],
+        )
 
     if create_backup_event:
         highlights = _highlights_from_flags(semantic_flags, force_backup=force_backup)
