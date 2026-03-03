@@ -6,10 +6,8 @@ import numpy as np
 from qtpy import QtWidgets, QtCore
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
-from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 from matplotlib.widgets import RectangleSelector
 from matplotlib import colors as mcolors
-from matplotlib.gridspec import GridSpec
 import matplotlib.patches as mpatches
 
 from ..utils import get_temp_dir, readchi
@@ -23,7 +21,6 @@ class MapController(object):
         self.plot_ctrl = None
 
         self._map_canvas = None
-        self._map_toolbar = None
         self._map_ax = None
         self._map_cax = None
         self._map_cbar = None
@@ -57,11 +54,9 @@ class MapController(object):
         if not hasattr(self.widget, "verticalLayout_MapCanvas"):
             return
         self._map_fig = Figure()
-        self._map_fig.subplots_adjust(left=0.08, right=0.92, top=0.93, bottom=0.1, wspace=0.04)
+        self._map_fig.subplots_adjust(left=0.005, right=0.94, top=0.985, bottom=0.03)
         self._recreate_map_axes()
         self._map_canvas = FigureCanvasQTAgg(self._map_fig)
-        self._map_toolbar = NavigationToolbar2QT(self._map_canvas, self.widget.groupBox_MapCanvas)
-        self.widget.verticalLayout_MapCanvas.addWidget(self._map_toolbar)
         self.widget.verticalLayout_MapCanvas.addWidget(self._map_canvas, 1)
         self._map_canvas.mpl_connect("button_press_event", self._on_map_click)
 
@@ -69,19 +64,17 @@ class MapController(object):
         if getattr(self, "_map_fig", None) is None:
             return
         self._map_fig.clf()
-        gs = GridSpec(1, 2, width_ratios=[20, 1], figure=self._map_fig)
-        self._map_ax = self._map_fig.add_subplot(gs[0, 0])
-        self._map_cax = self._map_fig.add_subplot(gs[0, 1])
+        self._map_ax = self._map_fig.add_subplot(111)
+        self._map_cax = None
         self._map_cbar = None
 
     def _ensure_map_axes(self):
-        if (self._map_ax is None) or (self._map_cax is None):
+        if self._map_ax is None:
             self._recreate_map_axes()
             return
         # Axes can become detached after colorbar removal in some mpl states.
         ax_fig = getattr(self._map_ax, "figure", None)
-        cax_fig = getattr(self._map_cax, "figure", None)
-        if (ax_fig is None) or (cax_fig is None) or (ax_fig is not self._map_fig) or (cax_fig is not self._map_fig):
+        if (ax_fig is None) or (ax_fig is not self._map_fig):
             self._recreate_map_axes()
 
     def _connect_channel(self):
@@ -94,8 +87,7 @@ class MapController(object):
         self.widget.spinBox_MapNy.valueChanged.connect(self._on_grid_changed)
         self.widget.comboBox_MapOrder.currentIndexChanged.connect(self._on_grid_changed)
 
-        self.widget.pushButton_MapSetRoi1D.clicked.connect(self._arm_roi_1d)
-        self.widget.pushButton_MapSetRoi2D.clicked.connect(self._arm_roi_2d)
+        self.widget.pushButton_MapSetRoi.clicked.connect(self._arm_roi_selection)
         self.widget.pushButton_MapClearRoi.clicked.connect(self._clear_roi)
         self.widget.pushButton_MapCompute.clicked.connect(self._compute_map)
 
@@ -123,10 +115,8 @@ class MapController(object):
 
     def deactivate_interactions(self):
         self._disable_roi_selectors()
-        if hasattr(self.widget, "pushButton_MapSetRoi1D"):
-            self.widget.pushButton_MapSetRoi1D.setChecked(False)
-        if hasattr(self.widget, "pushButton_MapSetRoi2D"):
-            self.widget.pushButton_MapSetRoi2D.setChecked(False)
+        if hasattr(self.widget, "pushButton_MapSetRoi"):
+            self.widget.pushButton_MapSetRoi.setChecked(False)
 
     def is_roi_selection_active(self):
         sel_1d_active = (self._selector_1d is not None) and \
@@ -172,7 +162,11 @@ class MapController(object):
         self._set_status(f"Loaded {len(self._chi_files)} CHI files. Guessed grid: {nx} x {ny}")
 
         self._preview_center_file()
-        self._draw_map()
+        self._set_default_1d_full_range_roi()
+        if self._roi_1d is not None:
+            self._compute_map()
+        else:
+            self._draw_map()
 
     def _guess_grid_dims(self, n_files):
         if n_files <= 0:
@@ -234,7 +228,29 @@ class MapController(object):
         ny = int(self.widget.spinBox_MapNy.value())
         self._grid = (nx, ny)
         self._preview_center_file()
+        n = len(self._chi_files)
+        if n > 0 and (nx * ny != n):
+            self._set_status(
+                f"Grid mismatch: Nx*Ny ({nx}x{ny}={nx * ny}) must equal loaded files ({n})."
+            )
         self._draw_map()
+
+    def _set_default_1d_full_range_roi(self):
+        if not self._chi_files:
+            return
+        try:
+            x, __ = self._load_bgsub_xy_if_requested(self._chi_files[0])
+            if x.size == 0:
+                return
+            xmin = float(np.nanmin(x))
+            xmax = float(np.nanmax(x))
+            if (not np.isfinite(xmin)) or (not np.isfinite(xmax)) or (xmax <= xmin):
+                return
+            self._roi_1d = (xmin, xmax)
+            self._roi_2d = None
+            self.widget.lineEdit_MapRoiSummary.setText(f"1D: 2theta [{xmin:.3f}, {xmax:.3f}]")
+        except Exception:
+            pass
 
     def _preview_center_file(self):
         if not self._chi_files:
@@ -242,7 +258,9 @@ class MapController(object):
         nx, ny = self._grid
         n = len(self._chi_files)
         if nx * ny != n:
-            self._set_status(f"Grid mismatch: {nx} x {ny} != {n}")
+            self._set_status(
+                f"Grid mismatch: Nx*Ny ({nx}x{ny}={nx * ny}) must equal loaded files ({n})."
+            )
             return
         cx = nx // 2
         cy = ny // 2
@@ -296,13 +314,12 @@ class MapController(object):
             x = nx - 1 - x
         return int(x), int(y)
 
-    def _arm_roi_1d(self):
+    def _arm_roi_selection(self):
         if self.widget.tabWidget.currentWidget() != self.widget.tab_Map:
             self._set_status("Open Map tab first.")
             return
         self._disable_roi_selectors()
-        self.widget.pushButton_MapSetRoi2D.setChecked(False)
-        self.widget.pushButton_MapSetRoi1D.setChecked(True)
+        self.widget.pushButton_MapSetRoi.setChecked(True)
         self._selector_1d = RectangleSelector(
             self.widget.mpl.canvas.ax_pattern,
             self._on_roi_1d_selected,
@@ -311,27 +328,18 @@ class MapController(object):
             interactive=False,
             drag_from_anywhere=False,
         )
-        self._set_status("Draw ROI on 1D pattern (main plot).")
-
-    def _arm_roi_2d(self):
-        if self.widget.tabWidget.currentWidget() != self.widget.tab_Map:
-            self._set_status("Open Map tab first.")
-            return
-        if not self.widget.checkBox_ShowCake.isChecked():
-            self._set_status("Enable Cake view to select 2D ROI.")
-            return
-        self._disable_roi_selectors()
-        self.widget.pushButton_MapSetRoi1D.setChecked(False)
-        self.widget.pushButton_MapSetRoi2D.setChecked(True)
-        self._selector_2d = RectangleSelector(
-            self.widget.mpl.canvas.ax_cake,
-            self._on_roi_2d_selected,
-            useblit=True,
-            button=[1],
-            interactive=False,
-            drag_from_anywhere=False,
-        )
-        self._set_status("Draw ROI on cake plot (main plot).")
+        if self.widget.checkBox_ShowCake.isChecked():
+            self._selector_2d = RectangleSelector(
+                self.widget.mpl.canvas.ax_cake,
+                self._on_roi_2d_selected,
+                useblit=True,
+                button=[1],
+                interactive=False,
+                drag_from_anywhere=False,
+            )
+            self._set_status("Draw ROI on 1D pattern or 2D cake plot.")
+        else:
+            self._set_status("Draw ROI on 1D pattern. Enable Cake view for 2D ROI.")
 
     def _disable_roi_selectors(self):
         if self._selector_1d is not None:
@@ -368,6 +376,7 @@ class MapController(object):
         self._set_status("1D ROI selected.")
         self.deactivate_interactions()
         self.refresh_roi_overlays()
+        self._compute_map()
 
     def _on_roi_2d_selected(self, eclick, erelease):
         if (eclick.xdata is None) or (erelease.xdata is None) or \
@@ -387,6 +396,7 @@ class MapController(object):
         self._set_status("2D ROI selected.")
         self.deactivate_interactions()
         self.refresh_roi_overlays()
+        self._compute_map()
 
     def _load_chi_xy(self, chi_path):
         if chi_path in self._chi_cache:
@@ -458,7 +468,9 @@ class MapController(object):
         nx, ny = self._grid
         n = len(self._chi_files)
         if nx * ny != n:
-            self._set_status(f"Grid mismatch: {nx} x {ny} != {n}")
+            self._set_status(
+                f"Grid mismatch: Nx*Ny ({nx}x{ny}={nx * ny}) must equal loaded files ({n})."
+            )
             return
         if (self._roi_1d is None) and (self._roi_2d is None):
             self._set_status("Select ROI first.")
@@ -566,18 +578,14 @@ class MapController(object):
         self._draw_map()
 
     def _draw_map(self):
-        self._ensure_map_axes()
+        # Recreate axes each draw so colorbar layout adjustments do not accumulate.
+        self._recreate_map_axes()
         if self._map_ax is None:
             return
         self._map_ax.clear()
-        if self._map_cax is not None:
-            self._map_cax.clear()
         self._map_cbar = None
         if self._map_data is None:
-            self._map_ax.set_title("Map")
-            self._map_ax.set_xlabel("X")
-            self._map_ax.set_ylabel("Y")
-            self._map_ax.set_aspect("equal", adjustable="box")
+            self._map_ax.set_axis_off()
             self._map_canvas.draw_idle()
             return
 
@@ -617,15 +625,21 @@ class MapController(object):
         else:
             im_kwargs["norm"] = norm
         self._map_im = self._map_ax.imshow(data, **im_kwargs)
-        self._map_cbar = self._map_fig.colorbar(self._map_im, cax=self._map_cax)
-        self._map_cbar.set_label(label)
+        self._map_cbar = self._map_fig.colorbar(
+            self._map_im, ax=self._map_ax, pad=0.0075, fraction=0.046
+        )
+        self._map_cbar.set_label("")
+        self._map_cbar.set_ticks([])
+        self._map_cbar.ax.tick_params(
+            left=False, right=False, labelleft=False, labelright=False,
+            bottom=False, top=False, labelbottom=False, labeltop=False
+        )
 
-        self._map_ax.set_title("Map")
-        self._map_ax.set_xlabel("X index")
-        self._map_ax.set_ylabel("Y index")
         self._map_ax.set_aspect("equal", adjustable="box")
+        self._map_ax.set_anchor("C")
         self._map_ax.set_xlim(-0.5, data.shape[1] - 0.5)
         self._map_ax.set_ylim(-0.5, data.shape[0] - 0.5)
+        self._map_ax.set_axis_off()
         self._map_canvas.draw_idle()
 
     def _on_map_click(self, event):
@@ -724,22 +738,40 @@ class MapController(object):
         if not filen:
             return
         self._map_fig.savefig(filen, dpi=300, bbox_inches="tight")
-        self._set_status(f"Saved image: {filen}")
+        self._set_status("Image exported.")
 
     def _export_npy(self):
         if self._map_data is None:
             self._set_status("No map data to export.")
             return
-        base = os.path.join(self.model.chi_path, "map.npy")
-        filen, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self.widget,
-            "Export map data",
-            base,
-            "NumPy files (*.npy)",
+        root = self.model.chi_path if str(getattr(self.model, "chi_path", "")).strip() else os.getcwd()
+        out_dir = os.path.join(root, "map_py")
+        os.makedirs(out_dir, exist_ok=True)
+
+        npy_path = os.path.join(out_dir, "map.npy")
+        py_path = os.path.join(out_dir, "plot_map.py")
+
+        np.save(npy_path, self._map_data)
+
+        script = (
+            "import numpy as np\n"
+            "import matplotlib.pyplot as plt\n\n"
+            "def main():\n"
+            "    data = np.load('map.npy')\n"
+            "    fig, ax = plt.subplots(figsize=(7, 5), facecolor='white')\n"
+            "    ax.set_facecolor('white')\n"
+            "    im = ax.imshow(data, origin='lower', cmap='viridis', interpolation='nearest', aspect='equal')\n"
+            "    cbar = fig.colorbar(im, ax=ax)\n"
+            "    cbar.set_label('Integrated intensity')\n"
+            "    ax.set_title('Map')\n"
+            "    ax.set_xlabel('X index')\n"
+            "    ax.set_ylabel('Y index')\n"
+            "    fig.tight_layout()\n"
+            "    plt.show()\n\n"
+            "if __name__ == '__main__':\n"
+            "    main()\n"
         )
-        if not filen:
-            return
-        if not filen.lower().endswith(".npy"):
-            filen = filen + ".npy"
-        np.save(filen, self._map_data)
-        self._set_status(f"Saved NPY: {filen}")
+        with open(py_path, "w", encoding="utf-8") as fh:
+            fh.write(script)
+
+        self._set_status("Exported map_py (map.npy + plot_map.py).")
