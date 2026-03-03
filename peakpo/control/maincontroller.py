@@ -26,6 +26,7 @@ from .peakfitcontroller import PeakFitController
 from .peakfittablecontroller import PeakfitTableController
 from .cakeazicontroller import CakeAziController
 from .exportpythoncontroller import ExportPythonController
+from .mapcontroller import MapController
 from ..utils import dialog_savefile, writechi, extract_extension, \
     convert_wl_to_energy, get_sorted_filelist, find_from_filelist, \
     make_filename, get_directory, get_temp_dir
@@ -61,6 +62,12 @@ class MainController(object):
         self.plot_ctrl.set_diff_controller(self.diff_ctrl)
         self._propagate_diff_controller()
         print("  ✓ DiffController created")
+
+        self.map_ctrl = MapController(self.model, self.widget)
+        self.map_ctrl.set_helpers(
+            base_ptn_ctrl=self.base_ptn_ctrl,
+            plot_ctrl=self.plot_ctrl)
+        print("  ✓ MapController created")
         
         self.cakeazi_ctrl = CakeAziController(self.model, self.widget)
         print("  ✓ CakeAziController created")
@@ -433,7 +440,11 @@ class MainController(object):
         return os.path.exists(temp_dir)
 
     def check_for_peakfit(self, i):
-        if i == 8:
+        if hasattr(self.widget, "tab_PkFt"):
+            is_peakfit_tab = (self.widget.tabWidget.widget(i) == self.widget.tab_PkFt)
+        else:
+            is_peakfit_tab = (i == 8)
+        if is_peakfit_tab:
             self.widget.checkBox_AutoY.setChecked(False)
             self.apply_changes_to_graph()
 
@@ -441,9 +452,19 @@ class MainController(object):
         if self._plot_update_deferred():
             return
         self.plot_ctrl.update()
+        if hasattr(self, "map_ctrl") and (self.map_ctrl is not None):
+            try:
+                self.map_ctrl.refresh_roi_overlays()
+            except Exception:
+                pass
 
     def plot_new_graph(self):
         self.plot_ctrl.zoom_out_graph()
+        if hasattr(self, "map_ctrl") and (self.map_ctrl is not None):
+            try:
+                self.map_ctrl.refresh_roi_overlays()
+            except Exception:
+                pass
 
     def load_jlist_from_session(self):
         """
@@ -884,6 +905,15 @@ class MainController(object):
         self.plot_ctrl.update()
 
     def deliver_mouse_signal(self, event):
+        # Map ROI selection uses mouse drag on the main plot/cake axes.
+        # Suppress default click handling (position popup / peak pick)
+        # while ROI selector is active.
+        if hasattr(self, "map_ctrl") and (self.map_ctrl is not None):
+            try:
+                if self.map_ctrl.is_roi_selection_active():
+                    return
+            except Exception:
+                pass
         # ✅ Compatible with matplotlib 3.3+
         if hasattr(self.widget.mpl.ntb, 'mode'):
             # New matplotlib API

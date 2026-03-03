@@ -142,6 +142,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._layout_backup_buttons()
         self._setup_diff_tab()
         self._promote_diff_to_main_tab()
+        self._setup_map_tab()
+        self._promote_map_to_main_tab()
         self._reorder_main_tabs_and_fit_tab_names()
         self._setup_toolbar_diff_toggle()
         self._spread_top_toolbar_even()
@@ -777,6 +779,186 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 self.tabWidget.insertTab(idx_fits, self.tab_Diff, "Diff")
 
+    def _setup_map_tab(self):
+        if not hasattr(self, "tabWidget_5"):
+            return
+        if hasattr(self, "tab_Map"):
+            return
+
+        self.tab_Map = QtWidgets.QWidget()
+        self.tab_Map.setObjectName("tab_Map")
+        self.verticalLayout_Map = QtWidgets.QVBoxLayout(self.tab_Map)
+        self.verticalLayout_Map.setContentsMargins(12, 12, 12, 12)
+        self.verticalLayout_Map.setSpacing(8)
+
+        self.scrollArea_Map = QtWidgets.QScrollArea(self.tab_Map)
+        self.scrollArea_Map.setWidgetResizable(True)
+        self.scrollArea_Map.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.scrollArea_Map.setObjectName("scrollArea_Map")
+
+        self.mapContents = QtWidgets.QWidget()
+        self.mapContents.setObjectName("mapContents")
+        self.verticalLayout_MapContents = QtWidgets.QVBoxLayout(self.mapContents)
+        self.verticalLayout_MapContents.setContentsMargins(8, 8, 8, 8)
+        self.verticalLayout_MapContents.setSpacing(8)
+
+        self.groupBox_MapLoad = QtWidgets.QGroupBox("Data", self.mapContents)
+        self.groupBox_MapLoad.setObjectName("groupBox_MapLoad")
+        self.gridLayout_MapLoad = QtWidgets.QGridLayout(self.groupBox_MapLoad)
+        self.pushButton_MapLoadChi = QtWidgets.QPushButton("Load CHI files", self.groupBox_MapLoad)
+        self.pushButton_MapLoadChi.setObjectName("pushButton_MapLoadChi")
+        self.label_MapLoaded = QtWidgets.QLabel("Loaded: 0", self.groupBox_MapLoad)
+        self.label_MapLoaded.setObjectName("label_MapLoaded")
+        self.label_MapNx = QtWidgets.QLabel("Nx", self.groupBox_MapLoad)
+        self.spinBox_MapNx = QtWidgets.QSpinBox(self.groupBox_MapLoad)
+        self.spinBox_MapNx.setObjectName("spinBox_MapNx")
+        self.spinBox_MapNx.setMinimum(1)
+        self.spinBox_MapNx.setMaximum(9999)
+        self.spinBox_MapNx.setValue(1)
+        self.label_MapNy = QtWidgets.QLabel("Ny", self.groupBox_MapLoad)
+        self.spinBox_MapNy = QtWidgets.QSpinBox(self.groupBox_MapLoad)
+        self.spinBox_MapNy.setObjectName("spinBox_MapNy")
+        self.spinBox_MapNy.setMinimum(1)
+        self.spinBox_MapNy.setMaximum(9999)
+        self.spinBox_MapNy.setValue(1)
+        self.label_MapOrder = QtWidgets.QLabel("Order", self.groupBox_MapLoad)
+        self.comboBox_MapOrder = QtWidgets.QComboBox(self.groupBox_MapLoad)
+        self.comboBox_MapOrder.setObjectName("comboBox_MapOrder")
+        self.comboBox_MapOrder.addItems(["Row-major", "Snake"])
+        self.gridLayout_MapLoad.addWidget(self.pushButton_MapLoadChi, 0, 0, 1, 2)
+        self.gridLayout_MapLoad.addWidget(self.label_MapLoaded, 0, 2, 1, 4)
+        self.gridLayout_MapLoad.addWidget(self.label_MapNx, 1, 0, 1, 1)
+        self.gridLayout_MapLoad.addWidget(self.spinBox_MapNx, 1, 1, 1, 1)
+        self.gridLayout_MapLoad.addWidget(self.label_MapNy, 1, 2, 1, 1)
+        self.gridLayout_MapLoad.addWidget(self.spinBox_MapNy, 1, 3, 1, 1)
+        self.gridLayout_MapLoad.addWidget(self.label_MapOrder, 1, 4, 1, 1)
+        self.gridLayout_MapLoad.addWidget(self.comboBox_MapOrder, 1, 5, 1, 1)
+
+        self.groupBox_MapRoi = QtWidgets.QGroupBox("ROI", self.mapContents)
+        self.groupBox_MapRoi.setObjectName("groupBox_MapRoi")
+        self.gridLayout_MapRoi = QtWidgets.QGridLayout(self.groupBox_MapRoi)
+        self.pushButton_MapSetRoi1D = QtWidgets.QPushButton("Select ROI in 1D", self.groupBox_MapRoi)
+        self.pushButton_MapSetRoi1D.setObjectName("pushButton_MapSetRoi1D")
+        self.pushButton_MapSetRoi1D.setCheckable(True)
+        self.pushButton_MapSetRoi2D = QtWidgets.QPushButton("Select ROI in 2D", self.groupBox_MapRoi)
+        self.pushButton_MapSetRoi2D.setObjectName("pushButton_MapSetRoi2D")
+        self.pushButton_MapSetRoi2D.setCheckable(True)
+        self.pushButton_MapClearRoi = QtWidgets.QPushButton("Clear ROI", self.groupBox_MapRoi)
+        self.pushButton_MapClearRoi.setObjectName("pushButton_MapClearRoi")
+        self.pushButton_MapCompute = QtWidgets.QPushButton("Compute Map", self.groupBox_MapRoi)
+        self.pushButton_MapCompute.setObjectName("pushButton_MapCompute")
+        self.lineEdit_MapRoiSummary = QtWidgets.QLineEdit(self.groupBox_MapRoi)
+        self.lineEdit_MapRoiSummary.setObjectName("lineEdit_MapRoiSummary")
+        self.lineEdit_MapRoiSummary.setReadOnly(True)
+        self.lineEdit_MapRoiSummary.setPlaceholderText("No ROI selected")
+        self.gridLayout_MapRoi.addWidget(self.pushButton_MapSetRoi1D, 0, 0, 1, 1)
+        self.gridLayout_MapRoi.addWidget(self.pushButton_MapSetRoi2D, 0, 1, 1, 1)
+        self.gridLayout_MapRoi.addWidget(self.pushButton_MapClearRoi, 0, 2, 1, 1)
+        self.gridLayout_MapRoi.addWidget(self.pushButton_MapCompute, 0, 3, 1, 1)
+        self.gridLayout_MapRoi.addWidget(self.lineEdit_MapRoiSummary, 1, 0, 1, 4)
+
+        self.groupBox_MapScale = QtWidgets.QGroupBox("Map Colors", self.mapContents)
+        self.groupBox_MapScale.setObjectName("groupBox_MapScale")
+        self.gridLayout_MapScale = QtWidgets.QGridLayout(self.groupBox_MapScale)
+        self.label_MapCmap = QtWidgets.QLabel("Colormap", self.groupBox_MapScale)
+        self.comboBox_MapCmap = QtWidgets.QComboBox(self.groupBox_MapScale)
+        self.comboBox_MapCmap.setObjectName("comboBox_MapCmap")
+        self.comboBox_MapCmap.addItems(["viridis", "magma", "inferno", "gray", "cividis", "turbo"])
+        self.checkBox_MapReverseCmap = QtWidgets.QCheckBox("Reverse", self.groupBox_MapScale)
+        self.checkBox_MapReverseCmap.setObjectName("checkBox_MapReverseCmap")
+        self.checkBox_MapLog = QtWidgets.QCheckBox("Log scale", self.groupBox_MapScale)
+        self.checkBox_MapLog.setObjectName("checkBox_MapLog")
+        self.checkBox_MapLockScale = QtWidgets.QCheckBox("Lock scale", self.groupBox_MapScale)
+        self.checkBox_MapLockScale.setObjectName("checkBox_MapLockScale")
+        self.label_MapVmin = QtWidgets.QLabel("Min", self.groupBox_MapScale)
+        self.doubleSpinBox_MapVmin = QtWidgets.QDoubleSpinBox(self.groupBox_MapScale)
+        self.doubleSpinBox_MapVmin.setObjectName("doubleSpinBox_MapVmin")
+        self.doubleSpinBox_MapVmin.setDecimals(6)
+        self.doubleSpinBox_MapVmin.setMinimum(-1e12)
+        self.doubleSpinBox_MapVmin.setMaximum(1e12)
+        self.label_MapVmax = QtWidgets.QLabel("Max", self.groupBox_MapScale)
+        self.doubleSpinBox_MapVmax = QtWidgets.QDoubleSpinBox(self.groupBox_MapScale)
+        self.doubleSpinBox_MapVmax.setObjectName("doubleSpinBox_MapVmax")
+        self.doubleSpinBox_MapVmax.setDecimals(6)
+        self.doubleSpinBox_MapVmax.setMinimum(-1e12)
+        self.doubleSpinBox_MapVmax.setMaximum(1e12)
+        self.pushButton_MapScaleAuto = QtWidgets.QPushButton("Auto", self.groupBox_MapScale)
+        self.pushButton_MapScaleAuto.setObjectName("pushButton_MapScaleAuto")
+        self.label_MapPct = QtWidgets.QLabel("Percentile", self.groupBox_MapScale)
+        self.doubleSpinBox_MapPctLow = QtWidgets.QDoubleSpinBox(self.groupBox_MapScale)
+        self.doubleSpinBox_MapPctLow.setObjectName("doubleSpinBox_MapPctLow")
+        self.doubleSpinBox_MapPctLow.setDecimals(2)
+        self.doubleSpinBox_MapPctLow.setRange(0.0, 100.0)
+        self.doubleSpinBox_MapPctLow.setValue(1.0)
+        self.doubleSpinBox_MapPctHigh = QtWidgets.QDoubleSpinBox(self.groupBox_MapScale)
+        self.doubleSpinBox_MapPctHigh.setObjectName("doubleSpinBox_MapPctHigh")
+        self.doubleSpinBox_MapPctHigh.setDecimals(2)
+        self.doubleSpinBox_MapPctHigh.setRange(0.0, 100.0)
+        self.doubleSpinBox_MapPctHigh.setValue(99.0)
+        self.pushButton_MapScalePercentile = QtWidgets.QPushButton("Apply %", self.groupBox_MapScale)
+        self.pushButton_MapScalePercentile.setObjectName("pushButton_MapScalePercentile")
+        self.pushButton_MapScaleReset = QtWidgets.QPushButton("Reset", self.groupBox_MapScale)
+        self.pushButton_MapScaleReset.setObjectName("pushButton_MapScaleReset")
+        self.gridLayout_MapScale.addWidget(self.label_MapCmap, 0, 0, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.comboBox_MapCmap, 0, 1, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.checkBox_MapReverseCmap, 0, 2, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.checkBox_MapLog, 0, 3, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.checkBox_MapLockScale, 0, 4, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.label_MapVmin, 1, 0, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.doubleSpinBox_MapVmin, 1, 1, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.label_MapVmax, 1, 2, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.doubleSpinBox_MapVmax, 1, 3, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.pushButton_MapScaleAuto, 1, 4, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.label_MapPct, 2, 0, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.doubleSpinBox_MapPctLow, 2, 1, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.doubleSpinBox_MapPctHigh, 2, 2, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.pushButton_MapScalePercentile, 2, 3, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.pushButton_MapScaleReset, 2, 4, 1, 1)
+
+        self.groupBox_MapExport = QtWidgets.QGroupBox("Export", self.mapContents)
+        self.groupBox_MapExport.setObjectName("groupBox_MapExport")
+        self.horizontalLayout_MapExport = QtWidgets.QHBoxLayout(self.groupBox_MapExport)
+        self.pushButton_MapExportImage = QtWidgets.QPushButton("Export Image", self.groupBox_MapExport)
+        self.pushButton_MapExportImage.setObjectName("pushButton_MapExportImage")
+        self.pushButton_MapExportNpy = QtWidgets.QPushButton("Export NPY", self.groupBox_MapExport)
+        self.pushButton_MapExportNpy.setObjectName("pushButton_MapExportNpy")
+        self.horizontalLayout_MapExport.addWidget(self.pushButton_MapExportImage)
+        self.horizontalLayout_MapExport.addWidget(self.pushButton_MapExportNpy)
+
+        self.groupBox_MapCanvas = QtWidgets.QGroupBox("Map", self.mapContents)
+        self.groupBox_MapCanvas.setObjectName("groupBox_MapCanvas")
+        self.verticalLayout_MapCanvas = QtWidgets.QVBoxLayout(self.groupBox_MapCanvas)
+        self.verticalLayout_MapCanvas.setObjectName("verticalLayout_MapCanvas")
+
+        self.label_MapStatus = QtWidgets.QLabel("Load CHI files to start.", self.mapContents)
+        self.label_MapStatus.setObjectName("label_MapStatus")
+
+        self.verticalLayout_MapContents.addWidget(self.groupBox_MapLoad)
+        self.verticalLayout_MapContents.addWidget(self.groupBox_MapRoi)
+        self.verticalLayout_MapContents.addWidget(self.groupBox_MapScale)
+        self.verticalLayout_MapContents.addWidget(self.groupBox_MapExport)
+        self.verticalLayout_MapContents.addWidget(self.groupBox_MapCanvas, 1)
+        self.verticalLayout_MapContents.addWidget(self.label_MapStatus)
+        self.scrollArea_Map.setWidget(self.mapContents)
+        self.verticalLayout_Map.addWidget(self.scrollArea_Map, 1)
+
+        self.tabWidget_5.addTab(self.tab_Map, "Map")
+
+    def _promote_map_to_main_tab(self):
+        if (not hasattr(self, "tab_Map")) or (not hasattr(self, "tabWidget")):
+            return
+        if hasattr(self, "tabWidget_5"):
+            idx_sub = self.tabWidget_5.indexOf(self.tab_Map)
+            if idx_sub >= 0:
+                self.tabWidget_5.removeTab(idx_sub)
+        if self.tabWidget.indexOf(self.tab_Map) < 0:
+            idx_fits = self.tabWidget.indexOf(self.tab_PkFt) \
+                if hasattr(self, "tab_PkFt") else -1
+            if idx_fits < 0:
+                self.tabWidget.addTab(self.tab_Map, "Map")
+            else:
+                self.tabWidget.insertTab(idx_fits, self.tab_Map, "Map")
+
     def _reorder_main_tabs_and_fit_tab_names(self):
         if hasattr(self, "tabWidget_4"):
             if hasattr(self, "tabWidget_4Page1"):
@@ -799,6 +981,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "tab_Bkgn",      # Pattern
             "tab_Cake1",     # Cake
             "tab_Diff",      # Diff
+            "tab_Map",       # Map
             "tab_PkFt",      # Fits
         ):
             if hasattr(self, name):
