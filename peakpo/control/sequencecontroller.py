@@ -1,5 +1,4 @@
 import os
-import glob
 import re
 import numpy as np
 from qtpy import QtWidgets, QtCore
@@ -9,7 +8,12 @@ from matplotlib.widgets import RectangleSelector
 from matplotlib.ticker import MaxNLocator, FormatStrFormatter
 import matplotlib.patches as mpatches
 
-from ..utils import get_temp_dir, readchi
+from .xrdiohelpers import (
+    load_chi_xy,
+    load_bgsub_or_raw_xy,
+    find_temp_cake_triplet,
+    load_cake_data,
+)
 
 
 class SequenceController(object):
@@ -271,67 +275,20 @@ class SequenceController(object):
         self._compute_sequence()
 
     def _load_chi_xy(self, chi_path):
-        if chi_path in self._chi_cache:
-            return self._chi_cache[chi_path]
-        __, __, x, y = readchi(chi_path)
-        x = np.asarray(x, dtype=float)
-        y = np.asarray(y, dtype=float)
-        self._chi_cache[chi_path] = (x, y)
-        return x, y
+        return load_chi_xy(chi_path, self._chi_cache)
 
     def _load_bgsub_xy_if_requested(self, chi_path):
-        use_bgsub = bool(getattr(self.widget, "checkBox_BgSub", None) and
-                         self.widget.checkBox_BgSub.isChecked())
-        if not use_bgsub:
-            return self._load_chi_xy(chi_path)
-        try:
-            temp_dir = get_temp_dir(chi_path)
-            base = os.path.splitext(os.path.basename(chi_path))[0]
-            temp_bgsub = os.path.join(temp_dir, f"{base}.bgsub.chi")
-            if os.path.exists(temp_bgsub):
-                __, __, x, y = readchi(temp_bgsub)
-                return np.asarray(x, dtype=float), np.asarray(y, dtype=float)
-        except Exception:
-            pass
-        sibling_bgsub = os.path.splitext(chi_path)[0] + ".bgsub.chi"
-        if os.path.exists(sibling_bgsub):
-            __, __, x, y = readchi(sibling_bgsub)
-            return np.asarray(x, dtype=float), np.asarray(y, dtype=float)
-        return self._load_chi_xy(chi_path)
+        use_bgsub = bool(
+            getattr(self.widget, "checkBox_BgSub", None) and
+            self.widget.checkBox_BgSub.isChecked()
+        )
+        return load_bgsub_or_raw_xy(chi_path, use_bgsub, self._chi_cache)
 
     def _find_temp_cake_triplet(self, chi_path):
-        temp_dir = get_temp_dir(chi_path)
-        tth_files = sorted(glob.glob(os.path.join(temp_dir, "*.tth.cake.npy")))
-        if not tth_files:
-            return None
-        stem_map = {}
-        for tth_f in tth_files:
-            stem = tth_f[: -len(".tth.cake.npy")]
-            azi_f = stem + ".azi.cake.npy"
-            int_f = stem + ".int.cake.npy"
-            if os.path.exists(azi_f) and os.path.exists(int_f):
-                stem_map[stem] = (tth_f, azi_f, int_f)
-        if not stem_map:
-            return None
-        triplets = sorted(stem_map.values(), key=lambda t: os.path.getmtime(t[2]), reverse=True)
-        return triplets[0]
+        return find_temp_cake_triplet(chi_path)
 
     def _load_cake_data(self, chi_path):
-        if chi_path in self._cake_cache:
-            return self._cake_cache[chi_path]
-        triplet = self._find_temp_cake_triplet(chi_path)
-        if triplet is None:
-            return None
-        tth = np.load(triplet[0])
-        azi = np.load(triplet[1])
-        intensity = np.load(triplet[2])
-        payload = (
-            np.asarray(tth, dtype=float),
-            np.asarray(azi, dtype=float),
-            np.asarray(intensity, dtype=float),
-        )
-        self._cake_cache[chi_path] = payload
-        return payload
+        return load_cake_data(chi_path, self._cake_cache)
 
     def _compute_sequence(self):
         if not self._chi_files:
