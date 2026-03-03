@@ -1,5 +1,5 @@
-- [ ] Make a new tab for Map.  It should automatically guess the dimension from the number of files.  It should be in a tab with image plot area with equal axes option.  Pick areas in chi or cake for map.  Color map options.  Color control. Click will update CHI+CAKE for a specific file.  Snake or row-by-row dropdown menu.  Output to PDF
-- [ ] Make a new tab for sequence.  Plot change in intensity in a sequence of files.  
+- [x] Make a new tab for Map.  It should automatically guess the dimension from the number of files.  It should be in a tab with image plot area with equal axes option.  Pick areas in chi or cake for map.  Color map options.  Color control. Click will update CHI+CAKE for a specific file.  Snake or row-by-row dropdown menu.  Output to PDF
+- [x] Make a new tab for sequence.  Plot change in intensity in a sequence of files.  
 - [x] test excel output functions
 - [ ] self.mask should be defined clearly whether for cake or original data.  for speed it should be better for cake.  then later when mask file from dioptas is read, which is for original image, it can be confusing.  But intensity mask can be still maintained for cake, not for original.  The decision depends on whether sectional integration is happening for existing cake or for original image file.
 - [x] `dpp` read error particularly with old `pyFAI` related issues.
