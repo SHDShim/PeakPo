@@ -144,6 +144,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._promote_diff_to_main_tab()
         self._setup_map_tab()
         self._promote_map_to_main_tab()
+        self._setup_seq_tab()
+        self._promote_seq_to_main_tab()
         self._reorder_main_tabs_and_fit_tab_names()
         self._setup_toolbar_diff_toggle()
         self._spread_top_toolbar_even()
@@ -997,6 +999,120 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 self.tabWidget.insertTab(idx_fits, self.tab_Map, "Map")
 
+    def _setup_seq_tab(self):
+        if not hasattr(self, "tabWidget_5"):
+            return
+        if hasattr(self, "tab_Seq"):
+            return
+
+        self.tab_Seq = QtWidgets.QWidget()
+        self.tab_Seq.setObjectName("tab_Seq")
+        self.verticalLayout_Seq = QtWidgets.QVBoxLayout(self.tab_Seq)
+        self.verticalLayout_Seq.setContentsMargins(12, 12, 12, 12)
+        self.verticalLayout_Seq.setSpacing(8)
+
+        self.scrollArea_Seq = QtWidgets.QScrollArea(self.tab_Seq)
+        self.scrollArea_Seq.setWidgetResizable(True)
+        self.scrollArea_Seq.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.scrollArea_Seq.setObjectName("scrollArea_Seq")
+
+        self.seqContents = QtWidgets.QWidget()
+        self.seqContents.setObjectName("seqContents")
+        self.verticalLayout_SeqContents = QtWidgets.QVBoxLayout(self.seqContents)
+        self.verticalLayout_SeqContents.setContentsMargins(8, 8, 8, 8)
+        self.verticalLayout_SeqContents.setSpacing(8)
+
+        self.groupBox_SeqLoad = QtWidgets.QGroupBox("Data", self.seqContents)
+        self.groupBox_SeqLoad.setObjectName("groupBox_SeqLoad")
+        self.gridLayout_SeqLoad = QtWidgets.QGridLayout(self.groupBox_SeqLoad)
+        self.gridLayout_SeqLoad.setHorizontalSpacing(12)
+        self.gridLayout_SeqLoad.setVerticalSpacing(8)
+        self.pushButton_SeqLoadChi = QtWidgets.QPushButton("Load CHI files", self.groupBox_SeqLoad)
+        self.pushButton_SeqLoadChi.setObjectName("pushButton_SeqLoadChi")
+        self.pushButton_SeqLoadChi.setMinimumSize(QtCore.QSize(220, 28))
+        self.label_SeqLoaded = QtWidgets.QLabel("Loaded: 0", self.groupBox_SeqLoad)
+        self.label_SeqLoaded.setObjectName("label_SeqLoaded")
+        self.label_SeqLoaded.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        self.gridLayout_SeqLoad.addWidget(self.pushButton_SeqLoadChi, 0, 0, 1, 1)
+        self.gridLayout_SeqLoad.addWidget(self.label_SeqLoaded, 0, 1, 1, 1)
+        self.gridLayout_SeqLoad.setColumnStretch(0, 1)
+        self.gridLayout_SeqLoad.setColumnStretch(1, 1)
+
+        self.groupBox_SeqRoi = QtWidgets.QGroupBox("ROI", self.seqContents)
+        self.groupBox_SeqRoi.setObjectName("groupBox_SeqRoi")
+        self.gridLayout_SeqRoi = QtWidgets.QGridLayout(self.groupBox_SeqRoi)
+        self.gridLayout_SeqRoi.setHorizontalSpacing(8)
+        self.gridLayout_SeqRoi.setVerticalSpacing(8)
+        self.pushButton_SeqSetRoi = QtWidgets.QPushButton("Select ROI", self.groupBox_SeqRoi)
+        self.pushButton_SeqSetRoi.setObjectName("pushButton_SeqSetRoi")
+        self.pushButton_SeqSetRoi.setCheckable(True)
+        self.pushButton_SeqClearRoi = QtWidgets.QPushButton("Clear ROI", self.groupBox_SeqRoi)
+        self.pushButton_SeqClearRoi.setObjectName("pushButton_SeqClearRoi")
+        self.pushButton_SeqCompute = QtWidgets.QPushButton("Compute Sequence", self.groupBox_SeqRoi)
+        self.pushButton_SeqCompute.setObjectName("pushButton_SeqCompute")
+        self.pushButton_SeqSetRoi.setMinimumHeight(28)
+        self.pushButton_SeqClearRoi.setMinimumHeight(28)
+        self.pushButton_SeqCompute.setMinimumHeight(28)
+        self.lineEdit_SeqRoiSummary = QtWidgets.QLineEdit(self.groupBox_SeqRoi)
+        self.lineEdit_SeqRoiSummary.setObjectName("lineEdit_SeqRoiSummary")
+        self.lineEdit_SeqRoiSummary.setReadOnly(True)
+        self.lineEdit_SeqRoiSummary.setPlaceholderText("No ROI selected")
+        self.gridLayout_SeqRoi.addWidget(self.pushButton_SeqSetRoi, 0, 0, 1, 1)
+        self.gridLayout_SeqRoi.addWidget(self.pushButton_SeqClearRoi, 0, 1, 1, 1)
+        self.gridLayout_SeqRoi.addWidget(self.pushButton_SeqCompute, 0, 2, 1, 1)
+        self.gridLayout_SeqRoi.addWidget(self.lineEdit_SeqRoiSummary, 1, 0, 1, 3)
+        self.gridLayout_SeqRoi.setColumnStretch(0, 1)
+        self.gridLayout_SeqRoi.setColumnStretch(1, 1)
+        self.gridLayout_SeqRoi.setColumnStretch(2, 1)
+
+        self.groupBox_SeqCanvas = QtWidgets.QGroupBox("Sequence", self.seqContents)
+        self.groupBox_SeqCanvas.setObjectName("groupBox_SeqCanvas")
+        self.verticalLayout_SeqCanvas = QtWidgets.QVBoxLayout(self.groupBox_SeqCanvas)
+        self.verticalLayout_SeqCanvas.setObjectName("verticalLayout_SeqCanvas")
+        self.groupBox_SeqCanvas.setMinimumHeight(320)
+
+        self.label_SeqStatus = QtWidgets.QLabel("Load CHI files to start.", self.seqContents)
+        self.label_SeqStatus.setObjectName("label_SeqStatus")
+
+        self.groupBox_SeqExport = QtWidgets.QGroupBox("Export", self.seqContents)
+        self.groupBox_SeqExport.setObjectName("groupBox_SeqExport")
+        self.horizontalLayout_SeqExport = QtWidgets.QHBoxLayout(self.groupBox_SeqExport)
+        self.horizontalLayout_SeqExport.setSpacing(8)
+        self.pushButton_SeqExportImage = QtWidgets.QPushButton("Export Image", self.groupBox_SeqExport)
+        self.pushButton_SeqExportImage.setObjectName("pushButton_SeqExportImage")
+        self.pushButton_SeqExportNpy = QtWidgets.QPushButton("Export NPY", self.groupBox_SeqExport)
+        self.pushButton_SeqExportNpy.setObjectName("pushButton_SeqExportNpy")
+        self.horizontalLayout_SeqExport.addWidget(self.pushButton_SeqExportImage)
+        self.horizontalLayout_SeqExport.addWidget(self.pushButton_SeqExportNpy)
+        self.pushButton_SeqExportImage.setMinimumHeight(28)
+        self.pushButton_SeqExportNpy.setMinimumHeight(28)
+
+        self.verticalLayout_SeqContents.addWidget(self.groupBox_SeqLoad)
+        self.verticalLayout_SeqContents.addWidget(self.groupBox_SeqRoi)
+        self.verticalLayout_SeqContents.addWidget(self.groupBox_SeqCanvas, 1)
+        self.verticalLayout_SeqContents.addWidget(self.label_SeqStatus)
+        self.verticalLayout_SeqContents.addWidget(self.groupBox_SeqExport)
+        self.verticalLayout_SeqContents.addStretch(1)
+        self.scrollArea_Seq.setWidget(self.seqContents)
+        self.verticalLayout_Seq.addWidget(self.scrollArea_Seq, 1)
+
+        self.tabWidget_5.addTab(self.tab_Seq, "Seq")
+
+    def _promote_seq_to_main_tab(self):
+        if (not hasattr(self, "tab_Seq")) or (not hasattr(self, "tabWidget")):
+            return
+        if hasattr(self, "tabWidget_5"):
+            idx_sub = self.tabWidget_5.indexOf(self.tab_Seq)
+            if idx_sub >= 0:
+                self.tabWidget_5.removeTab(idx_sub)
+        if self.tabWidget.indexOf(self.tab_Seq) < 0:
+            idx_fits = self.tabWidget.indexOf(self.tab_PkFt) \
+                if hasattr(self, "tab_PkFt") else -1
+            if idx_fits < 0:
+                self.tabWidget.addTab(self.tab_Seq, "Seq")
+            else:
+                self.tabWidget.insertTab(idx_fits, self.tab_Seq, "Seq")
+
     def _reorder_main_tabs_and_fit_tab_names(self):
         if hasattr(self, "tabWidget_4"):
             if hasattr(self, "tabWidget_4Page1"):
@@ -1020,6 +1136,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "tab_Cake1",     # Cake
             "tab_Diff",      # Diff
             "tab_Map",       # Map
+            "tab_Seq",       # Seq
             "tab_PkFt",      # Fits
         ):
             if hasattr(self, name):

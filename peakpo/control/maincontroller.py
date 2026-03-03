@@ -27,6 +27,7 @@ from .peakfittablecontroller import PeakfitTableController
 from .cakeazicontroller import CakeAziController
 from .exportpythoncontroller import ExportPythonController
 from .mapcontroller import MapController
+from .sequencecontroller import SequenceController
 from ..utils import dialog_savefile, writechi, extract_extension, \
     convert_wl_to_energy, get_sorted_filelist, find_from_filelist, \
     make_filename, get_directory, get_temp_dir
@@ -68,6 +69,12 @@ class MainController(object):
             base_ptn_ctrl=self.base_ptn_ctrl,
             plot_ctrl=self.plot_ctrl)
         print("  ✓ MapController created")
+
+        self.seq_ctrl = SequenceController(self.model, self.widget)
+        self.seq_ctrl.set_helpers(
+            base_ptn_ctrl=self.base_ptn_ctrl,
+            plot_ctrl=self.plot_ctrl)
+        print("  ✓ SequenceController created")
         
         self.cakeazi_ctrl = CakeAziController(self.model, self.widget)
         print("  ✓ CakeAziController created")
@@ -457,12 +464,22 @@ class MainController(object):
                 self.map_ctrl.refresh_roi_overlays()
             except Exception:
                 pass
+        if hasattr(self, "seq_ctrl") and (self.seq_ctrl is not None):
+            try:
+                self.seq_ctrl.refresh_roi_overlays()
+            except Exception:
+                pass
 
     def plot_new_graph(self):
         self.plot_ctrl.zoom_out_graph()
         if hasattr(self, "map_ctrl") and (self.map_ctrl is not None):
             try:
                 self.map_ctrl.refresh_roi_overlays()
+            except Exception:
+                pass
+        if hasattr(self, "seq_ctrl") and (self.seq_ctrl is not None):
+            try:
+                self.seq_ctrl.refresh_roi_overlays()
             except Exception:
                 pass
 
@@ -911,6 +928,12 @@ class MainController(object):
         if hasattr(self, "map_ctrl") and (self.map_ctrl is not None):
             try:
                 if self.map_ctrl.is_roi_selection_active():
+                    return
+            except Exception:
+                pass
+        if hasattr(self, "seq_ctrl") and (self.seq_ctrl is not None):
+            try:
+                if self.seq_ctrl.is_roi_selection_active():
                     return
             except Exception:
                 pass

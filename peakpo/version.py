@@ -9,7 +9,7 @@ Todo:
 """
 __version__ = "7.10.2"
 """
-7.10.2: Mapping capability added.
+7.10.2: Mapping and sequence capabilities added.
 7.10.1: Code optimization for speed.
 7.10.0: Pyqt6 transition.  Fix navigation issues for map files.  New diff function added.
         Backup log added.  Cake z scale control improvement.  Transition from DPP to JSON.
