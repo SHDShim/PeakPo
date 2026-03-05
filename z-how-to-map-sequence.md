@@ -52,4 +52,3 @@
 
 - For 2D ROI in Map/Seq, make sure data exists for each file (generated in normal cake workflow).
 - If result looks flat or empty, check ROI range and whether selected files actually contain that peak region.
-- Use 1D ROI first for fastest workflow; 2D ROI is heavier.
