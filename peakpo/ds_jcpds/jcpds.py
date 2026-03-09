@@ -165,6 +165,35 @@ class JCPDS(object):
         self._cache_hkl_key = None
         self._cache_hkl_text = None
 
+    def _ensure_runtime_defaults(self):
+        """Backfill attributes that legacy pickles may not contain."""
+        if not hasattr(self, "a"):
+            self.a = getattr(self, "a0", 0.)
+        if not hasattr(self, "b"):
+            self.b = getattr(self, "b0", 0.)
+        if not hasattr(self, "c"):
+            self.c = getattr(self, "c0", 0.)
+        if not hasattr(self, "alpha"):
+            self.alpha = getattr(self, "alpha0", 0.)
+        if not hasattr(self, "beta"):
+            self.beta = getattr(self, "beta0", 0.)
+        if not hasattr(self, "gamma"):
+            self.gamma = getattr(self, "gamma0", 0.)
+        if not hasattr(self, "v"):
+            self.v = getattr(self, "v0", 0.)
+        if not hasattr(self, "_cache_cal_dsp_key"):
+            self._cache_cal_dsp_key = None
+        if not hasattr(self, "_cache_tth"):
+            self._cache_tth = {}
+        if not hasattr(self, "_cache_hkl_key"):
+            self._cache_hkl_key = None
+        if not hasattr(self, "_cache_hkl_text"):
+            self._cache_hkl_text = None
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._ensure_runtime_defaults()
+
     def read_file(self, file):
         """
         read a jcpds file
@@ -893,6 +922,38 @@ class JCPDSplt(JCPDS):
         self.k0p_org = self.k0p
         self.v0_org = self.v0
         self.thermal_expansion_org = self.thermal_expansion
+
+    def _ensure_runtime_defaults(self):
+        super(JCPDSplt, self)._ensure_runtime_defaults()
+        if not hasattr(self, "color"):
+            self.color = ''
+        if not hasattr(self, "display"):
+            self.display = True
+        if not hasattr(self, "maxint"):
+            self.maxint = 1.0
+        if not hasattr(self, "twk_b_a"):
+            self.twk_b_a = 1.0
+        if not hasattr(self, "twk_c_a"):
+            self.twk_c_a = 1.0
+        if not hasattr(self, "twk_v0"):
+            self.twk_v0 = 1.0
+        if not hasattr(self, "twk_k0"):
+            self.twk_k0 = 1.0
+        if not hasattr(self, "twk_k0p"):
+            self.twk_k0p = 1.0
+        if not hasattr(self, "twk_thermal_expansion"):
+            self.twk_thermal_expansion = 1.0
+        if not hasattr(self, "twk_int"):
+            self.twk_int = 1.0
+        if not hasattr(self, "k0_org"):
+            self.k0_org = getattr(self, "k0", 0.)
+        if not hasattr(self, "k0p_org"):
+            self.k0p_org = getattr(self, "k0p", 0.)
+        if not hasattr(self, "v0_org"):
+            self.v0_org = getattr(self, "v0", 0.)
+        if not hasattr(self, "thermal_expansion_org"):
+            self.thermal_expansion_org = getattr(
+                self, "thermal_expansion", 0.)
 
     def read_file(self, file):
         '''

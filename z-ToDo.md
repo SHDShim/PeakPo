@@ -1,3 +1,4 @@
+- [x] check diff if python output works or not.  Also check other menu's making sure.
 - [x] Make a new tab for Map.  It should automatically guess the dimension from the number of files.  It should be in a tab with image plot area with equal axes option.  Pick areas in chi or cake for map.  Color map options.  Color control. Click will update CHI+CAKE for a specific file.  Snake or row-by-row dropdown menu.  Output to PDF
 - [x] Make a new tab for sequence.  Plot change in intensity in a sequence of files.  
 - [x] test excel output functions
