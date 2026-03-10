@@ -2,6 +2,7 @@ import numpy as np
 from qtpy import QtCore, QtWidgets
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from ..utils import align_spinbox_right
 
 
 class CakeHistogramWidget(QtWidgets.QWidget):
@@ -22,11 +23,13 @@ class CakeHistogramWidget(QtWidgets.QWidget):
         self.check_focus = QtWidgets.QCheckBox("Focus range")
         self.check_focus.setChecked(True)
         self.spin_low_pct = QtWidgets.QDoubleSpinBox()
+        align_spinbox_right(self.spin_low_pct)
         self.spin_low_pct.setRange(0.0, 100.0)
         self.spin_low_pct.setDecimals(2)
         self.spin_low_pct.setSingleStep(0.01)
         self.spin_low_pct.setValue(5.0)
         self.spin_high_pct = QtWidgets.QDoubleSpinBox()
+        align_spinbox_right(self.spin_high_pct)
         self.spin_high_pct.setRange(0.0, 100.0)
         self.spin_high_pct.setDecimals(2)
         self.spin_high_pct.setSingleStep(0.01)

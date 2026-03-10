@@ -9,7 +9,7 @@ import matplotlib.cm as cmx
 from .mplcontroller import MplController
 from .jcpdstablecontroller import JcpdsTableController
 from ..utils import xls_jlist, dialog_savefile, make_filename, get_temp_dir, \
-    InformationBox, extract_filename, extract_extension
+    InformationBox, extract_filename, extract_extension, align_spinbox_right
 from ..ds_jcpds import JCPDS
 import pymatgen as mg
 import datetime
@@ -131,16 +131,19 @@ class JcpdsController(object):
         layout = QtWidgets.QFormLayout(dialog)
 
         spin_k0 = QtWidgets.QDoubleSpinBox(dialog)
+        align_spinbox_right(spin_k0)
         spin_k0.setRange(0.0, 10000.0)
         spin_k0.setDecimals(3)
         spin_k0.setValue(200.0)
 
         spin_k0p = QtWidgets.QDoubleSpinBox(dialog)
+        align_spinbox_right(spin_k0p)
         spin_k0p.setRange(0.0, 100.0)
         spin_k0p.setDecimals(3)
         spin_k0p.setValue(4.0)
 
         spin_alpha = QtWidgets.QDoubleSpinBox(dialog)
+        align_spinbox_right(spin_alpha)
         spin_alpha.setRange(0.0, 1.0)
         spin_alpha.setDecimals(8)
         spin_alpha.setSingleStep(1e-6)

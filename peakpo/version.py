@@ -7,8 +7,9 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.10.2a"
+__version__ = "7.10.2b"
 """
+7.10.2b: polish UI design.
 7.10.2: Mapping and sequence capabilities added.
 7.10.1: Code optimization for speed.
 7.10.0: Pyqt6 transition.  Fix navigation issues for map files.  New diff function added.

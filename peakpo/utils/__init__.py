@@ -1,4 +1,9 @@
-from .pyqtutils import undo_button_press, SpinBoxFixStyle
+from .pyqtutils import (
+    undo_button_press,
+    SpinBoxFixStyle,
+    align_spinbox_right,
+    align_all_spinboxes_right,
+)
 from .fileutils import samefilename, extract_filename, make_filename, \
     get_sorted_filelist, find_from_filelist, writechi, readchi, \
     extract_extension, change_file_path, get_directory, get_temp_dir, \

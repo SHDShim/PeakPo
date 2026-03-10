@@ -2,7 +2,7 @@ import os
 from qtpy import QtCore, QtWidgets
 from .qtd import Ui_MainWindow
 from .cakehistwidget import CakeHistogramWidget
-from ..utils import SpinBoxFixStyle
+from ..utils import SpinBoxFixStyle, align_all_spinboxes_right
 from ..version import __version__
 from ..citation import __citation__
 from ..utils import InformationBox
@@ -134,6 +134,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._setup_jcpds_bars_layout()
         self._setup_title_config_group()
         self._setup_plot_setup_group()
+        self._setup_update_background_button()
         self._setup_bg_default_button()
         self._setup_cake_colormap_control()
         self._setup_plot_config_python_export()
@@ -147,6 +148,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._setup_seq_tab()
         self._promote_seq_to_main_tab()
         self._reorder_main_tabs_and_fit_tab_names()
+        self._setup_peakfit_section_buttons()
         self._setup_toolbar_diff_toggle()
         self._spread_top_toolbar_even()
         if hasattr(self, "pushButton_S_Zoom"):
@@ -193,6 +195,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self._update_pt_spinbox_colors)
         self._update_pt_spinbox_colors()
         self._fix_tab_clipping()
+        align_all_spinboxes_right(self)
         # navigation toolbar modification
         """
         self.ntb_WholePtn = QtWidgets.QPushButton()
@@ -496,6 +499,58 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(self, "checkBox_ShowLargePnT"):
             self.gridLayout_7.addWidget(self.checkBox_ShowLargePnT, 0, 0, 1, 1)
 
+    def _setup_update_background_button(self):
+        if not hasattr(self, "pushButton_UpdateBackground"):
+            return
+        self.pushButton_UpdateBackground.setSizePolicy(
+            QtWidgets.QSizePolicy(
+                QtWidgets.QSizePolicy.Preferred,
+                QtWidgets.QSizePolicy.Fixed))
+        self.pushButton_UpdateBackground.setMinimumHeight(28)
+        self.pushButton_UpdateBackground.setMaximumHeight(28)
+        self.pushButton_UpdateBackground.setStyleSheet(
+            "QPushButton {"
+            "background-color: #b22222;"
+            "color: white;"
+            "border: 1px solid #7a1313;"
+            "border-radius: 4px;"
+            "padding: 2px 10px;"
+            "}"
+            "QPushButton:hover {"
+            "background-color: #c92a2a;"
+            "}"
+            "QPushButton:pressed {"
+                "background-color: #8f1b1b;"
+                "}"
+        )
+
+    def _set_accent_button_style(self, button, base_color, hover_color,
+                                 pressed_color, border_color,
+                                 text_color="white"):
+        button.setStyleSheet(
+            "QPushButton {"
+            f"background-color: {base_color};"
+            f"color: {text_color};"
+            f"border: 1px solid {border_color};"
+            "border-radius: 4px;"
+            "padding: 2px 10px;"
+            "}"
+            "QPushButton:hover {"
+            f"background-color: {hover_color};"
+            "}"
+            "QPushButton:pressed {"
+            f"background-color: {pressed_color};"
+            "}"
+            "QPushButton:checked {"
+            f"background-color: {pressed_color};"
+            f"border: 1px solid {border_color};"
+            "}"
+        )
+
+    def _set_button_height(self, button, height=28):
+        button.setMinimumHeight(height)
+        button.setMaximumHeight(height)
+
     def _setup_bg_default_button(self):
         if not hasattr(self, "gridLayout_5"):
             return
@@ -508,6 +563,54 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_ResetBGParams.setToolTip(
             "Reset background parameters to defaults: N Points=20, N Order=10, N Iteration=20")
         self.gridLayout_5.addWidget(self.pushButton_ResetBGParams, 3, 2, 1, 1)
+
+    def _setup_peakfit_section_buttons(self):
+        if not hasattr(self, "pushButton_PkFtSectionSetToCurrent"):
+            return
+        for name in (
+            "pushButton_PkFtSectionRemove",
+            "pushButton_PkFtSectionSetToCurrent",
+            "pushButton_PlotSelectedPkFtResults",
+            "pushButton_PkFtSectionClear",
+            "pushButton_PkFtSectionImport",
+            "pushButton_PkFtSectionSavetoXLS",
+            "pushButton_SetFitSection",
+            "pushButton_ZoomToSection",
+            "pushButton_ConductFitting",
+            "pushButton_PkSave",
+            "pushButton_ClearSection",
+            "pushButton_AddRemoveFromMouse",
+            "pushButton_AddRemoveFromJlist",
+            "pushButton_CollectPeakFitResults",
+            "pushButton_PerformUCFit",
+        ):
+            if hasattr(self, name):
+                self._set_button_height(getattr(self, name))
+        self._set_accent_button_style(
+            self.pushButton_SetFitSection,
+            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            text_color="#1f1f1f")
+        self._set_accent_button_style(
+            self.pushButton_PkSave,
+            "#1f7a3d", "#278f49", "#16592d", "#11411f")
+        self._set_accent_button_style(
+            self.pushButton_ConductFitting,
+            "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
+        self._set_accent_button_style(
+            self.pushButton_AddRemoveFromMouse,
+            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            text_color="#1f1f1f")
+        self._set_accent_button_style(
+            self.pushButton_PkFtSectionSetToCurrent,
+            "#1f7a3d", "#278f49", "#16592d", "#11411f")
+        if hasattr(self, "pushButton_CollectPeakFitResults"):
+            self._set_accent_button_style(
+                self.pushButton_CollectPeakFitResults,
+                "#1f7a3d", "#278f49", "#16592d", "#11411f")
+        if hasattr(self, "pushButton_PerformUCFit"):
+            self._set_accent_button_style(
+                self.pushButton_PerformUCFit,
+                "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
 
     def _setup_cake_scale_layout(self):
         self.groupBox_29.setTitle("2D Cake scale")
@@ -939,6 +1042,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_MapScalePercentile.setMinimumHeight(28)
         self.pushButton_MapScaleAuto.setMinimumHeight(28)
         self.pushButton_MapScaleReset.setMinimumHeight(28)
+        self._set_accent_button_style(
+            self.pushButton_MapLoadChi,
+            "#1f7a3d", "#278f49", "#16592d", "#11411f")
+        self._set_accent_button_style(
+            self.pushButton_MapSetRoi,
+            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            text_color="#1f1f1f")
+        self._set_accent_button_style(
+            self.pushButton_MapCompute,
+            "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
         self.gridLayout_MapScale.addWidget(self.comboBox_MapCmap, 0, 0, 1, 2)
         self.gridLayout_MapScale.addWidget(self.checkBox_MapReverseCmap, 1, 0, 1, 2)
         self.gridLayout_MapScale.addWidget(self.checkBox_MapLog, 2, 0, 1, 2)
@@ -1054,6 +1167,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_SeqSetRoi.setMinimumHeight(28)
         self.pushButton_SeqClearRoi.setMinimumHeight(28)
         self.pushButton_SeqCompute.setMinimumHeight(28)
+        self._set_accent_button_style(
+            self.pushButton_SeqLoadChi,
+            "#1f7a3d", "#278f49", "#16592d", "#11411f")
+        self._set_accent_button_style(
+            self.pushButton_SeqSetRoi,
+            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            text_color="#1f1f1f")
+        self._set_accent_button_style(
+            self.pushButton_SeqCompute,
+            "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
         self.lineEdit_SeqRoiSummary = QtWidgets.QLineEdit(self.groupBox_SeqRoi)
         self.lineEdit_SeqRoiSummary.setObjectName("lineEdit_SeqRoiSummary")
         self.lineEdit_SeqRoiSummary.setReadOnly(True)

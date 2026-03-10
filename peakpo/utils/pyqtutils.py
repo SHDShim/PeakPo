@@ -1,4 +1,4 @@
-from qtpy import QtWidgets
+from qtpy import QtCore, QtWidgets
 
 
 def undo_button_press(buttonObj, released_text='Released',
@@ -37,3 +37,14 @@ class SpinBoxFixStyle(QtWidgets.QProxyStyle):
             return 5**10
         else:
             return super().styleHint(hint, option, widget, returnData)
+
+
+def align_spinbox_right(spinbox):
+    spinbox.setAlignment(
+        QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
+        QtCore.Qt.AlignVCenter)
+
+
+def align_all_spinboxes_right(root):
+    for spinbox in root.findChildren(QtWidgets.QAbstractSpinBox):
+        align_spinbox_right(spinbox)
