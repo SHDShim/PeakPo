@@ -284,8 +284,13 @@ class MainController(object):
         # slide bars
         self.widget.horizontalSlider_VMin.setValue(0)
         self.widget.horizontalSlider_VMax.setValue(100)
+        if hasattr(self.widget, "cake_hist_widget"):
+            self.widget.cake_hist_widget.combo_scale_mode.currentIndexChanged.connect(
+                self._sync_cake_scale_bar_from_combo)
+            self.widget.cake_hist_widget.combo_scale_mode.currentIndexChanged.connect(
+                self.apply_changes_to_graph)
         self.widget.horizontalSlider_MaxScaleBars.valueChanged.connect(
-            self.apply_changes_to_graph)
+            self._sync_cake_scale_combo_from_slider)
         self.widget.horizontalSlider_VMin.valueChanged.connect(
             self.apply_changes_to_graph)
         self.widget.horizontalSlider_VMax.valueChanged.connect(
@@ -765,7 +770,7 @@ class MainController(object):
                 "int_max": int(self.widget.spinBox_MaxCakeScale.value()),
                 "min_bar": int(self.widget.horizontalSlider_VMin.value()),
                 "max_bar": int(self.widget.horizontalSlider_VMax.value()),
-                "scale_bar": int(self.widget.horizontalSlider_MaxScaleBars.value()),
+                "scale_bar": int(self._get_cake_scale_bar_value()),
                 "hist": cake_hist,
             },
             "background": {
@@ -814,14 +819,13 @@ class MainController(object):
             self.widget.spinBox_MaxCakeScale.setValue(int(cake["int_max"]))
             self.widget.horizontalSlider_VMin.setValue(int(cake["min_bar"]))
             self.widget.horizontalSlider_VMax.setValue(int(cake["max_bar"]))
-            self.widget.horizontalSlider_MaxScaleBars.setValue(int(cake["scale_bar"]))
+            self._set_cake_scale_bar_value(int(cake["scale_bar"]))
             hist = cake.get("hist", {})
             if hasattr(self.widget, "cake_hist_widget") and hist != {}:
                 self.widget.cake_hist_widget.check_log.setChecked(bool(hist.get("log_y", True)))
                 self.widget.cake_hist_widget.check_focus.setChecked(bool(hist.get("focus_range", True)))
                 self.widget.cake_hist_widget.spin_low_pct.setValue(float(hist.get("low_pct", 40.0)))
                 self.widget.cake_hist_widget.spin_high_pct.setValue(float(hist.get("high_pct", 99.95)))
-            carried_any = True
 
         if self._should_carry_nav_category("background", "checkBox_CarryNavBackground"):
             bg = snap["background"]
@@ -861,6 +865,32 @@ class MainController(object):
         # Never carry over backup information across CHI navigation.
         # Always show backup info for the newly loaded file.
         self.session_ctrl.refresh_backup_table()
+
+    def _get_cake_scale_bar_value(self):
+        if hasattr(self.widget, "cake_hist_widget"):
+            return int(self.widget.cake_hist_widget.combo_scale_mode.currentData())
+        return int(self.widget.horizontalSlider_MaxScaleBars.value())
+
+    def _set_cake_scale_bar_value(self, value):
+        value = int(value)
+        self.widget.horizontalSlider_MaxScaleBars.setValue(value)
+        if hasattr(self.widget, "cake_hist_widget"):
+            combo = self.widget.cake_hist_widget.combo_scale_mode
+            idx = combo.findData(value)
+            if idx >= 0 and combo.currentIndex() != idx:
+                combo.setCurrentIndex(idx)
+
+    def _sync_cake_scale_bar_from_combo(self):
+        self.widget.horizontalSlider_MaxScaleBars.setValue(self._get_cake_scale_bar_value())
+
+    def _sync_cake_scale_combo_from_slider(self):
+        if not hasattr(self.widget, "cake_hist_widget"):
+            return
+        combo = self.widget.cake_hist_widget.combo_scale_mode
+        value = int(self.widget.horizontalSlider_MaxScaleBars.value())
+        idx = combo.findData(value)
+        if idx >= 0 and combo.currentIndex() != idx:
+            combo.setCurrentIndex(idx)
 
     """
     def closeEvent(self, event):

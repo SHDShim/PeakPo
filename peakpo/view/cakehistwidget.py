@@ -35,6 +35,10 @@ class CakeHistogramWidget(QtWidgets.QWidget):
         self.spin_high_pct.setSingleStep(0.01)
         self.spin_high_pct.setValue(99.95)
         self.button_apply_pct = QtWidgets.QPushButton("Apply pct")
+        self.combo_scale_mode = QtWidgets.QComboBox()
+        for value, label in enumerate(["0-fine", "1", "2", "3", "4-coarse"]):
+            self.combo_scale_mode.addItem(label, value)
+        self.combo_scale_mode.setCurrentIndex(2)
 
         self.fig = Figure(figsize=(4, 1.05), tight_layout=True)
         self.canvas = FigureCanvas(self.fig)

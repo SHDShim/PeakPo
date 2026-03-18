@@ -654,10 +654,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.cake_hist_widget.label_high.setParent(self.frame_CakeTopGrid)
         self.cake_hist_widget.spin_high_pct.setParent(self.frame_CakeTopGrid)
         self.cake_hist_widget.button_apply_pct.setParent(self.frame_CakeTopGrid)
+        self.cake_hist_widget.combo_scale_mode.setParent(self.frame_CakeTopGrid)
         self.cake_hist_widget.button_apply_pct.setMinimumHeight(25)
         self.cake_hist_widget.button_apply_pct.setMaximumHeight(25)
         self.cake_hist_widget.spin_low_pct.setMinimumHeight(25)
         self.cake_hist_widget.spin_high_pct.setMinimumHeight(25)
+        self.cake_hist_widget.combo_scale_mode.setMinimumHeight(25)
+        self.cake_hist_widget.combo_scale_mode.setMaximumHeight(25)
 
         self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.check_log, 0, 0, 1, 1)
         self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.check_focus, 1, 0, 1, 1)
@@ -665,6 +668,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.spin_low_pct, 0, 3, 1, 1)
         self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.label_high, 1, 2, 1, 1)
         self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.spin_high_pct, 1, 3, 1, 1)
+        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.combo_scale_mode, 2, 0, 1, 2)
         self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.button_apply_pct, 2, 3, 1, 1)
 
         if hasattr(self, "groupBox_CakeColormap"):
@@ -677,6 +681,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             # Keep colormap selector compact (do not stretch across the row).
             focus_w = self.cake_hist_widget.check_focus.sizeHint().width()
             target_w = max(160, int(focus_w))
+            self.cake_hist_widget.combo_scale_mode.setMinimumWidth(target_w)
+            self.cake_hist_widget.combo_scale_mode.setMaximumWidth(target_w)
+            self.cake_hist_widget.combo_scale_mode.setSizePolicy(
+                QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
             self.comboBox_CakeColormap.setMinimumWidth(target_w)
             self.comboBox_CakeColormap.setMaximumWidth(target_w)
             self.comboBox_CakeColormap.setSizePolicy(
@@ -693,24 +701,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Histogram plot
         self.cake_hist_widget.canvas.setParent(self.groupBox_29)
 
-        # Scale slider row
-        self.frame_ScaleRow = QtWidgets.QFrame(self.groupBox_29)
-        self.frame_ScaleRow.setObjectName("frame_ScaleRow")
-        self.horizontalLayout_ScaleRow = QtWidgets.QHBoxLayout(self.frame_ScaleRow)
-        self.horizontalLayout_ScaleRow.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout_ScaleRow.setSpacing(10)
-        self.label_19.setParent(self.frame_ScaleRow)
-        self.horizontalSlider_MaxScaleBars.setParent(self.frame_ScaleRow)
-        self.label_19.setFixedWidth(48)
-        self.label_19.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
-        self.horizontalLayout_ScaleRow.addWidget(self.label_19)
-        self.horizontalLayout_ScaleRow.addWidget(self.horizontalSlider_MaxScaleBars, 1)
+        # Hide legacy scale slider; the histogram widget now exposes a combo box.
+        self.label_19.setVisible(False)
+        self.horizontalSlider_MaxScaleBars.setVisible(False)
 
         self.verticalLayout_11.setContentsMargins(10, 0, 10, 0)
         self.verticalLayout_11.setSpacing(6)
         self.verticalLayout_11.addWidget(self.frame_CakeTopGrid)
         self.verticalLayout_11.addWidget(self.cake_hist_widget.canvas)
-        self.verticalLayout_11.addWidget(self.frame_ScaleRow)
 
     def _setup_cake_colormap_control(self):
         if not hasattr(self, "verticalLayout_PlotControl"):

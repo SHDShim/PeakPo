@@ -7,8 +7,9 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.10.2b"
+__version__ = "7.10.3"
 """
+7.10.3: Map problems?
 7.10.2b: polish UI design.
 7.10.2: Mapping and sequence capabilities added.
 7.10.1: Code optimization for speed.

@@ -255,8 +255,11 @@ class MplController(object):
         if (max_slider_pos <= min_slider_pos):
             self.widget.horizontalSlider_VMin.setValue(1)
             self.widget.horizontalSlider_VMax.setValue(99)
+        scale_bar_value = int(self.widget.horizontalSlider_MaxScaleBars.value())
+        if hasattr(self.widget, "cake_hist_widget"):
+            scale_bar_value = int(self.widget.cake_hist_widget.combo_scale_mode.currentData())
         prefactor = self.widget.spinBox_MaxCakeScale.value() / \
-            (10. ** self.widget.horizontalSlider_MaxScaleBars.value())
+            (10. ** scale_bar_value)
         climits = np.asarray([
             self.widget.horizontalSlider_VMin.value(),
             self.widget.horizontalSlider_VMax.value()]) / \

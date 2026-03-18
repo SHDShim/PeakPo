@@ -89,7 +89,7 @@ class CakeController(object):
         self.widget.spinBox_MaxCakeScale.setValue(temp_values[1])
         self.widget.horizontalSlider_VMin.setValue(temp_values[2])
         self.widget.horizontalSlider_VMax.setValue(temp_values[3])
-        self.widget.horizontalSlider_MaxScaleBars.setValue(temp_values[4])
+        self._set_cake_scale_bar_value(temp_values[4])
         self._apply_changes_to_graph()
 
     def save_cake_format_file(self):
@@ -108,7 +108,7 @@ class CakeController(object):
                   self.widget.spinBox_MaxCakeScale.value(),
                   self.widget.horizontalSlider_VMin.value(),
                   self.widget.horizontalSlider_VMax.value(),
-                  self.widget.horizontalSlider_MaxScaleBars.value()]
+                  self._get_cake_scale_bar_value()]
 
         with open(filen, "w") as f:
             for n, v in zip(names, values):
@@ -125,9 +125,23 @@ class CakeController(object):
     def _apply_changes_to_graph(self):
         self.plot_ctrl.update()
 
+    def _get_cake_scale_bar_value(self):
+        if hasattr(self.widget, "cake_hist_widget"):
+            return int(self.widget.cake_hist_widget.combo_scale_mode.currentData())
+        return int(self.widget.horizontalSlider_MaxScaleBars.value())
+
+    def _set_cake_scale_bar_value(self, value):
+        value = int(value)
+        self.widget.horizontalSlider_MaxScaleBars.setValue(value)
+        if hasattr(self.widget, "cake_hist_widget"):
+            combo = self.widget.cake_hist_widget.combo_scale_mode
+            idx = combo.findData(value)
+            if idx >= 0 and combo.currentIndex() != idx:
+                combo.setCurrentIndex(idx)
+
     def _set_cake_bound_from_hist(self, bound_type, intensity_value):
         prefactor = self.widget.spinBox_MaxCakeScale.value() / \
-            (10. ** self.widget.horizontalSlider_MaxScaleBars.value())
+            (10. ** self._get_cake_scale_bar_value())
         if prefactor <= 0:
             return
         current_min = self.widget.horizontalSlider_VMin.value()
