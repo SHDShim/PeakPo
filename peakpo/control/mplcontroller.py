@@ -3,7 +3,6 @@ import time
 import datetime
 import numpy as np
 import numpy.ma as ma
-from matplotlib.widgets import MultiCursor
 #from matplotlib.widgets import MultiCursor
 #import matplotlib.transforms as transforms
 #import matplotlib.colors as colors
@@ -31,6 +30,8 @@ class MplController(object):
         self._update_timer = QtCore.QTimer(self.widget)
         self._update_timer.setSingleShot(True)
         self._update_timer.timeout.connect(self._flush_update_request)
+        self._vcursor_pattern = None
+        self._vcursor_cake = None
         
         # ✅ Wrap toolbar methods to track state
         toolbar = self.widget.mpl.canvas.toolbar
@@ -43,7 +44,7 @@ class MplController(object):
             
             def zoom_wrapper(*args, **kwargs):
                 result = self._original_zoom(*args, **kwargs)
-                self._toolbar_active = (toolbar.mode != '')
+                self._toolbar_active = False
                 # ✅ NEW: Uncheck cursor when zoom is activated
                 if toolbar.mode == 'zoom rect':
                     self.widget.checkBox_LongCursor.setChecked(False)
@@ -51,7 +52,7 @@ class MplController(object):
             
             def pan_wrapper(*args, **kwargs):
                 result = self._original_pan(*args, **kwargs)
-                self._toolbar_active = (toolbar.mode != '')
+                self._toolbar_active = False
                 # ✅ NEW: Uncheck cursor when pan is activated
                 if toolbar.mode == 'pan/zoom':
                     self.widget.checkBox_LongCursor.setChecked(False)
@@ -83,6 +84,82 @@ class MplController(object):
 
     def set_diff_controller(self, diff_ctrl):
         self.diff_ctrl = diff_ctrl
+
+    def _clear_vertical_cursor_artists(self):
+        for attr in ("_vcursor_pattern", "_vcursor_cake"):
+            artist = getattr(self, attr, None)
+            if artist is not None:
+                try:
+                    artist.remove()
+                except Exception:
+                    pass
+            setattr(self, attr, None)
+
+    def _ensure_vertical_cursor_artists(self):
+        if not self.widget.checkBox_LongCursor.isChecked():
+            self._clear_vertical_cursor_artists()
+            return
+        try:
+            lw_value = float(
+                self.widget.comboBox_VertCursorThickness.currentText())
+        except Exception:
+            lw_value = 1.0
+        ax_pattern = self.widget.mpl.canvas.ax_pattern
+        if self._vcursor_pattern is None or \
+                getattr(self._vcursor_pattern, "axes", None) is not ax_pattern:
+            self._vcursor_pattern = ax_pattern.axvline(
+                0.0, color='r', lw=lw_value, ls='--', visible=False)
+        else:
+            self._vcursor_pattern.set_linewidth(lw_value)
+        use_cake = hasattr(self.widget.mpl.canvas, 'ax_cake') and \
+            self.widget.checkBox_ShowCake.isChecked()
+        if use_cake:
+            ax_cake = self.widget.mpl.canvas.ax_cake
+            if self._vcursor_cake is None or \
+                    getattr(self._vcursor_cake, "axes", None) is not ax_cake:
+                self._vcursor_cake = ax_cake.axvline(
+                    0.0, color='r', lw=lw_value, ls='--', visible=False)
+            else:
+                self._vcursor_cake.set_linewidth(lw_value)
+        else:
+            if self._vcursor_cake is not None:
+                try:
+                    self._vcursor_cake.remove()
+                except Exception:
+                    pass
+                self._vcursor_cake = None
+
+    def update_vertical_cursor_position(self, event):
+        if not self.widget.checkBox_LongCursor.isChecked():
+            return
+        if (event is None) or (event.inaxes is None) or (event.xdata is None):
+            self.clear_vertical_cursor_position()
+            return
+        valid_axes = [self.widget.mpl.canvas.ax_pattern]
+        if hasattr(self.widget.mpl.canvas, 'ax_cake') and \
+                self.widget.checkBox_ShowCake.isChecked():
+            valid_axes.append(self.widget.mpl.canvas.ax_cake)
+        if event.inaxes not in valid_axes:
+            self.clear_vertical_cursor_position()
+            return
+        self._ensure_vertical_cursor_artists()
+        x = float(event.xdata)
+        if self._vcursor_pattern is not None:
+            self._vcursor_pattern.set_xdata([x, x])
+            self._vcursor_pattern.set_visible(True)
+        if self._vcursor_cake is not None:
+            self._vcursor_cake.set_xdata([x, x])
+            self._vcursor_cake.set_visible(True)
+        self.widget.mpl.canvas.draw_idle()
+
+    def clear_vertical_cursor_position(self):
+        changed = False
+        for artist in (self._vcursor_pattern, self._vcursor_cake):
+            if artist is not None and artist.get_visible():
+                artist.set_visible(False)
+                changed = True
+        if changed:
+            self.widget.mpl.canvas.draw_idle()
 
     def _set_nightday_view(self):
         if not self.widget.checkBox_NightView.isChecked():
@@ -836,38 +913,9 @@ class MplController(object):
                 """
                 self.widget.mpl.canvas.ax_cake.format_coord = self._format_coord_x_y_z_dsp
             
-            # ✅ MOVED: Set up cursor BEFORE drawing (inside try block)
-            if self.widget.checkBox_LongCursor.isChecked():
-                # Determine which axes to use
-                if hasattr(self.widget.mpl.canvas, 'ax_cake') and \
-                   self.widget.checkBox_ShowCake.isChecked():
-                    # Use both axes
-                    axes_list = (self.widget.mpl.canvas.ax_pattern,
-                                self.widget.mpl.canvas.ax_cake)
-                else:
-                    # Use only pattern axis
-                    axes_list = (self.widget.mpl.canvas.ax_pattern,)
-                
-                # Get line width
-                try:
-                    lw_value = float(
-                        self.widget.comboBox_VertCursorThickness.currentText())
-                except:
-                    lw_value = 1.0
-                
-                # Create MultiCursor
-                self.widget.cursor = MultiCursor(
-                    self.widget.mpl.canvas.fig,  # Use figure, not canvas
-                    axes_list,
-                    color='r',
-                    lw=lw_value,
-                    ls='--',
-                    useblit=False,
-                    horizOn=False)  # Only vertical line
-            else:
-                # Clear cursor if checkbox is unchecked
-                if hasattr(self.widget, 'cursor'):
-                    self.widget.cursor = None
+            self._ensure_vertical_cursor_artists()
+            if not self.widget.checkBox_LongCursor.isChecked():
+                self.clear_vertical_cursor_position()
             
             # ✅ Draw canvas (deferred to Qt event loop)
             QtCore.QTimer.singleShot(0, self.widget.mpl.canvas.draw)

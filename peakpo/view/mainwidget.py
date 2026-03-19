@@ -150,16 +150,69 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._reorder_main_tabs_and_fit_tab_names()
         self._setup_peakfit_section_buttons()
         self._setup_toolbar_diff_toggle()
+        self._setup_mouse_mode_selector()
+        self._move_mouse_controls_to_plot_bar()
+        self._spread_primary_controls_evenly()
         self._spread_top_toolbar_even()
         if hasattr(self, "pushButton_S_Zoom"):
             self.pushButton_S_Zoom.setText("⤢")
             self.pushButton_S_Zoom.setToolTip("Fit X/Y to data (zoom out)")
+            self._set_button_height(self.pushButton_S_Zoom)
+        if hasattr(self, "pushButton_savePeakPos"):
+            self.pushButton_savePeakPos.setText("Sort")
+            self.pushButton_savePeakPos.setToolTip(
+                "Move checked JCPDS items to the top of the table")
+        for name in (
+            "pushButton_SaveTwkJCPDS",
+            "pushButton_ViewJCPDS",
+            "pushButton_savePeakPos",
+        ):
+            if hasattr(self, name):
+                button = getattr(self, name)
+                button.setMinimumHeight(20)
+                button.setMaximumHeight(25)
         if hasattr(self, "checkBox_BgSub"):
             self.checkBox_BgSub.setText("Bg")
             self.checkBox_BgSub.setToolTip("Subtract background from 1D pattern")
         if hasattr(self, "checkBox_LongCursor"):
             self.checkBox_LongCursor.setText("VCursor")
             self.checkBox_LongCursor.setToolTip("Change cursor to a vertical bar")
+        if hasattr(self, "pushButton_AddRemoveFromMouse"):
+            self.pushButton_AddRemoveFromMouse.setVisible(False)
+        if hasattr(self, "pushButton_MapSetRoi"):
+            self.pushButton_MapSetRoi.setVisible(False)
+            if hasattr(self, "gridLayout_MapRoi"):
+                self.gridLayout_MapRoi.removeWidget(self.pushButton_MapSetRoi)
+        if hasattr(self, "pushButton_MapClearRoi") and hasattr(self, "gridLayout_MapRoi"):
+            self.pushButton_MapClearRoi.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+            self.gridLayout_MapRoi.addWidget(self.pushButton_MapClearRoi, 0, 0, 1, 1)
+        if hasattr(self, "pushButton_MapCompute") and hasattr(self, "gridLayout_MapRoi"):
+            self.pushButton_MapCompute.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+            self.gridLayout_MapRoi.addWidget(self.pushButton_MapCompute, 0, 1, 1, 1)
+        if hasattr(self, "lineEdit_MapRoiSummary") and hasattr(self, "gridLayout_MapRoi"):
+            self.gridLayout_MapRoi.addWidget(self.lineEdit_MapRoiSummary, 1, 0, 1, 2)
+            self.gridLayout_MapRoi.setColumnStretch(0, 1)
+            self.gridLayout_MapRoi.setColumnStretch(1, 1)
+            self.gridLayout_MapRoi.setColumnStretch(2, 0)
+        if hasattr(self, "pushButton_SeqSetRoi"):
+            self.pushButton_SeqSetRoi.setVisible(False)
+            if hasattr(self, "gridLayout_SeqRoi"):
+                self.gridLayout_SeqRoi.removeWidget(self.pushButton_SeqSetRoi)
+        if hasattr(self, "pushButton_SeqClearRoi") and hasattr(self, "gridLayout_SeqRoi"):
+            self.pushButton_SeqClearRoi.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+            self.gridLayout_SeqRoi.addWidget(self.pushButton_SeqClearRoi, 0, 0, 1, 1)
+        if hasattr(self, "pushButton_SeqCompute") and hasattr(self, "gridLayout_SeqRoi"):
+            self.pushButton_SeqCompute.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+            self.gridLayout_SeqRoi.addWidget(self.pushButton_SeqCompute, 0, 1, 1, 1)
+        if hasattr(self, "lineEdit_SeqRoiSummary") and hasattr(self, "gridLayout_SeqRoi"):
+            self.gridLayout_SeqRoi.addWidget(self.lineEdit_SeqRoiSummary, 1, 0, 1, 2)
+            self.gridLayout_SeqRoi.setColumnStretch(0, 1)
+            self.gridLayout_SeqRoi.setColumnStretch(1, 1)
+            self.gridLayout_SeqRoi.setColumnStretch(2, 0)
         # Legacy toolbar save icon is replaced by the session Save button.
         if hasattr(self, "pushButton_S_SaveSession"):
             self.pushButton_S_SaveSession.setVisible(False)
@@ -551,6 +604,35 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         button.setMinimumHeight(height)
         button.setMaximumHeight(height)
 
+    def _set_mouse_mode_button_style(self, button, checked_color,
+                                     hover_color, pressed_color,
+                                     border_color, text_color="white"):
+        button.setStyleSheet(
+            "QPushButton {"
+            "background-color: #ece7db;"
+            "color: #2a241f;"
+            "border: 1px solid #b8ada0;"
+            "border-radius: 4px;"
+            "padding: 2px 10px;"
+            "font-weight: 600;"
+            "}"
+            "QPushButton:hover {"
+            "background-color: #e1d8cb;"
+            "}"
+            "QPushButton:pressed {"
+            f"background-color: {pressed_color};"
+            f"color: {text_color};"
+            "}"
+            "QPushButton:checked {"
+            f"background-color: {checked_color};"
+            f"color: {text_color};"
+            f"border: 1px solid {border_color};"
+            "}"
+            "QPushButton:checked:hover {"
+            f"background-color: {hover_color};"
+            "}"
+        )
+
     def _setup_bg_default_button(self):
         if not hasattr(self, "gridLayout_5"):
             return
@@ -611,6 +693,123 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self._set_accent_button_style(
                 self.pushButton_PerformUCFit,
                 "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
+
+    def _setup_mouse_mode_selector(self):
+        if (not hasattr(self, "horizontalLayout_7")) or \
+                hasattr(self, "buttonGroup_MouseMode"):
+            return
+        self.pushButton_MouseModeZoom = QtWidgets.QPushButton("Zoom", self.frame_2)
+        self.pushButton_MouseModeROI = QtWidgets.QPushButton("ROI", self.frame_2)
+        self.pushButton_MouseModePeakPick = QtWidgets.QPushButton("PeakPick", self.frame_2)
+        self.pushButton_MouseModeJCPDS = QtWidgets.QPushButton("JCPDS", self.frame_2)
+
+        self.buttonGroup_MouseMode = QtWidgets.QButtonGroup(self)
+        self.buttonGroup_MouseMode.setExclusive(True)
+
+        for button, mode_name in (
+            (self.pushButton_MouseModeZoom, "navigate"),
+            (self.pushButton_MouseModeROI, "roi"),
+            (self.pushButton_MouseModePeakPick, "peakpick"),
+            (self.pushButton_MouseModeJCPDS, "jcpds"),
+        ):
+            button.setObjectName(f"pushButton_MouseMode_{mode_name}")
+            button.setCheckable(True)
+            button.setProperty("mouseMode", mode_name)
+            self._set_button_height(button)
+            self.buttonGroup_MouseMode.addButton(button)
+
+        self.pushButton_MouseModeZoom.setToolTip("Default navigation: rectangular zoom")
+        self.pushButton_MouseModeROI.setToolTip("Draw an ROI using the mouse")
+        self.pushButton_MouseModePeakPick.setToolTip("Add or remove peaks from the plot")
+        self.pushButton_MouseModeJCPDS.setToolTip("Click the plot to inspect nearest JCPDS line")
+
+        self._set_mouse_mode_button_style(
+            self.pushButton_MouseModeZoom,
+            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            text_color="#1f1f1f")
+        self._set_mouse_mode_button_style(
+            self.pushButton_MouseModeROI,
+            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            text_color="#1f1f1f")
+        self._set_mouse_mode_button_style(
+            self.pushButton_MouseModePeakPick,
+            "#c27b00", "#d98b00", "#9a6100", "#7c4d00",
+            text_color="#1f1f1f")
+        self._set_mouse_mode_button_style(
+            self.pushButton_MouseModeJCPDS,
+            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            text_color="#1f1f1f")
+
+        insert_idx = self.horizontalLayout_7.indexOf(self.checkBox_AutoY)
+        if insert_idx < 0:
+            insert_idx = 0
+        self.horizontalLayout_7.insertWidget(insert_idx, self.pushButton_MouseModeZoom)
+        self.horizontalLayout_7.insertWidget(insert_idx + 1, self.pushButton_MouseModeROI)
+        self.horizontalLayout_7.insertWidget(insert_idx + 2, self.pushButton_MouseModePeakPick)
+        self.horizontalLayout_7.insertWidget(insert_idx + 3, self.pushButton_MouseModeJCPDS)
+        self.pushButton_MouseModeZoom.setChecked(True)
+
+    def _move_mouse_controls_to_plot_bar(self):
+        if (not hasattr(self, "mpl")) or \
+                (not hasattr(self.mpl, "add_control_widget")):
+            return
+        self.label_CursorPosition = QtWidgets.QLabel("", self.mpl.control_bar)
+        self.label_CursorPosition.setObjectName("label_CursorPosition")
+        self.label_CursorPosition.setMinimumHeight(25)
+        self.label_CursorPosition.setAlignment(
+            QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        self.label_CursorPosition.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        widgets = [
+            getattr(self, "pushButton_S_Zoom", None),
+            getattr(self, "pushButton_MouseModeZoom", None),
+            getattr(self, "pushButton_MouseModeROI", None),
+            getattr(self, "pushButton_MouseModePeakPick", None),
+            getattr(self, "pushButton_MouseModeJCPDS", None),
+            getattr(self, "checkBox_AutoY", None),
+            getattr(self, "checkBox_LongCursor", None),
+        ]
+        for widget in widgets:
+            if widget is None:
+                continue
+            widget.setParent(self.mpl.control_bar)
+            if widget == getattr(self, "pushButton_S_Zoom", None):
+                widget.setSizePolicy(
+                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            elif widget in (
+                getattr(self, "checkBox_AutoY", None),
+                getattr(self, "checkBox_LongCursor", None),
+            ):
+                widget.setSizePolicy(
+                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            self.mpl.add_control_widget(widget)
+        self.mpl.add_control_stretch(1)
+        self.mpl.add_control_widget(self.label_CursorPosition, 1)
+
+    def _spread_primary_controls_evenly(self):
+        if not hasattr(self, "horizontalLayout_7"):
+            return
+        layout = self.horizontalLayout_7
+        layout.setSpacing(18)
+        widgets = [
+            getattr(self, "pushButton_NewBasePtn", None),
+            getattr(self, "pushButton_LoadDPP", None),
+            getattr(self, "checkBox_ShowCake", None),
+            getattr(self, "checkBox_Diff", None),
+            getattr(self, "checkBox_BgSub", None),
+        ]
+        for widget in widgets:
+            if widget is None:
+                continue
+            widget.setMinimumWidth(0)
+            widget.setMaximumWidth(16777215)
+            widget.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            w = item.widget()
+            if w in widgets:
+                layout.setStretch(i, 1)
 
     def _setup_cake_scale_layout(self):
         self.groupBox_29.setTitle("2D Cake scale")

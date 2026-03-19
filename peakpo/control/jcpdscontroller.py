@@ -43,6 +43,9 @@ class JcpdsController(object):
             lambda: self._apply_changes_to_graph(limits=None))
         self.widget.pushButton_SaveTwkJCPDS.clicked.connect(
             self.write_twk_jcpds)
+        if hasattr(self.widget, "pushButton_savePeakPos"):
+            self.widget.pushButton_savePeakPos.clicked.connect(
+                self.sort_checked_to_top)
 
     def _apply_changes_to_graph(self, limits=None):
         self.plot_ctrl.update(limits=limits)
@@ -293,6 +296,21 @@ class JcpdsController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning',
                 'In order to remove, highlight the names.')
+
+    def sort_checked_to_top(self):
+        if not self.model.jcpds_exist():
+            return
+        self.jcpdstable_ctrl.sync_model_from_table()
+        checked = sorted(
+            [phase for phase in self.model.jcpds_lst if phase.display],
+            key=lambda phase: str(getattr(phase, "name", "")).lower())
+        unchecked = sorted(
+            [phase for phase in self.model.jcpds_lst if not phase.display],
+            key=lambda phase: str(getattr(phase, "name", "")).lower())
+        self.model.jcpds_lst[:] = checked + unchecked
+        self.widget.tableWidget_JCPDS.clearContents()
+        self.jcpdstable_ctrl.update()
+        self._apply_changes_to_graph()
 
     def save_xls(self):
         """

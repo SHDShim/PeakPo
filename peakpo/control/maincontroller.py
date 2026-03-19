@@ -45,6 +45,8 @@ class MainController(object):
         print("MainController.__init__ - START")
         self.widget = MainWindow()
         print("  ✓ MainWindow created")
+        self._mouse_mode = 'navigate'
+        self._syncing_mouse_mode = False
 
         self.model = PeakPoModel8()
         print("  ✓ PeakPoModel8 created")
@@ -67,13 +69,15 @@ class MainController(object):
         self.map_ctrl = MapController(self.model, self.widget)
         self.map_ctrl.set_helpers(
             base_ptn_ctrl=self.base_ptn_ctrl,
-            plot_ctrl=self.plot_ctrl)
+            plot_ctrl=self.plot_ctrl,
+            mouse_mode_done_cb=self._finish_temporary_mouse_mode)
         print("  ✓ MapController created")
 
         self.seq_ctrl = SequenceController(self.model, self.widget)
         self.seq_ctrl.set_helpers(
             base_ptn_ctrl=self.base_ptn_ctrl,
-            plot_ctrl=self.plot_ctrl)
+            plot_ctrl=self.plot_ctrl,
+            mouse_mode_done_cb=self._finish_temporary_mouse_mode)
         print("  ✓ SequenceController created")
         
         self.cakeazi_ctrl = CakeAziController(self.model, self.widget)
@@ -115,6 +119,7 @@ class MainController(object):
         
         self.connect_channel()
         print("  ✓ connect_channel() done")
+        self._initialize_mouse_mode()
         
         self.clip = QtWidgets.QApplication.clipboard()
         print("  ✓ clipboard set")
@@ -182,6 +187,10 @@ class MainController(object):
             'button_press_event', self.deliver_mouse_signal)
         self.widget.mpl.canvas.mpl_connect(
             'key_press_event', self.on_key_press)
+        self.widget.mpl.canvas.mpl_connect(
+            'motion_notify_event', self._update_cursor_position_readout)
+        self.widget.mpl.canvas.mpl_connect(
+            'figure_leave_event', self._clear_cursor_position_readout)
         self.widget.spinBox_AziShift.valueChanged.connect(
             self.apply_changes_to_graph)
         self.widget.doubleSpinBox_Pressure.valueChanged.connect(
@@ -278,6 +287,8 @@ class MainController(object):
             self.apply_changes_to_graph)
         # self.widget.actionClose.triggered.connect(self.closeEvent)
         self.widget.tabWidget.currentChanged.connect(self.check_for_peakfit)
+        self.widget.tabWidget.currentChanged.connect(
+            self._refresh_mouse_mode_availability)
         # self.widget.tabWidget.setTabEnabled(8, False)
         self.widget.pushButton_DelTempCHI.clicked.connect(self.del_temp_chi)
         self.widget.pushButton_DelTempCake.clicked.connect(self.del_temp_cake)
@@ -327,23 +338,197 @@ class MainController(object):
             lambda: self.goto_next_file('last'))
         self.widget.pushButton_FirstBasePtn.clicked.connect(
             lambda: self.goto_next_file('first'))
+        if hasattr(self.widget, "buttonGroup_MouseMode"):
+            self.widget.buttonGroup_MouseMode.buttonToggled.connect(
+                self._on_mouse_mode_button_toggled)
+        if hasattr(self.widget, "pushButton_AddRemoveFromMouse"):
+            self.widget.pushButton_AddRemoveFromMouse.toggled.connect(
+                self._on_peakpick_button_toggled)
+
+    def _initialize_mouse_mode(self):
+        self._refresh_mouse_mode_availability()
+        self._set_mouse_mode('navigate')
+
+    def _get_toolbar(self):
+        return getattr(self.widget.mpl, "ntb", None)
+
+    def _get_toolbar_mode(self):
+        toolbar = self._get_toolbar()
+        if toolbar is None:
+            return ''
+        if hasattr(toolbar, 'mode'):
+            return toolbar.mode or ''
+        if hasattr(toolbar, '_active'):
+            return toolbar._active or ''
+        return ''
+
+    def _deactivate_toolbar_modes(self):
+        toolbar = self._get_toolbar()
+        if toolbar is None:
+            return
+        current_mode = self._get_toolbar_mode()
+        if current_mode in ('zoom rect', 'ZOOM'):
+            toolbar.zoom()
+        elif current_mode in ('pan/zoom', 'PAN'):
+            toolbar.pan()
+
+    def _set_toolbar_zoom_active(self, enabled):
+        toolbar = self._get_toolbar()
+        if toolbar is None:
+            return
+        current_mode = self._get_toolbar_mode()
+        if current_mode in ('pan/zoom', 'PAN'):
+            toolbar.pan()
+            current_mode = self._get_toolbar_mode()
+        zoom_active = current_mode in ('zoom rect', 'ZOOM')
+        if enabled and (not zoom_active):
+            toolbar.zoom()
+        elif (not enabled) and zoom_active:
+            toolbar.zoom()
+
+    def _is_map_tab_active(self):
+        return hasattr(self.widget, "tab_Map") and \
+            (self.widget.tabWidget.currentWidget() == self.widget.tab_Map)
+
+    def _is_seq_tab_active(self):
+        return hasattr(self.widget, "tab_Seq") and \
+            (self.widget.tabWidget.currentWidget() == self.widget.tab_Seq)
+
+    def _fits_tab_active(self):
+        if hasattr(self.widget, "tab_PkFt"):
+            try:
+                return self.widget.tabWidget.currentWidget() == \
+                    self.widget.tab_PkFt
+            except Exception:
+                pass
+        return self.widget.tabWidget.currentIndex() in (4, 5)
+
+    def _roi_mode_available(self):
+        return self._is_map_tab_active() or self._is_seq_tab_active()
+
+    def _set_mouse_mode_button_state(self, mode):
+        button_map = {
+            'navigate': getattr(self.widget, "pushButton_MouseModeZoom", None),
+            'roi': getattr(self.widget, "pushButton_MouseModeROI", None),
+            'peakpick': getattr(self.widget, "pushButton_MouseModePeakPick", None),
+            'jcpds': getattr(self.widget, "pushButton_MouseModeJCPDS", None),
+        }
+        button = button_map.get(mode)
+        if button is None:
+            return
+        self._syncing_mouse_mode = True
+        button.setChecked(True)
+        self._syncing_mouse_mode = False
+
+    def _sync_peakpick_button(self, enabled):
+        if not hasattr(self.widget, "pushButton_AddRemoveFromMouse"):
+            return
+        self._syncing_mouse_mode = True
+        self.widget.pushButton_AddRemoveFromMouse.setChecked(bool(enabled))
+        self._syncing_mouse_mode = False
+
+    def _deactivate_roi_modes(self):
+        if hasattr(self, "map_ctrl") and (self.map_ctrl is not None):
+            self.map_ctrl.deactivate_interactions()
+        if hasattr(self, "seq_ctrl") and (self.seq_ctrl is not None):
+            self.seq_ctrl.deactivate_interactions()
+
+    def _refresh_mouse_mode_availability(self, *_args):
+        roi_available = self._roi_mode_available()
+        peakpick_available = self._fits_tab_active()
+        if hasattr(self.widget, "pushButton_MouseModeROI"):
+            self.widget.pushButton_MouseModeROI.setEnabled(roi_available)
+        if hasattr(self.widget, "pushButton_MouseModePeakPick"):
+            self.widget.pushButton_MouseModePeakPick.setEnabled(
+                peakpick_available)
+        if (self._mouse_mode == 'roi') and (not roi_available):
+            self._set_mouse_mode('navigate')
+        if (self._mouse_mode == 'peakpick') and (not peakpick_available):
+            self._set_mouse_mode('navigate')
+
+    def _set_mouse_mode(self, mode):
+        if mode == self._mouse_mode:
+            if mode == 'navigate':
+                self._set_toolbar_zoom_active(True)
+            return
+        if mode == 'roi' and (not self._roi_mode_available()):
+            mode = 'navigate'
+        if mode == 'peakpick' and (not self._fits_tab_active()):
+            mode = 'navigate'
+
+        self._deactivate_toolbar_modes()
+        self._deactivate_roi_modes()
+        self._sync_peakpick_button(False)
+
+        if hasattr(self.widget, "checkBox_LongCursor") and \
+                self.widget.checkBox_LongCursor.isChecked():
+            self.widget.checkBox_LongCursor.setChecked(False)
+
+        self._mouse_mode = mode
+        self._set_mouse_mode_button_state(mode)
+
+        if mode == 'navigate':
+            self._set_toolbar_zoom_active(True)
+        elif mode == 'roi':
+            if self._is_map_tab_active():
+                self.map_ctrl._arm_roi_selection()
+            elif self._is_seq_tab_active():
+                self.seq_ctrl._arm_roi_selection()
+        elif mode == 'peakpick':
+            self._sync_peakpick_button(True)
+
+    def _finish_temporary_mouse_mode(self, mode):
+        if mode == self._mouse_mode and mode in ('roi', 'jcpds'):
+            self._set_mouse_mode('navigate')
+
+    def _on_mouse_mode_button_toggled(self, button, checked):
+        if self._syncing_mouse_mode or (not checked) or (button is None):
+            return
+        mode = str(button.property("mouseMode") or "navigate")
+        self._set_mouse_mode(mode)
+
+    def _on_peakpick_button_toggled(self, checked):
+        if self._syncing_mouse_mode:
+            return
+        if checked:
+            self._set_mouse_mode('peakpick')
+        elif self._mouse_mode == 'peakpick':
+            self._set_mouse_mode('navigate')
+
+    def _clear_cursor_position_readout(self, _event=None):
+        if hasattr(self, "plot_ctrl") and (self.plot_ctrl is not None):
+            self.plot_ctrl.clear_vertical_cursor_position()
+        if hasattr(self.widget, "label_CursorPosition"):
+            self.widget.label_CursorPosition.setText("")
+
+    def _update_cursor_position_readout(self, event):
+        if hasattr(self, "plot_ctrl") and (self.plot_ctrl is not None):
+            self.plot_ctrl.update_vertical_cursor_position(event)
+        if not hasattr(self.widget, "label_CursorPosition"):
+            return
+        if (event is None) or (event.inaxes is None) or \
+                (event.xdata is None) or (event.ydata is None):
+            self._clear_cursor_position_readout()
+            return
+        formatter = getattr(event.inaxes, "format_coord", None)
+        if callable(formatter):
+            try:
+                text = formatter(event.xdata, event.ydata)
+            except Exception:
+                text = ""
+        else:
+            text = ""
+        text = str(text).replace("\n", " ").strip()
+        self.widget.label_CursorPosition.setText(text)
 
     def _on_long_cursor_changed(self, state):
-        """Deactivate pan/zoom when vertical cursor is enabled"""
+        """Keep vertical cursor and hidden zoom mode in sync."""
         if state == QtCore.Qt.Checked:
-            # Deactivate any active toolbar mode
-            toolbar = self.widget.mpl.canvas.toolbar
-            if toolbar and toolbar.mode:
-                # Click the active button again to deactivate it
-                if toolbar.mode == 'zoom rect':
-                    toolbar.zoom()  # Toggle off
-                elif toolbar.mode == 'pan/zoom':
-                    toolbar.pan()   # Toggle off
-            
-            # Update the plot to show cursor
+            self._deactivate_toolbar_modes()
             self.plot_ctrl.update()
         else:
-            # Update the plot to remove cursor
+            if self._mouse_mode == 'navigate':
+                self._set_toolbar_zoom_active(True)
             self.plot_ctrl.update()
 
     def _handle_cursor_toggle(self, state):
@@ -793,6 +978,10 @@ class MainController(object):
         if not bool(presence.get(key, False)):
             # If target CHI has no existing info, always carry from current.
             return True
+        if key == "jcpds":
+            # JCPDS attached to the destination CHI should take precedence over
+            # carry-over. This avoids overwriting a file's own saved phase list.
+            return False
         if not hasattr(self.widget, checkbox_attr):
             return True
         return bool(getattr(self.widget, checkbox_attr).isChecked())
@@ -952,9 +1141,17 @@ class MainController(object):
         self.plot_ctrl.update()
 
     def deliver_mouse_signal(self, event):
-        # Map ROI selection uses mouse drag on the main plot/cake axes.
-        # Suppress default click handling (position popup / peak pick)
-        # while ROI selector is active.
+        if self._mouse_mode == 'navigate':
+            if event.button == 3:
+                self.plot_new_graph()
+            return
+        if self._mouse_mode == 'roi':
+            if event.button == 3:
+                if self._is_map_tab_active() and hasattr(self, "map_ctrl"):
+                    self.map_ctrl._clear_roi()
+                elif self._is_seq_tab_active() and hasattr(self, "seq_ctrl"):
+                    self.seq_ctrl._clear_roi()
+            return
         if hasattr(self, "map_ctrl") and (self.map_ctrl is not None):
             try:
                 if self.map_ctrl.is_roi_selection_active():
@@ -967,15 +1164,8 @@ class MainController(object):
                     return
             except Exception:
                 pass
-        # ✅ Compatible with matplotlib 3.3+
-        if hasattr(self.widget.mpl.ntb, 'mode'):
-            # New matplotlib API
-            if self.widget.mpl.ntb.mode != '':
-                return
-        elif hasattr(self.widget.mpl.ntb, '_active'):
-            # Old matplotlib API
-            if self.widget.mpl.ntb._active is not None:
-                return
+        if self._get_toolbar_mode() not in ('', None):
+            return
         if (event.xdata is None) or (event.ydata is None):
             return
         # Peak add/remove must come from the main 1D pattern axes.
@@ -987,36 +1177,21 @@ class MainController(object):
             mouse_button = 'left'
         elif event.button == 3:
             mouse_button = 'right'
-        fits_active = False
-        if hasattr(self.widget, "tab_PkFt"):
-            fits_active = (self.widget.tabWidget.currentWidget() == self.widget.tab_PkFt)
-        else:
-            # Backward-compatible fallback for older/newer tab orders.
-            fits_active = (self.widget.tabWidget.currentIndex() in (4, 5))
-
-        if fits_active and \
-                (self.widget.pushButton_AddRemoveFromMouse.isChecked()):
+        if self._mouse_mode == 'peakpick':
+            if not self._fits_tab_active():
+                self._set_mouse_mode('navigate')
+                return
             if not self.model.current_section_exist():
                 QtWidgets.QMessageBox.warning(
                     self.widget, "Warning", "Set section first.")
                 return
-            """ lines below causes issues
-            if self.model.current_section.fitted():
-                reply = QtWidgets.QMessageBox.question(
-                    self.widget, 'Message',
-                    'Do you want to add to the last fitting result without save?',
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                    QtWidgets.QMessageBox.Yes)
-                if reply == QtWidgets.QMessageBox.No:
-                    return
-                else:
-                    self.model.current_section.invalidate_fit_result()
-            """
             if self.model.current_section.fitted():
                 self.model.current_section.invalidate_fit_result()
             self.pick_peak(mouse_button, event.xdata, event.ydata)
-        else:
+        elif self._mouse_mode == 'jcpds':
             self.read_plot(mouse_button, event.xdata, event.ydata)
+            if mouse_button == 'left':
+                self._finish_temporary_mouse_mode('jcpds')
 
     def pick_peak(self, mouse_button, xdata, ydata):
         """

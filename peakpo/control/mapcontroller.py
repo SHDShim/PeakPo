@@ -23,6 +23,7 @@ class MapController(object):
         self.widget = widget
         self.base_ptn_ctrl = None
         self.plot_ctrl = None
+        self.mouse_mode_done_cb = None
 
         self._map_canvas = None
         self._map_ax = None
@@ -50,9 +51,11 @@ class MapController(object):
         self._build_canvas()
         self._connect_channel()
 
-    def set_helpers(self, base_ptn_ctrl=None, plot_ctrl=None):
+    def set_helpers(self, base_ptn_ctrl=None, plot_ctrl=None,
+                    mouse_mode_done_cb=None):
         self.base_ptn_ctrl = base_ptn_ctrl
         self.plot_ctrl = plot_ctrl
+        self.mouse_mode_done_cb = mouse_mode_done_cb
 
     def _build_canvas(self):
         if not hasattr(self.widget, "verticalLayout_MapCanvas"):
@@ -362,10 +365,16 @@ class MapController(object):
     def _clear_roi(self):
         self._roi_1d = None
         self._roi_2d = None
-        self.widget.lineEdit_MapRoiSummary.setText("")
-        self._set_status("ROI cleared.")
         self.deactivate_interactions()
         self._clear_roi_overlays()
+        self._set_default_1d_full_range_roi()
+        if self._roi_1d is not None:
+            self._set_status("ROI reset to full diffraction pattern.")
+            self.refresh_roi_overlays()
+            self._compute_map()
+        else:
+            self.widget.lineEdit_MapRoiSummary.setText("")
+            self._set_status("ROI cleared.")
 
     def _on_roi_1d_selected(self, eclick, erelease):
         if (eclick.xdata is None) or (erelease.xdata is None):
@@ -381,6 +390,8 @@ class MapController(object):
         self.deactivate_interactions()
         self.refresh_roi_overlays()
         self._compute_map()
+        if self.mouse_mode_done_cb is not None:
+            self.mouse_mode_done_cb("roi")
 
     def _on_roi_2d_selected(self, eclick, erelease):
         if (eclick.xdata is None) or (erelease.xdata is None) or \
@@ -401,6 +412,8 @@ class MapController(object):
         self.deactivate_interactions()
         self.refresh_roi_overlays()
         self._compute_map()
+        if self.mouse_mode_done_cb is not None:
+            self.mouse_mode_done_cb("roi")
 
     def _load_chi_xy(self, chi_path):
         return load_chi_xy(chi_path, self._chi_cache)

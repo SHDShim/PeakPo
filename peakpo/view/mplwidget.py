@@ -103,11 +103,30 @@ class MplWidget(QtWidgets.QWidget):
         self.canvas.setFocus()
 
         self.vbl = QtWidgets.QVBoxLayout()
+        self.vbl.setContentsMargins(0, 0, 0, 0)
         self.ntb = NavigationToolbar(self.canvas, self)
-        self.vbl.addWidget(self.ntb)
+        self.control_bar = QtWidgets.QFrame(self)
+        self.control_bar.setObjectName("plotMouseControlBar")
+        self.control_bar.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.control_layout = QtWidgets.QHBoxLayout(self.control_bar)
+        self.control_layout.setContentsMargins(8, 6, 8, 6)
+        self.control_layout.setSpacing(8)
+        self.control_bar.hide()
+        self.vbl.addWidget(self.control_bar)
         self.vbl.addWidget(self.canvas)
         self.setLayout(self.vbl)
+        self.ntb.hide()
         self._shutdown_done = False
+
+    def add_control_widget(self, widget, stretch=0):
+        if widget is None:
+            return
+        self.control_layout.addWidget(widget, stretch)
+        self.control_bar.show()
+
+    def add_control_stretch(self, stretch=1):
+        self.control_layout.addStretch(stretch)
+        self.control_bar.show()
 
     def shutdown(self):
         if self._shutdown_done:

@@ -22,6 +22,7 @@ class SequenceController(object):
         self.widget = widget
         self.base_ptn_ctrl = None
         self.plot_ctrl = None
+        self.mouse_mode_done_cb = None
 
         self._seq_canvas = None
         self._seq_ax = None
@@ -44,9 +45,11 @@ class SequenceController(object):
         self._build_canvas()
         self._connect_channel()
 
-    def set_helpers(self, base_ptn_ctrl=None, plot_ctrl=None):
+    def set_helpers(self, base_ptn_ctrl=None, plot_ctrl=None,
+                    mouse_mode_done_cb=None):
         self.base_ptn_ctrl = base_ptn_ctrl
         self.plot_ctrl = plot_ctrl
+        self.mouse_mode_done_cb = mouse_mode_done_cb
 
     def _build_canvas(self):
         if not hasattr(self.widget, "verticalLayout_SeqCanvas"):
@@ -136,19 +139,35 @@ class SequenceController(object):
         return (1, name_lower)
 
     def _derive_file_numbers(self, files):
-        out = []
-        fallback = False
-        for i, f in enumerate(files):
+        if not files:
+            return []
+
+        number_groups = []
+        for f in files:
             name = os.path.splitext(os.path.basename(f))[0].lower()
-            nums = re.findall(r"(\d+)", name)
-            if nums:
-                out.append(int(nums[-1]))
-            else:
-                fallback = True
-                out.append(i + 1)
-        if fallback:
+            nums = [int(m.group(1)) for m in re.finditer(r"(\d+)", name)]
+            number_groups.append(nums)
+
+        max_groups = max((len(nums) for nums in number_groups), default=0)
+        if max_groups == 0:
             return list(range(1, len(files) + 1))
-        return out
+
+        # Prefer the rightmost numeric group, but only if it distinguishes
+        # every file. If that group collapses (for example repeated map ids),
+        # walk left until a unique group is found.
+        for rev_idx in range(1, max_groups + 1):
+            candidate = []
+            valid = True
+            for nums in number_groups:
+                if len(nums) < rev_idx:
+                    valid = False
+                    break
+                candidate.append(nums[-rev_idx])
+            if valid and (len(set(candidate)) == len(files)):
+                return candidate
+
+        # Final fallback: preserve order with guaranteed-unique indices.
+        return list(range(1, len(files) + 1))
 
     def _preview_first_file(self):
         if not self._chi_files:
@@ -234,10 +253,16 @@ class SequenceController(object):
     def _clear_roi(self):
         self._roi_1d = None
         self._roi_2d = None
-        self.widget.lineEdit_SeqRoiSummary.setText("")
-        self._set_status("ROI cleared.")
         self.deactivate_interactions()
         self._clear_roi_overlays()
+        self._set_default_1d_full_range_roi()
+        if self._roi_1d is not None:
+            self._set_status("ROI reset to full diffraction pattern.")
+            self.refresh_roi_overlays()
+            self._compute_sequence()
+        else:
+            self.widget.lineEdit_SeqRoiSummary.setText("")
+            self._set_status("ROI cleared.")
 
     def _on_roi_1d_selected(self, eclick, erelease):
         if (eclick.xdata is None) or (erelease.xdata is None):
@@ -253,6 +278,8 @@ class SequenceController(object):
         self.deactivate_interactions()
         self.refresh_roi_overlays()
         self._compute_sequence()
+        if self.mouse_mode_done_cb is not None:
+            self.mouse_mode_done_cb("roi")
 
     def _on_roi_2d_selected(self, eclick, erelease):
         if (eclick.xdata is None) or (erelease.xdata is None) or \
@@ -273,6 +300,8 @@ class SequenceController(object):
         self.deactivate_interactions()
         self.refresh_roi_overlays()
         self._compute_sequence()
+        if self.mouse_mode_done_cb is not None:
+            self.mouse_mode_done_cb("roi")
 
     def _load_chi_xy(self, chi_path):
         return load_chi_xy(chi_path, self._chi_cache)
