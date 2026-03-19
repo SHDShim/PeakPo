@@ -788,6 +788,7 @@ class MplController(object):
         # ✅ Pre-check conditions BEFORE setting flag
         if (not self.model.base_ptn_exist()) and \
                 (not self.model.jcpds_exist()):
+            self.widget.mpl.canvas.show_empty_state()
             return
         
         t_start = time.time()

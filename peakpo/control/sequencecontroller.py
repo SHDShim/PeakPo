@@ -55,11 +55,14 @@ class SequenceController(object):
         if not hasattr(self.widget, "verticalLayout_SeqCanvas"):
             return
         self._seq_fig = Figure()
+        self._seq_fig.patch.set_facecolor("black")
         self._seq_fig.subplots_adjust(left=0.09, right=0.985, top=0.96, bottom=0.14)
         self._seq_ax = self._seq_fig.add_subplot(111)
+        self._seq_ax.set_facecolor("black")
         self._seq_canvas = FigureCanvasQTAgg(self._seq_fig)
         self.widget.verticalLayout_SeqCanvas.addWidget(self._seq_canvas, 1)
         self._seq_canvas.mpl_connect("button_press_event", self._on_seq_click)
+        self._draw_sequence()
 
     def _connect_channel(self):
         if not hasattr(self.widget, "tabWidget"):
@@ -390,6 +393,8 @@ class SequenceController(object):
         if self._seq_ax is None:
             return
         self._seq_ax.clear()
+        self._seq_fig.patch.set_facecolor("black")
+        self._seq_ax.set_facecolor("black")
         if (self._seq_x is None) or (self._seq_y is None) or (self._seq_x.size == 0):
             self._seq_ax.set_axis_off()
             self._seq_canvas.draw_idle()

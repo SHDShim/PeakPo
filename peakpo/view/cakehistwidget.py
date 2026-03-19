@@ -43,9 +43,7 @@ class CakeHistogramWidget(QtWidgets.QWidget):
         self.fig = Figure(figsize=(4, 1.05), tight_layout=True)
         self.canvas = FigureCanvas(self.fig)
         self.ax = self.fig.add_subplot(111)
-        self.ax.set_yticks([])
-        self.ax.set_xlabel("Intensity histogram (Drag blue/orange lines for min/max)")
-        self.ax.tick_params(axis="x", labelsize=8)
+        self._draw_empty_state(draw=False)
 
         self.label_low = QtWidgets.QLabel("Low %")
         self.label_high = QtWidgets.QLabel("High %")
@@ -79,6 +77,14 @@ class CakeHistogramWidget(QtWidgets.QWidget):
         self.check_focus.stateChanged.connect(self._redraw_only)
         self.button_apply_pct.clicked.connect(self._apply_percentiles)
 
+    def _draw_empty_state(self, draw=True):
+        self.fig.patch.set_facecolor("black")
+        self.ax.clear()
+        self.ax.set_facecolor("black")
+        self.ax.set_axis_off()
+        if draw:
+            self.canvas.draw_idle()
+
     def set_data(self, values, vmin=None, vmax=None):
         if np.ma.isMaskedArray(values):
             arr = np.asarray(values.compressed(), dtype=float).ravel()
@@ -86,10 +92,7 @@ class CakeHistogramWidget(QtWidgets.QWidget):
             arr = np.asarray(values, dtype=float).ravel()
         arr = arr[np.isfinite(arr)]
         if arr.size == 0:
-            self.ax.clear()
-            self.ax.set_yticks([])
-            self.ax.set_xlabel("Intensity histogram (no data)")
-            self.canvas.draw_idle()
+            self._draw_empty_state()
             return
 
         self._data = arr
@@ -102,6 +105,8 @@ class CakeHistogramWidget(QtWidgets.QWidget):
         self._xlims = self._calc_view_xlim(lo, hi_data, vmin, vmax)
 
         self.ax.clear()
+        self.fig.patch.set_facecolor("black")
+        self.ax.set_facecolor("black")
         hist_lo, hist_hi = self._xlims
         if hist_hi <= hist_lo:
             hist_lo, hist_hi = lo, hi_data
@@ -113,6 +118,9 @@ class CakeHistogramWidget(QtWidgets.QWidget):
             self.ax.set_yscale("linear")
         self.ax.set_yticks([])
         self.ax.set_xlabel("Intensity histogram (Drag blue/orange lines for min/max)")
+        self.ax.tick_params(axis="x", labelsize=8, colors="white")
+        for spine in self.ax.spines.values():
+            spine.set_color("white")
 
         if vmin is not None:
             self._line_min = self.ax.axvline(vmin, color="#5ec7ff", linewidth=1.6)

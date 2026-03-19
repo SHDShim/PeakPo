@@ -37,6 +37,7 @@ class MplCanvas(FigureCanvasQTAgg):
         super().__init__(self.fig)
         self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         self.updateGeometry()
+        self.show_empty_state(draw=False)
 
     def _define_axes(self, h_cake):
         self.gs = GridSpec(100, 1)
@@ -49,6 +50,9 @@ class MplCanvas(FigureCanvasQTAgg):
     def resize_axes(self, h_cake):
         self.fig.clf()
         self._define_axes(h_cake)
+        self.fig.set_facecolor(self.bgColor)
+        self.ax_pattern.set_facecolor(self.bgColor)
+        self.ax_cake.set_facecolor(self.bgColor)
         if h_cake == 1:
             self.ax_cake.tick_params(axis="y", colors=self.objColor, labelleft=False)
             self.ax_cake.spines["right"].set_visible(False)
@@ -90,6 +94,20 @@ class MplCanvas(FigureCanvasQTAgg):
             self.draw_idle()
         except Exception:
             pass
+
+    def show_empty_state(self, draw=True):
+        self.fig.clf()
+        self._define_axes(1)
+        self.fig.set_facecolor("black")
+        for ax in (self.ax_pattern, self.ax_cake):
+            ax.clear()
+            ax.set_facecolor("black")
+            ax.set_axis_off()
+        if draw:
+            try:
+                self.draw_idle()
+            except Exception:
+                pass
 
 
 class MplWidget(QtWidgets.QWidget):

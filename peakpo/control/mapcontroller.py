@@ -61,17 +61,21 @@ class MapController(object):
         if not hasattr(self.widget, "verticalLayout_MapCanvas"):
             return
         self._map_fig = Figure()
+        self._map_fig.patch.set_facecolor("black")
         self._map_fig.subplots_adjust(left=0.005, right=0.94, top=0.985, bottom=0.03)
         self._recreate_map_axes()
         self._map_canvas = FigureCanvasQTAgg(self._map_fig)
         self.widget.verticalLayout_MapCanvas.addWidget(self._map_canvas, 1)
         self._map_canvas.mpl_connect("button_press_event", self._on_map_click)
+        self._draw_map()
 
     def _recreate_map_axes(self):
         if getattr(self, "_map_fig", None) is None:
             return
         self._map_fig.clf()
+        self._map_fig.patch.set_facecolor("black")
         self._map_ax = self._map_fig.add_subplot(111)
+        self._map_ax.set_facecolor("black")
         self._map_cax = None
         self._map_cbar = None
 
@@ -553,6 +557,8 @@ class MapController(object):
         if self._map_ax is None:
             return
         self._map_ax.clear()
+        self._map_fig.patch.set_facecolor("black")
+        self._map_ax.set_facecolor("black")
         self._map_cbar = None
         if self._map_data is None:
             self._map_ax.set_axis_off()
