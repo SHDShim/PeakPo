@@ -279,7 +279,10 @@ class MainController(object):
                 self.apply_changes_to_graph)
         self.widget.pushButton_S_Zoom.clicked.connect(self.plot_new_graph)
         self.widget.checkBox_AutoY.clicked.connect(self.apply_changes_to_graph)
-        self.widget.checkBox_BgSub.clicked.connect(self.apply_changes_to_graph)
+        self.widget.checkBox_BgSub.clicked.connect(self.apply_bgsub_toggle)
+        if hasattr(self.widget, "checkBox_LightBackground"):
+            self.widget.checkBox_LightBackground.clicked.connect(
+                self.apply_changes_to_graph)
         self.widget.checkBox_ShowWaterfallLabels.clicked.connect(
             self.apply_changes_to_graph)
         self.widget.checkBox_ShowMillerIndices_Cake.clicked.connect(
@@ -659,6 +662,57 @@ class MainController(object):
             except Exception:
                 pass
 
+    def apply_bgsub_toggle(self):
+        if self._plot_update_deferred():
+            return
+        if not self.model.base_ptn_exist():
+            self.apply_changes_to_graph()
+            return
+
+        try:
+            xlim = self.widget.mpl.canvas.ax_pattern.get_xlim()
+            if self.widget.checkBox_BgSub.isChecked():
+                x, y = self.model.base_ptn.get_bgsub()
+            else:
+                x, y = self.model.base_ptn.get_raw()
+            if self.plot_ctrl.diff_ctrl is not None:
+                x, y = self.plot_ctrl.diff_ctrl.get_display_pattern(x, y)
+
+            xroi, yroi = get_DataSection(x, y, [xlim[0], xlim[1]])
+            if len(yroi) == 0:
+                new_limits = self.plot_ctrl._get_data_limits(y_margin=0.0)
+            else:
+                yroi = np.asarray(yroi, dtype=float)
+                yroi = yroi[np.isfinite(yroi)]
+                if yroi.size == 0:
+                    new_limits = self.plot_ctrl._get_data_limits(y_margin=0.0)
+                else:
+                    ymin = float(np.min(yroi))
+                    ymax = float(np.max(yroi))
+                    if ymax <= ymin:
+                        pad = max(1.0, abs(ymax) * 0.05)
+                        ymin -= pad
+                        ymax += pad
+                    else:
+                        pad = (ymax - ymin) * 0.03
+                        ymin -= pad
+                        ymax += pad
+                    new_limits = [xlim[0], xlim[1], ymin, ymax]
+            self.plot_ctrl.update(new_limits)
+        except Exception:
+            self.plot_ctrl.update()
+
+        if hasattr(self, "map_ctrl") and (self.map_ctrl is not None):
+            try:
+                self.map_ctrl.refresh_roi_overlays()
+            except Exception:
+                pass
+        if hasattr(self, "seq_ctrl") and (self.seq_ctrl is not None):
+            try:
+                self.seq_ctrl.refresh_roi_overlays()
+            except Exception:
+                pass
+
     def plot_new_graph(self):
         self.plot_ctrl.zoom_out_graph()
         if hasattr(self, "map_ctrl") and (self.map_ctrl is not None):
@@ -890,6 +944,7 @@ class MainController(object):
             ("plot_cfg/jcpds_alpha_cake", "doubleSpinBox_JCPDS_cake_Alpha"),
             ("plot_cfg/jcpds_thickness_pattern", "comboBox_PtnJCPDSBarThickness"),
             ("plot_cfg/jcpds_thickness_cake", "comboBox_CakeJCPDSBarThickness"),
+            ("plot_cfg/light_background", "checkBox_LightBackground"),
         ]
 
     def _save_widget_to_settings(self, key, widget):

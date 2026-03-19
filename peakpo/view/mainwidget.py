@@ -131,6 +131,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                          'hexagonal', 'orthorhombic'])
         self.comboBox_Symmetry.setCurrentText('cubic')
         self._setup_plot_subtabs()
+        self._setup_light_background_checkbox()
         self._setup_jcpds_bars_layout()
         self._setup_title_config_group()
         self._setup_plot_setup_group()
@@ -162,6 +163,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.pushButton_S_Zoom.setText("⤢")
             self.pushButton_S_Zoom.setToolTip("Fit X/Y to data (zoom out)")
             self._set_button_height(self.pushButton_S_Zoom)
+            self._set_flat_toolbar_button_style(
+                self.pushButton_S_Zoom, compact=True)
+            self.pushButton_S_Zoom.setMinimumWidth(42)
+            self.pushButton_S_Zoom.setMaximumWidth(42)
         if hasattr(self, "pushButton_NewBasePtn"):
             self.pushButton_NewBasePtn.setText("Open")
         if hasattr(self, "pushButton_savePeakPos"):
@@ -177,12 +182,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 button = getattr(self, name)
                 button.setMinimumHeight(20)
                 button.setMaximumHeight(25)
+        if hasattr(self, "gridLayout_2"):
+            if hasattr(self, "pushButton_savePeakPos"):
+                self.gridLayout_2.removeWidget(self.pushButton_savePeakPos)
+                self.gridLayout_2.addWidget(self.pushButton_savePeakPos, 0, 4, 1, 1)
+            if hasattr(self, "pushButton_SaveTwkJCPDS"):
+                self.gridLayout_2.removeWidget(self.pushButton_SaveTwkJCPDS)
+                self.gridLayout_2.addWidget(self.pushButton_SaveTwkJCPDS, 0, 5, 1, 1)
+            if hasattr(self, "pushButton_ViewJCPDS"):
+                self.gridLayout_2.removeWidget(self.pushButton_ViewJCPDS)
+                self.gridLayout_2.addWidget(self.pushButton_ViewJCPDS, 0, 6, 1, 1)
         if hasattr(self, "checkBox_BgSub"):
             self.checkBox_BgSub.setText("Bg")
             self.checkBox_BgSub.setToolTip("Subtract background from 1D pattern")
         if hasattr(self, "checkBox_LongCursor"):
-            self.checkBox_LongCursor.setText("VCursor")
+            self.checkBox_LongCursor.setText("V cur")
             self.checkBox_LongCursor.setToolTip("Change cursor to a vertical bar")
+        if hasattr(self, "checkBox_AutoY"):
+            self.checkBox_AutoY.setText("Y auto")
         if hasattr(self, "pushButton_AddRemoveFromMouse"):
             self.pushButton_AddRemoveFromMouse.setVisible(False)
         if hasattr(self, "pushButton_MapSetRoi"):
@@ -569,6 +586,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_UpdateBackground.setMaximumHeight(28)
         self.pushButton_UpdateBackground.setStyleSheet("")
 
+    def _setup_light_background_checkbox(self):
+        if (not hasattr(self, "groupBox_34")) or \
+                (not hasattr(self, "gridLayout_11")) or \
+                hasattr(self, "checkBox_LightBackground"):
+            return
+        self.checkBox_LightBackground = QtWidgets.QCheckBox(self.groupBox_34)
+        self.checkBox_LightBackground.setObjectName("checkBox_LightBackground")
+        self.checkBox_LightBackground.setMinimumSize(QtCore.QSize(0, 20))
+        self.checkBox_LightBackground.setChecked(False)
+        self.checkBox_LightBackground.setText("Light background")
+        self.checkBox_LightBackground.setToolTip(
+            "Use a lighter 1D plot background to improve visibility of dark JCPDS bars")
+        self.gridLayout_11.addWidget(self.checkBox_LightBackground, 2, 2, 1, 1)
+
     def _set_flat_toolbar_button_style(self, button, compact=False):
         button.setFlat(True)
         button.setAutoDefault(False)
@@ -806,7 +837,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         self.pushButton_MouseModeZoom = QtWidgets.QPushButton("Zoom", self.frame_2)
         self.pushButton_MouseModeROI = QtWidgets.QPushButton("ROI", self.frame_2)
-        self.pushButton_MouseModePeakPick = QtWidgets.QPushButton("PeakPick", self.frame_2)
+        self.pushButton_MouseModePeakPick = QtWidgets.QPushButton("Peak", self.frame_2)
         self.pushButton_MouseModeJCPDS = QtWidgets.QPushButton("JCPDS", self.frame_2)
 
         self.buttonGroup_MouseMode = QtWidgets.QButtonGroup(self)
@@ -988,7 +1019,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 getattr(self, "pushButton_NewBasePtn", None),
                 getattr(self, "pushButton_LoadDPP", None),
             ):
-                if widget == getattr(self, "pushButton_LoadDPP", None):
+                if widget == getattr(self, "pushButton_NewBasePtn", None):
+                    self._set_colored_flat_toolbar_button_style(
+                        widget,
+                        "#2f8a57", "#3a9d66", "#267048", "#225f3d",
+                        text_color="#f3fff7")
+                elif widget == getattr(self, "pushButton_LoadDPP", None):
                     self._set_colored_flat_toolbar_button_style(
                         widget,
                         "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",

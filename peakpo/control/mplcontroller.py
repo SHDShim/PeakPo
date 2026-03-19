@@ -183,6 +183,14 @@ class MplController(object):
                         pattern.color = 'white'
             self.obj_color = 'white'
 
+    def _apply_pattern_background_style(self):
+        ax_pattern = self.widget.mpl.canvas.ax_pattern
+        face = self.widget.mpl.canvas.bgColor
+        if hasattr(self.widget, "checkBox_LightBackground") and \
+                self.widget.checkBox_LightBackground.isChecked():
+            face = "#66707a"
+        ax_pattern.set_facecolor(face)
+
     def get_cake_range(self):
         if self.widget.checkBox_ShowCake.isChecked():
             return self.widget.mpl.canvas.ax_cake.get_xlim(),\
@@ -817,6 +825,7 @@ class MplController(object):
                 self.widget.mpl.canvas.resize_axes(1)
             
             self._set_nightday_view()
+            self._apply_pattern_background_style()
             
             if self.model.base_ptn_exist():
                 title_font_size = 12
