@@ -150,6 +150,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._promote_seq_to_main_tab()
         self._reorder_main_tabs_and_fit_tab_names()
         self._setup_peakfit_section_buttons()
+        self._compact_peakfit_spinboxes()
         self._setup_toolbar_diff_toggle()
         self._setup_mouse_mode_selector()
         self._move_mouse_controls_to_plot_bar()
@@ -165,7 +166,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.pushButton_savePeakPos.setToolTip(
                 "Move checked JCPDS items to the top of the table")
         for name in (
-            "pushButton_SaveBgSubCHI",
             "pushButton_SaveTwkJCPDS",
             "pushButton_ViewJCPDS",
             "pushButton_savePeakPos",
@@ -566,6 +566,41 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_UpdateBackground.setMaximumHeight(28)
         self.pushButton_UpdateBackground.setStyleSheet("")
 
+    def _set_flat_toolbar_button_style(self, button, compact=False):
+        button.setFlat(True)
+        button.setAutoDefault(False)
+        button.setDefault(False)
+        if compact:
+            button.setMinimumWidth(44)
+            button.setMaximumWidth(88)
+            padding = "2px 8px"
+            font_weight = "600"
+        else:
+            padding = "3px 14px"
+            font_weight = "500"
+        button.setStyleSheet(
+            "QPushButton {"
+            "background-color: rgba(255, 255, 255, 0.045);"
+            "color: #f2f2f2;"
+            "border: 1px solid rgba(255, 255, 255, 0.08);"
+            "border-radius: 6px;"
+            f"padding: {padding};"
+            f"font-weight: {font_weight};"
+            "}"
+            "QPushButton:hover {"
+            "background-color: rgba(255, 255, 255, 0.085);"
+            "border: 1px solid rgba(255, 255, 255, 0.16);"
+            "}"
+            "QPushButton:pressed {"
+            "background-color: rgba(255, 255, 255, 0.13);"
+            "border: 1px solid rgba(255, 255, 255, 0.2);"
+            "}"
+            "QPushButton:focus {"
+            "outline: none;"
+            "border: 1px solid rgba(255, 255, 255, 0.18);"
+            "}"
+        )
+
     def _set_accent_button_style(self, button, base_color, hover_color,
                                  pressed_color, border_color,
                                  text_color="white"):
@@ -692,6 +727,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.pushButton_PerformUCFit,
                 "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
 
+    def _compact_peakfit_spinboxes(self):
+        for name in (
+            "spinBox_BGPolyOrder",
+            "spinBox_PeaksFromJlistIntensity",
+        ):
+            if not hasattr(self, name):
+                continue
+            box = getattr(self, name)
+            box.setMinimumWidth(110)
+            box.setMaximumWidth(110)
+            box.setSizePolicy(
+                QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+
     def _setup_mouse_mode_selector(self):
         if (not hasattr(self, "horizontalLayout_7")) or \
                 hasattr(self, "buttonGroup_MouseMode"):
@@ -768,7 +816,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.label_CursorPosition.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         widgets = [
-            getattr(self, "pushButton_S_Zoom", None),
             getattr(self, "checkBox_ShowCake", None),
             getattr(self, "checkBox_BgSub", None),
             getattr(self, "checkBox_AutoY", None),
@@ -778,10 +825,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if widget is None:
                 continue
             widget.setParent(self.mpl.control_bar)
-            if widget == getattr(self, "pushButton_S_Zoom", None):
-                widget.setSizePolicy(
-                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-            elif widget in (
+            if widget in (
                 getattr(self, "checkBox_AutoY", None),
                 getattr(self, "checkBox_LongCursor", None),
                 getattr(self, "checkBox_ShowCake", None),
@@ -805,7 +849,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
             self.layout_MouseModeGroup.addWidget(button)
 
-        insert_index = 1 if hasattr(self, "pushButton_S_Zoom") else 0
+        toolbar_zoom = getattr(self, "pushButton_S_Zoom", None)
+        if toolbar_zoom is not None:
+            spacer = QtWidgets.QSpacerItem(
+                8, 0,
+                QtWidgets.QSizePolicy.Fixed,
+                QtWidgets.QSizePolicy.Minimum)
+            self.layout_MouseModeGroup.addItem(spacer)
+            toolbar_zoom.setParent(self.frame_MouseModeGroup)
+            toolbar_zoom.setSizePolicy(
+                QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            self._set_button_height(toolbar_zoom)
+            self.layout_MouseModeGroup.addWidget(toolbar_zoom)
+
+        insert_index = 0
         self.mpl.insert_control_widget(insert_index, self.frame_MouseModeGroup)
         self.mpl.add_control_stretch(1)
         self.mpl.add_control_widget(self.label_CursorPosition, 1)
@@ -857,6 +914,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 getattr(self, "pushButton_AddBasePtn", None),
                 getattr(self, "pushButton_S_NextBasePtn", None),
             ):
+                self._set_flat_toolbar_button_style(widget, compact=True)
                 widget.setSizePolicy(
                     QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
                 self.layout_TopToolbarRow1.addWidget(widget, 0)
@@ -864,6 +922,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 getattr(self, "pushButton_NewBasePtn", None),
                 getattr(self, "pushButton_LoadDPP", None),
             ):
+                self._set_flat_toolbar_button_style(widget, compact=False)
                 widget.setSizePolicy(
                     QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
                 self.layout_TopToolbarRow1.addWidget(widget, 1)
@@ -886,6 +945,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             widget.show()
             widget.setMinimumHeight(28)
             widget.setMaximumHeight(28)
+            self._set_flat_toolbar_button_style(widget, compact=True)
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
             self.layout_TopToolbarRow2.addWidget(widget, 1)

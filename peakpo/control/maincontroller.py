@@ -207,7 +207,6 @@ class MainController(object):
             self.apply_pt_to_graph)
         self.widget.doubleSpinBox_SetWavelength.valueChanged.connect(
             self.apply_wavelength)
-        self.widget.pushButton_SaveBgSubCHI.clicked.connect(self.save_bgsubchi)
         if hasattr(self.widget, "pushButton_ExportPythonView"):
             self.widget.pushButton_ExportPythonView.clicked.connect(
                 self.export_py_ctrl.export_current_view)
