@@ -128,6 +128,12 @@ class MplWidget(QtWidgets.QWidget):
         self.control_layout.addStretch(stretch)
         self.control_bar.show()
 
+    def insert_control_widget(self, index, widget, stretch=0):
+        if widget is None:
+            return
+        self.control_layout.insertWidget(index, widget, stretch)
+        self.control_bar.show()
+
     def shutdown(self):
         if self._shutdown_done:
             return

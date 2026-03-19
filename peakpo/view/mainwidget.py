@@ -141,6 +141,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._move_backup_into_file_data_tab()
         self._setup_backup_comment_button()
         self._layout_backup_buttons()
+        self._compact_file_data_layout()
         self._setup_diff_tab()
         self._promote_diff_to_main_tab()
         self._setup_map_tab()
@@ -152,6 +153,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._setup_toolbar_diff_toggle()
         self._setup_mouse_mode_selector()
         self._move_mouse_controls_to_plot_bar()
+        self._rebuild_top_left_toolbar()
         self._spread_primary_controls_evenly()
         self._spread_top_toolbar_even()
         if hasattr(self, "pushButton_S_Zoom"):
@@ -163,6 +165,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.pushButton_savePeakPos.setToolTip(
                 "Move checked JCPDS items to the top of the table")
         for name in (
+            "pushButton_SaveBgSubCHI",
             "pushButton_SaveTwkJCPDS",
             "pushButton_ViewJCPDS",
             "pushButton_savePeakPos",
@@ -561,21 +564,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 QtWidgets.QSizePolicy.Fixed))
         self.pushButton_UpdateBackground.setMinimumHeight(28)
         self.pushButton_UpdateBackground.setMaximumHeight(28)
-        self.pushButton_UpdateBackground.setStyleSheet(
-            "QPushButton {"
-            "background-color: #b22222;"
-            "color: white;"
-            "border: 1px solid #7a1313;"
-            "border-radius: 4px;"
-            "padding: 2px 10px;"
-            "}"
-            "QPushButton:hover {"
-            "background-color: #c92a2a;"
-            "}"
-            "QPushButton:pressed {"
-                "background-color: #8f1b1b;"
-                "}"
-        )
+        self.pushButton_UpdateBackground.setStyleSheet("")
 
     def _set_accent_button_style(self, button, base_color, hover_color,
                                  pressed_color, border_color,
@@ -606,18 +595,27 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _set_mouse_mode_button_style(self, button, checked_color,
                                      hover_color, pressed_color,
-                                     border_color, text_color="white"):
+                                     border_color, segment="middle",
+                                     text_color="white"):
+        if segment == "left":
+            radius_rule = "border-top-left-radius: 6px; border-bottom-left-radius: 6px; border-top-right-radius: 0px; border-bottom-right-radius: 0px;"
+        elif segment == "right":
+            radius_rule = "border-top-left-radius: 0px; border-bottom-left-radius: 0px; border-top-right-radius: 6px; border-bottom-right-radius: 6px;"
+        elif segment == "single":
+            radius_rule = "border-radius: 6px;"
+        else:
+            radius_rule = "border-radius: 0px;"
         button.setStyleSheet(
             "QPushButton {"
-            "background-color: #ece7db;"
+            "background-color: #eee8dc;"
             "color: #2a241f;"
             "border: 1px solid #b8ada0;"
-            "border-radius: 4px;"
-            "padding: 2px 10px;"
+            f"{radius_rule}"
+            "padding: 2px 14px;"
             "font-weight: 600;"
             "}"
             "QPushButton:hover {"
-            "background-color: #e1d8cb;"
+            "background-color: #e3dbcf;"
             "}"
             "QPushButton:pressed {"
             f"background-color: {pressed_color};"
@@ -726,18 +724,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._set_mouse_mode_button_style(
             self.pushButton_MouseModeZoom,
             "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            segment="left",
             text_color="#1f1f1f")
         self._set_mouse_mode_button_style(
             self.pushButton_MouseModeROI,
             "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            segment="middle",
             text_color="#1f1f1f")
         self._set_mouse_mode_button_style(
             self.pushButton_MouseModePeakPick,
             "#c27b00", "#d98b00", "#9a6100", "#7c4d00",
+            segment="middle",
             text_color="#1f1f1f")
         self._set_mouse_mode_button_style(
             self.pushButton_MouseModeJCPDS,
             "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            segment="right",
             text_color="#1f1f1f")
 
         insert_idx = self.horizontalLayout_7.indexOf(self.checkBox_AutoY)
@@ -753,6 +755,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if (not hasattr(self, "mpl")) or \
                 (not hasattr(self.mpl, "add_control_widget")):
             return
+        self.frame_MouseModeGroup = QtWidgets.QFrame(self.mpl.control_bar)
+        self.frame_MouseModeGroup.setObjectName("frame_MouseModeGroup")
+        self.layout_MouseModeGroup = QtWidgets.QHBoxLayout(self.frame_MouseModeGroup)
+        self.layout_MouseModeGroup.setContentsMargins(0, 0, 0, 0)
+        self.layout_MouseModeGroup.setSpacing(0)
         self.label_CursorPosition = QtWidgets.QLabel("", self.mpl.control_bar)
         self.label_CursorPosition.setObjectName("label_CursorPosition")
         self.label_CursorPosition.setMinimumHeight(25)
@@ -762,10 +769,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         widgets = [
             getattr(self, "pushButton_S_Zoom", None),
-            getattr(self, "pushButton_MouseModeZoom", None),
-            getattr(self, "pushButton_MouseModeROI", None),
-            getattr(self, "pushButton_MouseModePeakPick", None),
-            getattr(self, "pushButton_MouseModeJCPDS", None),
+            getattr(self, "checkBox_ShowCake", None),
+            getattr(self, "checkBox_BgSub", None),
             getattr(self, "checkBox_AutoY", None),
             getattr(self, "checkBox_LongCursor", None),
         ]
@@ -779,12 +784,116 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             elif widget in (
                 getattr(self, "checkBox_AutoY", None),
                 getattr(self, "checkBox_LongCursor", None),
+                getattr(self, "checkBox_ShowCake", None),
+                getattr(self, "checkBox_BgSub", None),
             ):
                 widget.setSizePolicy(
                     QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
             self.mpl.add_control_widget(widget)
+
+        for button_name in (
+            "pushButton_MouseModeZoom",
+            "pushButton_MouseModeROI",
+            "pushButton_MouseModePeakPick",
+            "pushButton_MouseModeJCPDS",
+        ):
+            button = getattr(self, button_name, None)
+            if button is None:
+                continue
+            button.setParent(self.frame_MouseModeGroup)
+            button.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+            self.layout_MouseModeGroup.addWidget(button)
+
+        insert_index = 1 if hasattr(self, "pushButton_S_Zoom") else 0
+        self.mpl.insert_control_widget(insert_index, self.frame_MouseModeGroup)
         self.mpl.add_control_stretch(1)
         self.mpl.add_control_widget(self.label_CursorPosition, 1)
+
+    def _rebuild_top_left_toolbar(self):
+        if (not hasattr(self, "frame_9")) or (not hasattr(self, "frame_2")):
+            return
+        while self.horizontalLayout_21.count():
+            item = self.horizontalLayout_21.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.hide()
+
+        self.frame_TopLeftToolbarRows = QtWidgets.QFrame(self.frame_9)
+        self.frame_TopLeftToolbarRows.setObjectName("frame_TopLeftToolbarRows")
+        self.topLeftToolbarRows = QtWidgets.QVBoxLayout(self.frame_TopLeftToolbarRows)
+        self.topLeftToolbarRows.setContentsMargins(0, 0, 0, 0)
+        self.topLeftToolbarRows.setSpacing(6)
+
+        self.frame_TopToolbarRow1 = QtWidgets.QFrame(self.frame_9)
+        self.frame_TopToolbarRow1.setObjectName("frame_TopToolbarRow1")
+        self.layout_TopToolbarRow1 = QtWidgets.QHBoxLayout(self.frame_TopToolbarRow1)
+        self.layout_TopToolbarRow1.setContentsMargins(0, 0, 0, 0)
+        self.layout_TopToolbarRow1.setSpacing(10)
+
+        self.frame_TopToolbarRow2 = QtWidgets.QFrame(self.frame_9)
+        self.frame_TopToolbarRow2.setObjectName("frame_TopToolbarRow2")
+        self.layout_TopToolbarRow2 = QtWidgets.QHBoxLayout(self.frame_TopToolbarRow2)
+        self.layout_TopToolbarRow2.setContentsMargins(0, 0, 0, 0)
+        self.layout_TopToolbarRow2.setSpacing(10)
+
+        row1_widgets = [
+            getattr(self, "pushButton_S_PrevBasePtn", None),
+            getattr(self, "pushButton_AddBasePtn", None),
+            getattr(self, "pushButton_S_NextBasePtn", None),
+            getattr(self, "pushButton_NewBasePtn", None),
+            getattr(self, "pushButton_LoadDPP", None),
+            getattr(self, "checkBox_Diff", None),
+        ]
+        for widget in row1_widgets:
+            if widget is None:
+                continue
+            widget.setParent(self.frame_TopToolbarRow1)
+            widget.show()
+            widget.setMinimumHeight(28)
+            widget.setMaximumHeight(28)
+            if widget in (
+                getattr(self, "pushButton_S_PrevBasePtn", None),
+                getattr(self, "pushButton_AddBasePtn", None),
+                getattr(self, "pushButton_S_NextBasePtn", None),
+            ):
+                widget.setSizePolicy(
+                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+                self.layout_TopToolbarRow1.addWidget(widget, 0)
+            elif widget in (
+                getattr(self, "pushButton_NewBasePtn", None),
+                getattr(self, "pushButton_LoadDPP", None),
+            ):
+                widget.setSizePolicy(
+                    QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+                self.layout_TopToolbarRow1.addWidget(widget, 1)
+            else:
+                widget.setSizePolicy(
+                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+                self.layout_TopToolbarRow1.addWidget(widget, 0)
+
+        row2_widgets = [
+            getattr(self, "pushButton_S_PIncrease", None),
+            getattr(self, "pushButton_S_PDecrease", None),
+            getattr(self, "pushButton_S_TIncrease", None),
+            getattr(self, "pushButton_S_RoomT", None),
+            getattr(self, "pushButton_S_TDecrease", None),
+        ]
+        for widget in row2_widgets:
+            if widget is None:
+                continue
+            widget.setParent(self.frame_TopToolbarRow2)
+            widget.show()
+            widget.setMinimumHeight(28)
+            widget.setMaximumHeight(28)
+            widget.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+            self.layout_TopToolbarRow2.addWidget(widget, 1)
+
+        self.topLeftToolbarRows.addWidget(self.frame_TopToolbarRow1)
+        self.topLeftToolbarRows.addWidget(self.frame_TopToolbarRow2)
+        self.horizontalLayout_21.addWidget(self.frame_TopLeftToolbarRows)
+        self.frame_2.setVisible(False)
 
     def _spread_primary_controls_evenly(self):
         if not hasattr(self, "horizontalLayout_7"):
@@ -794,9 +903,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         widgets = [
             getattr(self, "pushButton_NewBasePtn", None),
             getattr(self, "pushButton_LoadDPP", None),
-            getattr(self, "checkBox_ShowCake", None),
             getattr(self, "checkBox_Diff", None),
-            getattr(self, "checkBox_BgSub", None),
         ]
         for widget in widgets:
             if widget is None:
@@ -1049,6 +1156,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_ExportDiffChi.setObjectName("pushButton_ExportDiffChi")
         self.pushButton_ExportDiffCakeNpy = QtWidgets.QPushButton("Export Diff Cake NPY", self.groupBox_DiffExport)
         self.pushButton_ExportDiffCakeNpy.setObjectName("pushButton_ExportDiffCakeNpy")
+        for button in (
+            self.pushButton_DiffRefBrowse,
+            self.pushButton_DiffRefClear,
+            self.pushButton_ExportDiffChi,
+            self.pushButton_ExportDiffCakeNpy,
+        ):
+            self._set_button_height(button)
         self.horizontalLayout_DiffExport.addWidget(self.pushButton_ExportDiffChi)
         self.horizontalLayout_DiffExport.addWidget(self.pushButton_ExportDiffCakeNpy)
 
@@ -1609,6 +1723,48 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 w.setParent(None)
         self.horizontalLayout_BackupTools.addWidget(self.pushButton_BackupEditComment, 1)
         self.horizontalLayout_BackupTools.addWidget(self.pushButton_BackupRestore, 1)
+
+    def _compact_file_data_layout(self):
+        if hasattr(self, "groupBox_28"):
+            self.groupBox_28.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        if hasattr(self, "verticalLayout_26"):
+            self.verticalLayout_26.setContentsMargins(12, 8, 12, 8)
+            self.verticalLayout_26.setSpacing(6)
+        if hasattr(self, "frame_24"):
+            self.frame_24.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        if hasattr(self, "horizontalLayout_2"):
+            self.horizontalLayout_2.setContentsMargins(8, 6, 8, 6)
+            self.horizontalLayout_2.setSpacing(8)
+        if hasattr(self, "frame_6"):
+            self.frame_6.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        if hasattr(self, "horizontalLayout_13"):
+            self.horizontalLayout_13.setContentsMargins(8, 4, 8, 4)
+            self.horizontalLayout_13.setSpacing(10)
+        if hasattr(self, "frame_23"):
+            self.frame_23.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+            self.frame_23.setMinimumHeight(0)
+        if hasattr(self, "horizontalLayout_6"):
+            self.horizontalLayout_6.setContentsMargins(12, 4, 12, 4)
+            self.horizontalLayout_6.setSpacing(18)
+
+        if hasattr(self, "groupBox_FileDataBackup"):
+            self.groupBox_FileDataBackup.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+        if hasattr(self, "tableWidget_BackupInfo"):
+            self.tableWidget_BackupInfo.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+            self.tableWidget_BackupInfo.setMinimumHeight(300)
+        if hasattr(self, "verticalLayout_2"):
+            for i in range(self.verticalLayout_2.count()):
+                item = self.verticalLayout_2.itemAt(i)
+                w = item.widget()
+                self.verticalLayout_2.setStretch(i, 0)
+                if w is getattr(self, "groupBox_FileDataBackup", None):
+                    self.verticalLayout_2.setStretch(i, 1)
 
     def closeEvent(self, event):
         try:
