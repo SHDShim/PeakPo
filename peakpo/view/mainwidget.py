@@ -151,6 +151,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._reorder_main_tabs_and_fit_tab_names()
         self._setup_peakfit_section_buttons()
         self._compact_peakfit_spinboxes()
+        self._normalize_misc_button_heights()
         self._setup_toolbar_diff_toggle()
         self._setup_mouse_mode_selector()
         self._move_mouse_controls_to_plot_bar()
@@ -161,6 +162,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.pushButton_S_Zoom.setText("⤢")
             self.pushButton_S_Zoom.setToolTip("Fit X/Y to data (zoom out)")
             self._set_button_height(self.pushButton_S_Zoom)
+        if hasattr(self, "pushButton_NewBasePtn"):
+            self.pushButton_NewBasePtn.setText("Open")
         if hasattr(self, "pushButton_savePeakPos"):
             self.pushButton_savePeakPos.setText("Sort")
             self.pushButton_savePeakPos.setToolTip(
@@ -601,6 +604,43 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "}"
         )
 
+    def _set_colored_flat_toolbar_button_style(
+            self, button, base_color, hover_color, pressed_color,
+            border_color, text_color="#1f1f1f", compact=False):
+        button.setFlat(True)
+        button.setAutoDefault(False)
+        button.setDefault(False)
+        if compact:
+            button.setMinimumWidth(44)
+            button.setMaximumWidth(88)
+            padding = "2px 8px"
+            font_weight = "600"
+        else:
+            padding = "3px 14px"
+            font_weight = "500"
+        button.setStyleSheet(
+            "QPushButton {"
+            f"background-color: {base_color};"
+            f"color: {text_color};"
+            f"border: 1px solid {border_color};"
+            "border-radius: 6px;"
+            f"padding: {padding};"
+            f"font-weight: {font_weight};"
+            "}"
+            "QPushButton:hover {"
+            f"background-color: {hover_color};"
+            f"border: 1px solid {border_color};"
+            "}"
+            "QPushButton:pressed {"
+            f"background-color: {pressed_color};"
+            f"border: 1px solid {border_color};"
+            "}"
+            "QPushButton:focus {"
+            "outline: none;"
+            f"border: 1px solid {border_color};"
+            "}"
+        )
+
     def _set_accent_button_style(self, button, base_color, hover_color,
                                  pressed_color, border_color,
                                  text_color="white"):
@@ -739,6 +779,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             box.setMaximumWidth(110)
             box.setSizePolicy(
                 QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+
+    def _normalize_misc_button_heights(self):
+        for name in (
+            "pushButton_1bar",
+            "pushButton_RoomT",
+            "pushButton_SetPStepTo1",
+            "pushButton_SetPStepTo10",
+            "pushButton_SetTStepTo100",
+            "pushButton_SetTStepTo1000",
+            "pushButton_ForceUpdatePlot",
+            "pushButton_ApplyWaterfallChange",
+            "pushButton_LoadPPSS",
+            "pushButton_SavePPSS",
+            "pushButton_ZipSession",
+            "pushButton_SaveDPPandPPSS",
+            "pushButton_DelTempCHI",
+            "pushButton_DelTempCake",
+        ):
+            if hasattr(self, name):
+                self._set_button_height(getattr(self, name))
 
     def _setup_mouse_mode_selector(self):
         if (not hasattr(self, "horizontalLayout_7")) or \
@@ -915,6 +975,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 getattr(self, "pushButton_S_NextBasePtn", None),
             ):
                 self._set_flat_toolbar_button_style(widget, compact=True)
+                if widget in (
+                    getattr(self, "pushButton_S_PrevBasePtn", None),
+                    getattr(self, "pushButton_S_NextBasePtn", None),
+                ):
+                    widget.setMinimumWidth(84)
+                    widget.setMaximumWidth(84)
                 widget.setSizePolicy(
                     QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
                 self.layout_TopToolbarRow1.addWidget(widget, 0)
@@ -922,10 +988,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 getattr(self, "pushButton_NewBasePtn", None),
                 getattr(self, "pushButton_LoadDPP", None),
             ):
-                self._set_flat_toolbar_button_style(widget, compact=False)
+                if widget == getattr(self, "pushButton_LoadDPP", None):
+                    self._set_colored_flat_toolbar_button_style(
+                        widget,
+                        "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+                        text_color="#1f1f1f")
+                else:
+                    self._set_flat_toolbar_button_style(widget, compact=False)
+                widget.setMinimumWidth(0)
+                widget.setMaximumWidth(180)
                 widget.setSizePolicy(
-                    QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-                self.layout_TopToolbarRow1.addWidget(widget, 1)
+                    QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+                self.layout_TopToolbarRow1.addWidget(widget, 0)
             else:
                 widget.setSizePolicy(
                     QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
