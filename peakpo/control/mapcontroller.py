@@ -24,6 +24,7 @@ class MapController(object):
         self.base_ptn_ctrl = None
         self.plot_ctrl = None
         self.mouse_mode_done_cb = None
+        self.export_current_view_cb = None
 
         self._map_canvas = None
         self._map_ax = None
@@ -52,10 +53,11 @@ class MapController(object):
         self._connect_channel()
 
     def set_helpers(self, base_ptn_ctrl=None, plot_ctrl=None,
-                    mouse_mode_done_cb=None):
+                    mouse_mode_done_cb=None, export_current_view_cb=None):
         self.base_ptn_ctrl = base_ptn_ctrl
         self.plot_ctrl = plot_ctrl
         self.mouse_mode_done_cb = mouse_mode_done_cb
+        self.export_current_view_cb = export_current_view_cb
 
     def _build_canvas(self):
         if not hasattr(self.widget, "verticalLayout_MapCanvas"):
@@ -112,8 +114,22 @@ class MapController(object):
         self.widget.pushButton_MapScalePercentile.clicked.connect(self._scale_percentile)
         self.widget.pushButton_MapScaleReset.clicked.connect(self._scale_reset)
 
-        self.widget.pushButton_MapExportImage.clicked.connect(self._export_image)
-        self.widget.pushButton_MapExportNpy.clicked.connect(self._export_npy)
+        if hasattr(self.widget, "pushButton_MapExportImage"):
+            self.widget.pushButton_MapExportImage.clicked.connect(self._export_image)
+        if hasattr(self.widget, "pushButton_MapExportNpy"):
+            self.widget.pushButton_MapExportNpy.clicked.connect(self._export_current_view)
+
+    def _export_current_view(self):
+        if self._map_fig is None:
+            self._set_status("No map view to export.")
+            return
+        if self.export_current_view_cb is None:
+            self._set_status("Export view is not available.")
+            return
+        self.export_current_view_cb(
+            fig=self._map_fig,
+            folder_prefix="map-pkpo-export",
+        )
 
     def _on_main_tab_changed(self, _idx):
         if not hasattr(self.widget, "tab_Map"):

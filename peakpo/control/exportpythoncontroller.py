@@ -14,18 +14,23 @@ class ExportPythonController(object):
         self.widget = widget
         self.plot_ctrl = plot_ctrl
 
-    def export_current_view(self):
-        if not hasattr(self.widget, "mpl") or (not hasattr(self.widget.mpl, "canvas")):
-            QtWidgets.QMessageBox.warning(self.widget, "Warning", "Plot canvas is not available.")
-            return
+    def export_current_view(self, fig=None, folder_prefix=None):
+        if isinstance(fig, bool):
+            fig = None
+        if fig is None:
+            if not hasattr(self.widget, "mpl") or (not hasattr(self.widget.mpl, "canvas")):
+                QtWidgets.QMessageBox.warning(self.widget, "Warning", "Plot canvas is not available.")
+                return
+            fig = self.widget.mpl.canvas.fig
 
         # Capture exactly what is currently visible on screen.
-        # Do not force a controller replot here: that can drop fit overlays
-        # depending on current tab/state just before export.
         try:
-            self.widget.mpl.canvas.draw()
+            fig.canvas.draw()
         except Exception:
-            pass
+            try:
+                self.widget.mpl.canvas.draw()
+            except Exception:
+                pass
 
         out_root = QtWidgets.QFileDialog.getExistingDirectory(
             self.widget,
@@ -37,10 +42,15 @@ class ExportPythonController(object):
             return
 
         stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        export_dir = os.path.join(out_root, f"peakpo_python_export_{stamp}")
+        if folder_prefix is None:
+            chi_path = str(getattr(self.model, "chi_path", "") or "")
+            chi_name = os.path.splitext(os.path.basename(chi_path))[0].strip()
+            if chi_name == "":
+                chi_name = "peakpo"
+            folder_prefix = f"{chi_name}-pkpo-exports"
+        export_dir = os.path.join(out_root, f"{folder_prefix}-{stamp}")
         os.makedirs(export_dir, exist_ok=True)
 
-        fig = self.widget.mpl.canvas.fig
         payload, arrays = self._capture_figure(fig)
 
         npz_path = os.path.join(export_dir, "data_arrays.npz")

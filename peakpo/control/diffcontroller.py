@@ -76,8 +76,10 @@ class DiffController(object):
             self._on_scale_mode_changed)
         self.widget.doubleSpinBox_DiffVmin.valueChanged.connect(self._on_manual_range_changed)
         self.widget.doubleSpinBox_DiffVmax.valueChanged.connect(self._on_manual_range_changed)
-        self.widget.pushButton_ExportDiffChi.clicked.connect(self.export_diff_chi)
-        self.widget.pushButton_ExportDiffCakeNpy.clicked.connect(self.export_diff_cake_npy)
+        if hasattr(self.widget, "pushButton_ExportDiffChi"):
+            self.widget.pushButton_ExportDiffChi.clicked.connect(self.export_diff_chi)
+        if hasattr(self.widget, "pushButton_ExportDiffCakeNpy"):
+            self.widget.pushButton_ExportDiffCakeNpy.clicked.connect(self.export_diff_cake_npy)
 
     def _init_ui_from_state(self):
         if (not hasattr(self.widget, "checkBox_Diff")) and \

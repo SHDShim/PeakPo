@@ -138,7 +138,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._setup_update_background_button()
         self._setup_bg_default_button()
         self._setup_cake_colormap_control()
-        self._setup_plot_config_python_export()
+        self._setup_plot_control_export()
         self._move_backup_into_file_data_tab()
         self._setup_backup_comment_button()
         self._layout_backup_buttons()
@@ -969,18 +969,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.frame_TopLeftToolbarRows = QtWidgets.QFrame(self.frame_9)
         self.frame_TopLeftToolbarRows.setObjectName("frame_TopLeftToolbarRows")
+        self.frame_TopLeftToolbarRows.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.topLeftToolbarRows = QtWidgets.QVBoxLayout(self.frame_TopLeftToolbarRows)
         self.topLeftToolbarRows.setContentsMargins(0, 0, 0, 0)
         self.topLeftToolbarRows.setSpacing(6)
 
         self.frame_TopToolbarRow1 = QtWidgets.QFrame(self.frame_9)
         self.frame_TopToolbarRow1.setObjectName("frame_TopToolbarRow1")
+        self.frame_TopToolbarRow1.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.layout_TopToolbarRow1 = QtWidgets.QHBoxLayout(self.frame_TopToolbarRow1)
         self.layout_TopToolbarRow1.setContentsMargins(0, 0, 0, 0)
         self.layout_TopToolbarRow1.setSpacing(10)
 
         self.frame_TopToolbarRow2 = QtWidgets.QFrame(self.frame_9)
         self.frame_TopToolbarRow2.setObjectName("frame_TopToolbarRow2")
+        self.frame_TopToolbarRow2.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.layout_TopToolbarRow2 = QtWidgets.QHBoxLayout(self.frame_TopToolbarRow2)
         self.layout_TopToolbarRow2.setContentsMargins(0, 0, 0, 0)
         self.layout_TopToolbarRow2.setSpacing(10)
@@ -1006,15 +1012,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 getattr(self, "pushButton_S_NextBasePtn", None),
             ):
                 self._set_flat_toolbar_button_style(widget, compact=True)
-                if widget in (
-                    getattr(self, "pushButton_S_PrevBasePtn", None),
-                    getattr(self, "pushButton_S_NextBasePtn", None),
-                ):
-                    widget.setMinimumWidth(84)
-                    widget.setMaximumWidth(84)
+                widget.setMinimumWidth(84)
+                widget.setMaximumWidth(16777215)
                 widget.setSizePolicy(
-                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-                self.layout_TopToolbarRow1.addWidget(widget, 0)
+                    QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+                self.layout_TopToolbarRow1.addWidget(widget, 1)
             elif widget in (
                 getattr(self, "pushButton_NewBasePtn", None),
                 getattr(self, "pushButton_LoadDPP", None),
@@ -1032,10 +1034,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 else:
                     self._set_flat_toolbar_button_style(widget, compact=False)
                 widget.setMinimumWidth(0)
-                widget.setMaximumWidth(180)
+                widget.setMaximumWidth(16777215)
                 widget.setSizePolicy(
-                    QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
-                self.layout_TopToolbarRow1.addWidget(widget, 0)
+                    QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+                self.layout_TopToolbarRow1.addWidget(widget, 2)
             else:
                 widget.setSizePolicy(
                     QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
@@ -1056,13 +1058,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             widget.setMinimumHeight(28)
             widget.setMaximumHeight(28)
             self._set_flat_toolbar_button_style(widget, compact=True)
+            widget.setMinimumWidth(0)
+            widget.setMaximumWidth(16777215)
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
             self.layout_TopToolbarRow2.addWidget(widget, 1)
 
         self.topLeftToolbarRows.addWidget(self.frame_TopToolbarRow1)
         self.topLeftToolbarRows.addWidget(self.frame_TopToolbarRow2)
-        self.horizontalLayout_21.addWidget(self.frame_TopLeftToolbarRows)
+        self.horizontalLayout_21.addWidget(self.frame_TopLeftToolbarRows, 1)
         self.frame_2.setVisible(False)
 
     def _spread_primary_controls_evenly(self):
@@ -1317,28 +1321,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.gridLayout_DiffCake.addWidget(self.label_DiffVmax, 1, 2, 1, 1)
         self.gridLayout_DiffCake.addWidget(self.doubleSpinBox_DiffVmax, 1, 3, 1, 1)
 
-        # Export outputs only on demand.
-        self.groupBox_DiffExport = QtWidgets.QGroupBox("Export", self.diffContents)
-        self.groupBox_DiffExport.setObjectName("groupBox_DiffExport")
-        self.horizontalLayout_DiffExport = QtWidgets.QHBoxLayout(self.groupBox_DiffExport)
-        self.horizontalLayout_DiffExport.setObjectName("horizontalLayout_DiffExport")
-        self.pushButton_ExportDiffChi = QtWidgets.QPushButton("Export Diff CHI", self.groupBox_DiffExport)
-        self.pushButton_ExportDiffChi.setObjectName("pushButton_ExportDiffChi")
-        self.pushButton_ExportDiffCakeNpy = QtWidgets.QPushButton("Export Diff Cake NPY", self.groupBox_DiffExport)
-        self.pushButton_ExportDiffCakeNpy.setObjectName("pushButton_ExportDiffCakeNpy")
         for button in (
             self.pushButton_DiffRefBrowse,
             self.pushButton_DiffRefClear,
-            self.pushButton_ExportDiffChi,
-            self.pushButton_ExportDiffCakeNpy,
         ):
             self._set_button_height(button)
-        self.horizontalLayout_DiffExport.addWidget(self.pushButton_ExportDiffChi)
-        self.horizontalLayout_DiffExport.addWidget(self.pushButton_ExportDiffCakeNpy)
 
         self.verticalLayout_DiffContents.addWidget(self.groupBox_DiffRef)
         self.verticalLayout_DiffContents.addWidget(self.groupBox_DiffCake)
-        self.verticalLayout_DiffContents.addWidget(self.groupBox_DiffExport)
         self.verticalLayout_DiffContents.addStretch(1)
         self.scrollArea_Diff.setWidget(self.diffContents)
         self.verticalLayout_Diff.addWidget(self.scrollArea_Diff, 1)
@@ -1557,13 +1547,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.groupBox_MapExport.setObjectName("groupBox_MapExport")
         self.horizontalLayout_MapExport = QtWidgets.QHBoxLayout(self.groupBox_MapExport)
         self.horizontalLayout_MapExport.setSpacing(8)
-        self.pushButton_MapExportImage = QtWidgets.QPushButton("Export Image", self.groupBox_MapExport)
-        self.pushButton_MapExportImage.setObjectName("pushButton_MapExportImage")
-        self.pushButton_MapExportNpy = QtWidgets.QPushButton("Export NPY", self.groupBox_MapExport)
+        self.pushButton_MapExportNpy = QtWidgets.QPushButton(
+            "Export to PY, PDF, and PNG", self.groupBox_MapExport)
         self.pushButton_MapExportNpy.setObjectName("pushButton_MapExportNpy")
-        self.horizontalLayout_MapExport.addWidget(self.pushButton_MapExportImage)
+        self.pushButton_MapExportNpy.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.horizontalLayout_MapExport.addWidget(self.pushButton_MapExportNpy)
-        self.pushButton_MapExportImage.setMinimumHeight(28)
         self.pushButton_MapExportNpy.setMinimumHeight(28)
 
         self.verticalLayout_MapContents.addWidget(self.groupBox_MapLoad)
@@ -1683,13 +1672,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.groupBox_SeqExport.setObjectName("groupBox_SeqExport")
         self.horizontalLayout_SeqExport = QtWidgets.QHBoxLayout(self.groupBox_SeqExport)
         self.horizontalLayout_SeqExport.setSpacing(8)
-        self.pushButton_SeqExportImage = QtWidgets.QPushButton("Export Image", self.groupBox_SeqExport)
-        self.pushButton_SeqExportImage.setObjectName("pushButton_SeqExportImage")
-        self.pushButton_SeqExportNpy = QtWidgets.QPushButton("Export NPY", self.groupBox_SeqExport)
+        self.pushButton_SeqExportNpy = QtWidgets.QPushButton(
+            "Export to PY, PDF, and PNG", self.groupBox_SeqExport)
         self.pushButton_SeqExportNpy.setObjectName("pushButton_SeqExportNpy")
-        self.horizontalLayout_SeqExport.addWidget(self.pushButton_SeqExportImage)
+        self.pushButton_SeqExportNpy.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.horizontalLayout_SeqExport.addWidget(self.pushButton_SeqExportNpy)
-        self.pushButton_SeqExportImage.setMinimumHeight(28)
         self.pushButton_SeqExportNpy.setMinimumHeight(28)
 
         self.verticalLayout_SeqContents.addWidget(self.groupBox_SeqLoad)
@@ -1783,12 +1771,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             w.setMaximumWidth(16777215)
             layout.setStretch(i, 1)
 
-    def _setup_plot_config_python_export(self):
-        if not hasattr(self, "verticalLayout_PlotConfig"):
+    def _setup_plot_control_export(self):
+        if not hasattr(self, "verticalLayout_PlotControl"):
             return
         if hasattr(self, "pushButton_ExportPythonView"):
             return
-        self.groupBox_PythonExport = QtWidgets.QGroupBox("Python Export", self.plotConfigContents)
+        self.groupBox_PythonExport = QtWidgets.QGroupBox("Export", self.plotControlContents)
         self.groupBox_PythonExport.setObjectName("groupBox_PythonExport")
         self.horizontalLayout_PythonExport = QtWidgets.QHBoxLayout(self.groupBox_PythonExport)
         self.horizontalLayout_PythonExport.setContentsMargins(12, 12, 12, 12)
@@ -1799,12 +1787,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_ExportPythonView.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.pushButton_ExportPythonView.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        self.pushButton_ExportPythonView.setText("Export Python (Current View)")
+        self.pushButton_ExportPythonView.setText("Export to PY, PDF, PNG")
         self.pushButton_ExportPythonView.setToolTip(
-            "Export current on-screen view as a Python reproducible package")
+            "Export current on-screen view as a Python reproducible package with PDF and PNG previews")
         self.horizontalLayout_PythonExport.addWidget(self.pushButton_ExportPythonView, 1)
-        # place at the top in Plot > Config
-        self.verticalLayout_PlotConfig.insertWidget(0, self.groupBox_PythonExport)
+        # Place at the top in Plot > Control.
+        self.verticalLayout_PlotControl.insertWidget(0, self.groupBox_PythonExport)
 
     def _setup_backup_comment_button(self):
         if (not hasattr(self, "horizontalLayout_BackupTools")) or \

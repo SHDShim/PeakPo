@@ -23,6 +23,7 @@ class SequenceController(object):
         self.base_ptn_ctrl = None
         self.plot_ctrl = None
         self.mouse_mode_done_cb = None
+        self.export_current_view_cb = None
 
         self._seq_canvas = None
         self._seq_ax = None
@@ -46,10 +47,11 @@ class SequenceController(object):
         self._connect_channel()
 
     def set_helpers(self, base_ptn_ctrl=None, plot_ctrl=None,
-                    mouse_mode_done_cb=None):
+                    mouse_mode_done_cb=None, export_current_view_cb=None):
         self.base_ptn_ctrl = base_ptn_ctrl
         self.plot_ctrl = plot_ctrl
         self.mouse_mode_done_cb = mouse_mode_done_cb
+        self.export_current_view_cb = export_current_view_cb
 
     def _build_canvas(self):
         if not hasattr(self.widget, "verticalLayout_SeqCanvas"):
@@ -73,8 +75,22 @@ class SequenceController(object):
         self.widget.pushButton_SeqSetRoi.clicked.connect(self._arm_roi_selection)
         self.widget.pushButton_SeqClearRoi.clicked.connect(self._clear_roi)
         self.widget.pushButton_SeqCompute.clicked.connect(self._compute_sequence)
-        self.widget.pushButton_SeqExportImage.clicked.connect(self._export_image)
-        self.widget.pushButton_SeqExportNpy.clicked.connect(self._export_npy)
+        if hasattr(self.widget, "pushButton_SeqExportImage"):
+            self.widget.pushButton_SeqExportImage.clicked.connect(self._export_image)
+        if hasattr(self.widget, "pushButton_SeqExportNpy"):
+            self.widget.pushButton_SeqExportNpy.clicked.connect(self._export_current_view)
+
+    def _export_current_view(self):
+        if self._seq_fig is None:
+            self._set_status("No sequence view to export.")
+            return
+        if self.export_current_view_cb is None:
+            self._set_status("Export view is not available.")
+            return
+        self.export_current_view_cb(
+            fig=self._seq_fig,
+            folder_prefix="seq-pkpo-export",
+        )
 
     def _on_main_tab_changed(self, _idx):
         if not hasattr(self.widget, "tab_Seq"):

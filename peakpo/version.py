@@ -7,7 +7,7 @@ Todo:
         create a new subobject with azimuthal ranges and resulting diffraction
         patterns
 """
-__version__ = "7.10.4"
+__version__ = "7.10.5"
 """
 7.10.4: New toolbar
 7.10.3: Map problems?

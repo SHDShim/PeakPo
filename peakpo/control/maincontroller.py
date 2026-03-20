@@ -112,6 +112,16 @@ class MainController(object):
         self.export_py_ctrl = ExportPythonController(
             self.model, self.widget, plot_ctrl=self.plot_ctrl)
         print("  ✓ ExportPythonController created")
+        self.map_ctrl.set_helpers(
+            base_ptn_ctrl=self.base_ptn_ctrl,
+            plot_ctrl=self.plot_ctrl,
+            mouse_mode_done_cb=self._finish_temporary_mouse_mode,
+            export_current_view_cb=self.export_py_ctrl.export_current_view)
+        self.seq_ctrl.set_helpers(
+            base_ptn_ctrl=self.base_ptn_ctrl,
+            plot_ctrl=self.plot_ctrl,
+            mouse_mode_done_cb=self._finish_temporary_mouse_mode,
+            export_current_view_cb=self.export_py_ctrl.export_current_view)
         self._propagate_diff_controller()
         
         self.read_setting()
