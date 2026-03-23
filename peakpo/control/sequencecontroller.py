@@ -116,14 +116,22 @@ class SequenceController(object):
         return bool(sel_1d_active or sel_2d_active)
 
     def _set_status(self, msg):
-        if hasattr(self.widget, "label_SeqStatus"):
-            self.widget.label_SeqStatus.setText(str(msg))
+        return
+
+    def _default_hover_text(self):
+        if not self._chi_files:
+            return "Load CHI files to start."
+        return "Hover over a sequence point to see its file name"
 
     def _set_hover_file_text(self, text):
         if hasattr(self.widget, "lineEdit_SeqHoverFile"):
             self.widget.lineEdit_SeqHoverFile.setText(str(text))
 
     def _clear_hover_file(self, _event=None):
+        if hasattr(self.widget, "lineEdit_SeqHoverFile"):
+            self.widget.lineEdit_SeqHoverFile.setPlaceholderText(
+                self._default_hover_text()
+            )
         self._set_hover_file_text("")
 
     def _set_loaded_count(self):

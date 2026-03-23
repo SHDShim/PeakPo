@@ -155,14 +155,22 @@ class MapController(object):
         return bool(sel_1d_active or sel_2d_active)
 
     def _set_status(self, msg):
-        if hasattr(self.widget, "label_MapStatus"):
-            self.widget.label_MapStatus.setText(str(msg))
+        return
+
+    def _default_hover_text(self):
+        if not self._chi_files:
+            return "Load CHI files to start."
+        return "Hover over a map pixel to see its file name"
 
     def _set_hover_file_text(self, text):
         if hasattr(self.widget, "lineEdit_MapHoverFile"):
             self.widget.lineEdit_MapHoverFile.setText(str(text))
 
     def _clear_hover_file(self, _event=None):
+        if hasattr(self.widget, "lineEdit_MapHoverFile"):
+            self.widget.lineEdit_MapHoverFile.setPlaceholderText(
+                self._default_hover_text()
+            )
         self._set_hover_file_text("")
 
     def _set_loaded_count(self):

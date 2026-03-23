@@ -1460,9 +1460,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.lineEdit_MapHoverFile.setReadOnly(True)
         self.lineEdit_MapHoverFile.setPlaceholderText("Hover over a map pixel to see its file name")
 
-        self.label_MapStatus = QtWidgets.QLabel("Load CHI files to start.", self.mapContents)
-        self.label_MapStatus.setObjectName("label_MapStatus")
-
         self.groupBox_MapScale = QtWidgets.QGroupBox("Map Colors", self.mapContents)
         self.groupBox_MapScale.setObjectName("groupBox_MapScale")
         self.gridLayout_MapScale = QtWidgets.QGridLayout(self.groupBox_MapScale)
@@ -1563,7 +1560,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.verticalLayout_MapContents.addWidget(self.groupBox_MapRoi)
         self.verticalLayout_MapContents.addWidget(self.groupBox_MapCanvas, 1)
         self.verticalLayout_MapContents.addWidget(self.lineEdit_MapHoverFile)
-        self.verticalLayout_MapContents.addWidget(self.label_MapStatus)
         self.verticalLayout_MapContents.addWidget(self.groupBox_MapScale)
         self.verticalLayout_MapContents.addWidget(self.groupBox_MapExport)
         self.verticalLayout_MapContents.addStretch(1)
@@ -1674,9 +1670,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.lineEdit_SeqHoverFile.setReadOnly(True)
         self.lineEdit_SeqHoverFile.setPlaceholderText("Hover over a sequence point to see its file name")
 
-        self.label_SeqStatus = QtWidgets.QLabel("Load CHI files to start.", self.seqContents)
-        self.label_SeqStatus.setObjectName("label_SeqStatus")
-
         self.groupBox_SeqExport = QtWidgets.QGroupBox("Export", self.seqContents)
         self.groupBox_SeqExport.setObjectName("groupBox_SeqExport")
         self.horizontalLayout_SeqExport = QtWidgets.QHBoxLayout(self.groupBox_SeqExport)
@@ -1693,7 +1686,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.verticalLayout_SeqContents.addWidget(self.groupBox_SeqRoi)
         self.verticalLayout_SeqContents.addWidget(self.groupBox_SeqCanvas, 1)
         self.verticalLayout_SeqContents.addWidget(self.lineEdit_SeqHoverFile)
-        self.verticalLayout_SeqContents.addWidget(self.label_SeqStatus)
         self.verticalLayout_SeqContents.addWidget(self.groupBox_SeqExport)
         self.verticalLayout_SeqContents.addStretch(1)
         self.scrollArea_Seq.setWidget(self.seqContents)
