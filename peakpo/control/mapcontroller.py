@@ -69,6 +69,8 @@ class MapController(object):
         self._map_canvas = FigureCanvasQTAgg(self._map_fig)
         self.widget.verticalLayout_MapCanvas.addWidget(self._map_canvas, 1)
         self._map_canvas.mpl_connect("button_press_event", self._on_map_click)
+        self._map_canvas.mpl_connect("motion_notify_event", self._on_map_hover)
+        self._map_canvas.mpl_connect("figure_leave_event", self._clear_hover_file)
         self._draw_map()
 
     def _recreate_map_axes(self):
@@ -156,6 +158,13 @@ class MapController(object):
         if hasattr(self.widget, "label_MapStatus"):
             self.widget.label_MapStatus.setText(str(msg))
 
+    def _set_hover_file_text(self, text):
+        if hasattr(self.widget, "lineEdit_MapHoverFile"):
+            self.widget.lineEdit_MapHoverFile.setText(str(text))
+
+    def _clear_hover_file(self, _event=None):
+        self._set_hover_file_text("")
+
     def _set_loaded_count(self):
         if hasattr(self.widget, "label_MapLoaded"):
             self.widget.label_MapLoaded.setText(f"Loaded: {len(self._chi_files)}")
@@ -178,6 +187,7 @@ class MapController(object):
         self._roi_1d = None
         self._roi_2d = None
         self._map_data = None
+        self._clear_hover_file()
 
         nx, ny = self._guess_grid_dims(len(self._chi_files))
         self._sync_ui_from_roi = True
@@ -340,6 +350,28 @@ class MapController(object):
         if order == "Snake" and ((y % 2) == 1):
             x = nx - 1 - x
         return int(x), int(y)
+
+    def _file_idx_from_map_coords(self, xdata, ydata):
+        if self._map_data is None:
+            return None
+        if (xdata is None) or (ydata is None):
+            return None
+        x = int(round(xdata))
+        y = int(round(ydata))
+        lin = self._grid_to_linear(x, y)
+        if lin is None:
+            return None
+        return self._lin_to_file.get(lin, None)
+
+    def _hover_filename_for_event(self, event):
+        if event.inaxes != self._map_ax:
+            return ""
+        file_idx = self._file_idx_from_map_coords(event.xdata, event.ydata)
+        if file_idx is None:
+            return ""
+        if (file_idx < 0) or (file_idx >= len(self._chi_files)):
+            return ""
+        return os.path.basename(self._chi_files[file_idx])
 
     def _arm_roi_selection(self):
         if self.widget.tabWidget.currentWidget() != self.widget.tab_Map:
@@ -570,6 +602,7 @@ class MapController(object):
     def _draw_map(self):
         # Recreate axes each draw so colorbar layout adjustments do not accumulate.
         self._recreate_map_axes()
+        self._clear_hover_file()
         if self._map_ax is None:
             return
         self._map_ax.clear()
@@ -635,23 +668,20 @@ class MapController(object):
         self._map_canvas.draw_idle()
 
     def _on_map_click(self, event):
-        if self._map_data is None:
-            return
-        if event.inaxes != self._map_ax:
-            return
-        if (event.xdata is None) or (event.ydata is None):
+        file_idx = self._file_idx_from_map_coords(event.xdata, event.ydata)
+        if file_idx is None:
+            if event.inaxes == self._map_ax:
+                x = "NA" if event.xdata is None else int(round(event.xdata))
+                y = "NA" if event.ydata is None else int(round(event.ydata))
+                self._set_status(f"No file for map pixel ({x}, {y})")
             return
         x = int(round(event.xdata))
         y = int(round(event.ydata))
-        lin = self._grid_to_linear(x, y)
-        if lin is None:
-            return
-        file_idx = self._lin_to_file.get(lin, None)
-        if file_idx is None:
-            self._set_status(f"No file for map pixel ({x}, {y})")
-            return
         self._load_file_to_main_plot(file_idx)
         self._set_status(f"Selected map pixel ({x}, {y})")
+
+    def _on_map_hover(self, event):
+        self._set_hover_file_text(self._hover_filename_for_event(event))
 
     def _is_map_tab_active(self):
         return hasattr(self.widget, "tab_Map") and \

@@ -1,6 +1,7 @@
 import os
 import sys
 import faulthandler
+from importlib import resources
 
 # ========================================
 # STEP 1: Environment Setup (BEFORE any imports)
@@ -44,7 +45,7 @@ matplotlib.use('QtAgg')
 # STEP 4: Import remaining Qt modules
 # ========================================
 from qtpy import QtCore, QtWidgets
-from qtpy.QtGui import QPalette, QColor
+from qtpy.QtGui import QPalette, QColor, QIcon
 
 # Standard library imports
 from io import StringIO
@@ -57,6 +58,29 @@ from sys import platform as _platform
 # ========================================
 app = QtWidgets.QApplication(sys.argv)
 app.setStyle('Fusion')
+
+
+def _load_app_icon():
+    if sys.platform == "darwin":
+        icon_name = "PeakPo.icns"
+    elif sys.platform.startswith("win"):
+        icon_name = "PeakPo.ico"
+    else:
+        icon_name = "PeakPo.ico"
+
+    try:
+        icon_path = resources.files("peakpo").joinpath(f"assets/{icon_name}")
+    except Exception:
+        return QIcon()
+    icon = QIcon(str(icon_path))
+    if icon.isNull():
+        return QIcon()
+    return icon
+
+
+_app_icon = _load_app_icon()
+if not _app_icon.isNull():
+    app.setWindowIcon(_app_icon)
 
 # ========================================
 # STEP 6: NOW Import Your Application Modules
@@ -156,6 +180,8 @@ app.setPalette(dark_palette)
 # Create and Show Window
 # ========================================
 controller = MainController()
+if not _app_icon.isNull() and hasattr(controller, "widget"):
+    controller.widget.setWindowIcon(_app_icon)
 controller.show_window()
 
 _shutdown_done = {"value": False}

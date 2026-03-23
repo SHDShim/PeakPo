@@ -21,7 +21,7 @@ setup(
     license="Apache-2.0",
     packages=find_packages(exclude=("deletables", "setup_bin")),
     include_package_data=False,
-    package_data={"peakpo": ["mplstyle/*.mplstyle"]},
+    package_data={"peakpo": ["mplstyle/*.mplstyle", "assets/*.icns", "assets/*.ico"]},
     exclude_package_data={"": ["__pycache__/*", "*.py[cod]"], "peakpo": ["error.log"]},
     python_requires=">=3.11",
     install_requires=[

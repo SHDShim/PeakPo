@@ -64,6 +64,8 @@ class SequenceController(object):
         self._seq_canvas = FigureCanvasQTAgg(self._seq_fig)
         self.widget.verticalLayout_SeqCanvas.addWidget(self._seq_canvas, 1)
         self._seq_canvas.mpl_connect("button_press_event", self._on_seq_click)
+        self._seq_canvas.mpl_connect("motion_notify_event", self._on_seq_hover)
+        self._seq_canvas.mpl_connect("figure_leave_event", self._clear_hover_file)
         self._draw_sequence()
 
     def _connect_channel(self):
@@ -117,6 +119,13 @@ class SequenceController(object):
         if hasattr(self.widget, "label_SeqStatus"):
             self.widget.label_SeqStatus.setText(str(msg))
 
+    def _set_hover_file_text(self, text):
+        if hasattr(self.widget, "lineEdit_SeqHoverFile"):
+            self.widget.lineEdit_SeqHoverFile.setText(str(text))
+
+    def _clear_hover_file(self, _event=None):
+        self._set_hover_file_text("")
+
     def _set_loaded_count(self):
         if hasattr(self.widget, "label_SeqLoaded"):
             self.widget.label_SeqLoaded.setText(f"Loaded: {len(self._chi_files)}")
@@ -139,6 +148,7 @@ class SequenceController(object):
         self._roi_2d = None
         self._seq_x = None
         self._seq_y = None
+        self._clear_hover_file()
 
         self._set_loaded_count()
         self._set_status(f"Loaded {len(self._chi_files)} CHI files.")
@@ -408,6 +418,7 @@ class SequenceController(object):
     def _draw_sequence(self):
         if self._seq_ax is None:
             return
+        self._clear_hover_file()
         self._seq_ax.clear()
         self._seq_fig.patch.set_facecolor("black")
         self._seq_ax.set_facecolor("black")
@@ -437,32 +448,43 @@ class SequenceController(object):
         self._seq_fig.tight_layout()
         self._seq_canvas.draw_idle()
 
-    def _on_seq_click(self, event):
+    def _nearest_seq_file_idx(self, event, max_distance_px=20.0):
         if (self._seq_x is None) or (self._seq_y is None):
-            return
+            return None
         if event.inaxes != self._seq_ax:
-            return
+            return None
         if event.xdata is None:
-            return
+            return None
         finite = np.isfinite(self._seq_x) & np.isfinite(self._seq_y)
         if not np.any(finite):
-            return
+            return None
+
         x = self._seq_x[finite]
         y = self._seq_y[finite]
         idx_map = np.where(finite)[0]
-
-        # Nearest point in display units for robust click selection.
-        click_px = self._seq_ax.transData.transform((event.xdata, event.ydata if event.ydata is not None else 0.0))
+        ydata = event.ydata if event.ydata is not None else 0.0
+        hover_px = self._seq_ax.transData.transform((event.xdata, ydata))
         pts_px = self._seq_ax.transData.transform(np.column_stack([x, y]))
-        dist2 = np.sum((pts_px - click_px) ** 2, axis=1)
+        dist2 = np.sum((pts_px - hover_px) ** 2, axis=1)
         k = int(np.argmin(dist2))
-        if dist2[k] > 20.0 ** 2:
-            return
+        if dist2[k] > float(max_distance_px) ** 2:
+            return None
+        return int(idx_map[k])
 
-        file_idx = int(idx_map[k])
+    def _on_seq_click(self, event):
+        file_idx = self._nearest_seq_file_idx(event)
+        if file_idx is None:
+            return
         self._load_file_to_main_plot(file_idx)
         file_num = int(self._file_numbers[file_idx]) if file_idx < len(self._file_numbers) else file_idx + 1
         self._set_status(f"Selected sequence point: file number {file_num}")
+
+    def _on_seq_hover(self, event):
+        file_idx = self._nearest_seq_file_idx(event)
+        if file_idx is None or file_idx >= len(self._chi_files):
+            self._clear_hover_file()
+            return
+        self._set_hover_file_text(os.path.basename(self._chi_files[file_idx]))
 
     def _is_seq_tab_active(self):
         return hasattr(self.widget, "tab_Seq") and \

@@ -2,10 +2,7 @@
 PeakPo version
 
 Todo:
-    - save azimuthal integration results in dpp, allowing for easy PeakFit
-    - for azimuthal integration patterns.
-        create a new subobject with azimuthal ranges and resulting diffraction
-        patterns
+- azimuthal integration improvement
 """
 __version__ = "7.10.5"
 """
