@@ -15,6 +15,7 @@ from .xrdiohelpers import (
     find_temp_cake_triplet,
     load_cake_data,
 )
+from ..utils.dialogs import dialog_openfiles_hide_param_dirs
 
 
 class MapController(object):
@@ -178,7 +179,7 @@ class MapController(object):
             self.widget.label_MapLoaded.setText(f"Loaded: {len(self._chi_files)}")
 
     def _load_chi_files(self):
-        files, _ = QtWidgets.QFileDialog.getOpenFileNames(
+        files, _ = dialog_openfiles_hide_param_dirs(
             self.widget,
             "Select CHI files for map",
             self.model.chi_path,

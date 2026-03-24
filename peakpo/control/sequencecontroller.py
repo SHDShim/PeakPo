@@ -14,6 +14,7 @@ from .xrdiohelpers import (
     find_temp_cake_triplet,
     load_cake_data,
 )
+from ..utils.dialogs import dialog_openfiles_hide_param_dirs
 
 
 class SequenceController(object):
@@ -139,7 +140,7 @@ class SequenceController(object):
             self.widget.label_SeqLoaded.setText(f"Loaded: {len(self._chi_files)}")
 
     def _load_chi_files(self):
-        files, _ = QtWidgets.QFileDialog.getOpenFileNames(
+        files, _ = dialog_openfiles_hide_param_dirs(
             self.widget,
             "Select CHI files for sequence",
             self.model.chi_path,

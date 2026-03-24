@@ -4,8 +4,10 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.10.5"
+__version__ = "7.10.6"
 """
+7.10.6: hide -param folders for file chooser in map and seq
+7.10.5: UI fixes
 7.10.4: New toolbar
 7.10.3: Map problems?
 7.10.2b: polish UI design.

@@ -3,6 +3,45 @@ import os.path
 from .fileutils import extract_extension
 
 
+class _HideParamFoldersProxyModel(QtCore.QSortFilterProxyModel):
+    def filterAcceptsRow(self, source_row, source_parent):
+        model = self.sourceModel()
+        if model is None:
+            return True
+
+        index = model.index(source_row, 0, source_parent)
+        if not index.isValid():
+            return True
+
+        try:
+            is_dir = bool(model.isDir(index))
+        except AttributeError:
+            is_dir = False
+        if not is_dir:
+            return True
+
+        folder_name = str(model.fileName(index) or "")
+        return not folder_name.lower().endswith("-param")
+
+
+def dialog_openfiles_hide_param_dirs(obj, title, directory, file_filter):
+    dialog = QtWidgets.QFileDialog(obj, title, directory, file_filter)
+    dialog.setFileMode(QtWidgets.QFileDialog.ExistingFiles)
+    dialog.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, True)
+
+    proxy = _HideParamFoldersProxyModel(dialog)
+    proxy.setRecursiveFilteringEnabled(False)
+    dialog.setProxyModel(proxy)
+    proxy.invalidateFilter()
+
+    exec_fn = getattr(dialog, "exec", None)
+    if exec_fn is None:
+        exec_fn = dialog.exec_
+    if exec_fn():
+        return dialog.selectedFiles(), dialog.selectedNameFilter()
+    return [], ""
+
+
 def dialog_savefile(obj, default_filename):
     """
     :return: "" if the user choose not to overwrite or save
