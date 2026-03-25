@@ -6,7 +6,7 @@ from scipy.interpolate import interp1d
 from ..model import PeakPoModel8
 from ..model.diff_state import DiffState
 from ..model.param_session_io import load_model_from_param
-from ..utils import readchi, writechi, get_temp_dir
+from ..utils import readchi, writechi, get_temp_dir, dialog_openfile_hide_param_dirs
 
 
 class DiffController(object):
@@ -171,11 +171,12 @@ class DiffController(object):
 
     def _browse_ref_chi(self):
         start_dir = self.model.chi_path if self.model.chi_path else ""
-        filen = QtWidgets.QFileDialog.getOpenFileName(
+        filen = dialog_openfile_hide_param_dirs(
             self.widget,
             "Choose Reference CHI",
             start_dir,
             "CHI files (*.chi)",
+            default_hide_param_dirs=True,
         )[0]
         if filen == "":
             return

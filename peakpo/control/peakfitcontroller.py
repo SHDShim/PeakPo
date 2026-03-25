@@ -3,7 +3,7 @@ import traceback
 from qtpy import QtWidgets
 from .mplcontroller import MplController
 from .peakfittablecontroller import PeakfitTableController
-from ..utils import make_filename, get_temp_dir
+from ..utils import make_filename, get_temp_dir, dialog_openfile_hide_param_dirs
 from ..compat_pickle import PeakPoCompatDillUnpickler
 from ..model.param_session_io import load_section_from_param
 
@@ -48,7 +48,7 @@ class PeakFitController(object):
         self.plot_ctrl.update_to_gsas_style()
 
     def import_section_from_dpp(self):
-        fn = QtWidgets.QFileDialog.getOpenFileName(
+        fn = dialog_openfile_hide_param_dirs(
             self.widget, "Choose A Session File",
             self.model.chi_path, "(*.dpp)")[0]
 #       replaceing chi_path with '' does not work

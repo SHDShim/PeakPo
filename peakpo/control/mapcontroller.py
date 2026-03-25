@@ -184,6 +184,7 @@ class MapController(object):
             "Select CHI files for map",
             self.model.chi_path,
             "CHI files (*.chi)",
+            default_hide_param_dirs=True,
         )
         if not files:
             return

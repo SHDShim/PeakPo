@@ -2064,7 +2064,7 @@
                        <item row="0" column="0">
                         <widget class="QLabel" name="label_17">
                          <property name="sizePolicy">
-                          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
@@ -3169,7 +3169,7 @@
                          </property>
                          <property name="maximumSize">
                           <size>
-                           <width>60</width>
+                           <width>16777215</width>
                            <height>16777215</height>
                           </size>
                          </property>
@@ -3193,7 +3193,7 @@
                        <item row="0" column="3">
                         <widget class="QPushButton" name="pushButton_MoveDown">
                          <property name="sizePolicy">
-                          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
@@ -3274,7 +3274,7 @@
                          </property>
                          <property name="maximumSize">
                           <size>
-                           <width>60</width>
+                           <width>16777215</width>
                            <height>16777215</height>
                           </size>
                          </property>
@@ -4059,7 +4059,7 @@
                        </sizepolicy>
                       </property>
                       <property name="title">
-                       <string>List</string>
+                       <string>JCPDS Export</string>
                       </property>
                       <property name="flat">
                        <bool>false</bool>
@@ -4077,80 +4077,6 @@
                        <property name="bottomMargin">
                         <number>12</number>
                        </property>
-                       <item>
-                        <widget class="QPushButton" name="pushButton_NewJlist">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="minimumSize">
-                          <size>
-                           <width>0</width>
-                           <height>25</height>
-                          </size>
-                         </property>
-                         <property name="maximumSize">
-                          <size>
-                           <width>60</width>
-                           <height>16777215</height>
-                          </size>
-                         </property>
-                         <property name="font">
-                          <font>
-                           <family>Helvetica</family>
-                           <pointsize>12</pointsize>
-                           <weight>50</weight>
-                           <italic>false</italic>
-                           <bold>false</bold>
-                          </font>
-                         </property>
-                         <property name="toolTip">
-                          <string>Make a new JCPDS list</string>
-                         </property>
-                         <property name="text">
-                          <string>New</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item>
-                        <widget class="QPushButton" name="pushButton_ImportJlist">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="minimumSize">
-                          <size>
-                           <width>0</width>
-                           <height>25</height>
-                          </size>
-                         </property>
-                         <property name="maximumSize">
-                          <size>
-                           <width>60</width>
-                           <height>16777215</height>
-                          </size>
-                         </property>
-                         <property name="font">
-                          <font>
-                           <family>Helvetica</family>
-                           <pointsize>12</pointsize>
-                           <weight>50</weight>
-                           <italic>false</italic>
-                           <bold>false</bold>
-                          </font>
-                         </property>
-                         <property name="toolTip">
-                          <string>Import a JCPDS list from a dpp file</string>
-                         </property>
-                         <property name="text">
-                          <string>Import</string>
-                         </property>
-                        </widget>
-                       </item>
                        <item>
                         <widget class="QPushButton" name="pushButton_SaveJlist">
                          <property name="sizePolicy">
@@ -4181,10 +4107,10 @@
                           </font>
                          </property>
                          <property name="toolTip">
-                          <string>Save current JCPDS list to a dpp file</string>
+                          <string>Save all current JCPDS cards to a folder</string>
                          </property>
                          <property name="text">
-                          <string>Save</string>
+                          <string>Save All</string>
                          </property>
                         </widget>
                        </item>
@@ -4209,10 +4135,10 @@
                           </size>
                          </property>
                          <property name="toolTip">
-                          <string>Save JCPDSs to an excel file</string>
+                          <string>Export current JCPDS list to an Excel file</string>
                          </property>
                          <property name="text">
-                          <string>XLS</string>
+                          <string>Export to Excel</string>
                          </property>
                         </widget>
                        </item>

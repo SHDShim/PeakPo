@@ -5,7 +5,8 @@ from qtpy import QtCore
 from qtpy import QtGui
 from .mplcontroller import MplController
 from .waterfalltablecontroller import WaterfallTableController
-from ..utils import convert_wl_to_energy, get_directory, get_temp_dir
+from ..utils import convert_wl_to_energy, get_directory, get_temp_dir, \
+    dialog_openfiles_hide_param_dirs
 
 
 class WaterfallController(object):
@@ -146,9 +147,9 @@ class WaterfallController(object):
                 self.widget, "Warning",
                 "Pick a base pattern first.")
             return
-        f_input = QtWidgets.QFileDialog.getOpenFileNames(
+        f_input = dialog_openfiles_hide_param_dirs(
             self.widget, "Choose additional data files", self.model.chi_path,
-            "Data files (*.chi)")
+            "Data files (*.chi)", default_hide_param_dirs=True)
         files = f_input[0]
         self._add_patterns(files)
 

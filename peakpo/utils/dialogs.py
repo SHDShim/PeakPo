@@ -4,6 +4,14 @@ from .fileutils import extract_extension
 
 
 class _HideParamFoldersProxyModel(QtCore.QSortFilterProxyModel):
+    def __init__(self, *args, **kwargs):
+        super(_HideParamFoldersProxyModel, self).__init__(*args, **kwargs)
+        self._hide_param_dirs = True
+
+    def set_hide_param_dirs(self, hide_param_dirs):
+        self._hide_param_dirs = bool(hide_param_dirs)
+        self.invalidateFilter()
+
     def filterAcceptsRow(self, source_row, source_parent):
         model = self.sourceModel()
         if model is None:
@@ -20,26 +28,87 @@ class _HideParamFoldersProxyModel(QtCore.QSortFilterProxyModel):
         if not is_dir:
             return True
 
+        if not self._hide_param_dirs:
+            return True
+
         folder_name = str(model.fileName(index) or "")
         return not folder_name.lower().endswith("-param")
 
 
-def dialog_openfiles_hide_param_dirs(obj, title, directory, file_filter):
+def _attach_hide_param_checkbox(dialog, proxy, default_checked=False):
+    checkbox = QtWidgets.QCheckBox(
+        "Hide *-param folders in file chooser", dialog)
+    checkbox.setChecked(bool(default_checked))
+    checkbox.toggled.connect(proxy.set_hide_param_dirs)
+
+    layout = dialog.layout()
+    if isinstance(layout, QtWidgets.QGridLayout):
+        row = layout.rowCount()
+        layout.addWidget(checkbox, row, 0, 1, layout.columnCount())
+    elif layout is not None:
+        layout.addWidget(checkbox)
+
+    return checkbox
+
+
+def _exec_dialog(dialog):
+    exec_fn = getattr(dialog, "exec", None)
+    if exec_fn is None:
+        exec_fn = dialog.exec_
+    return bool(exec_fn())
+
+
+def _build_open_dialog(
+        obj, title, directory, file_filter, file_mode,
+        default_hide_param_dirs=False):
     dialog = QtWidgets.QFileDialog(obj, title, directory, file_filter)
-    dialog.setFileMode(QtWidgets.QFileDialog.ExistingFiles)
+    dialog.setFileMode(file_mode)
     dialog.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, True)
 
     proxy = _HideParamFoldersProxyModel(dialog)
     proxy.setRecursiveFilteringEnabled(False)
     dialog.setProxyModel(proxy)
-    proxy.invalidateFilter()
+    _attach_hide_param_checkbox(
+        dialog, proxy, default_checked=default_hide_param_dirs)
+    proxy.set_hide_param_dirs(default_hide_param_dirs)
 
-    exec_fn = getattr(dialog, "exec", None)
-    if exec_fn is None:
-        exec_fn = dialog.exec_
-    if exec_fn():
+    return dialog
+
+
+def dialog_openfile_hide_param_dirs(
+        obj, title, directory, file_filter, default_hide_param_dirs=False):
+    dialog = _build_open_dialog(
+        obj, title, directory, file_filter,
+        QtWidgets.QFileDialog.ExistingFile,
+        default_hide_param_dirs=default_hide_param_dirs)
+    if _exec_dialog(dialog):
+        files = dialog.selectedFiles()
+        return (files[0] if files else ""), dialog.selectedNameFilter()
+    return "", ""
+
+
+def dialog_openfiles_hide_param_dirs(
+        obj, title, directory, file_filter, default_hide_param_dirs=False):
+    dialog = _build_open_dialog(
+        obj, title, directory, file_filter,
+        QtWidgets.QFileDialog.ExistingFiles,
+        default_hide_param_dirs=default_hide_param_dirs)
+    if _exec_dialog(dialog):
         return dialog.selectedFiles(), dialog.selectedNameFilter()
     return [], ""
+
+
+def dialog_existing_directory_hide_param_dirs(
+        obj, title, directory, default_hide_param_dirs=False):
+    dialog = _build_open_dialog(
+        obj, title, directory, "",
+        QtWidgets.QFileDialog.Directory,
+        default_hide_param_dirs=default_hide_param_dirs)
+    dialog.setOption(QtWidgets.QFileDialog.ShowDirsOnly, True)
+    if _exec_dialog(dialog):
+        files = dialog.selectedFiles()
+        return files[0] if files else ""
+    return ""
 
 
 def dialog_savefile(obj, default_filename):

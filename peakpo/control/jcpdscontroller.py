@@ -8,7 +8,8 @@ from matplotlib import colors as mcolors
 import matplotlib.cm as cmx
 from .mplcontroller import MplController
 from .jcpdstablecontroller import JcpdsTableController
-from ..utils import xls_jlist, dialog_savefile, make_filename, get_temp_dir, \
+from ..utils import xls_jlist, dialog_savefile, \
+    dialog_openfiles_hide_param_dirs, make_filename, get_temp_dir, \
     InformationBox, extract_filename, extract_extension, align_spinbox_right
 from ..ds_jcpds import JCPDS
 import pymatgen as mg
@@ -25,7 +26,9 @@ class JcpdsController(object):
         self.connect_channel()
 
     def connect_channel(self):
-        self.widget.pushButton_NewJlist.clicked.connect(self.make_jlist)
+        if hasattr(self.widget, "pushButton_SaveJlist"):
+            self.widget.pushButton_SaveJlist.clicked.connect(
+                self.save_jlist_to_folder)
         self.widget.pushButton_RemoveJCPDS.clicked.connect(self.remove_a_jcpds)
         self.widget.pushButton_AddToJlist.clicked.connect(
             lambda: self.make_jlist(append=True))
@@ -120,7 +123,7 @@ class JcpdsController(object):
         """
         collect files for jlist
         """
-        files = QtWidgets.QFileDialog.getOpenFileNames(
+        files = dialog_openfiles_hide_param_dirs(
             self.widget, "Choose JPCDS Files", self.model.jcpds_path,
             "JCPDS/CIF files (*.jcpds *.JCPDS *.cif *.CIF)")[0]
         if files == []:
@@ -327,6 +330,70 @@ class JcpdsController(object):
         xls_jlist(filen_xls, self.model.jcpds_lst,
                   self.widget.doubleSpinBox_Pressure.value(),
                   self.widget.doubleSpinBox_Temperature.value())
+
+    def _make_unique_jcpds_export_path(self, folder, base_name, used_paths):
+        stem = str(base_name).strip() or "jcpds"
+        candidate = os.path.join(folder, stem + ".jcpds")
+        suffix = 2
+        while (candidate in used_paths) or os.path.exists(candidate):
+            candidate = os.path.join(folder, f"{stem}_{suffix}.jcpds")
+            suffix += 1
+        used_paths.add(candidate)
+        return candidate
+
+    def _write_untweaked_jcpds(self, phase, out_path):
+        phase_to_save = copy.deepcopy(phase)
+        if hasattr(phase_to_save, "k0_org"):
+            phase_to_save.k0 = phase_to_save.k0_org
+        if hasattr(phase_to_save, "k0p_org"):
+            phase_to_save.k0p = phase_to_save.k0p_org
+        if hasattr(phase_to_save, "v0_org"):
+            phase_to_save.v0 = phase_to_save.v0_org
+        if hasattr(phase_to_save, "thermal_expansion_org"):
+            phase_to_save.thermal_expansion = \
+                phase_to_save.thermal_expansion_org
+        phase_to_save.write_to_file(out_path)
+
+    def save_jlist_to_folder(self):
+        if not self.model.jcpds_exist():
+            return
+
+        folder = QtWidgets.QFileDialog.getExistingDirectory(
+            self.widget,
+            "Choose folder to save JCPDS list",
+            self.model.jcpds_path,
+            QtWidgets.QFileDialog.ShowDirsOnly,
+        )
+        if folder in ("", None):
+            return
+
+        used_paths = set()
+        saved_count = 0
+        failed = []
+        for phase in self.model.jcpds_lst:
+            out_path = self._make_unique_jcpds_export_path(
+                folder, getattr(phase, "name", "jcpds"), used_paths)
+            try:
+                self._write_untweaked_jcpds(phase, out_path)
+                saved_count += 1
+            except Exception as exc:
+                failed.append(f"{getattr(phase, 'name', 'jcpds')}: {exc}")
+
+        self.model.set_jcpds_path(folder)
+        if failed:
+            QtWidgets.QMessageBox.warning(
+                self.widget,
+                "Partial Save",
+                f"Saved {saved_count} JCPDS file(s) to:\n{folder}\n\n"
+                "Failed:\n" + "\n".join(failed),
+            )
+            return
+
+        QtWidgets.QMessageBox.information(
+            self.widget,
+            "JCPDS Saved",
+            f"Saved {saved_count} JCPDS file(s) to:\n{folder}",
+        )
 
     def view_jcpds(self):
         if not self.model.jcpds_exist():

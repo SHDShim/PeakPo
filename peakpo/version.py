@@ -6,7 +6,7 @@ Todo:
 """
 __version__ = "7.10.6"
 """
-7.10.6: hide -param folders for file chooser in map and seq
+7.10.6: hide -param folders option for file loader.  Export JCPDS to a designated folder.
 7.10.5: UI fixes
 7.10.4: New toolbar
 7.10.3: Map problems?

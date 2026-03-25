@@ -9,7 +9,14 @@ from .fileutils import samefilename, extract_filename, make_filename, \
     extract_extension, change_file_path, get_directory, get_temp_dir, \
     get_unique_filename, backup_copy, read_any_poni_file, \
         make_poni2_from_poni21, make_converted_poni2_filename
-from .dialogs import dialog_savefile, ErrorMessageBox, InformationBox
+from .dialogs import (
+    dialog_savefile,
+    dialog_openfile_hide_param_dirs,
+    dialog_openfiles_hide_param_dirs,
+    dialog_existing_directory_hide_param_dirs,
+    ErrorMessageBox,
+    InformationBox,
+)
 from .excelutils import xls_ucfitlist, xls_jlist
 from .physutils import convert_wl_to_energy
 from .unitcellfit import make_output_table, fit_cubic_cell, \

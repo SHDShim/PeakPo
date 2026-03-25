@@ -1,7 +1,7 @@
 import os
 from qtpy import QtWidgets
 from ..utils import get_sorted_filelist, find_from_filelist, readchi, \
-    make_filename, writechi, get_directory
+    make_filename, writechi, get_directory, dialog_openfile_hide_param_dirs
 from ..utils import undo_button_press, get_temp_dir
 import datetime
 from .mplcontroller import MplController
@@ -28,9 +28,9 @@ class BasePatternController(object):
         """
         opens a file select dialog
         """
-        filen = QtWidgets.QFileDialog.getOpenFileName(
+        filen = dialog_openfile_hide_param_dirs(
             self.widget, "Open a Chi File", self.model.chi_path,
-            "Data files (*.chi)")[0]
+            "Data files (*.chi)", default_hide_param_dirs=True)[0]
         self._setshow_new_base_ptn(str(filen))
 
     def load_new_base_pattern_from_name(self):

@@ -1,11 +1,13 @@
 import os
+import filecmp
 import shutil
 import glob
 from qtpy import QtWidgets
 import numpy as np
 from ..utils import dialog_savefile, writechi, get_directory, make_filename, \
     get_temp_dir, extract_filename, extract_extension, InformationBox, \
-        make_converted_poni2_filename, make_poni2_from_poni21, read_any_poni_file
+        make_converted_poni2_filename, make_poni2_from_poni21, \
+        read_any_poni_file, dialog_openfile_hide_param_dirs
 from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
 from PIL import Image
@@ -455,6 +457,65 @@ class CakeController(object):
         else:
             return True
 
+    def _set_current_poni(self, poni_path):
+        self.model.poni = poni_path
+        self.widget.lineEdit_PONI.setText(self.model.poni)
+
+    def _apply_poni_change(self, poni_path):
+        self._set_current_poni(poni_path)
+        if self.model.diff_img_exist():
+            self.produce_cake()
+        self._apply_changes_to_graph()
+
+    def _is_same_poni_file(self, file_a, file_b):
+        if (not file_a) or (not file_b):
+            return False
+        if (not os.path.exists(file_a)) or (not os.path.exists(file_b)):
+            return False
+        try:
+            return filecmp.cmp(file_a, file_b, shallow=False)
+        except OSError:
+            return False
+
+    def _choose_and_store_poni(self, temp_dir, current_poni=None):
+        filen = dialog_openfile_hide_param_dirs(
+            self.widget, "Open a PONI File",
+            self.model.chi_path, "PONI files (*.poni)")[0]
+        filename = str(filen)
+        if not os.path.exists(filename):
+            return False
+
+        if self._is_same_poni_file(filename, current_poni):
+            self._set_current_poni(current_poni)
+            return False
+
+        for existing_poni in self.get_all_temp_poni():
+            try:
+                os.remove(existing_poni)
+            except OSError:
+                pass
+
+        # Check if the chosen poni file is version 2.1
+        poni_content = read_any_poni_file(filename)
+        if 'poni_version' in poni_content:
+            if poni_content['poni_version'] != 2:
+                output_file = make_converted_poni2_filename(filename)
+                make_poni2_from_poni21(filename, output_file)
+                shutil.move(output_file, temp_dir)
+                filen = extract_filename(output_file) + '.' + \
+                        extract_extension(output_file)
+            else:
+                shutil.copy(filename, temp_dir)
+                filen = extract_filename(filename) + '.' + \
+                        extract_extension(filename)
+        else:
+            shutil.copy(filename, temp_dir)
+            filen = extract_filename(filename) + '.' + \
+                    extract_extension(filename)
+
+        self._apply_poni_change(os.path.join(temp_dir, filen))
+        return True
+
     def get_poni(self):
         """
         Opens a pyFAI calibration file
@@ -465,49 +526,20 @@ class CakeController(object):
         temp_dir = get_temp_dir(
             self.model.get_base_ptn_filename())
         if num_poni == 1:
-            # single poni file in temp folder
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning', self.model.poni + \
-                    ' already exists in TEMP folder.' + \
-                    ' If the file is not correct, delete it in TEMP folder.')
-            self.model.poni = poni_all[0]
-            self.widget.lineEdit_PONI.setText(self.model.poni)
-            if self.model.diff_img_exist():
-                self.produce_cake()
-            self._apply_changes_to_graph()
+            existing_poni = poni_all[0]
+            self._set_current_poni(existing_poni)
+            reply = QtWidgets.QMessageBox.question(
+                self.widget, 'Question',
+                'A PONI file already exists in the folder.\n\n' +
+                existing_poni + '\n\n' +
+                'Do you want to choose a different PONI file?',
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.No)
+            if reply == QtWidgets.QMessageBox.Yes:
+                self._choose_and_store_poni(
+                    temp_dir, current_poni=existing_poni)
         elif num_poni == 0:
-            # no poni file in temp folder
-            filen = QtWidgets.QFileDialog.getOpenFileName(
-                self.widget, "Open a PONI File",
-                self.model.chi_path, "PONI files (*.poni)")[0]
-            filename = str(filen)
-            if os.path.exists(filename):
-                # Check if the chosen poni file is version 2.1
-                poni_content = read_any_poni_file(filename)
-                if 'poni_version' in poni_content:
-                    if poni_content['poni_version'] != 2:
-                        # Call the function to modify the file
-                        output_file = make_converted_poni2_filename(filename)
-                        make_poni2_from_poni21(filename, output_file)
-                        # copy the chose file to temp_dir
-                        shutil.move(output_file, temp_dir)
-                        filen = extract_filename(output_file) + '.' + \
-                                extract_extension(output_file)
-                    else:
-                        shutil.copy(filename, temp_dir)
-                        filen = extract_filename(filename) + '.' + \
-                                extract_extension(filename)
-                else:
-                    # copy the chose file to temp_dir
-                    shutil.copy(filename, temp_dir)
-                    filen = extract_filename(filename) + '.' + \
-                            extract_extension(filename)
-                # set filename to that exists in temp_dir
-                self.model.poni = os.path.join(temp_dir, filen)
-                self.widget.lineEdit_PONI.setText(self.model.poni)
-                if self.model.diff_img_exist():
-                    self.produce_cake()
-                self._apply_changes_to_graph()
+            self._choose_and_store_poni(temp_dir)
         else:
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning',  

@@ -1,7 +1,7 @@
 import os
 from qtpy import QtWidgets
 import numpy as np
-from ..utils import dialog_savefile, writechi
+from ..utils import dialog_savefile, writechi, dialog_openfile_hide_param_dirs
 from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
 
@@ -51,7 +51,7 @@ class CakeAziController(object):
 
     def _load_cake_marker_file(self):
         # get filename
-        filen = QtWidgets.QFileDialog.getOpenFileName(
+        filen = dialog_openfile_hide_param_dirs(
             self.widget, "Open a marker File", self.model.chi_path,
             "Data files (*.marker)")[0]
         if filen == '':

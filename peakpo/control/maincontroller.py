@@ -28,9 +28,9 @@ from .cakeazicontroller import CakeAziController
 from .exportpythoncontroller import ExportPythonController
 from .mapcontroller import MapController
 from .sequencecontroller import SequenceController
-from ..utils import dialog_savefile, writechi, extract_extension, \
-    convert_wl_to_energy, get_sorted_filelist, find_from_filelist, \
-    make_filename, get_directory, get_temp_dir
+from ..utils import dialog_savefile, writechi, convert_wl_to_energy, \
+    get_sorted_filelist, find_from_filelist, make_filename, \
+    get_directory, get_temp_dir
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
 from ..ds_jcpds import UnitCell
@@ -230,8 +230,6 @@ class MainController(object):
         self.widget.pushButton_ExportToUCFit.clicked.connect(
             self.export_to_ucfit)
         """
-        self.widget.pushButton_ImportJlist.clicked.connect(
-            self.load_jlist_from_session)
         self.widget.pushButton_UpdateBackground.clicked.connect(
             self.update_bgsub)
         if hasattr(self.widget, "pushButton_ResetBGParams"):
@@ -735,23 +733,6 @@ class MainController(object):
                 self.seq_ctrl.refresh_roi_overlays()
             except Exception:
                 pass
-
-    def load_jlist_from_session(self):
-        """
-        get existing jlist file from data folder
-        """
-        fn_jlist = QtWidgets.QFileDialog.getOpenFileName(
-            self.widget, "Choose A Session File",
-            self.model.chi_path, "(*.ppss *.dpp)")[0]
-        if fn_jlist == '':
-            return
-        if extract_extension(fn_jlist) == 'ppss':
-            self.session_ctrl._load_ppss(fn_jlist, jlistonly=True)
-        elif extract_extension(fn_jlist) == 'dpp':
-            self.session_ctrl._load_dpp(fn_jlist, jlistonly=True)
-        self.widget.textEdit_Jlist.setText(str(fn_jlist))
-        self.jcpdstable_ctrl.update()
-        self.plot_ctrl.update()
 
     """
     def export_to_ucfit(self):

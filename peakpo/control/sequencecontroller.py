@@ -145,6 +145,7 @@ class SequenceController(object):
             "Select CHI files for sequence",
             self.model.chi_path,
             "CHI files (*.chi)",
+            default_hide_param_dirs=True,
         )
         if not files:
             return

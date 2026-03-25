@@ -19,8 +19,9 @@ from .waterfalltablecontroller import WaterfallTableController
 from .jcpdstablecontroller import JcpdsTableController
 from .peakfittablecontroller import PeakfitTableController
 from .cakemakecontroller import CakemakeController
-from ..utils import dialog_savefile, convert_wl_to_energy, get_temp_dir, \
-    make_filename, extract_filename
+from ..utils import dialog_savefile, dialog_openfile_hide_param_dirs, \
+    dialog_existing_directory_hide_param_dirs, convert_wl_to_energy, \
+    get_temp_dir, make_filename, extract_filename
 from ..compat_pickle import PeakPoCompatDillUnpickler
 from ..model.param_session_io import (
     save_model_to_param,
@@ -65,7 +66,6 @@ class SessionController(object):
             self.widget.pushButton_OpenBackupInfo.clicked.connect(
                 self.open_backup_info)
         self.widget.pushButton_ZipSession.clicked.connect(self.zip_ppss)
-        self.widget.pushButton_SaveJlist.clicked.connect(self.save_dpp)
         self.widget.pushButton_SaveDPPandPPSS.clicked.connect(
             self.save_dpp_ppss)
         self.widget.pushButton_S_SaveSession.clicked.connect(self.save_dpp)
@@ -368,7 +368,7 @@ class SessionController(object):
         """
         get existing jlist file from data folder
         """
-        fn = QtWidgets.QFileDialog.getOpenFileName(
+        fn = dialog_openfile_hide_param_dirs(
             self.widget, "Choose A Session File",
             self.model.chi_path, "(*.ppss)")[0]
 #       replaceing chi_path with '' does not work
@@ -382,7 +382,7 @@ class SessionController(object):
         """
         get existing jlist file from data folder
         """
-        fn = QtWidgets.QFileDialog.getOpenFileName(
+        fn = dialog_openfile_hide_param_dirs(
             self.widget, "Choose A Session File",
             self.model.chi_path,
             "Session files (*.dpp *.chi *peakpo_manifest.json)")[0]
@@ -1182,10 +1182,8 @@ class SessionController(object):
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                 QtWidgets.QMessageBox.Yes)
             if reply == QtWidgets.QMessageBox.Yes:
-                jcpds_path = \
-                    QtWidgets.QFileDialog.getExistingDirectory(
-                        self.widget, "Open Directory", self.model.jcpds_path,
-                        QtWidgets.QFileDialog.ShowDirsOnly)
+                jcpds_path = dialog_existing_directory_hide_param_dirs(
+                    self.widget, "Open Directory", self.model.jcpds_path)
                 self.model.set_jcpds_path(jcpds_path)
                 self.model.set_jcpds_from_ppss()
                 return True
