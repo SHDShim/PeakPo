@@ -4,7 +4,7 @@ include AUTHORS
 include pyproject.toml
 include setup.py
 
-recursive-include peakpo *.py *.mplstyle
+recursive-include peakpo *.py *.mplstyle *.icns *.ico
 exclude peakpo/error.log
 
 prune jupyter-tools

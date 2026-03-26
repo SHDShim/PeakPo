@@ -1,5 +1,6 @@
 from qtpy import QtGui, QtWidgets, QtCore
 import os.path
+import re
 from .fileutils import extract_extension
 
 
@@ -7,6 +8,19 @@ class _HideParamFoldersProxyModel(QtCore.QSortFilterProxyModel):
     def __init__(self, *args, **kwargs):
         super(_HideParamFoldersProxyModel, self).__init__(*args, **kwargs)
         self._hide_param_dirs = True
+
+    @staticmethod
+    def _natural_sort_key(text):
+        parts = re.split(r"(\d+)", str(text or "").lower())
+        key = []
+        for part in parts:
+            if not part:
+                continue
+            if part.isdigit():
+                key.append((0, int(part)))
+            else:
+                key.append((1, part))
+        return tuple(key)
 
     def set_hide_param_dirs(self, hide_param_dirs):
         self._hide_param_dirs = bool(hide_param_dirs)
@@ -33,6 +47,18 @@ class _HideParamFoldersProxyModel(QtCore.QSortFilterProxyModel):
 
         folder_name = str(model.fileName(index) or "")
         return not folder_name.lower().endswith("-param")
+
+    def lessThan(self, left, right):
+        model = self.sourceModel()
+        if (model is not None) and (left.column() == 0) and (right.column() == 0):
+            try:
+                left_name = model.fileName(left)
+                right_name = model.fileName(right)
+            except AttributeError:
+                left_name = left.data(QtCore.Qt.DisplayRole)
+                right_name = right.data(QtCore.Qt.DisplayRole)
+            return self._natural_sort_key(left_name) < self._natural_sort_key(right_name)
+        return super(_HideParamFoldersProxyModel, self).lessThan(left, right)
 
 
 def _attach_hide_param_checkbox(dialog, proxy, default_checked=False):
