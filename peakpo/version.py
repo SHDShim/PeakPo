@@ -4,9 +4,9 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.10.7"
+__version__ = "7.10.7a0"
 """
-7.10.7: fix filechooser sorting issue.
+7.10.7: fix filechooser sorting issue.  fix pressure carry over issue.
 7.10.6: hide -param folders option for file loader.  Export JCPDS to a designated folder.
 7.10.5: UI fixes
 7.10.4: New toolbar

@@ -979,6 +979,18 @@ class MainController(object):
             return
 
     def _capture_nav_carry_state(self):
+        try:
+            self.widget.doubleSpinBox_Pressure.interpretText()
+        except Exception:
+            pass
+        try:
+            self.widget.doubleSpinBox_Temperature.interpretText()
+        except Exception:
+            pass
+        current_pressure = float(self.widget.doubleSpinBox_Pressure.value())
+        current_temperature = float(self.widget.doubleSpinBox_Temperature.value())
+        self.model.save_pressure(current_pressure)
+        self.model.save_temperature(current_temperature)
         source_chi = None
         if self.model.base_ptn_exist():
             source_chi = os.path.basename(self.model.get_base_ptn_filename())
@@ -994,8 +1006,8 @@ class MainController(object):
         return {
             "source_chi": source_chi,
             "jcpds_lst": copy.deepcopy(self.model.jcpds_lst),
-            "pressure": float(self.model.get_saved_pressure()),
-            "temperature": float(self.model.get_saved_temperature()),
+            "pressure": current_pressure,
+            "temperature": current_temperature,
             "cake_z_scale": {
                 "int_max": int(self.widget.spinBox_MaxCakeScale.value()),
                 "min_bar": int(self.widget.horizontalSlider_VMin.value()),
