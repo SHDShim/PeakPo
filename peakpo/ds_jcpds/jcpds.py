@@ -1008,7 +1008,9 @@ class JCPDSplt(JCPDS):
         textout += 'Name: ' + self.name +'\n'
         textout += 'Crystal system: ' + self.symmetry + '\n'
         textout += '\n'
-        textout += 'Values at high P-T after tweak \n'
+        textout += \
+            'Properties at {0:.2f} GPa and {1:.0f} K after tweak\n'.format(
+                pressure, temperature)
         textout += ' a = {0:.5f} A, b = {1:.5f} A, c = {2:.5f} A\n'.\
             format(float(self.a), float(self.b), float(self.c))
         textout += ' alpha = {0:.2f}, beta = {1:.2f}, gamma = {2:.2f}\n'.\
@@ -1016,7 +1018,7 @@ class JCPDSplt(JCPDS):
         textout += ' V = {0:.5f} A^3\n'.format(float(self.v))
         textout += '\n'
         if self.symmetry != 'nosymmetry':
-            textout += 'Values at 1 bar and 300 K after tweak \n'
+            textout += 'Properties at 1 bar and 300 K after tweak\n'
             a0_twk, b0_twk, c0_twk = get_cell_prm_twk(
                 self.symmetry, self.v0, self.a0, self.b0, self.c0,
                 self.alpha0, self.beta0, self.gamma0, self.twk_b_a, self.twk_c_a)
@@ -1030,7 +1032,7 @@ class JCPDSplt(JCPDS):
             textout += ' Tweak for b/a = {0:.5f}, Tweak for c/a = {1:.5f}\n'.\
                 format(self.twk_b_a, self.twk_c_a)
             textout += '\n'
-            textout += 'Values in original JCPDS file\n'
+            textout += 'Properties in original JCPDS file\n'
             textout += ' a0 = {0:.5f} A, b0 = {1:.5f} A, c0 = {2:.5f} A\n'.\
                 format(self.a0, self.b0, self.c0)
             textout += ' alpha0 = {0:.2f}, beta0 = {1:.2f}, gamma0 = {2:.2f}\n'.\

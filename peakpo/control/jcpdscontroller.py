@@ -1,5 +1,6 @@
 import os
 import copy
+import html
 import numpy as np
 from qtpy import QtWidgets
 from qtpy import QtCore
@@ -17,6 +18,11 @@ import datetime
 
 
 class JcpdsController(object):
+    JCPDS_HEADING_PREFIXES = (
+        "Properties at ",
+        "Properties in original JCPDS file",
+    )
+
 
     def __init__(self, model, widget):
         self.model = model
@@ -415,10 +421,32 @@ class JcpdsController(object):
                 self.widget.doubleSpinBox_Pressure.value(),
                 self.widget.doubleSpinBox_Temperature.value())
             infobox = InformationBox()
-            infobox.setText(textoutput)
+            infobox.text_lbl.setTextFormat(QtCore.Qt.RichText)
+            infobox.setText(self._format_jcpds_textoutput_html(textoutput))
             print(str(datetime.datetime.now())[:-7], 
                 ": Show JCPDS \n", textoutput)
             infobox.exec()
+
+    def _format_jcpds_textoutput_html(self, textoutput):
+        lines = textoutput.splitlines()
+        html_lines = []
+        for line in lines:
+            escaped_line = html.escape(line)
+            if line.startswith(self.JCPDS_HEADING_PREFIXES):
+                escaped_line = (
+                    '<span style="color:#0b5ed7; font-weight:700; '
+                    'background-color:#eaf2ff;">'
+                    f'{escaped_line}</span>'
+                )
+            html_lines.append(escaped_line if escaped_line else '&nbsp;')
+
+        return (
+            '<div style="font-family: Menlo, Monaco, Consolas, '
+            '\'Courier New\', monospace; white-space: pre-wrap; '
+            'line-height: 1.35;">'
+            + '<br>'.join(html_lines) +
+            '</div>'
+        )
 
     def write_twk_jcpds(self):
         if not self.model.jcpds_exist():
