@@ -68,6 +68,9 @@ htmlcov/
 *.bak
 *.orig
 
+# Obsolete local helper scripts
+scripts/
+
 # Generated notebook outputs
 *.html
 *.nb.html
