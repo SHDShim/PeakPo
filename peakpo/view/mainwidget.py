@@ -159,6 +159,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._rebuild_top_left_toolbar()
         self._spread_primary_controls_evenly()
         self._spread_top_toolbar_even()
+        self._apply_compact_clarity_labels()
+        self._setup_compact_help_statusbar()
         if hasattr(self, "pushButton_S_Zoom"):
             self.pushButton_S_Zoom.setText("⤢")
             self.pushButton_S_Zoom.setToolTip("Fit X/Y to data (zoom out)")
@@ -193,13 +195,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.gridLayout_2.removeWidget(self.pushButton_ViewJCPDS)
                 self.gridLayout_2.addWidget(self.pushButton_ViewJCPDS, 0, 6, 1, 1)
         if hasattr(self, "checkBox_BgSub"):
-            self.checkBox_BgSub.setText("Bg")
+            self.checkBox_BgSub.setText("BG sub")
             self.checkBox_BgSub.setToolTip("Subtract background from 1D pattern")
         if hasattr(self, "checkBox_LongCursor"):
-            self.checkBox_LongCursor.setText("V cur")
+            self.checkBox_LongCursor.setText("V cursor")
             self.checkBox_LongCursor.setToolTip("Change cursor to a vertical bar")
         if hasattr(self, "checkBox_AutoY"):
-            self.checkBox_AutoY.setText("Y auto")
+            self.checkBox_AutoY.setText("Auto Y")
         if hasattr(self, "pushButton_AddRemoveFromMouse"):
             self.pushButton_AddRemoveFromMouse.setVisible(False)
         if hasattr(self, "pushButton_MapSetRoi"):
@@ -564,6 +566,145 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Put title controls near the top of Plot > Config.
         self.verticalLayout_PlotConfig.insertWidget(0, self.groupBox_TitleConfig)
+
+    def _apply_compact_clarity_labels(self):
+        if hasattr(self, "groupBox_34"):
+            self.groupBox_34.setTitle("Layers")
+        if hasattr(self, "groupBox_20"):
+            self.groupBox_20.setTitle("JCPDS guides")
+        if hasattr(self, "groupBox_16"):
+            self.groupBox_16.setTitle("Appearance")
+        if hasattr(self, "groupBox_24"):
+            self.groupBox_24.setTitle("Line widths")
+        if hasattr(self, "groupBox_13"):
+            self.groupBox_13.setTitle("Text")
+        if hasattr(self, "groupBox_27"):
+            self.groupBox_27.setTitle("Mouse")
+        if hasattr(self, "groupBox"):
+            self.groupBox.setTitle("Pressure / Temperature")
+        if hasattr(self, "groupBox_8"):
+            self.groupBox_8.setTitle("JCPDS list")
+        if hasattr(self, "groupBox_NavCarry"):
+            self.groupBox_NavCarry.setTitle("CHI carry-over")
+
+        if hasattr(self, "checkBox_JCPDSinPattern"):
+            self.checkBox_JCPDSinPattern.setText("JCPDS 1D")
+        if hasattr(self, "checkBox_JCPDSinCake"):
+            self.checkBox_JCPDSinCake.setText("JCPDS 2D")
+        if hasattr(self, "checkBox_Intensity"):
+            self.checkBox_Intensity.setText("Scale by I")
+        if hasattr(self, "checkBox_ShowMillerIndices"):
+            self.checkBox_ShowMillerIndices.setText("HKL 1D")
+        if hasattr(self, "checkBox_ShowMillerIndices_Cake"):
+            self.checkBox_ShowMillerIndices_Cake.setText("HKL 2D")
+        if hasattr(self, "checkBox_ShowLargePnT"):
+            self.checkBox_ShowLargePnT.setText("P/T label")
+        if hasattr(self, "checkBox_ShowCakeLabels"):
+            self.checkBox_ShowCakeLabels.setText("2D labels")
+        if hasattr(self, "checkBox_ShowWaterfallLabels"):
+            self.checkBox_ShowWaterfallLabels.setText("Wfall labels")
+        if hasattr(self, "label_27"):
+            self.label_27.setText("Height")
+        if hasattr(self, "label_28"):
+            self.label_28.setText("Offset")
+
+        if hasattr(self, "tabWidget"):
+            for name, label in (
+                ("tab_Main", "File"),
+                ("tab_JCPDSList2", "JCPDS"),
+                ("tab_Plot", "View"),
+                ("tab_Bkgn", "1D"),
+                ("tab_Cake1", "Cake"),
+                ("tab_Diff", "Compare"),
+                ("tab_Map", "Map"),
+                ("tab_Seq", "Sequence"),
+                ("tab_PkFt", "Fit"),
+            ):
+                if not hasattr(self, name):
+                    continue
+                idx = self.tabWidget.indexOf(getattr(self, name))
+                if idx >= 0:
+                    self.tabWidget.setTabText(idx, label)
+                    self.tabWidget.setTabToolTip(idx, label)
+
+    def _setup_compact_help_statusbar(self):
+        self._compact_help_default = "Hover a compact control to see details."
+        self._compact_help_widgets = {}
+        self.statusBar().showMessage(self._compact_help_default)
+
+        def register(widget, message):
+            if widget is None:
+                return
+            self._compact_help_widgets[widget] = message
+            widget.setToolTip(message)
+            if hasattr(widget, "setStatusTip"):
+                widget.setStatusTip(message)
+            widget.installEventFilter(self)
+
+        register(getattr(self, "pushButton_S_PrevBasePtn", None),
+                 "Open the previous diffraction file.")
+        register(getattr(self, "pushButton_AddBasePtn", None),
+                 "Add the current diffraction file to the waterfall list.")
+        register(getattr(self, "pushButton_S_NextBasePtn", None),
+                 "Open the next diffraction file.")
+        register(getattr(self, "pushButton_NewBasePtn", None),
+                 "Open a CHI diffraction file.")
+        register(getattr(self, "pushButton_LoadDPP", None),
+                 "Load a saved PeakPo session from DPP/PARAM data.")
+        register(getattr(self, "checkBox_Diff", None),
+                 "Turn on Diff mode for pattern comparison tools.")
+        register(getattr(self, "checkBox_ShowCake", None),
+                 "Show or hide the 2D cake image.")
+        register(getattr(self, "checkBox_BgSub", None),
+                 "Subtract the fitted background from the 1D pattern.")
+        register(getattr(self, "checkBox_AutoY", None),
+                 "Automatically rescale the Y axis after updates.")
+        register(getattr(self, "checkBox_LongCursor", None),
+                 "Use a full-height vertical cursor on the plot.")
+        register(getattr(self, "pushButton_MouseModeZoom", None),
+                 "Mouse mode: drag to zoom the plot.")
+        register(getattr(self, "pushButton_MouseModeROI", None),
+                 "Mouse mode: draw a region of interest.")
+        register(getattr(self, "pushButton_MouseModePeakPick", None),
+                 "Mouse mode: add or remove peak markers.")
+        register(getattr(self, "pushButton_MouseModeJCPDS", None),
+                 "Mouse mode: inspect the nearest JCPDS line.")
+        register(getattr(self, "pushButton_S_PIncrease", None),
+                 "Increase pressure by the current pressure step.")
+        register(getattr(self, "pushButton_S_PDecrease", None),
+                 "Decrease pressure by the current pressure step.")
+        register(getattr(self, "pushButton_S_TIncrease", None),
+                 "Increase temperature by the current temperature step.")
+        register(getattr(self, "pushButton_S_RoomT", None),
+                 "Reset temperature to 300 K.")
+        register(getattr(self, "pushButton_S_TDecrease", None),
+                 "Decrease temperature by the current temperature step.")
+        register(getattr(self, "checkBox_JCPDSinPattern", None),
+                 "Show JCPDS reference lines in the 1D pattern.")
+        register(getattr(self, "checkBox_JCPDSinCake", None),
+                 "Show JCPDS reference lines in the 2D cake image.")
+        register(getattr(self, "checkBox_Intensity", None),
+                 "Scale JCPDS guide heights by relative intensity.")
+        register(getattr(self, "checkBox_ShowMillerIndices", None),
+                 "Show Miller indices on the 1D pattern guides.")
+        register(getattr(self, "checkBox_ShowMillerIndices_Cake", None),
+                 "Show Miller indices on the 2D cake guides.")
+        register(getattr(self, "checkBox_ShowLargePnT", None),
+                 "Show the pressure and temperature label on the plot.")
+        register(getattr(self, "checkBox_ShowWaterfall", None),
+                 "Show stacked waterfall patterns on the plot.")
+        register(getattr(self, "checkBox_ShowWaterfallLabels", None),
+                 "Show file labels next to waterfall patterns.")
+        register(getattr(self, "pushButton_ExportPythonView", None),
+                 "Export the current view with reproducible Python, PDF, and PNG outputs.")
+
+    def eventFilter(self, obj, event):
+        if hasattr(self, "_compact_help_widgets") and obj in self._compact_help_widgets:
+            if event.type() in (QtCore.QEvent.Type.Enter, QtCore.QEvent.Type.FocusIn):
+                self.statusBar().showMessage(self._compact_help_widgets[obj])
+            elif event.type() in (QtCore.QEvent.Type.Leave, QtCore.QEvent.Type.FocusOut):
+                self.statusBar().showMessage(self._compact_help_default)
+        return super().eventFilter(obj, event)
 
     def _setup_plot_setup_group(self):
         if not hasattr(self, "gridLayout_7"):
@@ -1011,6 +1152,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 getattr(self, "pushButton_AddBasePtn", None),
                 getattr(self, "pushButton_S_NextBasePtn", None),
             ):
+                if widget == getattr(self, "pushButton_S_PrevBasePtn", None):
+                    widget.setText("Prev")
+                elif widget == getattr(self, "pushButton_AddBasePtn", None):
+                    widget.setText("Wfall+")
+                elif widget == getattr(self, "pushButton_S_NextBasePtn", None):
+                    widget.setText("Next")
                 self._set_flat_toolbar_button_style(widget, compact=True)
                 widget.setMinimumWidth(84)
                 widget.setMaximumWidth(16777215)
@@ -1057,6 +1204,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             widget.show()
             widget.setMinimumHeight(28)
             widget.setMaximumHeight(28)
+            if widget == getattr(self, "pushButton_S_PIncrease", None):
+                widget.setText("P +")
+            elif widget == getattr(self, "pushButton_S_PDecrease", None):
+                widget.setText("P -")
+            elif widget == getattr(self, "pushButton_S_TIncrease", None):
+                widget.setText("T +")
+            elif widget == getattr(self, "pushButton_S_RoomT", None):
+                widget.setText("300 K")
+            elif widget == getattr(self, "pushButton_S_TDecrease", None):
+                widget.setText("T -")
             self._set_flat_toolbar_button_style(widget, compact=True)
             widget.setMinimumWidth(0)
             widget.setMaximumWidth(16777215)
@@ -1789,7 +1946,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_ExportPythonView.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.pushButton_ExportPythonView.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        self.pushButton_ExportPythonView.setText("Export to PY, PDF, PNG")
+        self.pushButton_ExportPythonView.setText("Export view")
         self.pushButton_ExportPythonView.setToolTip(
             "Export current on-screen view as a Python reproducible package with PDF and PNG previews")
         self.horizontalLayout_PythonExport.addWidget(self.pushButton_ExportPythonView, 1)
