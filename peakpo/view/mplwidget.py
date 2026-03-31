@@ -130,8 +130,28 @@ class MplWidget(QtWidgets.QWidget):
         self.control_layout.setContentsMargins(8, 6, 8, 6)
         self.control_layout.setSpacing(8)
         self.control_bar.hide()
+        self.footer_bar = QtWidgets.QFrame(self)
+        self.footer_bar.setObjectName("plotFooterBar")
+        self.footer_bar.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.footer_layout = QtWidgets.QHBoxLayout(self.footer_bar)
+        self.footer_layout.setContentsMargins(0, 4, 0, 0)
+        self.footer_layout.setSpacing(8)
+        self.footer_left = QtWidgets.QLabel("", self.footer_bar)
+        self.footer_left.setObjectName("plotFooterLeft")
+        self.footer_left.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        self.footer_left.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.footer_right = QtWidgets.QLabel("", self.footer_bar)
+        self.footer_right.setObjectName("plotFooterRight")
+        self.footer_right.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        self.footer_right.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.footer_layout.addWidget(self.footer_left, 1)
+        self.footer_layout.addWidget(self.footer_right, 1)
+        self.footer_bar.hide()
         self.vbl.addWidget(self.control_bar)
         self.vbl.addWidget(self.canvas)
+        self.vbl.addWidget(self.footer_bar)
         self.setLayout(self.vbl)
         self.ntb.hide()
         self._shutdown_done = False
@@ -151,6 +171,9 @@ class MplWidget(QtWidgets.QWidget):
             return
         self.control_layout.insertWidget(index, widget, stretch)
         self.control_bar.show()
+
+    def show_footer(self):
+        self.footer_bar.show()
 
     def shutdown(self):
         if self._shutdown_done:

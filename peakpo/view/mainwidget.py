@@ -171,6 +171,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.pushButton_S_Zoom.setMaximumWidth(42)
         if hasattr(self, "pushButton_NewBasePtn"):
             self.pushButton_NewBasePtn.setText("Open")
+        if hasattr(self, "pushButton_LoadDPP"):
+            self.pushButton_LoadDPP.setText("Save")
         if hasattr(self, "pushButton_savePeakPos"):
             self.pushButton_savePeakPos.setText("Sort")
             self.pushButton_savePeakPos.setToolTip(
@@ -312,7 +314,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 (not hasattr(self, "verticalLayout_31")):
             return
         self.groupBox_NavCarry = QtWidgets.QGroupBox(
-            "CHI Navigation Carry-over", self.scrollAreaWidgetContents_2)
+            "Keep these settings for the next file", self.scrollAreaWidgetContents_2)
         self.groupBox_NavCarry.setObjectName("groupBox_NavCarry")
         self.groupBox_NavCarry.setSizePolicy(
             QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
@@ -569,23 +571,27 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _apply_compact_clarity_labels(self):
         if hasattr(self, "groupBox_34"):
-            self.groupBox_34.setTitle("Layers")
+            self.groupBox_34.setTitle("What to show")
         if hasattr(self, "groupBox_20"):
             self.groupBox_20.setTitle("JCPDS guides")
         if hasattr(self, "groupBox_16"):
-            self.groupBox_16.setTitle("Appearance")
+            self.groupBox_16.setTitle("Plot appearance")
         if hasattr(self, "groupBox_24"):
-            self.groupBox_24.setTitle("Line widths")
+            self.groupBox_24.setTitle("Line width")
         if hasattr(self, "groupBox_13"):
-            self.groupBox_13.setTitle("Text")
+            self.groupBox_13.setTitle("Label text")
         if hasattr(self, "groupBox_27"):
-            self.groupBox_27.setTitle("Mouse")
+            self.groupBox_27.setTitle("Mouse tools")
         if hasattr(self, "groupBox"):
-            self.groupBox.setTitle("Pressure / Temperature")
+            self.groupBox.setTitle("Pressure and temperature")
         if hasattr(self, "groupBox_8"):
-            self.groupBox_8.setTitle("JCPDS list")
+            self.groupBox_8.setTitle("Reference list")
         if hasattr(self, "groupBox_NavCarry"):
-            self.groupBox_NavCarry.setTitle("CHI carry-over")
+            self.groupBox_NavCarry.setTitle("Keep these settings for the next file")
+        if hasattr(self, "checkBox_CarryNavCakeZScale"):
+            self.checkBox_CarryNavCakeZScale.setText("2D image scale")
+        if hasattr(self, "checkBox_CarryNavFits"):
+            self.checkBox_CarryNavFits.setText("Fitting results")
 
         if hasattr(self, "checkBox_JCPDSinPattern"):
             self.checkBox_JCPDSinPattern.setText("JCPDS 1D")
@@ -598,11 +604,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(self, "checkBox_ShowMillerIndices_Cake"):
             self.checkBox_ShowMillerIndices_Cake.setText("HKL 2D")
         if hasattr(self, "checkBox_ShowLargePnT"):
-            self.checkBox_ShowLargePnT.setText("P/T label")
+            self.checkBox_ShowLargePnT.setText("Pressure/temp")
         if hasattr(self, "checkBox_ShowCakeLabels"):
-            self.checkBox_ShowCakeLabels.setText("2D labels")
+            self.checkBox_ShowCakeLabels.setText("Cake labels")
         if hasattr(self, "checkBox_ShowWaterfallLabels"):
-            self.checkBox_ShowWaterfallLabels.setText("Wfall labels")
+            self.checkBox_ShowWaterfallLabels.setText("Stack labels")
         if hasattr(self, "label_27"):
             self.label_27.setText("Height")
         if hasattr(self, "label_28"):
@@ -612,13 +618,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             for name, label in (
                 ("tab_Main", "File"),
                 ("tab_JCPDSList2", "JCPDS"),
-                ("tab_Plot", "View"),
-                ("tab_Bkgn", "1D"),
+                ("tab_Plot", "Display"),
+                ("tab_Bkgn", "Pattern"),
                 ("tab_Cake1", "Cake"),
                 ("tab_Diff", "Compare"),
                 ("tab_Map", "Map"),
                 ("tab_Seq", "Sequence"),
-                ("tab_PkFt", "Fit"),
+                ("tab_PkFt", "Fitting"),
             ):
                 if not hasattr(self, name):
                     continue
@@ -630,7 +636,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _setup_compact_help_statusbar(self):
         self._compact_help_default = "Hover a compact control to see details."
         self._compact_help_widgets = {}
-        self.statusBar().showMessage(self._compact_help_default)
+        if hasattr(self, "label_PlotHelp"):
+            self.label_PlotHelp.setText(self._compact_help_default)
 
         def register(widget, message):
             if widget is None:
@@ -650,7 +657,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         register(getattr(self, "pushButton_NewBasePtn", None),
                  "Open a CHI diffraction file.")
         register(getattr(self, "pushButton_LoadDPP", None),
-                 "Load a saved PeakPo session from DPP/PARAM data.")
+                 "Open a saved PeakPo session from DPP/PARAM data.")
         register(getattr(self, "checkBox_Diff", None),
                  "Turn on Diff mode for pattern comparison tools.")
         register(getattr(self, "checkBox_ShowCake", None),
@@ -684,7 +691,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         register(getattr(self, "checkBox_JCPDSinCake", None),
                  "Show JCPDS reference lines in the 2D cake image.")
         register(getattr(self, "checkBox_Intensity", None),
-                 "Scale JCPDS guide heights by relative intensity.")
+                 "Make reference guide heights follow relative peak intensity.")
         register(getattr(self, "checkBox_ShowMillerIndices", None),
                  "Show Miller indices on the 1D pattern guides.")
         register(getattr(self, "checkBox_ShowMillerIndices_Cake", None),
@@ -701,9 +708,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def eventFilter(self, obj, event):
         if hasattr(self, "_compact_help_widgets") and obj in self._compact_help_widgets:
             if event.type() in (QtCore.QEvent.Type.Enter, QtCore.QEvent.Type.FocusIn):
-                self.statusBar().showMessage(self._compact_help_widgets[obj])
+                if hasattr(self, "label_PlotHelp"):
+                    self.label_PlotHelp.setText(self._compact_help_widgets[obj])
             elif event.type() in (QtCore.QEvent.Type.Leave, QtCore.QEvent.Type.FocusOut):
-                self.statusBar().showMessage(self._compact_help_default)
+                if hasattr(self, "label_PlotHelp"):
+                    self.label_PlotHelp.setText(self._compact_help_default)
         return super().eventFilter(obj, event)
 
     def _setup_plot_setup_group(self):
@@ -1040,18 +1049,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.layout_MouseModeGroup = QtWidgets.QHBoxLayout(self.frame_MouseModeGroup)
         self.layout_MouseModeGroup.setContentsMargins(0, 0, 0, 0)
         self.layout_MouseModeGroup.setSpacing(0)
-        self.label_CursorPosition = QtWidgets.QLabel("", self.mpl.control_bar)
+        self.label_CursorPosition = QtWidgets.QLabel("", self.mpl.footer_bar)
         self.label_CursorPosition.setObjectName("label_CursorPosition")
         self.label_CursorPosition.setMinimumHeight(25)
         self.label_CursorPosition.setAlignment(
-            QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+            QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         self.label_CursorPosition.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.label_PlotHelp = QtWidgets.QLabel("", self.mpl.footer_bar)
+        self.label_PlotHelp.setObjectName("label_PlotHelp")
+        self.label_PlotHelp.setMinimumHeight(25)
+        self.label_PlotHelp.setAlignment(
+            QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        self.label_PlotHelp.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         widgets = [
             getattr(self, "checkBox_ShowCake", None),
             getattr(self, "checkBox_BgSub", None),
             getattr(self, "checkBox_AutoY", None),
             getattr(self, "checkBox_LongCursor", None),
+            getattr(self, "checkBox_Diff", None),
         ]
         for widget in widgets:
             if widget is None:
@@ -1062,6 +1079,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 getattr(self, "checkBox_LongCursor", None),
                 getattr(self, "checkBox_ShowCake", None),
                 getattr(self, "checkBox_BgSub", None),
+                getattr(self, "checkBox_Diff", None),
             ):
                 widget.setSizePolicy(
                     QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
@@ -1096,8 +1114,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         insert_index = 0
         self.mpl.insert_control_widget(insert_index, self.frame_MouseModeGroup)
-        self.mpl.add_control_stretch(1)
-        self.mpl.add_control_widget(self.label_CursorPosition, 1)
+        self.mpl.footer_left.setParent(None)
+        self.mpl.footer_right.setParent(None)
+        self.mpl.footer_layout.addWidget(self.label_CursorPosition, 1)
+        self.mpl.footer_layout.addWidget(self.label_PlotHelp, 1)
+        self.mpl.show_footer()
 
     def _rebuild_top_left_toolbar(self):
         if (not hasattr(self, "frame_9")) or (not hasattr(self, "frame_2")):
@@ -1138,7 +1159,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             getattr(self, "pushButton_S_NextBasePtn", None),
             getattr(self, "pushButton_NewBasePtn", None),
             getattr(self, "pushButton_LoadDPP", None),
-            getattr(self, "checkBox_Diff", None),
         ]
         for widget in row1_widgets:
             if widget is None:

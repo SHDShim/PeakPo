@@ -319,7 +319,7 @@ class JcpdsTableController(object):
                     row, self.COL_ALPHA, self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
                     setKeyboardTracking(False)
-            self._set_row_locked_state(row, row_locked)
+            self._apply_row_interaction_state(row)
         
         self.widget.tableWidget_JCPDS.resizeColumnsToContents()
         # Disconnect all previous connections to avoid multiple dialogs
@@ -365,11 +365,12 @@ class JcpdsTableController(object):
                 self.model.jcpds_lst[idx].display = True
             elif item.checkState() == QtCore.Qt.Unchecked:
                 self.model.jcpds_lst[idx].display = False
+            self._apply_row_interaction_state(idx)
             self._apply_changes_to_graph()
         elif item.column() == self.COL_LOCK:
             is_locked = (item.checkState() == QtCore.Qt.Checked)
             self.model.jcpds_lst[idx]._pkpo_locked = bool(is_locked)
-            self._set_row_locked_state(idx, is_locked)
+            self._apply_row_interaction_state(idx)
         
         # Handle color clicks
         elif item.column() == self.COL_COLOR:
@@ -382,8 +383,11 @@ class JcpdsTableController(object):
                 self.model.jcpds_lst[idx].color = str(color.name())
                 self._apply_changes_to_graph()
 
-    def _set_row_locked_state(self, row, locked):
+    def _apply_row_interaction_state(self, row):
         table = self.widget.tableWidget_JCPDS
+        phase = self.model.jcpds_lst[row]
+        locked = bool(getattr(phase, "_pkpo_locked", False))
+        allow_tweaks = bool(phase.display) and (not locked)
         color_item = table.item(row, self.COL_COLOR)
         if color_item is not None:
             if locked:
@@ -394,7 +398,7 @@ class JcpdsTableController(object):
         for col in range(self.COL_V0, self.COL_ALPHA + 1):
             box = table.cellWidget(row, col)
             if box is not None:
-                box.setEnabled(not locked)
+                box.setEnabled(allow_tweaks)
             item = table.item(row, col)
             if item is not None:
                 if locked:
