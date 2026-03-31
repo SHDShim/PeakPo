@@ -1,5 +1,5 @@
 import os
-from qtpy import QtCore, QtWidgets
+from qtpy import QtCore, QtGui, QtWidgets
 from .qtd import Ui_MainWindow
 from .cakehistwidget import CakeHistogramWidget
 from ..utils import SpinBoxFixStyle, align_all_spinboxes_right
@@ -9,6 +9,96 @@ from ..utils import InformationBox
 # exec(open(os.path.join(os.path.curdir, 'version.py')).read())
 # exec(open(os.path.join(os.path.curdir, 'citation.py')).read())
 
+
+class WheelCenterButton(QtWidgets.QPushButton):
+    def __init__(self, text="", parent=None):
+        super().__init__(text, parent)
+        self.setCursor(QtCore.Qt.SizeVerCursor)
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setFlat(True)
+        self.setAutoDefault(False)
+        self.setDefault(False)
+        self.setMinimumSize(64, 32)
+
+    def sizeHint(self):
+        return QtCore.QSize(72, 32)
+
+    def _groove_pitch(self):
+        return max(4.0, (self.height() - 6) / 5.0)
+
+    def paintEvent(self, event):
+        del event
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+
+        outer = QtCore.QRectF(self.rect()).adjusted(1, 1, -1, -1)
+        fill = QtGui.QLinearGradient(0, outer.top(), 0, outer.bottom())
+        fill.setColorAt(0.0, QtGui.QColor("#4c4c4c"))
+        fill.setColorAt(0.08, QtGui.QColor("#656565"))
+        fill.setColorAt(0.18, QtGui.QColor("#787878"))
+        fill.setColorAt(0.50, QtGui.QColor("#6a6a6a"))
+        fill.setColorAt(0.82, QtGui.QColor("#787878"))
+        fill.setColorAt(0.92, QtGui.QColor("#656565"))
+        fill.setColorAt(1.0, QtGui.QColor("#4c4c4c"))
+        if self.isDown():
+            fill.setColorAt(0.0, QtGui.QColor("#464646"))
+            fill.setColorAt(0.18, QtGui.QColor("#6d6d6d"))
+            fill.setColorAt(0.50, QtGui.QColor("#5f5f5f"))
+            fill.setColorAt(0.82, QtGui.QColor("#6d6d6d"))
+            fill.setColorAt(1.0, QtGui.QColor("#464646"))
+        elif self.underMouse():
+            fill.setColorAt(0.0, QtGui.QColor("#565656"))
+            fill.setColorAt(0.18, QtGui.QColor("#848484"))
+            fill.setColorAt(0.50, QtGui.QColor("#747474"))
+            fill.setColorAt(0.82, QtGui.QColor("#848484"))
+            fill.setColorAt(1.0, QtGui.QColor("#565656"))
+        painter.fillRect(outer, fill)
+        painter.setPen(QtGui.QPen(QtGui.QColor("#171717"), 1))
+        painter.drawRect(outer)
+
+        groove_area = outer.adjusted(1, 2, -1, -2)
+        groove_height = self._groove_pitch()
+        start_top = groove_area.top()
+        painter.save()
+        painter.setClipRect(groove_area)
+        top = start_top
+        while top < groove_area.bottom() + groove_height:
+            groove_rect = QtCore.QRectF(
+                groove_area.left(),
+                top,
+                groove_area.width(),
+                groove_height - 1,
+            )
+            groove_fill = QtGui.QLinearGradient(0, groove_rect.top(), 0, groove_rect.bottom())
+            groove_fill.setColorAt(0.0, QtGui.QColor(48, 48, 48, 170))
+            groove_fill.setColorAt(0.22, QtGui.QColor(132, 132, 132, 120))
+            groove_fill.setColorAt(0.52, QtGui.QColor(110, 110, 110, 90))
+            groove_fill.setColorAt(1.0, QtGui.QColor(46, 46, 46, 160))
+            painter.fillRect(groove_rect, groove_fill)
+            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255, 24), 1))
+            painter.drawLine(
+                QtCore.QPointF(groove_rect.left(), groove_rect.top()),
+                QtCore.QPointF(groove_rect.right(), groove_rect.top()),
+            )
+            painter.setPen(QtGui.QPen(QtGui.QColor(28, 28, 28, 100), 1))
+            painter.drawLine(
+                QtCore.QPointF(groove_rect.left(), groove_rect.bottom()),
+                QtCore.QPointF(groove_rect.right(), groove_rect.bottom()),
+            )
+            top += groove_height
+        painter.restore()
+
+        painter.setPen(QtGui.QColor("#111111"))
+        font = painter.font()
+        font.setPointSize(14)
+        font.setBold(True)
+        painter.setFont(font)
+        painter.drawText(outer, QtCore.Qt.AlignCenter, self.text())
+
+        if self.hasFocus():
+            focus_pen = QtGui.QPen(QtGui.QColor("#7bb8ff"), 1)
+            painter.setPen(focus_pen)
+            painter.drawRect(outer.adjusted(1, 1, -1, -1))
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     """
@@ -131,6 +221,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                          'hexagonal', 'orthorhombic'])
         self.comboBox_Symmetry.setCurrentText('cubic')
         self._setup_plot_subtabs()
+        self._setup_pressure_temperature_grid()
         self._setup_light_background_checkbox()
         self._setup_jcpds_bars_layout()
         self._setup_title_config_group()
@@ -159,6 +250,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._rebuild_top_left_toolbar()
         self._spread_primary_controls_evenly()
         self._spread_top_toolbar_even()
+        self._setup_quick_pt_wheel_controls()
         self._apply_compact_clarity_labels()
         self._setup_compact_help_statusbar()
         if hasattr(self, "pushButton_S_Zoom"):
@@ -173,6 +265,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.pushButton_NewBasePtn.setText("Open")
         if hasattr(self, "pushButton_LoadDPP"):
             self.pushButton_LoadDPP.setText("Save")
+        if hasattr(self, "pushButton_S_PIncrease"):
+            self.pushButton_S_PIncrease.setMinimumWidth(56)
+            self.pushButton_S_PIncrease.setMaximumWidth(16777215)
+        if hasattr(self, "pushButton_S_PDecrease"):
+            self.pushButton_S_PDecrease.setMinimumWidth(56)
+            self.pushButton_S_PDecrease.setMaximumWidth(16777215)
+        if hasattr(self, "pushButton_S_PScroll"):
+            self.pushButton_S_PScroll.setMinimumWidth(72)
+            self.pushButton_S_PScroll.setMaximumWidth(160)
+        if hasattr(self, "pushButton_S_TIncrease"):
+            self.pushButton_S_TIncrease.setMinimumWidth(56)
+            self.pushButton_S_TIncrease.setMaximumWidth(16777215)
+        if hasattr(self, "pushButton_S_TDecrease"):
+            self.pushButton_S_TDecrease.setMinimumWidth(56)
+            self.pushButton_S_TDecrease.setMaximumWidth(16777215)
+        if hasattr(self, "pushButton_S_TScroll"):
+            self.pushButton_S_TScroll.setMinimumWidth(72)
+            self.pushButton_S_TScroll.setMaximumWidth(160)
+        if hasattr(self, "pushButton_S_RoomT") and hasattr(self, "doubleSpinBox_Temperature"):
+            target_width = self.pushButton_S_RoomT.sizeHint().width() + 8
+            self.pushButton_S_RoomT.setMinimumWidth(target_width)
+            self.pushButton_S_RoomT.setMaximumWidth(target_width)
         if hasattr(self, "pushButton_savePeakPos"):
             self.pushButton_savePeakPos.setText("Sort")
             self.pushButton_savePeakPos.setToolTip(
@@ -329,7 +443,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.checkBox_CarryNavBackground = QtWidgets.QCheckBox("Background")
         self.checkBox_CarryNavWaterfall = QtWidgets.QCheckBox("Waterfall list")
         self.checkBox_CarryNavPONI = QtWidgets.QCheckBox("PONI")
-        self.checkBox_CarryNavFits = QtWidgets.QCheckBox("Fits information")
+        self.checkBox_CarryNavFits = QtWidgets.QCheckBox("Fitting results")
 
         # Default non-carry-over categories:
         # backup, cake z scale, background, poni, fits
@@ -467,6 +581,82 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.verticalLayout_PlotConfig.addWidget(self.groupBox_27)
         self.verticalLayout_PlotConfig.addStretch(1)
 
+    def _setup_pressure_temperature_grid(self):
+        required = (
+            "groupBox", "gridLayout_10", "frame_16", "frame_17",
+            "doubleSpinBox_Pressure", "pushButton_1bar", "doubleSpinBox_PStep",
+            "pushButton_SetPStepTo1", "pushButton_SetPStepTo10",
+            "doubleSpinBox_Temperature", "pushButton_RoomT", "spinBox_TStep",
+            "pushButton_SetTStepTo100", "pushButton_SetTStepTo1000",
+        )
+        if not all(hasattr(self, name) for name in required):
+            return
+        if hasattr(self, "frame_PTGrid"):
+            return
+
+        self.frame_16.hide()
+        self.frame_17.hide()
+        self.gridLayout_10.removeWidget(self.frame_16)
+        self.gridLayout_10.removeWidget(self.frame_17)
+
+        self.frame_PTGrid = QtWidgets.QFrame(self.groupBox)
+        self.frame_PTGrid.setObjectName("frame_PTGrid")
+        self.frame_PTGrid.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.gridLayout_PTGrid = QtWidgets.QGridLayout(self.frame_PTGrid)
+        self.gridLayout_PTGrid.setContentsMargins(12, 12, 12, 12)
+        self.gridLayout_PTGrid.setHorizontalSpacing(14)
+        self.gridLayout_PTGrid.setVerticalSpacing(14)
+
+        rows = [
+            [
+                self.doubleSpinBox_Pressure,
+                self.pushButton_1bar,
+                self.doubleSpinBox_PStep,
+                self.pushButton_SetPStepTo1,
+                self.pushButton_SetPStepTo10,
+            ],
+            [
+                self.doubleSpinBox_Temperature,
+                self.pushButton_RoomT,
+                self.spinBox_TStep,
+                self.pushButton_SetTStepTo100,
+                self.pushButton_SetTStepTo1000,
+            ],
+        ]
+
+        col_widths = [0] * 5
+        for col in range(5):
+            for row in range(2):
+                widget = rows[row][col]
+                col_widths[col] = max(
+                    col_widths[col],
+                    widget.sizeHint().width(),
+                    widget.minimumSizeHint().width(),
+                )
+
+        col_widths[0] = max(110, col_widths[0] // 2)
+        col_widths[1] = max(72, int(col_widths[1] * 0.6))
+        col_widths[2] = min(max(col_widths[2], 64), 72)
+        col_widths[3] = max(42, int(col_widths[3] * 0.7))
+        col_widths[4] = max(42, int(col_widths[4] * 0.7))
+
+        for row in range(2):
+            for col in range(5):
+                widget = rows[row][col]
+                widget.setParent(self.frame_PTGrid)
+                widget.setMinimumWidth(col_widths[col])
+                widget.setMaximumWidth(col_widths[col])
+                widget.setSizePolicy(
+                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+                self.gridLayout_PTGrid.addWidget(widget, row, col, 1, 1)
+
+        self.gridLayout_PTGrid.setColumnStretch(0, 0)
+        self.gridLayout_PTGrid.setColumnStretch(1, 0)
+        self.gridLayout_PTGrid.setColumnStretch(2, 0)
+        self.gridLayout_PTGrid.setColumnStretch(3, 0)
+        self.gridLayout_PTGrid.setColumnStretch(4, 0)
+        self.gridLayout_10.addWidget(self.frame_PTGrid, 0, 1, 5, 1)
+
     def _setup_jcpds_bars_layout(self):
         if not hasattr(self, "groupBox_20"):
             return
@@ -585,7 +775,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(self, "groupBox"):
             self.groupBox.setTitle("Pressure and temperature")
         if hasattr(self, "groupBox_8"):
-            self.groupBox_8.setTitle("Reference list")
+            self.groupBox_8.setTitle("JCPDS list")
         if hasattr(self, "groupBox_NavCarry"):
             self.groupBox_NavCarry.setTitle("Keep these settings for the next file")
         if hasattr(self, "checkBox_CarryNavCakeZScale"):
@@ -598,7 +788,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(self, "checkBox_JCPDSinCake"):
             self.checkBox_JCPDSinCake.setText("JCPDS 2D")
         if hasattr(self, "checkBox_Intensity"):
-            self.checkBox_Intensity.setText("Scale by I")
+            self.checkBox_Intensity.setText("Scale by Intensity")
         if hasattr(self, "checkBox_ShowMillerIndices"):
             self.checkBox_ShowMillerIndices.setText("HKL 1D")
         if hasattr(self, "checkBox_ShowMillerIndices_Cake"):
@@ -677,15 +867,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         register(getattr(self, "pushButton_MouseModeJCPDS", None),
                  "Mouse mode: inspect the nearest JCPDS line.")
         register(getattr(self, "pushButton_S_PIncrease", None),
-                 "Increase pressure by the current pressure step.")
+                 "Pressure up. Step size comes from JCPDS > Data.")
         register(getattr(self, "pushButton_S_PDecrease", None),
-                 "Decrease pressure by the current pressure step.")
+                 "Pressure down. Step size comes from JCPDS > Data.")
+        register(getattr(self, "pushButton_S_PScroll", None),
+                 "Mouse wheel changes pressure by the step size in JCPDS > Data.")
         register(getattr(self, "pushButton_S_TIncrease", None),
-                 "Increase temperature by the current temperature step.")
+                 "Temperature up. Step size comes from JCPDS > Data.")
         register(getattr(self, "pushButton_S_RoomT", None),
-                 "Reset temperature to 300 K.")
+                 "Reset temperature to 300 K. Mouse wheel also changes temperature by the step size in JCPDS > Data.")
         register(getattr(self, "pushButton_S_TDecrease", None),
-                 "Decrease temperature by the current temperature step.")
+                 "Temperature down. Step size comes from JCPDS > Data.")
+        register(getattr(self, "pushButton_S_TScroll", None),
+                 "Mouse wheel changes temperature by the step size in JCPDS > Data.")
         register(getattr(self, "checkBox_JCPDSinPattern", None),
                  "Show JCPDS reference lines in the 1D pattern.")
         register(getattr(self, "checkBox_JCPDSinCake", None),
@@ -706,6 +900,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                  "Export the current view with reproducible Python, PDF, and PNG outputs.")
 
     def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.Type.Wheel:
+            if obj in (
+                getattr(self, "pushButton_S_PIncrease", None),
+                getattr(self, "pushButton_S_PDecrease", None),
+                getattr(self, "pushButton_S_PScroll", None),
+            ):
+                step_dir = 1 if event.angleDelta().y() > 0 else -1
+                self.set_pressure(
+                    float(self.doubleSpinBox_Pressure.value()) +
+                    step_dir * float(self.doubleSpinBox_PStep.value()))
+                return True
+            if obj in (
+                getattr(self, "pushButton_S_TIncrease", None),
+                getattr(self, "pushButton_S_RoomT", None),
+                getattr(self, "pushButton_S_TDecrease", None),
+                getattr(self, "pushButton_S_TScroll", None),
+            ):
+                step_dir = 1 if event.angleDelta().y() > 0 else -1
+                self.set_temperature(
+                    float(self.doubleSpinBox_Temperature.value()) +
+                    step_dir * float(self.spinBox_TStep.value()))
+                return True
         if hasattr(self, "_compact_help_widgets") and obj in self._compact_help_widgets:
             if event.type() in (QtCore.QEvent.Type.Enter, QtCore.QEvent.Type.FocusIn):
                 if hasattr(self, "label_PlotHelp"):
@@ -714,6 +930,82 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 if hasattr(self, "label_PlotHelp"):
                     self.label_PlotHelp.setText(self._compact_help_default)
         return super().eventFilter(obj, event)
+
+    def _setup_quick_pt_wheel_controls(self):
+        for button in (
+            getattr(self, "pushButton_S_PIncrease", None),
+            getattr(self, "pushButton_S_PDecrease", None),
+            getattr(self, "pushButton_S_TIncrease", None),
+            getattr(self, "pushButton_S_RoomT", None),
+            getattr(self, "pushButton_S_TDecrease", None),
+            getattr(self, "pushButton_S_PScroll", None),
+            getattr(self, "pushButton_S_TScroll", None),
+        ):
+            if button is None:
+                continue
+            button.installEventFilter(self)
+
+    def _setup_toolbar_step_spinboxes(self):
+        if hasattr(self, "doubleSpinBox_ToolbarPStep"):
+            return
+        self.doubleSpinBox_ToolbarPStep = QtWidgets.QDoubleSpinBox(self.frame_TopToolbarRow2)
+        self.doubleSpinBox_ToolbarPStep.setDecimals(2)
+        self.doubleSpinBox_ToolbarPStep.setRange(
+            self.doubleSpinBox_PStep.minimum(), self.doubleSpinBox_PStep.maximum())
+        self.doubleSpinBox_ToolbarPStep.setSingleStep(self.doubleSpinBox_PStep.singleStep())
+        self.doubleSpinBox_ToolbarPStep.setValue(self.doubleSpinBox_PStep.value())
+        self.doubleSpinBox_ToolbarPStep.setKeyboardTracking(False)
+        self.doubleSpinBox_ToolbarPStep.setStyle(SpinBoxFixStyle())
+        self.doubleSpinBox_ToolbarPStep.setMinimumHeight(28)
+        self.doubleSpinBox_ToolbarPStep.setMaximumHeight(28)
+        self.doubleSpinBox_ToolbarPStep.setAlignment(
+            QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
+
+        self.spinBox_ToolbarTStep = QtWidgets.QSpinBox(self.frame_TopToolbarRow2)
+        self.spinBox_ToolbarTStep.setRange(self.spinBox_TStep.minimum(), self.spinBox_TStep.maximum())
+        self.spinBox_ToolbarTStep.setSingleStep(self.spinBox_TStep.singleStep())
+        self.spinBox_ToolbarTStep.setValue(self.spinBox_TStep.value())
+        self.spinBox_ToolbarTStep.setKeyboardTracking(False)
+        self.spinBox_ToolbarTStep.setStyle(SpinBoxFixStyle())
+        self.spinBox_ToolbarTStep.setMinimumHeight(28)
+        self.spinBox_ToolbarTStep.setMaximumHeight(28)
+        self.spinBox_ToolbarTStep.setAlignment(
+            QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
+
+        self.doubleSpinBox_ToolbarPStep.valueChanged.connect(self._sync_toolbar_pstep)
+        self.spinBox_ToolbarTStep.valueChanged.connect(self._sync_toolbar_tstep)
+        self.doubleSpinBox_PStep.valueChanged.connect(self._sync_from_main_pstep)
+        self.spinBox_TStep.valueChanged.connect(self._sync_from_main_tstep)
+
+    def _sync_toolbar_pstep(self, value):
+        if float(self.doubleSpinBox_PStep.value()) == float(value):
+            return
+        blocker = QtCore.QSignalBlocker(self.doubleSpinBox_PStep)
+        self.doubleSpinBox_PStep.setValue(value)
+        del blocker
+        self.set_pstep()
+
+    def _sync_toolbar_tstep(self, value):
+        if int(self.spinBox_TStep.value()) == int(value):
+            return
+        blocker = QtCore.QSignalBlocker(self.spinBox_TStep)
+        self.spinBox_TStep.setValue(value)
+        del blocker
+        self.set_tstep()
+
+    def _sync_from_main_pstep(self, value):
+        if not hasattr(self, "doubleSpinBox_ToolbarPStep"):
+            return
+        blocker = QtCore.QSignalBlocker(self.doubleSpinBox_ToolbarPStep)
+        self.doubleSpinBox_ToolbarPStep.setValue(value)
+        del blocker
+
+    def _sync_from_main_tstep(self, value):
+        if not hasattr(self, "spinBox_ToolbarTStep"):
+            return
+        blocker = QtCore.QSignalBlocker(self.spinBox_ToolbarTStep)
+        self.spinBox_ToolbarTStep.setValue(value)
+        del blocker
 
     def _setup_plot_setup_group(self):
         if not hasattr(self, "gridLayout_7"):
@@ -1210,36 +1502,124 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
                 self.layout_TopToolbarRow1.addWidget(widget, 0)
 
-        row2_widgets = [
-            getattr(self, "pushButton_S_PIncrease", None),
-            getattr(self, "pushButton_S_PDecrease", None),
-            getattr(self, "pushButton_S_TIncrease", None),
-            getattr(self, "pushButton_S_RoomT", None),
-            getattr(self, "pushButton_S_TDecrease", None),
-        ]
-        for widget in row2_widgets:
+        toolbar_p_inc = getattr(self, "pushButton_S_PIncrease", None)
+        toolbar_p_dec = getattr(self, "pushButton_S_PDecrease", None)
+        toolbar_t_inc = getattr(self, "pushButton_S_TIncrease", None)
+        toolbar_t_dec = getattr(self, "pushButton_S_TDecrease", None)
+
+        for widget, text in (
+            (toolbar_p_inc, "▲"),
+            (toolbar_p_dec, "▼"),
+            (toolbar_t_inc, "▲"),
+            (toolbar_t_dec, "▼"),
+        ):
             if widget is None:
                 continue
             widget.setParent(self.frame_TopToolbarRow2)
             widget.show()
+            widget.setText(text)
             widget.setMinimumHeight(28)
             widget.setMaximumHeight(28)
-            if widget == getattr(self, "pushButton_S_PIncrease", None):
-                widget.setText("P +")
-            elif widget == getattr(self, "pushButton_S_PDecrease", None):
-                widget.setText("P -")
-            elif widget == getattr(self, "pushButton_S_TIncrease", None):
-                widget.setText("T +")
-            elif widget == getattr(self, "pushButton_S_RoomT", None):
-                widget.setText("300 K")
-            elif widget == getattr(self, "pushButton_S_TDecrease", None):
-                widget.setText("T -")
-            self._set_flat_toolbar_button_style(widget, compact=True)
-            widget.setMinimumWidth(0)
-            widget.setMaximumWidth(16777215)
+            widget.setFlat(False)
+            widget.setAutoDefault(False)
+            widget.setDefault(False)
+            widget.setStyleSheet(
+                "QPushButton {"
+                "background-color: #444444;"
+                "color: #ffffff;"
+                "border: 1px solid rgba(255, 255, 255, 0.10);"
+                "border-radius: 3px;"
+                "padding: 0px;"
+                "font-weight: 700;"
+                "}"
+                "QPushButton:hover {"
+                "background-color: #505050;"
+                "}"
+                "QPushButton:pressed {"
+                "background-color: #383838;"
+                "}"
+                "QPushButton:focus {"
+                "outline: none;"
+                "border: 1px solid rgba(255, 255, 255, 0.16);"
+                "}"
+            )
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-            self.layout_TopToolbarRow2.addWidget(widget, 1)
+
+        if not hasattr(self, "frame_PWheelGroup"):
+            self.frame_PWheelGroup = QtWidgets.QFrame(self.frame_TopToolbarRow2)
+            self.layout_PWheelGroup = QtWidgets.QHBoxLayout(self.frame_PWheelGroup)
+            self.layout_PWheelGroup.setContentsMargins(0, 0, 0, 0)
+            self.layout_PWheelGroup.setSpacing(0)
+        self.frame_PWheelGroup.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        if not hasattr(self, "frame_TWheelGroup"):
+            self.frame_TWheelGroup = QtWidgets.QFrame(self.frame_TopToolbarRow2)
+            self.layout_TWheelGroup = QtWidgets.QHBoxLayout(self.frame_TWheelGroup)
+            self.layout_TWheelGroup.setContentsMargins(0, 0, 0, 0)
+            self.layout_TWheelGroup.setSpacing(0)
+        self.frame_TWheelGroup.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+
+        if not hasattr(self, "pushButton_S_PScroll"):
+            self.pushButton_S_PScroll = WheelCenterButton(parent=self.frame_PWheelGroup)
+        self.pushButton_S_PScroll.setParent(self.frame_PWheelGroup)
+        self.pushButton_S_PScroll.setText("P")
+        self.pushButton_S_PScroll.setToolTip("Use mouse wheel to change pressure by the current step size.")
+        self.pushButton_S_PScroll.setMinimumHeight(28)
+        self.pushButton_S_PScroll.setMaximumHeight(28)
+        self.pushButton_S_PScroll.setMinimumWidth(72)
+        self.pushButton_S_PScroll.setMaximumWidth(160)
+        self.pushButton_S_PScroll.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+
+        if not hasattr(self, "pushButton_S_TScroll"):
+            self.pushButton_S_TScroll = WheelCenterButton(parent=self.frame_TWheelGroup)
+        self.pushButton_S_TScroll.setParent(self.frame_TWheelGroup)
+        self.pushButton_S_TScroll.setText("T")
+        self.pushButton_S_TScroll.setToolTip("Use mouse wheel to change temperature by the current step size.")
+        self.pushButton_S_TScroll.setMinimumHeight(28)
+        self.pushButton_S_TScroll.setMaximumHeight(28)
+        self.pushButton_S_TScroll.setMinimumWidth(72)
+        self.pushButton_S_TScroll.setMaximumWidth(160)
+        self.pushButton_S_TScroll.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+
+        toolbar_roomt = getattr(self, "pushButton_S_RoomT", None)
+        if toolbar_roomt is not None:
+            toolbar_roomt.setParent(self.frame_TopToolbarRow2)
+            toolbar_roomt.show()
+            toolbar_roomt.setMinimumHeight(28)
+            toolbar_roomt.setMaximumHeight(28)
+            toolbar_roomt.setText("300 K")
+            self._set_flat_toolbar_button_style(toolbar_roomt, compact=True)
+            tight_width = toolbar_roomt.sizeHint().width() + 8
+            toolbar_roomt.setMinimumWidth(tight_width)
+            toolbar_roomt.setMaximumWidth(tight_width)
+            toolbar_roomt.setSizePolicy(
+                QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+
+        for group_layout, widgets in (
+            (self.layout_PWheelGroup, (toolbar_p_inc, self.pushButton_S_PScroll, toolbar_p_dec)),
+            (self.layout_TWheelGroup, (toolbar_t_inc, self.pushButton_S_TScroll, toolbar_t_dec)),
+        ):
+            while group_layout.count():
+                item = group_layout.takeAt(0)
+                child = item.widget()
+                if child is not None:
+                    child.hide()
+            for widget in widgets:
+                if widget is not None:
+                    widget.show()
+                    group_layout.addWidget(widget)
+
+        for widget, stretch in (
+            (self.frame_PWheelGroup, 1),
+            (self.frame_TWheelGroup, 1),
+            (toolbar_roomt, 0),
+        ):
+            if widget is not None:
+                self.layout_TopToolbarRow2.addWidget(widget, stretch)
 
         self.topLeftToolbarRows.addWidget(self.frame_TopToolbarRow1)
         self.topLeftToolbarRows.addWidget(self.frame_TopToolbarRow2)
