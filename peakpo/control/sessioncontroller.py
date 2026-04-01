@@ -37,6 +37,7 @@ class SessionController(object):
         self.model = model
         self.widget = widget
         self._carryover_source_chi = None
+        self._backup_table_refreshing = False
         self._last_param_category_presence = {
             "backup_information": False,
             "jcpds": False,
@@ -72,9 +73,9 @@ class SessionController(object):
         if hasattr(self.widget, "pushButton_BackupRestore"):
             self.widget.pushButton_BackupRestore.clicked.connect(
                 self.restore_selected_backup)
-        if hasattr(self.widget, "pushButton_BackupEditComment"):
-            self.widget.pushButton_BackupEditComment.clicked.connect(
-                self.edit_selected_backup_comment)
+        if hasattr(self.widget, "tableWidget_BackupInfo"):
+            self.widget.tableWidget_BackupInfo.itemChanged.connect(
+                self._handle_backup_table_item_changed)
         if hasattr(self.widget, "tabWidget_3"):
             self.widget.tabWidget_3.currentChanged.connect(
                 self._handle_file_subtab_changed)
@@ -109,38 +110,47 @@ class SessionController(object):
         if not hasattr(self.widget, "tableWidget_BackupInfo"):
             return
         table = self.widget.tableWidget_BackupInfo
+        self._backup_table_refreshing = True
+        table.blockSignals(True)
         headers = ["ID", "Comment", "Changes", "Timestamp", "Files"]
-        table.clear()
-        table.setColumnCount(len(headers))
-        table.setHorizontalHeaderLabels(headers)
-        table.setRowCount(0)
-        table.verticalHeader().setVisible(False)
-        if not self.model.base_ptn_exist():
-            return
-        param_dir = get_temp_dir(self.model.get_base_ptn_filename())
-        if not is_new_param_folder(param_dir):
-            return
-        events = list_backup_events(param_dir)
-        table.setRowCount(len(events))
-        for row, (idx, ev) in enumerate(reversed(list(enumerate(events)))):
-            reason = self._format_backup_comment(ev.get("reason", ""))
-            values = [
-                str(ev.get("id", "")),
-                reason,
-                ", ".join(ev.get("highlights", [])) or "none",
-                str(ev.get("timestamp", "")),
-                str(len(ev.get("changed_files", []))),
-            ]
-            for col, txt in enumerate(values):
-                item = QtWidgets.QTableWidgetItem(txt)
-                item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-                if col == 0:
-                    item.setData(QtCore.Qt.UserRole, idx)
-                table.setItem(row, col, item)
-        table.resizeColumnsToContents()
-        table.resizeRowsToContents()
-        if table.rowCount() > 0:
-            table.selectRow(0)
+        try:
+            table.clear()
+            table.setColumnCount(len(headers))
+            table.setHorizontalHeaderLabels(headers)
+            table.setRowCount(0)
+            table.verticalHeader().setVisible(False)
+            if not self.model.base_ptn_exist():
+                return
+            param_dir = get_temp_dir(self.model.get_base_ptn_filename())
+            if not is_new_param_folder(param_dir):
+                return
+            events = list_backup_events(param_dir)
+            table.setRowCount(len(events))
+            for row, (idx, ev) in enumerate(reversed(list(enumerate(events)))):
+                reason = self._format_backup_comment(ev.get("reason", ""))
+                values = [
+                    str(ev.get("id", "")),
+                    reason,
+                    ", ".join(ev.get("highlights", [])) or "none",
+                    str(ev.get("timestamp", "")),
+                    str(len(ev.get("changed_files", []))),
+                ]
+                for col, txt in enumerate(values):
+                    item = QtWidgets.QTableWidgetItem(txt)
+                    flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+                    if col == 1:
+                        flags |= QtCore.Qt.ItemIsEditable
+                    item.setFlags(flags)
+                    if col == 0:
+                        item.setData(QtCore.Qt.UserRole, idx)
+                    table.setItem(row, col, item)
+            table.resizeColumnsToContents()
+            table.resizeRowsToContents()
+            if table.rowCount() > 0:
+                table.selectRow(0)
+        finally:
+            table.blockSignals(False)
+            self._backup_table_refreshing = False
 
     def _format_backup_comment(self, reason):
         comment = str(reason or "").strip()
@@ -184,26 +194,19 @@ class SessionController(object):
             tmp_path = tmpf.name
         os.replace(tmp_path, path)
 
-    def edit_selected_backup_comment(self):
-        backup_idx = self._selected_backup_index_from_table()
-        backup_id = self._selected_backup_id_from_table()
-        if backup_idx is None:
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning",
-                "Select one backup row first.")
-            return
+    def _update_backup_comment(self, backup_idx, updated_comment):
         if not self.model.base_ptn_exist():
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning",
                 "Open a CHI file first.")
-            return
+            return False
         param_dir = get_temp_dir(self.model.get_base_ptn_filename())
         index_path = os.path.join(param_dir, BACKUP_INDEX_FILE)
         if not os.path.exists(index_path):
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning",
                 "Backup index file not found.")
-            return
+            return False
         try:
             with open(index_path, "r", encoding="utf-8") as f:
                 index_data = json.load(f)
@@ -211,24 +214,14 @@ class SessionController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning",
                 "Cannot read backup index:\n" + str(exc))
-            return
+            return False
         events = index_data.get("events", [])
         if (backup_idx < 0) or (backup_idx >= len(events)):
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning",
                 "Selected backup row is no longer valid.")
-            return
-        ev = events[backup_idx]
-        current_comment = self._format_backup_comment(ev.get("reason", ""))
-        new_comment, ok = QtWidgets.QInputDialog.getText(
-            self.widget,
-            "Edit Backup Comment",
-            "Comment:",
-            text=current_comment,
-        )
-        if not ok:
-            return
-        updated_comment = str(new_comment or "").strip()
+            return False
+        updated_comment = str(updated_comment or "").strip()
         if updated_comment == "":
             updated_comment = "snapshot"
         events[backup_idx]["reason"] = updated_comment
@@ -239,11 +232,26 @@ class SessionController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning",
                 "Cannot update backup comment:\n" + str(exc))
+            return False
+        return True
+
+    def _handle_backup_table_item_changed(self, item):
+        if self._backup_table_refreshing or item is None or item.column() != 1:
+            return
+        table = self.widget.tableWidget_BackupInfo
+        row = item.row()
+        id_item = table.item(row, 0)
+        if id_item is None:
+            return
+        backup_idx = id_item.data(QtCore.Qt.UserRole)
+        backup_id = str(id_item.text() or "")
+        if backup_idx is None:
+            return
+        if not self._update_backup_comment(int(backup_idx), item.text()):
+            self.refresh_backup_table()
             return
         self.refresh_backup_table()
-        # Restore selection to edited backup id when possible.
-        if hasattr(self.widget, "tableWidget_BackupInfo") and (backup_id not in (None, "")):
-            table = self.widget.tableWidget_BackupInfo
+        if backup_id not in (None, ""):
             for r in range(table.rowCount()):
                 it = table.item(r, 0)
                 if (it is not None) and (str(it.text()) == backup_id):

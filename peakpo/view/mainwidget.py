@@ -31,7 +31,7 @@ class WheelCenterButton(QtWidgets.QPushButton):
         painter = QtGui.QPainter(self)
         painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
 
-        outer = QtCore.QRectF(self.rect()).adjusted(1, 1, -1, -1)
+        outer = QtCore.QRectF(self.rect()).adjusted(0, 0, -1, -1)
         fill = QtGui.QLinearGradient(0, outer.top(), 0, outer.bottom())
         fill.setColorAt(0.0, QtGui.QColor("#4c4c4c"))
         fill.setColorAt(0.08, QtGui.QColor("#656565"))
@@ -224,6 +224,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._setup_pressure_temperature_grid()
         self._setup_light_background_checkbox()
         self._setup_jcpds_bars_layout()
+        self._compact_jcpds_config_layout()
         self._setup_title_config_group()
         self._setup_plot_setup_group()
         self._setup_update_background_button()
@@ -691,9 +692,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.frame_PTGrid.setObjectName("frame_PTGrid")
         self.frame_PTGrid.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.gridLayout_PTGrid = QtWidgets.QGridLayout(self.frame_PTGrid)
-        self.gridLayout_PTGrid.setContentsMargins(12, 12, 12, 12)
+        self.gridLayout_PTGrid.setContentsMargins(12, 4, 12, 4)
         self.gridLayout_PTGrid.setHorizontalSpacing(14)
-        self.gridLayout_PTGrid.setVerticalSpacing(14)
+        self.gridLayout_PTGrid.setVerticalSpacing(6)
 
         self.label_CarryNavStatus = QtWidgets.QLabel(self.groupBox)
         self.label_CarryNavStatus.setObjectName("label_CarryNavStatus")
@@ -784,8 +785,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "color: " + color + ";"
             "font: 600 12pt \"Helvetica\";"
             "padding-left: 12px;"
-            "padding-top: 2px;"
-            "padding-bottom: 4px;"
+            "padding-top: 0px;"
+            "padding-bottom: 1px;"
             "}"
         )
 
@@ -825,6 +826,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._jcpds_bars_grid.addWidget(self.horizontalSlider_JCPDSBarPosition, 1, 1, 1, 1)
         self._jcpds_bars_grid.setColumnStretch(1, 1)
         self.verticalLayout_23.addLayout(self._jcpds_bars_grid)
+
+    def _compact_jcpds_config_layout(self):
+        if not hasattr(self, "verticalLayout_33"):
+            return
+        self.verticalLayout_33.setAlignment(QtCore.Qt.AlignTop)
+        if hasattr(self, "_jcpds_config_bottom_spacer"):
+            return
+        self._jcpds_config_bottom_spacer = QtWidgets.QSpacerItem(
+            20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout_33.addItem(self._jcpds_config_bottom_spacer)
 
     def _setup_title_config_group(self):
         if not hasattr(self, "verticalLayout_PlotConfig"):
@@ -896,6 +907,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.groupBox_34.setTitle("What to show")
         if hasattr(self, "groupBox_20"):
             self.groupBox_20.setTitle("JCPDS bar properties")
+        if hasattr(self, "groupBox_18"):
+            self.groupBox_18.setVisible(False)
+        if hasattr(self, "pushButton_ForceUpdatePlot"):
+            self.pushButton_ForceUpdatePlot.setVisible(False)
         if hasattr(self, "groupBox_16"):
             self.groupBox_16.setTitle("Plot appearance")
         if hasattr(self, "groupBox_24"):
@@ -907,11 +922,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(self, "groupBox"):
             self.groupBox.setTitle("Pressure and temperature")
         if hasattr(self, "groupBox_8"):
-            self.groupBox_8.setTitle("JCPDS list")
+            self.groupBox_8.setTitle("JCPDS control")
         if hasattr(self, "groupBox_NavCarry"):
             self.groupBox_NavCarry.setTitle("Keep these settings for the next file")
         if hasattr(self, "checkBox_CarryNavCakeZScale"):
             self.checkBox_CarryNavCakeZScale.setText("2D image scale")
+        if hasattr(self, "checkBox_CarryNavBackground"):
+            self.checkBox_CarryNavBackground.setText("Background parameters")
         if hasattr(self, "checkBox_CarryNavFits"):
             self.checkBox_CarryNavFits.setText("Fitting results")
 
@@ -1547,6 +1564,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _rebuild_top_left_toolbar(self):
         if (not hasattr(self, "frame_9")) or (not hasattr(self, "frame_2")):
             return
+        row2_height = 28
         while self.horizontalLayout_21.count():
             item = self.horizontalLayout_21.takeAt(0)
             w = item.widget()
@@ -1573,6 +1591,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.frame_TopToolbarRow2.setObjectName("frame_TopToolbarRow2")
         self.frame_TopToolbarRow2.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.frame_TopToolbarRow2.setMinimumHeight(row2_height)
+        self.frame_TopToolbarRow2.setMaximumHeight(row2_height)
         self.layout_TopToolbarRow2 = QtWidgets.QHBoxLayout(self.frame_TopToolbarRow2)
         self.layout_TopToolbarRow2.setContentsMargins(0, 0, 0, 0)
         self.layout_TopToolbarRow2.setSpacing(10)
@@ -1650,31 +1670,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             widget.setParent(self.frame_TopToolbarRow2)
             widget.show()
             widget.setText(text)
-            widget.setMinimumHeight(28)
-            widget.setMaximumHeight(28)
+            widget.setMinimumHeight(row2_height - 2)
+            widget.setMaximumHeight(row2_height - 2)
             widget.setFlat(False)
             widget.setAutoDefault(False)
             widget.setDefault(False)
-            widget.setStyleSheet(
-                "QPushButton {"
-                "background-color: #444444;"
-                "color: #ffffff;"
-                "border: 1px solid rgba(255, 255, 255, 0.10);"
-                "border-radius: 3px;"
-                "padding: 0px;"
-                "font-weight: 700;"
-                "}"
-                "QPushButton:hover {"
-                "background-color: #505050;"
-                "}"
-                "QPushButton:pressed {"
-                "background-color: #383838;"
-                "}"
-                "QPushButton:focus {"
-                "outline: none;"
-                "border: 1px solid rgba(255, 255, 255, 0.16);"
-                "}"
-            )
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
 
@@ -1685,6 +1685,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.layout_PWheelGroup.setSpacing(0)
         self.frame_PWheelGroup.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.frame_PWheelGroup.setMinimumHeight(row2_height)
+        self.frame_PWheelGroup.setMaximumHeight(row2_height)
         if not hasattr(self, "frame_TWheelGroup"):
             self.frame_TWheelGroup = QtWidgets.QFrame(self.frame_TopToolbarRow2)
             self.layout_TWheelGroup = QtWidgets.QHBoxLayout(self.frame_TWheelGroup)
@@ -1692,14 +1694,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.layout_TWheelGroup.setSpacing(0)
         self.frame_TWheelGroup.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.frame_TWheelGroup.setMinimumHeight(row2_height)
+        self.frame_TWheelGroup.setMaximumHeight(row2_height)
 
         if not hasattr(self, "pushButton_S_PScroll"):
             self.pushButton_S_PScroll = WheelCenterButton(parent=self.frame_PWheelGroup)
         self.pushButton_S_PScroll.setParent(self.frame_PWheelGroup)
         self.pushButton_S_PScroll.setText("P")
         self.pushButton_S_PScroll.setToolTip("Use mouse wheel to change pressure by the current step size.")
-        self.pushButton_S_PScroll.setMinimumHeight(28)
-        self.pushButton_S_PScroll.setMaximumHeight(28)
+        self.pushButton_S_PScroll.setMinimumHeight(row2_height)
+        self.pushButton_S_PScroll.setMaximumHeight(row2_height)
         self.pushButton_S_PScroll.setMinimumWidth(72)
         self.pushButton_S_PScroll.setMaximumWidth(160)
         self.pushButton_S_PScroll.setSizePolicy(
@@ -1710,8 +1714,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_S_TScroll.setParent(self.frame_TWheelGroup)
         self.pushButton_S_TScroll.setText("T")
         self.pushButton_S_TScroll.setToolTip("Use mouse wheel to change temperature by the current step size.")
-        self.pushButton_S_TScroll.setMinimumHeight(28)
-        self.pushButton_S_TScroll.setMaximumHeight(28)
+        self.pushButton_S_TScroll.setMinimumHeight(row2_height)
+        self.pushButton_S_TScroll.setMaximumHeight(row2_height)
         self.pushButton_S_TScroll.setMinimumWidth(72)
         self.pushButton_S_TScroll.setMaximumWidth(160)
         self.pushButton_S_TScroll.setSizePolicy(
@@ -1721,8 +1725,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if toolbar_roomt is not None:
             toolbar_roomt.setParent(self.frame_TopToolbarRow2)
             toolbar_roomt.show()
-            toolbar_roomt.setMinimumHeight(28)
-            toolbar_roomt.setMaximumHeight(28)
+            toolbar_roomt.setMinimumHeight(row2_height)
+            toolbar_roomt.setMaximumHeight(row2_height)
             toolbar_roomt.setText("300 K")
             self._set_flat_toolbar_button_style(toolbar_roomt, compact=True)
             tight_width = toolbar_roomt.sizeHint().width() + 8
@@ -1744,6 +1748,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 if widget is not None:
                     widget.show()
                     group_layout.addWidget(widget)
+            left_button, _, right_button = widgets
+            if left_button is not None:
+                self._set_thumbwheel_arrow_button_style(left_button, "left")
+            if right_button is not None:
+                self._set_thumbwheel_arrow_button_style(right_button, "right")
 
         for widget, stretch in (
             (self.frame_PWheelGroup, 1),
@@ -1757,6 +1766,43 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.topLeftToolbarRows.addWidget(self.frame_TopToolbarRow2)
         self.horizontalLayout_21.addWidget(self.frame_TopLeftToolbarRows, 1)
         self.frame_2.setVisible(False)
+
+    def _set_thumbwheel_arrow_button_style(self, button, side):
+        if side == "left":
+            radius_rule = (
+                "border-top-left-radius: 3px;"
+                "border-bottom-left-radius: 3px;"
+                "border-top-right-radius: 0px;"
+                "border-bottom-right-radius: 0px;"
+            )
+        else:
+            radius_rule = (
+                "border-top-left-radius: 0px;"
+                "border-bottom-left-radius: 0px;"
+                "border-top-right-radius: 3px;"
+                "border-bottom-right-radius: 3px;"
+            )
+        button.setStyleSheet(
+            "QPushButton {"
+            "background-color: #444444;"
+            "color: #ffffff;"
+            "border: 1px solid rgba(255, 255, 255, 0.10);"
+            + radius_rule +
+            "padding: 0px;"
+            "font-weight: 700;"
+            "}"
+            "QPushButton:hover {"
+            "background-color: #505050;"
+            "}"
+            "QPushButton:pressed {"
+            "background-color: #383838;"
+            "}"
+            "QPushButton:focus {"
+            "outline: none;"
+            "border: 1px solid rgba(255, 255, 255, 0.16);"
+            + radius_rule +
+            "}"
+        )
 
     def _spread_primary_controls_evenly(self):
         if not hasattr(self, "horizontalLayout_7"):
@@ -2486,21 +2532,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.verticalLayout_PlotControl.insertWidget(0, self.groupBox_PythonExport)
 
     def _setup_backup_comment_button(self):
-        if (not hasattr(self, "horizontalLayout_BackupTools")) or \
-                hasattr(self, "pushButton_BackupEditComment"):
-            return
-        self.pushButton_BackupEditComment = QtWidgets.QPushButton(self.frame_BackupTools)
-        self.pushButton_BackupEditComment.setObjectName("pushButton_BackupEditComment")
-        self.pushButton_BackupEditComment.setMinimumSize(QtCore.QSize(95, 25))
-        self.pushButton_BackupEditComment.setMaximumSize(QtCore.QSize(140, 16777215))
-        self.pushButton_BackupEditComment.setText("Edit Comment")
-        self.pushButton_BackupEditComment.setToolTip("Edit comment for selected backup row")
-        idx_restore = self.horizontalLayout_BackupTools.indexOf(self.pushButton_BackupRestore)
-        if idx_restore < 0:
-            self.horizontalLayout_BackupTools.addWidget(self.pushButton_BackupEditComment)
-        else:
-            self.horizontalLayout_BackupTools.insertWidget(
-                idx_restore, self.pushButton_BackupEditComment)
+        return
 
     def _move_backup_into_file_data_tab(self):
         # Move backup table/tools under File > Data, below Raw image handling.
@@ -2551,27 +2583,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _layout_backup_buttons(self):
         if not hasattr(self, "horizontalLayout_BackupTools"):
             return
-        if (not hasattr(self, "pushButton_BackupEditComment")) or \
-                (not hasattr(self, "pushButton_BackupRestore")):
+        if not hasattr(self, "pushButton_BackupRestore"):
             return
+        self.frame_BackupTools.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.horizontalLayout_BackupTools.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_BackupTools.setSpacing(0)
         self.pushButton_BackupRestore.setText("Restore")
         common_h = 30
-        for btn in (self.pushButton_BackupEditComment, self.pushButton_BackupRestore):
-            btn.setMinimumHeight(common_h)
-            btn.setMaximumHeight(common_h)
-            btn.setMinimumWidth(0)
-            btn.setMaximumWidth(16777215)
-            btn.setSizePolicy(
-                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.pushButton_BackupRestore.setMinimumHeight(common_h)
+        self.pushButton_BackupRestore.setMaximumHeight(common_h)
+        self.pushButton_BackupRestore.setMinimumWidth(0)
+        self.pushButton_BackupRestore.setMaximumWidth(16777215)
+        self.pushButton_BackupRestore.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
 
-        # Rebuild row to remove spacer and spread both buttons horizontally.
+        # Rebuild row to remove spacer and keep only Restore.
         while self.horizontalLayout_BackupTools.count():
             item = self.horizontalLayout_BackupTools.takeAt(0)
             w = item.widget()
             if w is not None:
                 w.setParent(None)
-        self.horizontalLayout_BackupTools.addWidget(self.pushButton_BackupEditComment, 1)
         self.horizontalLayout_BackupTools.addWidget(self.pushButton_BackupRestore, 1)
+        self.horizontalLayout_BackupTools.setStretch(0, 1)
 
     def _compact_file_data_layout(self):
         if hasattr(self, "groupBox_28"):
@@ -2607,6 +2641,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWidget_BackupInfo.setSizePolicy(
                 QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
             self.tableWidget_BackupInfo.setMinimumHeight(300)
+            self.tableWidget_BackupInfo.setEditTriggers(
+                QtWidgets.QAbstractItemView.DoubleClicked |
+                QtWidgets.QAbstractItemView.EditKeyPressed |
+                QtWidgets.QAbstractItemView.SelectedClicked)
         if hasattr(self, "verticalLayout_2"):
             for i in range(self.verticalLayout_2.count()):
                 item = self.verticalLayout_2.itemAt(i)
