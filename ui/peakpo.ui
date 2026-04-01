@@ -1121,7 +1121,7 @@
                        </sizepolicy>
                       </property>
                       <property name="title">
-                       <string>Base pattern</string>
+                       <string>1D diffraction pattern</string>
                       </property>
                       <property name="flat">
                        <bool>false</bool>
@@ -6488,7 +6488,7 @@
                               <string>Recieve starting peak position values from JCPDS</string>
                              </property>
                              <property name="text">
-                              <string>From jlist</string>
+                              <string>From JCPDS</string>
                              </property>
                             </widget>
                            </item>

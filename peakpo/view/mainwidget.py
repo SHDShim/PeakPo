@@ -763,7 +763,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(self, "groupBox_34"):
             self.groupBox_34.setTitle("What to show")
         if hasattr(self, "groupBox_20"):
-            self.groupBox_20.setTitle("JCPDS guides")
+            self.groupBox_20.setTitle("JCPDS bar properties")
         if hasattr(self, "groupBox_16"):
             self.groupBox_16.setTitle("Plot appearance")
         if hasattr(self, "groupBox_24"):
