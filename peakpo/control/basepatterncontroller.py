@@ -73,6 +73,8 @@ class BasePatternController(object):
         if self.session_ctrl is not None:
             # Reset carry-over provenance for generic/manual loads.
             self.session_ctrl.set_carryover_source_chi(None)
+        if hasattr(self.widget, "set_nav_carry_status"):
+            self.widget.set_nav_carry_status("")
         self.model.set_base_ptn(
             new_filename, self.widget.doubleSpinBox_SetWavelength.value())
         # self.widget.textEdit_DiffractionPatternFileName.setText(

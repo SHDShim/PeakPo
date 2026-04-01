@@ -427,6 +427,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not hasattr(self, "scrollAreaWidgetContents_2") or \
                 (not hasattr(self, "verticalLayout_31")):
             return
+        if hasattr(self, "groupBox_NavCarry"):
+            return
         self.groupBox_NavCarry = QtWidgets.QGroupBox(
             "Keep these settings for the next file", self.scrollAreaWidgetContents_2)
         self.groupBox_NavCarry.setObjectName("groupBox_NavCarry")
@@ -484,6 +486,92 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if idx >= 0:
                 insert_idx = idx
         self.verticalLayout_31.insertWidget(insert_idx, self.groupBox_NavCarry)
+
+        self.groupBox_NavCarryBehavior = QtWidgets.QGroupBox(
+            "When next file already has information", self.scrollAreaWidgetContents_2)
+        self.groupBox_NavCarryBehavior.setObjectName("groupBox_NavCarryBehavior")
+        self.groupBox_NavCarryBehavior.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        self.gridLayout_NavCarryBehavior = QtWidgets.QGridLayout(
+            self.groupBox_NavCarryBehavior)
+        self.gridLayout_NavCarryBehavior.setContentsMargins(12, 12, 12, 12)
+        self.gridLayout_NavCarryBehavior.setHorizontalSpacing(16)
+        self.gridLayout_NavCarryBehavior.setVerticalSpacing(10)
+
+        self.label_CarryNavExistingJCPDS = QtWidgets.QLabel(
+            "JCPDS", self.groupBox_NavCarryBehavior)
+        self.label_CarryNavExistingJCPDS.setObjectName("label_CarryNavExistingJCPDS")
+        self.comboBox_CarryNavExistingJCPDS = QtWidgets.QComboBox(
+            self.groupBox_NavCarryBehavior)
+        self.comboBox_CarryNavExistingJCPDS.setObjectName(
+            "comboBox_CarryNavExistingJCPDS")
+        self.comboBox_CarryNavExistingJCPDS.addItem("Keep existing JCPDS")
+        self.comboBox_CarryNavExistingJCPDS.addItem(
+            "Overwrite with previous JCPDS")
+
+        self.label_CarryNavExistingOther = QtWidgets.QLabel(
+            "Other carried settings", self.groupBox_NavCarryBehavior)
+        self.label_CarryNavExistingOther.setObjectName("label_CarryNavExistingOther")
+        self.comboBox_CarryNavExistingOther = QtWidgets.QComboBox(
+            self.groupBox_NavCarryBehavior)
+        self.comboBox_CarryNavExistingOther.setObjectName(
+            "comboBox_CarryNavExistingOther")
+        self.comboBox_CarryNavExistingOther.addItem("Keep existing information")
+        self.comboBox_CarryNavExistingOther.addItem(
+            "Overwrite with carried settings")
+
+        self.gridLayout_NavCarryBehavior.addWidget(
+            self.label_CarryNavExistingJCPDS, 0, 0, 1, 1)
+        self.gridLayout_NavCarryBehavior.addWidget(
+            self.comboBox_CarryNavExistingJCPDS, 0, 1, 1, 1)
+        self.gridLayout_NavCarryBehavior.addWidget(
+            self.label_CarryNavExistingOther, 1, 0, 1, 1)
+        self.gridLayout_NavCarryBehavior.addWidget(
+            self.comboBox_CarryNavExistingOther, 1, 1, 1, 1)
+        self.gridLayout_NavCarryBehavior.setColumnStretch(1, 1)
+        self.verticalLayout_31.insertWidget(insert_idx + 1, self.groupBox_NavCarryBehavior)
+
+        self.groupBox_NavCarryNotifications = QtWidgets.QGroupBox(
+            "Notifications", self.scrollAreaWidgetContents_2)
+        self.groupBox_NavCarryNotifications.setObjectName(
+            "groupBox_NavCarryNotifications")
+        self.groupBox_NavCarryNotifications.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout_NavCarryNotifications = QtWidgets.QVBoxLayout(
+            self.groupBox_NavCarryNotifications)
+        self.verticalLayout_NavCarryNotifications.setContentsMargins(12, 12, 12, 12)
+        self.verticalLayout_NavCarryNotifications.setSpacing(10)
+
+        self.checkBox_CarryNavInlineStatus = QtWidgets.QCheckBox(
+            "Show inline status in JCPDS > Data", self.groupBox_NavCarryNotifications)
+        self.checkBox_CarryNavInlineStatus.setObjectName(
+            "checkBox_CarryNavInlineStatus")
+        self.checkBox_CarryNavInlineStatus.setChecked(True)
+        self.checkBox_CarryNavPopupConflict = QtWidgets.QCheckBox(
+            "Ask when existing information would be kept", self.groupBox_NavCarryNotifications)
+        self.checkBox_CarryNavPopupConflict.setObjectName(
+            "checkBox_CarryNavPopupConflict")
+        self.checkBox_CarryNavPopupConflict.setChecked(False)
+        self.checkBox_CarryNavPopupOverwrite = QtWidgets.QCheckBox(
+            "Ask when existing information would be overwritten",
+            self.groupBox_NavCarryNotifications)
+        self.checkBox_CarryNavPopupOverwrite.setObjectName(
+            "checkBox_CarryNavPopupOverwrite")
+        self.checkBox_CarryNavPopupOverwrite.setChecked(True)
+
+        self.verticalLayout_NavCarryNotifications.addWidget(
+            self.checkBox_CarryNavInlineStatus)
+        self.verticalLayout_NavCarryNotifications.addWidget(
+            self.checkBox_CarryNavPopupConflict)
+        self.verticalLayout_NavCarryNotifications.addWidget(
+            self.checkBox_CarryNavPopupOverwrite)
+        self.verticalLayout_31.insertWidget(
+            insert_idx + 2, self.groupBox_NavCarryNotifications)
+
+        self._nav_carry_status_text = ""
+        self._nav_carry_status_level = "white"
+        self.checkBox_CarryNavInlineStatus.toggled.connect(
+            self._sync_nav_carry_status_visibility)
 
     def _fix_tab_clipping(self):
         # Keep native tab visuals while nudging tab size metrics to prevent
@@ -607,6 +695,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.gridLayout_PTGrid.setHorizontalSpacing(14)
         self.gridLayout_PTGrid.setVerticalSpacing(14)
 
+        self.label_CarryNavStatus = QtWidgets.QLabel(self.groupBox)
+        self.label_CarryNavStatus.setObjectName("label_CarryNavStatus")
+        self.label_CarryNavStatus.setWordWrap(True)
+        self.label_CarryNavStatus.setText("")
+        self.label_CarryNavStatus.setVisible(False)
+
         rows = [
             [
                 self.doubleSpinBox_Pressure,
@@ -655,7 +749,45 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.gridLayout_PTGrid.setColumnStretch(2, 0)
         self.gridLayout_PTGrid.setColumnStretch(3, 0)
         self.gridLayout_PTGrid.setColumnStretch(4, 0)
-        self.gridLayout_10.addWidget(self.frame_PTGrid, 0, 1, 5, 1)
+        self.gridLayout_10.addWidget(self.label_CarryNavStatus, 0, 1, 1, 1)
+        self.gridLayout_10.addWidget(self.frame_PTGrid, 1, 1, 4, 1)
+        self._sync_nav_carry_status_visibility()
+
+    def set_nav_carry_status(self, text="", level="white"):
+        self._nav_carry_status_text = str(text or "")
+        self._nav_carry_status_level = str(level or "white")
+        self._sync_nav_carry_status_visibility()
+
+    def _sync_nav_carry_status_visibility(self):
+        if not hasattr(self, "label_CarryNavStatus"):
+            return
+        status_text = getattr(self, "_nav_carry_status_text", "")
+        status_level = getattr(self, "_nav_carry_status_level", "white")
+        inline_enabled = True
+        if hasattr(self, "checkBox_CarryNavInlineStatus"):
+            inline_enabled = bool(self.checkBox_CarryNavInlineStatus.isChecked())
+        visible = inline_enabled and bool(status_text)
+        self.label_CarryNavStatus.setVisible(visible)
+        if not visible:
+            self.label_CarryNavStatus.setText("")
+            return
+
+        colors = {
+            "white": "#f0f0f0",
+            "green": "#8bc34a",
+            "red": "#ef5350",
+        }
+        color = colors.get(status_level, colors["white"])
+        self.label_CarryNavStatus.setText(status_text)
+        self.label_CarryNavStatus.setStyleSheet(
+            "QLabel {"
+            "color: " + color + ";"
+            "font: 600 12pt \"Helvetica\";"
+            "padding-left: 12px;"
+            "padding-top: 2px;"
+            "padding-bottom: 4px;"
+            "}"
+        )
 
     def _setup_jcpds_bars_layout(self):
         if not hasattr(self, "groupBox_20"):

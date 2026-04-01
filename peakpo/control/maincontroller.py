@@ -838,6 +838,9 @@ class MainController(object):
         for key, attr in nav_keys:
             if hasattr(self.widget, attr):
                 self.settings.setValue(key, bool(getattr(self.widget, attr).isChecked()))
+        for key, attr in self._carry_nav_setting_bindings():
+            if hasattr(self.widget, attr):
+                self._save_widget_to_settings(key, getattr(self.widget, attr))
 
         for key, attr in self._plot_config_setting_bindings():
             if hasattr(self.widget, attr):
@@ -908,6 +911,11 @@ class MainController(object):
                 raw = self.settings.value(key, nav_defaults[attr])
                 val = str(raw).lower() in ("1", "true", "yes") if isinstance(raw, str) else bool(raw)
                 getattr(self.widget, attr).setChecked(val)
+        for key, attr in self._carry_nav_setting_bindings():
+            if hasattr(self.widget, attr):
+                self._load_widget_from_settings(
+                    key, getattr(self.widget, attr),
+                    self._carry_nav_setting_defaults().get(attr))
 
         for key, attr in self._plot_config_setting_bindings():
             if hasattr(self.widget, attr):
@@ -938,6 +946,24 @@ class MainController(object):
             ("plot_cfg/light_background", "checkBox_LightBackground"),
         ]
 
+    def _carry_nav_setting_bindings(self):
+        return [
+            ("carry_nav_existing_jcpds", "comboBox_CarryNavExistingJCPDS"),
+            ("carry_nav_existing_other", "comboBox_CarryNavExistingOther"),
+            ("carry_nav_inline_status", "checkBox_CarryNavInlineStatus"),
+            ("carry_nav_popup_conflict", "checkBox_CarryNavPopupConflict"),
+            ("carry_nav_popup_overwrite", "checkBox_CarryNavPopupOverwrite"),
+        ]
+
+    def _carry_nav_setting_defaults(self):
+        return {
+            "comboBox_CarryNavExistingJCPDS": "Keep existing JCPDS",
+            "comboBox_CarryNavExistingOther": "Keep existing information",
+            "checkBox_CarryNavInlineStatus": True,
+            "checkBox_CarryNavPopupConflict": False,
+            "checkBox_CarryNavPopupOverwrite": True,
+        }
+
     def _save_widget_to_settings(self, key, widget):
         if isinstance(widget, QtWidgets.QCheckBox):
             self.settings.setValue(key, bool(widget.isChecked()))
@@ -952,26 +978,30 @@ class MainController(object):
             self.settings.setValue(key, float(widget.value()))
             return
 
-    def _load_widget_from_settings(self, key, widget):
+    def _load_widget_from_settings(self, key, widget, default_value=None):
         if isinstance(widget, QtWidgets.QCheckBox):
-            raw = self.settings.value(key, widget.isChecked())
+            raw = self.settings.value(
+                key, widget.isChecked() if default_value is None else default_value)
             val = str(raw).lower() in ("1", "true", "yes") if isinstance(raw, str) else bool(raw)
             widget.setChecked(val)
             return
         if isinstance(widget, QtWidgets.QComboBox):
-            raw = str(self.settings.value(key, widget.currentText()))
+            raw = str(self.settings.value(
+                key, widget.currentText() if default_value is None else default_value))
             if widget.findText(raw) >= 0:
                 widget.setCurrentText(raw)
             return
         if isinstance(widget, QtWidgets.QSpinBox):
-            raw = self.settings.value(key, widget.value())
+            raw = self.settings.value(
+                key, widget.value() if default_value is None else default_value)
             try:
                 widget.setValue(int(raw))
             except Exception:
                 pass
             return
         if isinstance(widget, QtWidgets.QDoubleSpinBox):
-            raw = self.settings.value(key, widget.value())
+            raw = self.settings.value(
+                key, widget.value() if default_value is None else default_value)
             try:
                 widget.setValue(float(raw))
             except Exception:
@@ -1030,37 +1060,179 @@ class MainController(object):
             },
         }
 
-    def _should_carry_nav_category(self, key, checkbox_attr):
-        presence = self.session_ctrl.get_last_param_category_presence()
-        if not bool(presence.get(key, False)):
-            # If target CHI has no existing info, always carry from current.
-            return True
-        if key == "jcpds":
-            # JCPDS attached to the destination CHI should take precedence over
-            # carry-over. This avoids overwriting a file's own saved phase list.
-            return False
+    def _is_nav_carry_enabled(self, checkbox_attr):
         if not hasattr(self.widget, checkbox_attr):
             return True
         return bool(getattr(self.widget, checkbox_attr).isChecked())
 
+    def _get_nav_carry_existing_mode(self, key):
+        attr = "comboBox_CarryNavExistingJCPDS" if key == "jcpds" \
+            else "comboBox_CarryNavExistingOther"
+        if not hasattr(self.widget, attr):
+            return "keep"
+        text = str(getattr(self.widget, attr).currentText()).lower()
+        if "overwrite" in text:
+            return "overwrite"
+        return "keep"
+
+    def _get_nav_carry_action(self, key, checkbox_attr, presence):
+        if not self._is_nav_carry_enabled(checkbox_attr):
+            return "skip"
+        if not bool(presence.get(key, False)):
+            return "carry_blank"
+        mode = self._get_nav_carry_existing_mode(key)
+        if mode == "overwrite":
+            return "overwrite_existing"
+        return "keep_existing"
+
+    def _should_prompt_for_nav_carry_action(self, action):
+        if action == "keep_existing":
+            return hasattr(self.widget, "checkBox_CarryNavPopupConflict") and \
+                self.widget.checkBox_CarryNavPopupConflict.isChecked()
+        if action == "overwrite_existing":
+            return hasattr(self.widget, "checkBox_CarryNavPopupOverwrite") and \
+                self.widget.checkBox_CarryNavPopupOverwrite.isChecked()
+        return False
+
+    def _prompt_for_nav_carry_action(self, label, action):
+        if not self._should_prompt_for_nav_carry_action(action):
+            return action
+
+        box = QtWidgets.QMessageBox(self.widget)
+        box.setIcon(QtWidgets.QMessageBox.Question)
+        box.setWindowTitle("Carry-forward choice")
+        box.setText(label + " already exists in this file.")
+
+        if action == "overwrite_existing":
+            box.setInformativeText(
+                "Choose whether to overwrite it with the previous file setting "
+                "or keep the existing information.")
+            overwrite_btn = box.addButton(
+                "Carry over", QtWidgets.QMessageBox.AcceptRole)
+            keep_btn = box.addButton(
+                "Use existing", QtWidgets.QMessageBox.RejectRole)
+            box.setDefaultButton(overwrite_btn)
+        else:
+            box.setInformativeText(
+                "Choose whether to keep the existing information "
+                "or carry over the previous file setting.")
+            keep_btn = box.addButton(
+                "Use existing", QtWidgets.QMessageBox.AcceptRole)
+            overwrite_btn = box.addButton(
+                "Carry over", QtWidgets.QMessageBox.ActionRole)
+            box.setDefaultButton(keep_btn)
+
+        box.exec()
+        clicked = box.clickedButton()
+        if clicked == overwrite_btn:
+            return "overwrite_existing"
+        return "keep_existing"
+
+    def _record_nav_carry_result(self, results, key, action):
+        if action == "skip":
+            return
+        labels = {
+            "jcpds": "JCPDS",
+            "pressure": "Pressure",
+            "temperature": "Temperature",
+            "cake_z_scale": "2D image scale",
+            "background": "Background",
+            "waterfall_list": "Waterfall list",
+            "poni": "PONI",
+            "fits_information": "Fitting results",
+        }
+        results.append({
+            "key": key,
+            "label": labels.get(key, key),
+            "action": action,
+        })
+
+    def _format_nav_carry_status(self, results):
+        status_results = [
+            item for item in results
+            if item["key"] in ("jcpds", "pressure", "temperature")
+        ]
+        if not status_results:
+            return ("", "white")
+
+        priority = {"jcpds": 0, "pressure": 1, "temperature": 2}
+        status_results.sort(key=lambda item: priority.get(item["key"], 99))
+        top = status_results[0]
+        if top["key"] == "jcpds":
+            if top["action"] == "carry_blank":
+                return ("Previous JCPDS carried into this file.", "white")
+            if top["action"] == "keep_existing":
+                return ("Existing JCPDS kept for this file.", "green")
+            if top["action"] == "overwrite_existing":
+                return ("Previous JCPDS replaced existing JCPDS.", "red")
+
+        p_action = next((item["action"] for item in status_results
+                         if item["key"] == "pressure"), None)
+        t_action = next((item["action"] for item in status_results
+                         if item["key"] == "temperature"), None)
+        if p_action is not None and p_action == t_action:
+            if p_action == "carry_blank":
+                return ("Pressure and temperature carried from previous file.", "white")
+            if p_action == "keep_existing":
+                return ("Existing pressure and temperature kept.", "green")
+            if p_action == "overwrite_existing":
+                return (
+                    "Previous pressure and temperature replaced existing values.",
+                    "red",
+                )
+
+        messages = []
+        level = "white"
+        for item in status_results:
+            if item["action"] == "carry_blank":
+                messages.append(item["label"] + " carried from previous file")
+            elif item["action"] == "keep_existing":
+                messages.append("Existing " + item["label"].lower() + " kept")
+                if level != "red":
+                    level = "green"
+            elif item["action"] == "overwrite_existing":
+                messages.append(
+                    "Previous " + item["label"].lower() + " replaced existing value")
+                level = "red"
+        return (". ".join(messages) + ".", level)
+
     def _apply_nav_carry_state(self, snap):
         carried_any = False
-        if self._should_carry_nav_category("jcpds", "checkBox_CarryNavJCPDS"):
+        results = []
+        presence = self.session_ctrl.get_last_param_category_presence()
+
+        jcpds_action = self._get_nav_carry_action(
+            "jcpds", "checkBox_CarryNavJCPDS", presence)
+        jcpds_action = self._prompt_for_nav_carry_action("JCPDS", jcpds_action)
+        if jcpds_action in ("carry_blank", "overwrite_existing"):
             self.model.jcpds_lst = copy.deepcopy(snap["jcpds_lst"])
             self.jcpdstable_ctrl.update()
             carried_any = True
+        self._record_nav_carry_result(results, "jcpds", jcpds_action)
 
-        if self._should_carry_nav_category("pressure", "checkBox_CarryNavPressure"):
+        pressure_action = self._get_nav_carry_action(
+            "pressure", "checkBox_CarryNavPressure", presence)
+        pressure_action = self._prompt_for_nav_carry_action("Pressure", pressure_action)
+        if pressure_action in ("carry_blank", "overwrite_existing"):
             self.model.save_pressure(float(snap["pressure"]))
             self.widget.doubleSpinBox_Pressure.setValue(float(snap["pressure"]))
             carried_any = True
+        self._record_nav_carry_result(results, "pressure", pressure_action)
 
-        if self._should_carry_nav_category("temperature", "checkBox_CarryNavTemperature"):
+        temperature_action = self._get_nav_carry_action(
+            "temperature", "checkBox_CarryNavTemperature", presence)
+        temperature_action = self._prompt_for_nav_carry_action(
+            "Temperature", temperature_action)
+        if temperature_action in ("carry_blank", "overwrite_existing"):
             self.model.save_temperature(float(snap["temperature"]))
             self.widget.doubleSpinBox_Temperature.setValue(float(snap["temperature"]))
             carried_any = True
+        self._record_nav_carry_result(results, "temperature", temperature_action)
 
-        if self._should_carry_nav_category("cake_z_scale", "checkBox_CarryNavCakeZScale"):
+        cake_action = self._get_nav_carry_action(
+            "cake_z_scale", "checkBox_CarryNavCakeZScale", presence)
+        cake_action = self._prompt_for_nav_carry_action("2D image scale", cake_action)
+        if cake_action in ("carry_blank", "overwrite_existing"):
             cake = snap["cake_z_scale"]
             self.widget.spinBox_MaxCakeScale.setValue(int(cake["int_max"]))
             self.widget.horizontalSlider_VMin.setValue(int(cake["min_bar"]))
@@ -1072,8 +1244,14 @@ class MainController(object):
                 self.widget.cake_hist_widget.check_focus.setChecked(bool(hist.get("focus_range", True)))
                 self.widget.cake_hist_widget.spin_low_pct.setValue(float(hist.get("low_pct", 40.0)))
                 self.widget.cake_hist_widget.spin_high_pct.setValue(float(hist.get("high_pct", 99.95)))
+            carried_any = True
+        self._record_nav_carry_result(results, "cake_z_scale", cake_action)
 
-        if self._should_carry_nav_category("background", "checkBox_CarryNavBackground"):
+        background_action = self._get_nav_carry_action(
+            "background", "checkBox_CarryNavBackground", presence)
+        background_action = self._prompt_for_nav_carry_action(
+            "Background", background_action)
+        if background_action in ("carry_blank", "overwrite_existing"):
             bg = snap["background"]
             self.widget.doubleSpinBox_Background_ROI_min.setValue(float(bg["roi_min"]))
             self.widget.doubleSpinBox_Background_ROI_max.setValue(float(bg["roi_max"]))
@@ -1083,18 +1261,32 @@ class MainController(object):
             if self.model.base_ptn_exist():
                 self.update_bgsub()
             carried_any = True
+        self._record_nav_carry_result(results, "background", background_action)
 
-        if self._should_carry_nav_category("waterfall_list", "checkBox_CarryNavWaterfall"):
+        waterfall_action = self._get_nav_carry_action(
+            "waterfall_list", "checkBox_CarryNavWaterfall", presence)
+        waterfall_action = self._prompt_for_nav_carry_action(
+            "Waterfall list", waterfall_action)
+        if waterfall_action in ("carry_blank", "overwrite_existing"):
             self.model.waterfall_ptn = copy.deepcopy(snap["waterfall_list"])
             self.waterfalltable_ctrl.update()
             carried_any = True
+        self._record_nav_carry_result(results, "waterfall_list", waterfall_action)
 
-        if self._should_carry_nav_category("poni", "checkBox_CarryNavPONI"):
+        poni_action = self._get_nav_carry_action(
+            "poni", "checkBox_CarryNavPONI", presence)
+        poni_action = self._prompt_for_nav_carry_action("PONI", poni_action)
+        if poni_action in ("carry_blank", "overwrite_existing"):
             self.model.poni = snap["poni"]
             self.widget.lineEdit_PONI.setText('' if snap["poni"] is None else str(snap["poni"]))
             carried_any = True
+        self._record_nav_carry_result(results, "poni", poni_action)
 
-        if self._should_carry_nav_category("fits_information", "checkBox_CarryNavFits"):
+        fits_action = self._get_nav_carry_action(
+            "fits_information", "checkBox_CarryNavFits", presence)
+        fits_action = self._prompt_for_nav_carry_action(
+            "Fitting results", fits_action)
+        if fits_action in ("carry_blank", "overwrite_existing"):
             self.model.section_lst = copy.deepcopy(snap["fits_information"]["section_lst"])
             self.model.current_section = copy.deepcopy(snap["fits_information"]["current_section"])
             self.peakfit_table_ctrl.update_sections()
@@ -1102,11 +1294,16 @@ class MainController(object):
             self.peakfit_table_ctrl.update_baseline_constraints()
             self.peakfit_table_ctrl.update_peak_constraints()
             carried_any = True
+        self._record_nav_carry_result(results, "fits_information", fits_action)
 
         if carried_any:
             self.session_ctrl.set_carryover_source_chi(snap.get("source_chi"))
         else:
             self.session_ctrl.set_carryover_source_chi(None)
+
+        status_text, status_level = self._format_nav_carry_status(results)
+        if hasattr(self.widget, "set_nav_carry_status"):
+            self.widget.set_nav_carry_status(status_text, status_level)
 
         # Never carry over backup information across CHI navigation.
         # Always show backup info for the newly loaded file.
