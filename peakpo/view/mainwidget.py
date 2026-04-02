@@ -100,6 +100,27 @@ class WheelCenterButton(QtWidgets.QPushButton):
             painter.setPen(focus_pen)
             painter.drawRect(outer.adjusted(1, 1, -1, -1))
 
+
+class ToolbarTumblerDoubleSpinBox(QtWidgets.QDoubleSpinBox):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setKeyboardTracking(False)
+        self.setStyle(SpinBoxFixStyle())
+        self.setFrame(False)
+        self.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
+        self.setAlignment(QtCore.Qt.AlignCenter)
+
+
+class ToolbarTumblerSpinBox(QtWidgets.QSpinBox):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setKeyboardTracking(False)
+        self.setStyle(SpinBoxFixStyle())
+        self.setFrame(False)
+        self.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
+        self.setAlignment(QtCore.Qt.AlignCenter)
+
+
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     """
     Main window
@@ -272,18 +293,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(self, "pushButton_S_PDecrease"):
             self.pushButton_S_PDecrease.setMinimumWidth(56)
             self.pushButton_S_PDecrease.setMaximumWidth(16777215)
-        if hasattr(self, "pushButton_S_PScroll"):
-            self.pushButton_S_PScroll.setMinimumWidth(72)
-            self.pushButton_S_PScroll.setMaximumWidth(160)
+        if hasattr(self, "doubleSpinBox_ToolbarPressure"):
+            self.doubleSpinBox_ToolbarPressure.setMinimumWidth(72)
+            self.doubleSpinBox_ToolbarPressure.setMaximumWidth(160)
         if hasattr(self, "pushButton_S_TIncrease"):
             self.pushButton_S_TIncrease.setMinimumWidth(56)
             self.pushButton_S_TIncrease.setMaximumWidth(16777215)
         if hasattr(self, "pushButton_S_TDecrease"):
             self.pushButton_S_TDecrease.setMinimumWidth(56)
             self.pushButton_S_TDecrease.setMaximumWidth(16777215)
-        if hasattr(self, "pushButton_S_TScroll"):
-            self.pushButton_S_TScroll.setMinimumWidth(72)
-            self.pushButton_S_TScroll.setMaximumWidth(160)
+        if hasattr(self, "spinBox_ToolbarTemperature"):
+            self.spinBox_ToolbarTemperature.setMinimumWidth(72)
+            self.spinBox_ToolbarTemperature.setMaximumWidth(160)
         if hasattr(self, "pushButton_S_RoomT") and hasattr(self, "doubleSpinBox_Temperature"):
             target_width = self.pushButton_S_RoomT.sizeHint().width() + 8
             self.pushButton_S_RoomT.setMinimumWidth(target_width)
@@ -388,6 +409,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self._update_pt_spinbox_colors)
         self.doubleSpinBox_Temperature.valueChanged.connect(
             self._update_pt_spinbox_colors)
+        self.doubleSpinBox_Pressure.valueChanged.connect(
+            self._sync_from_main_pressure)
+        self.doubleSpinBox_Temperature.valueChanged.connect(
+            self._sync_from_main_temperature)
         self._update_pt_spinbox_colors()
         self._fix_tab_clipping()
         align_all_spinboxes_right(self)
@@ -1019,16 +1044,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                  "Pressure up. Step size comes from JCPDS > Data.")
         register(getattr(self, "pushButton_S_PDecrease", None),
                  "Pressure down. Step size comes from JCPDS > Data.")
-        register(getattr(self, "pushButton_S_PScroll", None),
-                 "Mouse wheel changes pressure by the step size in JCPDS > Data.")
+        register(getattr(self, "doubleSpinBox_ToolbarPressure", None),
+                 "Pressure tumbler. Range 0 to 1000 GPa.")
         register(getattr(self, "pushButton_S_TIncrease", None),
                  "Temperature up. Step size comes from JCPDS > Data.")
         register(getattr(self, "pushButton_S_RoomT", None),
                  "Reset temperature to 300 K. Mouse wheel also changes temperature by the step size in JCPDS > Data.")
         register(getattr(self, "pushButton_S_TDecrease", None),
                  "Temperature down. Step size comes from JCPDS > Data.")
-        register(getattr(self, "pushButton_S_TScroll", None),
-                 "Mouse wheel changes temperature by the step size in JCPDS > Data.")
+        register(getattr(self, "spinBox_ToolbarTemperature", None),
+                 "Temperature tumbler. Range 0 to 10000 K.")
         register(getattr(self, "checkBox_JCPDSinPattern", None),
                  "Show JCPDS reference lines in the 1D pattern.")
         register(getattr(self, "checkBox_JCPDSinCake", None),
@@ -1053,7 +1078,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if obj in (
                 getattr(self, "pushButton_S_PIncrease", None),
                 getattr(self, "pushButton_S_PDecrease", None),
-                getattr(self, "pushButton_S_PScroll", None),
             ):
                 step_dir = 1 if event.angleDelta().y() > 0 else -1
                 self.set_pressure(
@@ -1064,7 +1088,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 getattr(self, "pushButton_S_TIncrease", None),
                 getattr(self, "pushButton_S_RoomT", None),
                 getattr(self, "pushButton_S_TDecrease", None),
-                getattr(self, "pushButton_S_TScroll", None),
             ):
                 step_dir = 1 if event.angleDelta().y() > 0 else -1
                 self.set_temperature(
@@ -1087,8 +1110,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             getattr(self, "pushButton_S_TIncrease", None),
             getattr(self, "pushButton_S_RoomT", None),
             getattr(self, "pushButton_S_TDecrease", None),
-            getattr(self, "pushButton_S_PScroll", None),
-            getattr(self, "pushButton_S_TScroll", None),
         ):
             if button is None:
                 continue
@@ -1154,6 +1175,36 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         blocker = QtCore.QSignalBlocker(self.spinBox_ToolbarTStep)
         self.spinBox_ToolbarTStep.setValue(value)
+        del blocker
+
+    def _sync_toolbar_pressure(self, value):
+        if float(self.doubleSpinBox_Pressure.value()) == float(value):
+            return
+        blocker = QtCore.QSignalBlocker(self.doubleSpinBox_Pressure)
+        self.doubleSpinBox_Pressure.setValue(value)
+        del blocker
+        self._update_pt_spinbox_colors()
+
+    def _sync_toolbar_temperature(self, value):
+        if int(round(self.doubleSpinBox_Temperature.value())) == int(value):
+            return
+        blocker = QtCore.QSignalBlocker(self.doubleSpinBox_Temperature)
+        self.doubleSpinBox_Temperature.setValue(float(value))
+        del blocker
+        self._update_pt_spinbox_colors()
+
+    def _sync_from_main_pressure(self, value):
+        if not hasattr(self, "doubleSpinBox_ToolbarPressure"):
+            return
+        blocker = QtCore.QSignalBlocker(self.doubleSpinBox_ToolbarPressure)
+        self.doubleSpinBox_ToolbarPressure.setValue(float(value))
+        del blocker
+
+    def _sync_from_main_temperature(self, value):
+        if not hasattr(self, "spinBox_ToolbarTemperature"):
+            return
+        blocker = QtCore.QSignalBlocker(self.spinBox_ToolbarTemperature)
+        self.spinBox_ToolbarTemperature.setValue(int(round(value)))
         del blocker
 
     def _setup_plot_setup_group(self):
@@ -1595,7 +1646,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.frame_TopToolbarRow2.setMaximumHeight(row2_height)
         self.layout_TopToolbarRow2 = QtWidgets.QHBoxLayout(self.frame_TopToolbarRow2)
         self.layout_TopToolbarRow2.setContentsMargins(0, 0, 0, 0)
-        self.layout_TopToolbarRow2.setSpacing(10)
+        self.layout_TopToolbarRow2.setSpacing(36)
 
         row1_widgets = [
             getattr(self, "pushButton_S_PrevBasePtn", None),
@@ -1653,6 +1704,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 widget.setSizePolicy(
                     QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
                 self.layout_TopToolbarRow1.addWidget(widget, 0)
+            if widget == getattr(self, "pushButton_S_NextBasePtn", None):
+                self.layout_TopToolbarRow1.addSpacing(28)
 
         toolbar_p_inc = getattr(self, "pushButton_S_PIncrease", None)
         toolbar_p_dec = getattr(self, "pushButton_S_PDecrease", None)
@@ -1670,8 +1723,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             widget.setParent(self.frame_TopToolbarRow2)
             widget.show()
             widget.setText(text)
-            widget.setMinimumHeight(row2_height - 2)
-            widget.setMaximumHeight(row2_height - 2)
+            widget.setMinimumHeight(row2_height)
+            widget.setMaximumHeight(row2_height)
             widget.setFlat(False)
             widget.setAutoDefault(False)
             widget.setDefault(False)
@@ -1682,7 +1735,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.frame_PWheelGroup = QtWidgets.QFrame(self.frame_TopToolbarRow2)
             self.layout_PWheelGroup = QtWidgets.QHBoxLayout(self.frame_PWheelGroup)
             self.layout_PWheelGroup.setContentsMargins(0, 0, 0, 0)
-            self.layout_PWheelGroup.setSpacing(0)
+            self.layout_PWheelGroup.setSpacing(4)
         self.frame_PWheelGroup.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.frame_PWheelGroup.setMinimumHeight(row2_height)
@@ -1691,35 +1744,52 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.frame_TWheelGroup = QtWidgets.QFrame(self.frame_TopToolbarRow2)
             self.layout_TWheelGroup = QtWidgets.QHBoxLayout(self.frame_TWheelGroup)
             self.layout_TWheelGroup.setContentsMargins(0, 0, 0, 0)
-            self.layout_TWheelGroup.setSpacing(0)
+            self.layout_TWheelGroup.setSpacing(4)
         self.frame_TWheelGroup.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.frame_TWheelGroup.setMinimumHeight(row2_height)
         self.frame_TWheelGroup.setMaximumHeight(row2_height)
 
-        if not hasattr(self, "pushButton_S_PScroll"):
-            self.pushButton_S_PScroll = WheelCenterButton(parent=self.frame_PWheelGroup)
-        self.pushButton_S_PScroll.setParent(self.frame_PWheelGroup)
-        self.pushButton_S_PScroll.setText("P")
-        self.pushButton_S_PScroll.setToolTip("Use mouse wheel to change pressure by the current step size.")
-        self.pushButton_S_PScroll.setMinimumHeight(row2_height)
-        self.pushButton_S_PScroll.setMaximumHeight(row2_height)
-        self.pushButton_S_PScroll.setMinimumWidth(72)
-        self.pushButton_S_PScroll.setMaximumWidth(160)
-        self.pushButton_S_PScroll.setSizePolicy(
+        if not hasattr(self, "doubleSpinBox_ToolbarPressure"):
+            self.doubleSpinBox_ToolbarPressure = ToolbarTumblerDoubleSpinBox(
+                self.frame_PWheelGroup)
+            self.doubleSpinBox_ToolbarPressure.valueChanged.connect(
+                self._sync_toolbar_pressure)
+        self.doubleSpinBox_ToolbarPressure.setParent(self.frame_PWheelGroup)
+        self.doubleSpinBox_ToolbarPressure.setToolTip("Pressure tumbler.")
+        self.doubleSpinBox_ToolbarPressure.setDecimals(2)
+        self.doubleSpinBox_ToolbarPressure.setRange(0.0, 1000.0)
+        self.doubleSpinBox_ToolbarPressure.setSingleStep(
+            self.doubleSpinBox_Pressure.singleStep())
+        self.doubleSpinBox_ToolbarPressure.setValue(
+            float(self.doubleSpinBox_Pressure.value()))
+        self.doubleSpinBox_ToolbarPressure.setMinimumHeight(row2_height)
+        self.doubleSpinBox_ToolbarPressure.setMaximumHeight(row2_height)
+        self.doubleSpinBox_ToolbarPressure.setMinimumWidth(72)
+        self.doubleSpinBox_ToolbarPressure.setMaximumWidth(160)
+        self.doubleSpinBox_ToolbarPressure.setSizePolicy(
             QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self._set_toolbar_tumbler_style(self.doubleSpinBox_ToolbarPressure)
 
-        if not hasattr(self, "pushButton_S_TScroll"):
-            self.pushButton_S_TScroll = WheelCenterButton(parent=self.frame_TWheelGroup)
-        self.pushButton_S_TScroll.setParent(self.frame_TWheelGroup)
-        self.pushButton_S_TScroll.setText("T")
-        self.pushButton_S_TScroll.setToolTip("Use mouse wheel to change temperature by the current step size.")
-        self.pushButton_S_TScroll.setMinimumHeight(row2_height)
-        self.pushButton_S_TScroll.setMaximumHeight(row2_height)
-        self.pushButton_S_TScroll.setMinimumWidth(72)
-        self.pushButton_S_TScroll.setMaximumWidth(160)
-        self.pushButton_S_TScroll.setSizePolicy(
+        if not hasattr(self, "spinBox_ToolbarTemperature"):
+            self.spinBox_ToolbarTemperature = ToolbarTumblerSpinBox(
+                self.frame_TWheelGroup)
+            self.spinBox_ToolbarTemperature.valueChanged.connect(
+                self._sync_toolbar_temperature)
+        self.spinBox_ToolbarTemperature.setParent(self.frame_TWheelGroup)
+        self.spinBox_ToolbarTemperature.setToolTip("Temperature tumbler.")
+        self.spinBox_ToolbarTemperature.setRange(0, 10000)
+        self.spinBox_ToolbarTemperature.setSingleStep(
+            max(1, int(self.spinBox_TStep.value())))
+        self.spinBox_ToolbarTemperature.setValue(
+            int(round(self.doubleSpinBox_Temperature.value())))
+        self.spinBox_ToolbarTemperature.setMinimumHeight(row2_height)
+        self.spinBox_ToolbarTemperature.setMaximumHeight(row2_height)
+        self.spinBox_ToolbarTemperature.setMinimumWidth(72)
+        self.spinBox_ToolbarTemperature.setMaximumWidth(160)
+        self.spinBox_ToolbarTemperature.setSizePolicy(
             QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self._set_toolbar_tumbler_style(self.spinBox_ToolbarTemperature)
 
         toolbar_roomt = getattr(self, "pushButton_S_RoomT", None)
         if toolbar_roomt is not None:
@@ -1736,8 +1806,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
 
         for group_layout, widgets in (
-            (self.layout_PWheelGroup, (toolbar_p_inc, self.pushButton_S_PScroll, toolbar_p_dec)),
-            (self.layout_TWheelGroup, (toolbar_t_inc, self.pushButton_S_TScroll, toolbar_t_dec)),
+            (self.layout_PWheelGroup, (toolbar_p_inc, self.doubleSpinBox_ToolbarPressure, toolbar_p_dec)),
+            (self.layout_TWheelGroup, (toolbar_t_inc, self.spinBox_ToolbarTemperature, toolbar_t_dec)),
         ):
             while group_layout.count():
                 item = group_layout.takeAt(0)
@@ -1801,6 +1871,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "outline: none;"
             "border: 1px solid rgba(255, 255, 255, 0.16);"
             + radius_rule +
+            "}"
+        )
+
+    def _set_toolbar_tumbler_style(self, box):
+        box.setStyleSheet(
+            "QAbstractSpinBox {"
+            "background-color: #444444;"
+            "color: #ffffff;"
+            "border: 1px solid rgba(255, 255, 255, 0.10);"
+            "border-radius: 0px;"
+            "padding: 0px 6px 0px 6px;"
+            "font: 700 13pt \"Helvetica\";"
+            "selection-background-color: #1565c0;"
+            "}"
+            "QAbstractSpinBox:hover {"
+            "background-color: #505050;"
+            "}"
+            "QAbstractSpinBox:focus {"
+            "border: 1px solid rgba(255, 255, 255, 0.18);"
             "}"
         )
 
@@ -2706,10 +2795,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def set_pstep(self):
         self.doubleSpinBox_Pressure.setSingleStep(
             self.doubleSpinBox_PStep.value())
+        if hasattr(self, "doubleSpinBox_ToolbarPressure"):
+            self.doubleSpinBox_ToolbarPressure.setSingleStep(
+                self.doubleSpinBox_PStep.value())
 
     def set_tstep(self):
         self.doubleSpinBox_Temperature.setSingleStep(
             self.spinBox_TStep.value())
+        if hasattr(self, "spinBox_ToolbarTemperature"):
+            self.spinBox_ToolbarTemperature.setSingleStep(
+                max(1, int(self.spinBox_TStep.value())))
 
     def set_temperature(self, temperature):
         self.doubleSpinBox_Temperature.setValue(temperature)
