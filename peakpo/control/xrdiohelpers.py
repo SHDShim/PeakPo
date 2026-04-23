@@ -3,6 +3,7 @@ import glob
 import numpy as np
 
 from ..utils import get_temp_dir, readchi
+from ..ds_powdiff.DiffractionPattern import Pattern
 
 
 def load_chi_xy(chi_path, chi_cache):
@@ -38,6 +39,65 @@ def load_bgsub_or_raw_xy(chi_path, use_bgsub, chi_cache):
 
     # Fallback: raw chi if bgsub file is unavailable.
     return load_chi_xy(chi_path, chi_cache)
+
+
+def refresh_temp_bgsub_for_chi_files(
+        chi_files,
+        preferred_chi=None,
+        bg_roi=None,
+        bg_params=None):
+    """
+    Force-refresh temporary bg/bgsub files for map/sequence workflows.
+    Files are written only under each CHI's temporary PARAM directory.
+    """
+    files = [str(f) for f in (chi_files or []) if f]
+    if not files:
+        return {"reference": None, "updated": 0, "failed": 0, "failures": []}
+
+    preferred = str(preferred_chi) if preferred_chi else None
+    if preferred in files:
+        reference = preferred
+    else:
+        reference = files[0]
+
+    if (bg_roi is None) or (len(bg_roi) < 2):
+        roi = None
+    else:
+        roi = [float(bg_roi[0]), float(bg_roi[1])]
+    if (bg_params is None) or (len(bg_params) < 3):
+        params = [20, 10, 20]
+    else:
+        params = [int(bg_params[0]), int(bg_params[1]), int(bg_params[2])]
+
+    if roi is None:
+        __, __, x_ref, __ = readchi(reference)
+        x_ref = np.asarray(x_ref, dtype=float)
+        roi = [float(np.nanmin(x_ref)), float(np.nanmax(x_ref))]
+
+    failures = []
+    updated = 0
+    for chi_path in files:
+        try:
+            ptn = Pattern(chi_path)
+            x_raw, __ = ptn.get_raw()
+            x_raw = np.asarray(x_raw, dtype=float)
+            roi_min = max(float(np.nanmin(x_raw)), float(min(roi)))
+            roi_max = min(float(np.nanmax(x_raw)), float(max(roi)))
+            if roi_max <= roi_min:
+                roi_min = float(np.nanmin(x_raw))
+                roi_max = float(np.nanmax(x_raw))
+            ptn.subtract_bg([roi_min, roi_max], params=params, yshift=0)
+            ptn.write_temporary_bgfiles(get_temp_dir(chi_path))
+            updated += 1
+        except Exception as exc:
+            failures.append((chi_path, str(exc)))
+
+    return {
+        "reference": reference,
+        "updated": int(updated),
+        "failed": int(len(failures)),
+        "failures": failures,
+    }
 
 
 def find_temp_cake_triplet(chi_path):

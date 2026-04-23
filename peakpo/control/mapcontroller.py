@@ -12,6 +12,7 @@ import matplotlib.patches as mpatches
 from .xrdiohelpers import (
     load_chi_xy,
     load_bgsub_or_raw_xy,
+    refresh_temp_bgsub_for_chi_files,
     find_temp_cake_triplet,
     load_cake_data,
 )
@@ -493,6 +494,54 @@ class MapController(object):
     def _load_cake_data(self, chi_path):
         return load_cake_data(chi_path, self._cake_cache)
 
+    def _current_displayed_chi(self):
+        if not getattr(self.model, "base_ptn", None):
+            return None
+        return getattr(self.model.base_ptn, "fname", None)
+
+    def _preferred_bg_reference_chi(self):
+        shown = self._current_displayed_chi()
+        if shown and (shown in self._chi_files):
+            return shown
+        if self._chi_files:
+            return self._chi_files[0]
+        return None
+
+    def _refresh_temp_bgsub_if_requested(self):
+        use_bgsub = bool(
+            getattr(self.widget, "checkBox_BgSub", None) and
+            self.widget.checkBox_BgSub.isChecked()
+        )
+        if (not use_bgsub) or (self._roi_1d is None) or (not self._chi_files):
+            return
+
+        bg_roi = [
+            float(self.widget.doubleSpinBox_Background_ROI_min.value()),
+            float(self.widget.doubleSpinBox_Background_ROI_max.value()),
+        ]
+        bg_params = [
+            int(self.widget.spinBox_BGParam0.value()),
+            int(self.widget.spinBox_BGParam1.value()),
+            int(self.widget.spinBox_BGParam2.value()),
+        ]
+        result = refresh_temp_bgsub_for_chi_files(
+            self._chi_files,
+            preferred_chi=self._preferred_bg_reference_chi(),
+            bg_roi=bg_roi,
+            bg_params=bg_params,
+        )
+        ref_name = os.path.basename(result["reference"]) if result["reference"] else "N/A"
+        if result["updated"] > 0:
+            self._set_status(
+                f"Temp BG refresh complete: {result['updated']} updated "
+                f"(reference: {ref_name}).")
+        if result["failed"] > 0:
+            first_path, first_err = result["failures"][0]
+            first_name = os.path.basename(first_path)
+            self._set_status(
+                f"Temp BG refresh: {result['updated']} updated, "
+                f"{result['failed']} failed. First: {first_name} ({first_err})")
+
     def _compute_map(self):
         if not self._chi_files:
             self._set_status("Load CHI files first.")
@@ -507,6 +556,7 @@ class MapController(object):
         if (self._roi_1d is None) and (self._roi_2d is None):
             self._set_status("Select ROI first.")
             return
+        self._refresh_temp_bgsub_if_requested()
 
         values = np.full(n, np.nan, dtype=float)
         failures = []

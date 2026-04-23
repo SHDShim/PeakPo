@@ -1,6 +1,8 @@
 from qtpy import QtGui, QtWidgets, QtCore
 import os.path
 import re
+import glob
+import fnmatch
 from .fileutils import extract_extension
 
 
@@ -84,10 +86,74 @@ def _exec_dialog(dialog):
     return bool(exec_fn())
 
 
+def _extract_name_filter_patterns(name_filter):
+    # Example: "CHI files (*.chi *.dat)"
+    m = re.search(r"\(([^)]*)\)", str(name_filter or ""))
+    if not m:
+        return []
+    parts = [p.strip() for p in m.group(1).split() if p.strip()]
+    return [p for p in parts if p != "*"]
+
+
+def _matches_name_filter(path, patterns):
+    if not patterns:
+        return True
+    base = os.path.basename(path)
+    return any(fnmatch.fnmatch(base, pat) for pat in patterns)
+
+
+def _expand_selected_files(dialog, selected_files):
+    """
+    Expand wildcard tokens typed into the filename field (e.g., map2_*).
+    """
+    if not selected_files:
+        return []
+
+    current_dir = dialog.directory().absolutePath()
+    patterns = _extract_name_filter_patterns(dialog.selectedNameFilter())
+    out = []
+    seen = set()
+    for item in selected_files:
+        token = str(item or "").strip()
+        if not token:
+            continue
+        has_glob = any(ch in token for ch in ("*", "?", "["))
+        if has_glob:
+            query = token if os.path.isabs(token) else os.path.join(current_dir, token)
+            for match in sorted(glob.glob(query)):
+                if (not os.path.isfile(match)) or (not _matches_name_filter(match, patterns)):
+                    continue
+                if match not in seen:
+                    seen.add(match)
+                    out.append(match)
+            continue
+        path = token if os.path.isabs(token) else os.path.join(current_dir, token)
+        if os.path.isfile(path) and _matches_name_filter(path, patterns):
+            if path not in seen:
+                seen.add(path)
+                out.append(path)
+    return out
+
+
+class _OpenFileDialog(QtWidgets.QFileDialog):
+    def __init__(self, *args, **kwargs):
+        super(_OpenFileDialog, self).__init__(*args, **kwargs)
+        self._expanded_selected_files = None
+
+    def accept(self):
+        if self.fileMode() == QtWidgets.QFileDialog.ExistingFiles:
+            expanded = _expand_selected_files(self, self.selectedFiles())
+            if expanded:
+                self._expanded_selected_files = expanded
+                self.done(QtWidgets.QDialog.Accepted)
+                return
+        super(_OpenFileDialog, self).accept()
+
+
 def _build_open_dialog(
         obj, title, directory, file_filter, file_mode,
         default_hide_param_dirs=False):
-    dialog = QtWidgets.QFileDialog(obj, title, directory, file_filter)
+    dialog = _OpenFileDialog(obj, title, directory, file_filter)
     dialog.setFileMode(file_mode)
     dialog.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, True)
 
@@ -120,7 +186,10 @@ def dialog_openfiles_hide_param_dirs(
         QtWidgets.QFileDialog.ExistingFiles,
         default_hide_param_dirs=default_hide_param_dirs)
     if _exec_dialog(dialog):
-        return dialog.selectedFiles(), dialog.selectedNameFilter()
+        files = getattr(dialog, "_expanded_selected_files", None)
+        if files is None:
+            files = _expand_selected_files(dialog, dialog.selectedFiles())
+        return files, dialog.selectedNameFilter()
     return [], ""
 
 
