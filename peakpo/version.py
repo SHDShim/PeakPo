@@ -4,8 +4,11 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.10.7a3"
+__version__ = "7.10.8"
 """
+7.10.8: force temporary BG refresh on Compute Map/Seq with BG sub;
+        prioritize currently displayed pattern as reference;
+        support wildcard input (e.g., map2_*.chi) in CHI multi-file chooser.
 7.10.7: fix filechooser sorting issue.  fix pressure carry over issue. Improved output for JCPDS view.
 7.10.6: hide -param folders option for file loader.  Export JCPDS to a designated folder.
 7.10.5: UI fixes
