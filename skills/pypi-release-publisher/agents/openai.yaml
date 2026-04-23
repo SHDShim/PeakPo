@@ -1,0 +1,6 @@
+display_name: PyPI Release Publisher
+short_description: Build and publish this package to PyPI with safe version gating.
+default_prompt: >-
+  Prepare and publish a new PyPI release for this repository. First ask whether
+  the release should be alpha or stable, then proceed with version update,
+  build, and targeted upload of only the new version artifacts.
