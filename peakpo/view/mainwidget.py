@@ -754,7 +754,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     widget.minimumSizeHint().width(),
                 )
 
-        col_widths[0] = max(110, col_widths[0] // 2)
+        col_widths[0] = max(
+            self._large_pt_spinbox_minimum_width(self.doubleSpinBox_Pressure),
+            self._large_pt_spinbox_minimum_width(self.doubleSpinBox_Temperature),
+            150,
+            col_widths[0] // 2)
         col_widths[1] = max(72, int(col_widths[1] * 0.6))
         col_widths[2] = min(max(col_widths[2], 64), 72)
         col_widths[3] = max(42, int(col_widths[3] * 0.7))
@@ -778,6 +782,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.gridLayout_10.addWidget(self.label_CarryNavStatus, 0, 1, 1, 1)
         self.gridLayout_10.addWidget(self.frame_PTGrid, 1, 1, 4, 1)
         self._sync_nav_carry_status_visibility()
+
+    def _large_pt_spinbox_minimum_width(self, box):
+        font_metrics = QtGui.QFontMetrics(box.font())
+        sample_values = (
+            box.textFromValue(box.minimum()),
+            box.textFromValue(box.maximum()),
+            box.textFromValue(box.value()),
+            "-1000.00",
+            "10000",
+        )
+        if hasattr(font_metrics, "horizontalAdvance"):
+            text_width = max(font_metrics.horizontalAdvance(v)
+                             for v in sample_values)
+        else:
+            text_width = max(font_metrics.width(v) for v in sample_values)
+        return text_width + 40
 
     def set_nav_carry_status(self, text="", level="white"):
         self._nav_carry_status_text = str(text or "")
@@ -2837,6 +2857,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "font: 75 24pt \"Helvetica\";"
             "color: #f0f0f0;"
             "background-color: " + bg + ";"
+            "padding: 0px;"
+            "}"
+            "QDoubleSpinBox::edit-field {"
+            "margin: 0px;"
+            "padding: 0px;"
+            "}"
+            "QDoubleSpinBox::up-button {"
+            "subcontrol-origin: border;"
+            "subcontrol-position: top right;"
+            "width: 24px;"
+            "margin: 0px;"
+            "}"
+            "QDoubleSpinBox::down-button {"
+            "subcontrol-origin: border;"
+            "subcontrol-position: bottom right;"
+            "width: 24px;"
+            "margin: 0px;"
             "}"
         )
 

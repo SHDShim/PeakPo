@@ -33,12 +33,17 @@ This repository contains `PeakPo`, a Python desktop application for X-ray diffra
 
 ## Verification
 
-Useful local checks:
+Use the `dev26a` Conda environment for local Python commands in this
+repository. Prefer the environment's Python executable directly when possible:
 
 ```bash
-python -m compileall peakpo
-python -m pip install -e .
-python -m peakpo
+/opt/homebrew/Caskroom/miniforge/base/envs/dev26a/bin/python -m compileall peakpo
+/opt/homebrew/Caskroom/miniforge/base/envs/dev26a/bin/python -m pip install -e .
+/opt/homebrew/Caskroom/miniforge/base/envs/dev26a/bin/python -m peakpo
 ```
+
+Avoid assuming the shell's currently active Conda environment is correct. In
+particular, the `main` environment may be active in automated shells but is not
+the intended development environment for this project.
 
 Use judgment with GUI launch commands in headless or sandboxed environments.

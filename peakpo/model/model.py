@@ -2,7 +2,6 @@ import pickle
 import os
 import copy
 import types
-import xlwt
 import numpy
 import base64
 import traceback
@@ -17,6 +16,7 @@ from ..ds_section import Section
 from .diff_state import DiffState
 from ..utils import samefilename, make_filename, change_file_path, \
     cal_dspacing, extract_extension
+from ..utils.excelutils import require_xlwt
 from ..compat_pickle import PeakPoCompatPickleUnpickler
 
 
@@ -404,6 +404,7 @@ class PeakPoModel(object):
         if str(xls_filen) == '':
             return
         num_sec = 0
+        xlwt = require_xlwt()
         workbook = xlwt.Workbook()
         sheet_num = 0
         for section in self.section_lst:

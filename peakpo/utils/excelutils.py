@@ -1,9 +1,18 @@
-
-import xlwt
+def require_xlwt():
+    try:
+        import xlwt
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError(
+            "The Excel .xls export feature requires the 'xlwt' package. "
+            "Install it in the active PeakPo environment, for example with "
+            "'python -m pip install xlwt' or 'conda install -c conda-forge xlwt'."
+        ) from exc
+    return xlwt
 
 
 def xls_jlist(filename, jlist, pressure, temperature):
     num_jcpds = 0
+    xlwt = require_xlwt()
     workbook = xlwt.Workbook()
     for jcpds in jlist:
         sheet = workbook.add_sheet(jcpds.name)
@@ -82,6 +91,7 @@ def xls_ucfitlist(filename, ucfitlist):
     """
     dump ucfitlist to an excel files
     """
+    xlwt = require_xlwt()
     workbook = xlwt.Workbook()
     num_jcpds = 0
     for j in ucfitlist:

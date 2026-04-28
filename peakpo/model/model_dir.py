@@ -3,7 +3,6 @@ import os
 import copy
 import datetime
 import traceback
-import xlwt
 from ..ds_cake import DiffImg
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
@@ -12,6 +11,7 @@ from ..ds_powdiff import PatternPeakPo, get_DataSection
 from ..ds_section import Section
 from ..utils import samefilename, make_filename, change_file_path, \
     extract_extension
+from ..utils.excelutils import require_xlwt
 from ..compat_pickle import PeakPoCompatPickleUnpickler
 
 
@@ -424,6 +424,7 @@ class PeakPoDirModel(object):
         if str(xls_filen) == '':
             return
         num_sec = 0
+        xlwt = require_xlwt()
         workbook = xlwt.Workbook()
         sheet_num = 0
         for section in self.section_lst:
