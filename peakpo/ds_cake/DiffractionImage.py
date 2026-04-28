@@ -43,7 +43,11 @@ class DiffImg(object):
         elif extract_extension(self.img_filename) == 'cbf':
             data_fabio = fabio.open(img_filename)
             data = data_fabio.data
-        self.img = np.array(data)[::-1]
+        # Keep detector pixels in file coordinates for pyFAI.  PONI
+        # calibration parameters are defined in the same coordinate system;
+        # flipping the array here makes the loaded calibration inconsistent
+        # with the image used for cake integration.
+        self.img = np.array(data)
         print(str(datetime.datetime.now())[:-7], 
                 ": Load ", self.img_filename)
 
@@ -269,4 +273,3 @@ class DiffImg(object):
         np.save(tth_filen, self.tth_cake)
         np.save(azi_filen, self.chi_cake)
         np.save(int_filen, self.intensity_cake)
-

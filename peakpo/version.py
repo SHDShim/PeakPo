@@ -4,8 +4,9 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.10.8"
+__version__ = "7.10.9"
 """
+7.10.9: fix cake making problem
 7.10.8: force temporary BG refresh on Compute Map/Seq with BG sub;
         prioritize currently displayed pattern as reference;
         support wildcard input (e.g., map2_*.chi) in CHI multi-file chooser.

@@ -53,6 +53,8 @@ class CakeController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'Choose CHI file first.')
             return
+        if not self._sync_poni_from_line_edit(warn_if_missing=True):
+            return
         if not self.model.poni_exist():
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'Choose PONI file first.')
@@ -461,6 +463,27 @@ class CakeController(object):
         self.model.poni = poni_path
         self.widget.lineEdit_PONI.setText(self.model.poni)
 
+    def _sync_poni_from_line_edit(self, warn_if_missing=False):
+        """
+        Keep the model calibration path synchronized with the visible PONI field.
+
+        Button clicks may be handled before the edited line edit has committed its
+        value through editingFinished.  The cake regeneration path must therefore
+        read the visible field directly before loading the calibration.
+        """
+        poni_path = self.widget.lineEdit_PONI.text().strip()
+        if poni_path == "":
+            return self.model.poni_exist()
+        if not os.path.exists(poni_path):
+            if warn_if_missing:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, 'Warning', 'The PONI file does not exist.')
+            return False
+        if poni_path != self.model.poni:
+            self.model.poni = poni_path
+            self.widget.lineEdit_PONI.setText(self.model.poni)
+        return True
+
     def _apply_poni_change(self, poni_path):
         self._set_current_poni(poni_path)
         if self.model.diff_img_exist():
@@ -498,7 +521,11 @@ class CakeController(object):
         # Check if the chosen poni file is version 2.1
         poni_content = read_any_poni_file(filename)
         if 'poni_version' in poni_content:
-            if poni_content['poni_version'] != 2:
+            try:
+                poni_version = float(poni_content['poni_version'])
+            except (TypeError, ValueError):
+                poni_version = None
+            if poni_version != 2.0:
                 output_file = make_converted_poni2_filename(filename)
                 make_poni2_from_poni21(filename, output_file)
                 shutil.move(output_file, temp_dir)
@@ -548,13 +575,7 @@ class CakeController(object):
 
     def load_new_poni_from_name(self):
         if self.widget.lineEdit_PONI.isModified():
-            filen = self.widget.lineEdit_PONI.text()
-            if os.path.exists(filen):
-                self.model.poni = filen
-                self.widget.lineEdit_PONI.setText(self.model.poni)
+            if self._sync_poni_from_line_edit(warn_if_missing=True):
                 if self.model.diff_img_exist():
                     self.produce_cake()
                 self._apply_changes_to_graph()
-            else:
-                QtWidgets.QMessageBox.warning(
-                    self.widget, 'Warning', 'The PONI file does not exist.')
