@@ -1,6 +1,6 @@
 # PeakPo
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.810401.svg)](https://doi.org/10.5281/zenodo.810401)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.810402.svg)](https://doi.org/10.5281/zenodo.810402)
 
 PeakPo is a Python application for X-ray diffraction analysis of samples at high pressure and high temperature.
 
