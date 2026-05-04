@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use PeakPo, please cite it using the metadata from this file."
+type: software
+title: "PeakPo: A Python software package for X-ray diffraction analysis at high pressure and high temperature"
+authors:
+  - family-names: Shim
+    given-names: "S.-H. Dan"
+version: "7.10.10"
+doi: 10.5281/zenodo.810199
+url: "https://github.com/SHDShim/PeakPo"
+repository-code: "https://github.com/SHDShim/PeakPo"
+license: Apache-2.0
+abstract: "PeakPo is a Python application for X-ray diffraction analysis of samples at high pressure and high temperature."
+keywords:
+  - X-ray diffraction
+  - high pressure
+  - high temperature
+  - mineral physics
+  - Python
+preferred-citation:
+  type: software
+  title: "PeakPo: A Python software package for X-ray diffraction analysis at high pressure and high temperature"
+  authors:
+    - family-names: Shim
+      given-names: "S.-H."
+  year: 2017
+  doi: 10.5281/zenodo.810199
+  publisher:
+    name: Zenodo
