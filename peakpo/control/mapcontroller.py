@@ -746,9 +746,9 @@ class MapController(object):
                     label = "log10(Integrated intensity)"
 
         im_kwargs = {
-            "origin": "lower",
+            "origin": "upper",
             "cmap": self._effective_cmap(),
-            "extent": [-0.5, data.shape[1] - 0.5, -0.5, data.shape[0] - 0.5],
+            "extent": [-0.5, data.shape[1] - 0.5, data.shape[0] - 0.5, -0.5],
             "interpolation": "nearest",
         }
         if norm is None:
@@ -770,7 +770,7 @@ class MapController(object):
         self._map_ax.set_aspect("equal", adjustable="box")
         self._map_ax.set_anchor("C")
         self._map_ax.set_xlim(-0.5, data.shape[1] - 0.5)
-        self._map_ax.set_ylim(-0.5, data.shape[0] - 0.5)
+        self._map_ax.set_ylim(data.shape[0] - 0.5, -0.5)
         self._map_ax.set_axis_off()
         self._map_canvas.draw_idle()
 

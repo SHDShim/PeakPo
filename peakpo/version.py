@@ -4,8 +4,9 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.10.11"
+__version__ = "7.10.12"
 """
+7.10.12: start map pixels from the top-left corner.
 7.10.11: add Ignore filenumber option for map data input order.
 7.10.10: fix Windows spinbox layout and make xlwt import lazy.
 7.10.9: fix cake making problem
