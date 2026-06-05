@@ -40,6 +40,7 @@ class MapController(object):
         self._roi_artist_2d = None
 
         self._chi_files = []
+        self._chi_input_files = []
         self._pos_idx = []
         self._lin_to_file = {}
         self._chi_cache = {}
@@ -103,6 +104,10 @@ class MapController(object):
         self.widget.spinBox_MapNx.valueChanged.connect(self._on_grid_changed)
         self.widget.spinBox_MapNy.valueChanged.connect(self._on_grid_changed)
         self.widget.comboBox_MapOrder.currentIndexChanged.connect(self._on_grid_changed)
+        if hasattr(self.widget, "checkBox_MapIgnoreFileNumber"):
+            self.widget.checkBox_MapIgnoreFileNumber.stateChanged.connect(
+                self._on_file_order_mode_changed
+            )
 
         self.widget.pushButton_MapSetRoi.clicked.connect(self._arm_roi_selection)
         self.widget.pushButton_MapClearRoi.clicked.connect(self._clear_roi)
@@ -190,26 +195,16 @@ class MapController(object):
         if not files:
             return
 
-        self._chi_files = sorted(list(files), key=self._filename_sort_key)
-        self._pos_idx = self._derive_position_indices(self._chi_files)
-        self._rebuild_linear_lookup()
-        self._chi_cache = {}
-        self._cake_cache = {}
+        self._chi_input_files = list(files)
         self._roi_1d = None
         self._roi_2d = None
-        self._map_data = None
-        self._clear_hover_file()
-
-        nx, ny = self._guess_grid_dims(len(self._chi_files))
-        self._sync_ui_from_roi = True
-        self.widget.spinBox_MapNx.setValue(nx)
-        self.widget.spinBox_MapNy.setValue(ny)
-        self._sync_ui_from_roi = False
-        self._grid = (nx, ny)
-        self._set_loaded_count()
-        self._set_status(f"Loaded {len(self._chi_files)} CHI files. Guessed grid: {nx} x {ny}")
-
-        self._preview_center_file()
+        self._refresh_loaded_files(reset_grid=True)
+        nx, ny = self._grid
+        order_text = "input order" if self._ignore_file_numbers() else "filename order"
+        self._set_status(
+            f"Loaded {len(self._chi_files)} CHI files using {order_text}. "
+            f"Guessed grid: {nx} x {ny}"
+        )
         self._set_default_1d_full_range_roi()
         if self._roi_1d is not None:
             self._compute_map()
@@ -248,7 +243,59 @@ class MapController(object):
             return (1, name_lower[:tail_match.start()], int(tail_match.group(1)))
         return (2, name_lower)
 
+    def _ignore_file_numbers(self):
+        return bool(
+            getattr(self.widget, "checkBox_MapIgnoreFileNumber", None) and
+            self.widget.checkBox_MapIgnoreFileNumber.isChecked()
+        )
+
+    def _ordered_chi_files(self, files):
+        ordered = list(files)
+        if self._ignore_file_numbers():
+            return ordered
+        return sorted(ordered, key=self._filename_sort_key)
+
+    def _refresh_loaded_files(self, reset_grid=False, preferred_chi=None):
+        self._chi_files = self._ordered_chi_files(self._chi_input_files)
+        self._pos_idx = self._derive_position_indices(self._chi_files)
+        self._rebuild_linear_lookup()
+        self._chi_cache = {}
+        self._cake_cache = {}
+        self._map_data = None
+        self._clear_hover_file()
+
+        if reset_grid:
+            nx, ny = self._guess_grid_dims(len(self._chi_files))
+            self._sync_ui_from_roi = True
+            self.widget.spinBox_MapNx.setValue(nx)
+            self.widget.spinBox_MapNy.setValue(ny)
+            self._sync_ui_from_roi = False
+            self._grid = (nx, ny)
+        else:
+            self._grid = (
+                int(self.widget.spinBox_MapNx.value()),
+                int(self.widget.spinBox_MapNy.value()),
+            )
+
+        self._set_loaded_count()
+        if preferred_chi and (preferred_chi in self._chi_files):
+            self._load_file_to_main_plot(self._chi_files.index(preferred_chi))
+        else:
+            self._preview_center_file()
+
+    def _on_file_order_mode_changed(self):
+        if not self._chi_input_files:
+            return
+        preferred_chi = self._current_displayed_chi()
+        self._refresh_loaded_files(reset_grid=False, preferred_chi=preferred_chi)
+        if (self._roi_1d is not None) or (self._roi_2d is not None):
+            self._compute_map()
+        else:
+            self._draw_map()
+
     def _derive_position_indices(self, files):
+        if self._ignore_file_numbers():
+            return list(range(len(files)))
         nums = []
         ok = True
         for f in files:

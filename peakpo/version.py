@@ -4,8 +4,9 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.10.10"
+__version__ = "7.10.11"
 """
+7.10.11: add Ignore filenumber option for map data input order.
 7.10.10: fix Windows spinbox layout and make xlwt import lazy.
 7.10.9: fix cake making problem
 7.10.8: force temporary BG refresh on Compute Map/Seq with BG sub;
