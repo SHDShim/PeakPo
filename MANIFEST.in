@@ -11,11 +11,14 @@ prune jupyter-tools
 prune environments
 prune scripts
 prune shortcuts
+prune skills
+prune tests
 prune ui
 
 exclude 0-ToDo.md
 exclude links.txt
 exclude .gitignore
+exclude *.metadata*.json
 
 global-exclude __pycache__/*
 global-exclude *.py[cod]

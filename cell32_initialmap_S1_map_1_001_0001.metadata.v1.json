@@ -1,0 +1,1954 @@
+{
+  "created_utc": "2026-06-06T19:49:42.539252+00:00",
+  "generator": "dioptas_batch_gui",
+  "image_index": 0,
+  "output_base_name": "cell32_initialmap_S1_map_1_001_0001",
+  "provenance": {
+    "large_dataset_inline_item_limit": 10000,
+    "metadata_export": "recursive_hdf5",
+    "source_file_count": 1
+  },
+  "schema_version": "1.0",
+  "source_files": [
+    {
+      "hdf5": {
+        "canonical": {
+          "detector": [
+            "/entry/instrument/NDAttributes/Detector Model",
+            "/entry/instrument/NDAttributes/T Detector Model"
+          ],
+          "instrument": [
+            "/entry/instrument/NDAttributes/Cryo T (K)",
+            "/entry/instrument/NDAttributes/Date",
+            "/entry/instrument/NDAttributes/Exposure",
+            "/entry/instrument/NDAttributes/Focus",
+            "/entry/instrument/NDAttributes/Horizontal",
+            "/entry/instrument/NDAttributes/ID Energy(eV)",
+            "/entry/instrument/NDAttributes/ID Ring Current",
+            "/entry/instrument/NDAttributes/Ion Chamber 2",
+            "/entry/instrument/NDAttributes/Laser Power Burst, DS(%)",
+            "/entry/instrument/NDAttributes/Laser Power Burst, US(%)",
+            "/entry/instrument/NDAttributes/Laser Power, DS(%)",
+            "/entry/instrument/NDAttributes/Laser Power, DS(w)",
+            "/entry/instrument/NDAttributes/Laser Power, US(%)",
+            "/entry/instrument/NDAttributes/Laser Power, US(W)",
+            "/entry/instrument/NDAttributes/Membrane P (bar)",
+            "/entry/instrument/NDAttributes/NDArrayEpicsTSSec",
+            "/entry/instrument/NDAttributes/NDArrayEpicsTSnSec",
+            "/entry/instrument/NDAttributes/NDArrayTimeStamp",
+            "/entry/instrument/NDAttributes/NDArrayUniqueId",
+            "/entry/instrument/NDAttributes/Number of Frames",
+            "/entry/instrument/NDAttributes/Omega",
+            "/entry/instrument/NDAttributes/Pinhole Along",
+            "/entry/instrument/NDAttributes/Pinhole Horizontal",
+            "/entry/instrument/NDAttributes/Pinhole Vertical",
+            "/entry/instrument/NDAttributes/T DS (K)",
+            "/entry/instrument/NDAttributes/T File Name",
+            "/entry/instrument/NDAttributes/T File Path",
+            "/entry/instrument/NDAttributes/T PIMAX Exposure",
+            "/entry/instrument/NDAttributes/T PIXIS Exposure",
+            "/entry/instrument/NDAttributes/T US (K)",
+            "/entry/instrument/NDAttributes/Temperature DAC(K)",
+            "/entry/instrument/NDAttributes/Temperature DAC(R)",
+            "/entry/instrument/NDAttributes/ThresholdEnergy",
+            "/entry/instrument/NDAttributes/ThresholdNumber",
+            "/entry/instrument/NDAttributes/Trigger Mode",
+            "/entry/instrument/NDAttributes/Vertical",
+            "/entry/instrument/NDAttributes/Wavelength(A)",
+            "/entry/instrument/NDAttributes/XRD File Name",
+            "/entry/instrument/NDAttributes/XRD File Number",
+            "/entry/instrument/NDAttributes/XRD File Path",
+            "/entry/instrument/performance/timestamp"
+          ]
+        },
+        "nodes": {
+          "/": {
+            "attrs": {},
+            "name": "/",
+            "path": "/",
+            "type": "group"
+          },
+          "/entry": {
+            "NX_class": "NXentry",
+            "attrs": {
+              "NX_class": "NXentry"
+            },
+            "name": "entry",
+            "path": "/entry",
+            "type": "group"
+          },
+          "/entry/data": {
+            "NX_class": "NXdata",
+            "attrs": {
+              "NX_class": "NXdata"
+            },
+            "name": "data",
+            "path": "/entry/data",
+            "type": "group"
+          },
+          "/entry/data/data": {
+            "attrs": {
+              "NDArrayDimBinning": [
+                1,
+                1
+              ],
+              "NDArrayDimOffset": [
+                0,
+                0
+              ],
+              "NDArrayDimReverse": [
+                0,
+                0
+              ],
+              "NDArrayNumDims": 2,
+              "signal": 1
+            },
+            "dataset": {
+              "dtype": "int32",
+              "ndim": 3,
+              "role_hint": "detector_data",
+              "shape": [
+                18,
+                3262,
+                3108
+              ],
+              "size": 182489328,
+              "value_omitted": "dataset is too large for inline metadata export; limit=10000"
+            },
+            "name": "data",
+            "path": "/entry/data/data",
+            "type": "dataset"
+          },
+          "/entry/instrument": {
+            "NX_class": "NXinstrument",
+            "attrs": {
+              "NX_class": "NXinstrument"
+            },
+            "name": "instrument",
+            "path": "/entry/instrument",
+            "type": "group"
+          },
+          "/entry/instrument/NDAttributes": {
+            "NX_class": "NXcollection",
+            "attrs": {
+              "NX_class": "NXcollection",
+              "hostname": "corvette"
+            },
+            "name": "NDAttributes",
+            "path": "/entry/instrument/NDAttributes",
+            "type": "group"
+          },
+          "/entry/instrument/NDAttributes/Cryo T (K)": {
+            "attrs": {
+              "NDAttrDescription": "Cryo Temperature (K)",
+              "NDAttrName": "Cryo T (K)",
+              "NDAttrSource": "13Cryocon1:CC1:STS:T1",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float32",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN
+              ]
+            },
+            "name": "Cryo T (K)",
+            "path": "/entry/instrument/NDAttributes/Cryo T (K)",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Date": {
+            "attrs": {
+              "NDAttrDescription": "Date and Time",
+              "NDAttrName": "Date",
+              "NDAttrSource": "S:IOC:timeOfDayForm1SI",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "|S256",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                "June 06, 2026 08:23:34",
+                "June 06, 2026 08:23:35",
+                "June 06, 2026 08:23:36",
+                "June 06, 2026 08:23:37",
+                "June 06, 2026 08:23:38",
+                "June 06, 2026 08:23:39",
+                "June 06, 2026 08:23:40",
+                "June 06, 2026 08:23:41",
+                "June 06, 2026 08:23:42",
+                "June 06, 2026 08:23:43",
+                "June 06, 2026 08:23:44",
+                "June 06, 2026 08:23:45",
+                "June 06, 2026 08:23:46",
+                "June 06, 2026 08:23:47",
+                "June 06, 2026 08:23:48",
+                "June 06, 2026 08:23:49",
+                "June 06, 2026 08:23:50",
+                "June 06, 2026 08:23:51"
+              ]
+            },
+            "name": "Date",
+            "path": "/entry/instrument/NDAttributes/Date",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Detector Model": {
+            "attrs": {
+              "NDAttrDescription": "Camera Model",
+              "NDAttrName": "Detector Model",
+              "NDAttrSource": "13EIG2_9M:cam1:Model_RBV",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "|S256",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M",
+                "EIGER2 CdTe 9M"
+              ]
+            },
+            "name": "Detector Model",
+            "path": "/entry/instrument/NDAttributes/Detector Model",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Exposure": {
+            "attrs": {
+              "NDAttrDescription": "Exposure",
+              "NDAttrName": "Exposure",
+              "NDAttrSource": "13EIG2_9M:cam1:AcquireTime_RBV",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                0.989,
+                0.989,
+                0.989,
+                0.989,
+                0.989,
+                0.989,
+                0.989,
+                0.989,
+                0.989,
+                0.989,
+                0.989,
+                0.989,
+                0.989,
+                0.989,
+                0.989,
+                0.989,
+                0.989,
+                0.989
+              ]
+            },
+            "name": "Exposure",
+            "path": "/entry/instrument/NDAttributes/Exposure",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Focus": {
+            "attrs": {
+              "NDAttrDescription": "Sample Focus",
+              "NDAttrName": "Focus",
+              "NDAttrSource": "13IDD:m99.RBV",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                4.508,
+                4.508,
+                4.508,
+                4.508,
+                4.508,
+                4.508,
+                4.508,
+                4.508,
+                4.508,
+                4.508,
+                4.508,
+                4.508,
+                4.508,
+                4.508,
+                4.508,
+                4.508,
+                4.508,
+                4.508
+              ]
+            },
+            "name": "Focus",
+            "path": "/entry/instrument/NDAttributes/Focus",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Horizontal": {
+            "attrs": {
+              "NDAttrDescription": "Sample Horizontal",
+              "NDAttrName": "Horizontal",
+              "NDAttrSource": "13IDD:m98.RBV",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                0.6546,
+                0.6506,
+                0.6465,
+                0.6424,
+                0.6382,
+                0.6353,
+                0.6311,
+                0.627,
+                0.6228,
+                0.6188,
+                0.6147,
+                0.6106,
+                0.6066,
+                0.6026,
+                0.5986,
+                0.5958,
+                0.5916,
+                0.5862
+              ]
+            },
+            "name": "Horizontal",
+            "path": "/entry/instrument/NDAttributes/Horizontal",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/ID Energy(eV)": {
+            "attrs": {
+              "NDAttrDescription": "ID Energy",
+              "NDAttrName": "ID Energy(eV)",
+              "NDAttrSource": "13IDA:CDEn:E_RBV",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                37077.05137497397,
+                37077.02826327959,
+                37077.02826327959,
+                37077.05137497397,
+                37077.05137497397,
+                37077.005151614074,
+                37077.005151614074,
+                37076.9820399774,
+                37077.05137497397,
+                37077.02826327959,
+                37077.005151614074,
+                37077.02826327959,
+                37077.074486697195,
+                37077.05137497397,
+                37077.02826327959,
+                37077.02826327959,
+                37077.02826327959,
+                37077.02826327959
+              ]
+            },
+            "name": "ID Energy(eV)",
+            "path": "/entry/instrument/NDAttributes/ID Energy(eV)",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/ID Ring Current": {
+            "attrs": {
+              "NDAttrDescription": "Ring Current",
+              "NDAttrName": "ID Ring Current",
+              "NDAttrSource": "S:SRcurrentAI.VAL",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                199.9592870693497,
+                199.94887547064124,
+                199.93864374722472,
+                200.2815294036954,
+                200.2719398438927,
+                200.2618858731192,
+                200.25253716065032,
+                200.24175428713949,
+                200.23204938498395,
+                200.22218245113453,
+                200.2118152993157,
+                200.20241781760063,
+                200.19279029086235,
+                200.1818332636525,
+                200.17244654423385,
+                200.16232448078304,
+                200.15187847392602,
+                200.14185174929406
+              ]
+            },
+            "name": "ID Ring Current",
+            "path": "/entry/instrument/NDAttributes/ID Ring Current",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Ion Chamber 2": {
+            "attrs": {
+              "NDAttrDescription": "Ion Chamber 2",
+              "NDAttrName": "Ion Chamber 2",
+              "NDAttrSource": "13IDD:userTran1.P",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                90.16796176132871,
+                90.16262116478403,
+                89.80480119629354,
+                90.57384709872083,
+                90.65395604689043,
+                89.91161312718629,
+                90.22136772677501,
+                90.20000534059655,
+                90.37624502656939,
+                90.52578172981922,
+                90.13591818206088,
+                90.40828860583723,
+                90.28545488531068,
+                90.30681727148917,
+                90.4296509920157,
+                90.22136772677501,
+                90.29079548185524,
+                90.3174984645784
+              ]
+            },
+            "name": "Ion Chamber 2",
+            "path": "/entry/instrument/NDAttributes/Ion Chamber 2",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Laser Power Burst, DS(%)": {
+            "attrs": {
+              "NDAttrDescription": "DS Laser Power (%)",
+              "NDAttrName": "Laser Power Burst, DS(%)",
+              "NDAttrSource": "13IDD:userStringSeq16.STR6",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "|S256",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20"
+              ]
+            },
+            "name": "Laser Power Burst, DS(%)",
+            "path": "/entry/instrument/NDAttributes/Laser Power Burst, DS(%)",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Laser Power Burst, US(%)": {
+            "attrs": {
+              "NDAttrDescription": "US Laser Power (%)",
+              "NDAttrName": "Laser Power Burst, US(%)",
+              "NDAttrSource": "13IDD:userStringSeq16.STR5",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "|S256",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20",
+                "20"
+              ]
+            },
+            "name": "Laser Power Burst, US(%)",
+            "path": "/entry/instrument/NDAttributes/Laser Power Burst, US(%)",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Laser Power, DS(%)": {
+            "attrs": {
+              "NDAttrDescription": "DS Laser Power (%)",
+              "NDAttrName": "Laser Power, DS(%)",
+              "NDAttrSource": "13IDD:DS_LaserPower.VAL",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "name": "Laser Power, DS(%)",
+            "path": "/entry/instrument/NDAttributes/Laser Power, DS(%)",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Laser Power, DS(w)": {
+            "attrs": {
+              "NDAttrDescription": "DS Laser Power (W)",
+              "NDAttrName": "Laser Power, DS(w)",
+              "NDAttrSource": "13IDD:Laser2OutputPower",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0
+              ]
+            },
+            "name": "Laser Power, DS(w)",
+            "path": "/entry/instrument/NDAttributes/Laser Power, DS(w)",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Laser Power, US(%)": {
+            "attrs": {
+              "NDAttrDescription": "US Laser Power (%)",
+              "NDAttrName": "Laser Power, US(%)",
+              "NDAttrSource": "13IDD:US_LaserPower.VAL",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            "name": "Laser Power, US(%)",
+            "path": "/entry/instrument/NDAttributes/Laser Power, US(%)",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Laser Power, US(W)": {
+            "attrs": {
+              "NDAttrDescription": "US Laser Power (W)",
+              "NDAttrName": "Laser Power, US(W)",
+              "NDAttrSource": "13IDD:Laser1OutputPower",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0
+              ]
+            },
+            "name": "Laser Power, US(W)",
+            "path": "/entry/instrument/NDAttributes/Laser Power, US(W)",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Membrane P (bar)": {
+            "attrs": {
+              "NDAttrDescription": "Membrane Pressure",
+              "NDAttrName": "Membrane P (bar)",
+              "NDAttrSource": "13IDD_PACE5000:PC1:Pressure_RBV",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                36.2000313,
+                36.2000625,
+                36.2000352,
+                36.1999922,
+                36.1999414,
+                36.1999844,
+                36.2001289,
+                36.2000234,
+                36.1999375,
+                36.1998828,
+                36.1999336,
+                36.2000078,
+                36.2000078,
+                36.1999727,
+                36.2000586,
+                36.2001211,
+                36.1999687,
+                36.1999492
+              ]
+            },
+            "name": "Membrane P (bar)",
+            "path": "/entry/instrument/NDAttributes/Membrane P (bar)",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/NDArrayEpicsTSSec": {
+            "attrs": {
+              "NDAttrDescription": "The NDArray EPICS timestamp seconds past epoch",
+              "NDAttrName": "NDArrayEpicsTSSec",
+              "NDAttrSource": "Driver",
+              "NDAttrSourceType": "NDAttrSourceDriver"
+            },
+            "dataset": {
+              "dtype": "uint32",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                1149600214,
+                1149600215,
+                1149600216,
+                1149600217,
+                1149600218,
+                1149600219,
+                1149600220,
+                1149600221,
+                1149600222,
+                1149600223,
+                1149600224,
+                1149600225,
+                1149600226,
+                1149600227,
+                1149600228,
+                1149600229,
+                1149600230,
+                1149600231
+              ]
+            },
+            "name": "NDArrayEpicsTSSec",
+            "path": "/entry/instrument/NDAttributes/NDArrayEpicsTSSec",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/NDArrayEpicsTSnSec": {
+            "attrs": {
+              "NDAttrDescription": "The NDArray EPICS timestamp nanoseconds",
+              "NDAttrName": "NDArrayEpicsTSnSec",
+              "NDAttrSource": "Driver",
+              "NDAttrSourceType": "NDAttrSourceDriver"
+            },
+            "dataset": {
+              "dtype": "uint32",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                516649159,
+                512149325,
+                497516916,
+                483062813,
+                478588560,
+                464094956,
+                459330721,
+                444784244,
+                430169538,
+                425762786,
+                411273881,
+                396235574,
+                392571333,
+                377424191,
+                363028746,
+                358583170,
+                344138043,
+                681219239
+              ]
+            },
+            "name": "NDArrayEpicsTSnSec",
+            "path": "/entry/instrument/NDAttributes/NDArrayEpicsTSnSec",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/NDArrayTimeStamp": {
+            "attrs": {
+              "NDAttrDescription": "The timestamp of the NDArray as float64",
+              "NDAttrName": "NDArrayTimeStamp",
+              "NDAttrSource": "Driver",
+              "NDAttrSourceType": "NDAttrSourceDriver"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                1149600214.5166492,
+                1149600215.5121493,
+                1149600216.4975169,
+                1149600217.4830627,
+                1149600218.4785886,
+                1149600219.4640949,
+                1149600220.4593308,
+                1149600221.4447842,
+                1149600222.4301696,
+                1149600223.425763,
+                1149600224.411274,
+                1149600225.3962355,
+                1149600226.3925714,
+                1149600227.3774242,
+                1149600228.3630288,
+                1149600229.3585832,
+                1149600230.3441381,
+                1149600231.6812193
+              ]
+            },
+            "name": "NDArrayTimeStamp",
+            "path": "/entry/instrument/NDAttributes/NDArrayTimeStamp",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/NDArrayUniqueId": {
+            "attrs": {
+              "NDAttrDescription": "The unique ID of the NDArray",
+              "NDAttrName": "NDArrayUniqueId",
+              "NDAttrSource": "Driver",
+              "NDAttrSourceType": "NDAttrSourceDriver"
+            },
+            "dataset": {
+              "dtype": "int32",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                26312,
+                26313,
+                26314,
+                26315,
+                26316,
+                26317,
+                26318,
+                26319,
+                26320,
+                26321,
+                26322,
+                26323,
+                26324,
+                26325,
+                26326,
+                26327,
+                26328,
+                26329
+              ]
+            },
+            "name": "NDArrayUniqueId",
+            "path": "/entry/instrument/NDAttributes/NDArrayUniqueId",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Number of Frames": {
+            "attrs": {
+              "NDAttrDescription": "Number of Frames",
+              "NDAttrName": "Number of Frames",
+              "NDAttrSource": "13EIG2_9M:cam1:NumImages",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "int32",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18
+              ]
+            },
+            "name": "Number of Frames",
+            "path": "/entry/instrument/NDAttributes/Number of Frames",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Omega": {
+            "attrs": {
+              "NDAttrDescription": "Sample Omega",
+              "NDAttrName": "Omega",
+              "NDAttrSource": "13IDD:Auto1:m1.RBV",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                -2.6822e-06,
+                -1.4081549999999999e-05,
+                -6.7055e-07,
+                5.3644e-06,
+                -6.7055e-06,
+                -4.69385e-06,
+                -6.03495e-06,
+                -4.69385e-06,
+                2.6822e-06,
+                -6.7055e-06,
+                9.3877e-06,
+                -4.69385e-06,
+                6.03495e-06,
+                -8.0466e-06,
+                5.3644e-06,
+                4.0233e-06,
+                -2.6822e-06,
+                -1.20699e-05
+              ]
+            },
+            "name": "Omega",
+            "path": "/entry/instrument/NDAttributes/Omega",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Pinhole Along": {
+            "attrs": {
+              "NDAttrDescription": "Pinhole Along",
+              "NDAttrName": "Pinhole Along",
+              "NDAttrSource": "13IDD:m22.RBV",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15,
+                -3.552713678800501e-15
+              ]
+            },
+            "name": "Pinhole Along",
+            "path": "/entry/instrument/NDAttributes/Pinhole Along",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Pinhole Horizontal": {
+            "attrs": {
+              "NDAttrDescription": "Pinhole Horizontal",
+              "NDAttrName": "Pinhole Horizontal",
+              "NDAttrSource": "13IDD:m101.RBV",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455,
+                0.012000000000000455
+              ]
+            },
+            "name": "Pinhole Horizontal",
+            "path": "/entry/instrument/NDAttributes/Pinhole Horizontal",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Pinhole Vertical": {
+            "attrs": {
+              "NDAttrDescription": "Pinhole Vertical",
+              "NDAttrName": "Pinhole Vertical",
+              "NDAttrSource": "13IDD:m100.RBV",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789,
+                -0.011999999999999789
+              ]
+            },
+            "name": "Pinhole Vertical",
+            "path": "/entry/instrument/NDAttributes/Pinhole Vertical",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/T DS (K)": {
+            "attrs": {
+              "NDAttrDescription": "DS Temperature (K)",
+              "NDAttrName": "T DS (K)",
+              "NDAttrSource": "13IDD:ds_las_temp.VAL",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817,
+                2079.0331658458817
+              ]
+            },
+            "name": "T DS (K)",
+            "path": "/entry/instrument/NDAttributes/T DS (K)",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/T Detector Model": {
+            "attrs": {
+              "NDAttrDescription": "T Camera Model",
+              "NDAttrName": "T Detector Model",
+              "NDAttrSource": "13IDDLF1:cam1:LFExperimentName_RBV",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "|S256",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature",
+                "PIMAX_temperature"
+              ]
+            },
+            "name": "T Detector Model",
+            "path": "/entry/instrument/NDAttributes/T Detector Model",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/T File Name": {
+            "attrs": {
+              "NDAttrDescription": "T File Name",
+              "NDAttrName": "T File Name",
+              "NDAttrSource": "13IDDLF1:cam1:LFFileName_RBV",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "|S256",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                "t_001",
+                "t_001",
+                "t_001",
+                "t_001",
+                "t_001",
+                "t_001",
+                "t_001",
+                "t_001",
+                "t_001",
+                "t_001",
+                "t_001",
+                "t_001",
+                "t_001",
+                "t_001",
+                "t_001",
+                "t_001",
+                "t_001",
+                "t_001"
+              ]
+            },
+            "name": "T File Name",
+            "path": "/entry/instrument/NDAttributes/T File Name",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/T File Path": {
+            "attrs": {
+              "NDAttrDescription": "T File Path",
+              "NDAttrName": "T File Path",
+              "NDAttrSource": "13IDDLF1:cam1:FilePath",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "|S256",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T",
+                "T:\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\T"
+              ]
+            },
+            "name": "T File Path",
+            "path": "/entry/instrument/NDAttributes/T File Path",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/T PIMAX Exposure": {
+            "attrs": {
+              "NDAttrDescription": "T PIMAX Exposure",
+              "NDAttrName": "T PIMAX Exposure",
+              "NDAttrSource": "13IDDLF1:cam1:LFRepGateWidth",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                0.01,
+                0.01,
+                0.01,
+                0.01,
+                0.01,
+                0.01,
+                0.01,
+                0.01,
+                0.01,
+                0.01,
+                0.01,
+                0.01,
+                0.01,
+                0.01,
+                0.01,
+                0.01,
+                0.01,
+                0.01
+              ]
+            },
+            "name": "T PIMAX Exposure",
+            "path": "/entry/instrument/NDAttributes/T PIMAX Exposure",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/T PIXIS Exposure": {
+            "attrs": {
+              "NDAttrDescription": "T PIXIS Exposure",
+              "NDAttrName": "T PIXIS Exposure",
+              "NDAttrSource": "13IDDLF1:cam1:AcquireTime",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                0.13,
+                0.13,
+                0.13,
+                0.13,
+                0.13,
+                0.13,
+                0.13,
+                0.13,
+                0.13,
+                0.13,
+                0.13,
+                0.13,
+                0.13,
+                0.13,
+                0.13,
+                0.13,
+                0.13,
+                0.13
+              ]
+            },
+            "name": "T PIXIS Exposure",
+            "path": "/entry/instrument/NDAttributes/T PIXIS Exposure",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/T US (K)": {
+            "attrs": {
+              "NDAttrDescription": "US Temperature (K)",
+              "NDAttrName": "T US (K)",
+              "NDAttrSource": "13IDD:us_las_temp.VAL",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119,
+                1999.7892434860119
+              ]
+            },
+            "name": "T US (K)",
+            "path": "/entry/instrument/NDAttributes/T US (K)",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Temperature DAC(K)": {
+            "attrs": {
+              "NDAttrDescription": "Thermocouple K Type",
+              "NDAttrName": "Temperature DAC(K)",
+              "NDAttrSource": "13Keithley2:DMM1Ch1_calc.VAL",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float32",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN
+              ]
+            },
+            "name": "Temperature DAC(K)",
+            "path": "/entry/instrument/NDAttributes/Temperature DAC(K)",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Temperature DAC(R)": {
+            "attrs": {
+              "NDAttrDescription": "Thermocouple R Type",
+              "NDAttrName": "Temperature DAC(R)",
+              "NDAttrSource": "13Keithley2:DMM1Ch3_calc.VAL",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float32",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN
+              ]
+            },
+            "name": "Temperature DAC(R)",
+            "path": "/entry/instrument/NDAttributes/Temperature DAC(R)",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/ThresholdEnergy": {
+            "attrs": {
+              "NDAttrDescription": "Threshold energy (eV)",
+              "NDAttrName": "ThresholdEnergy",
+              "NDAttrSource": "Driver",
+              "NDAttrSourceType": "NDAttrSourceDriver"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                18538.5,
+                18538.5,
+                18538.5,
+                18538.5,
+                18538.5,
+                18538.5,
+                18538.5,
+                18538.5,
+                18538.5,
+                18538.5,
+                18538.5,
+                18538.5,
+                18538.5,
+                18538.5,
+                18538.5,
+                18538.5,
+                18538.5,
+                18538.5
+              ]
+            },
+            "name": "ThresholdEnergy",
+            "path": "/entry/instrument/NDAttributes/ThresholdEnergy",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/ThresholdNumber": {
+            "attrs": {
+              "NDAttrDescription": "Threshold number",
+              "NDAttrName": "ThresholdNumber",
+              "NDAttrSource": "Driver",
+              "NDAttrSourceType": "NDAttrSourceDriver"
+            },
+            "dataset": {
+              "dtype": "int32",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ]
+            },
+            "name": "ThresholdNumber",
+            "path": "/entry/instrument/NDAttributes/ThresholdNumber",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Trigger Mode": {
+            "attrs": {
+              "NDAttrDescription": "Trigger Mode",
+              "NDAttrName": "Trigger Mode",
+              "NDAttrSource": "13EIG2_9M:cam1:TriggerMode",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "|S256",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                "External Series",
+                "External Series",
+                "External Series",
+                "External Series",
+                "External Series",
+                "External Series",
+                "External Series",
+                "External Series",
+                "External Series",
+                "External Series",
+                "External Series",
+                "External Series",
+                "External Series",
+                "External Series",
+                "External Series",
+                "External Series",
+                "External Series",
+                "External Series"
+              ]
+            },
+            "name": "Trigger Mode",
+            "path": "/entry/instrument/NDAttributes/Trigger Mode",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Vertical": {
+            "attrs": {
+              "NDAttrDescription": "Sample Vertical",
+              "NDAttrName": "Vertical",
+              "NDAttrSource": "13IDD:m97.RBV",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                -0.05,
+                -0.05,
+                -0.05,
+                -0.05,
+                -0.05,
+                -0.05,
+                -0.05,
+                -0.05,
+                -0.05,
+                -0.05,
+                -0.05,
+                -0.05,
+                -0.05,
+                -0.05,
+                -0.05,
+                -0.05,
+                -0.05,
+                -0.05
+              ]
+            },
+            "name": "Vertical",
+            "path": "/entry/instrument/NDAttributes/Vertical",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/Wavelength(A)": {
+            "attrs": {
+              "NDAttrDescription": "ID Wavelength",
+              "NDAttrName": "Wavelength(A)",
+              "NDAttrSource": "13IDA:mono_pid1_incalc.N",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                0.3343960627993359,
+                0.3343962712426758,
+                0.3343962712426758,
+                0.3343960627993359,
+                0.3343960627993359,
+                0.33439647968601527,
+                0.33439647968601527,
+                0.33439668812935447,
+                0.3343960627993359,
+                0.3343962712426758,
+                0.33439647968601527,
+                0.3343962712426758,
+                0.3343958543559957,
+                0.3343962712426758,
+                0.3343962712426758,
+                0.3343962712426758,
+                0.3343962712426758,
+                0.3343962712426758
+              ]
+            },
+            "name": "Wavelength(A)",
+            "path": "/entry/instrument/NDAttributes/Wavelength(A)",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/XRD File Name": {
+            "attrs": {
+              "NDAttrDescription": "XRD File Name",
+              "NDAttrName": "XRD File Name",
+              "NDAttrSource": "13EIG2_9M:HDF1:FileName",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "|S256",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1",
+                "cell32_initialmap_S1_map_1"
+              ]
+            },
+            "name": "XRD File Name",
+            "path": "/entry/instrument/NDAttributes/XRD File Name",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/XRD File Number": {
+            "attrs": {
+              "NDAttrDescription": "XRD File Number",
+              "NDAttrName": "XRD File Number",
+              "NDAttrSource": "13EIG2_9M:HDF1:FileNumber",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "int32",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                1,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2
+              ]
+            },
+            "name": "XRD File Number",
+            "path": "/entry/instrument/NDAttributes/XRD File Number",
+            "type": "dataset"
+          },
+          "/entry/instrument/NDAttributes/XRD File Path": {
+            "attrs": {
+              "NDAttrDescription": "XRD File Path",
+              "NDAttrName": "XRD File Path",
+              "NDAttrSource": "13EIG2_9M:HDF1:FilePath",
+              "NDAttrSourceType": "NDAttrSourceEPICSPV"
+            },
+            "dataset": {
+              "dtype": "|S256",
+              "ndim": 1,
+              "shape": [
+                18
+              ],
+              "size": 18,
+              "value": [
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc",
+                "/home/dac_user/cars6/Data/dac_user/2026/IDD_2026-2/ASU/Pease/cell32/initalmapc"
+              ]
+            },
+            "name": "XRD File Path",
+            "path": "/entry/instrument/NDAttributes/XRD File Path",
+            "type": "dataset"
+          },
+          "/entry/instrument/detector": {
+            "NX_class": "NXdetector",
+            "attrs": {
+              "NX_class": "NXdetector"
+            },
+            "name": "detector",
+            "path": "/entry/instrument/detector",
+            "type": "group"
+          },
+          "/entry/instrument/detector/NDAttributes": {
+            "NX_class": "NXcollection",
+            "attrs": {
+              "NX_class": "NXcollection"
+            },
+            "name": "NDAttributes",
+            "path": "/entry/instrument/detector/NDAttributes",
+            "type": "group"
+          },
+          "/entry/instrument/performance": {
+            "attrs": {},
+            "name": "performance",
+            "path": "/entry/instrument/performance",
+            "type": "group"
+          },
+          "/entry/instrument/performance/timestamp": {
+            "attrs": {},
+            "dataset": {
+              "dtype": "float64",
+              "ndim": 2,
+              "shape": [
+                18,
+                5
+              ],
+              "size": 90,
+              "value": [
+                [
+                  0.0037546700000000003,
+                  0.007591337,
+                  353.926920714,
+                  40756.488644144636,
+                  0.0
+                ],
+                [
+                  0.003893507,
+                  0.990715828,
+                  0.003912004,
+                  312.29564673350006,
+                  79088.93759678543
+                ],
+                [
+                  0.003870155,
+                  0.985337161,
+                  0.989249165,
+                  314.0003772113645,
+                  625.5173139001336
+                ],
+                [
+                  0.0038372550000000004,
+                  0.985514258,
+                  1.9747634230000002,
+                  313.9439513155932,
+                  470.0252748721916
+                ],
+                [
+                  0.0039468540000000005,
+                  0.9956339730000001,
+                  2.970397396,
+                  310.75299620614186,
+                  416.63952527162127
+                ],
+                [
+                  0.004139599,
+                  0.98569857,
+                  3.9560959660000004,
+                  313.8852481386627,
+                  391.03732934366207
+                ],
+                [
+                  0.003749886,
+                  0.994844813,
+                  4.950940779000001,
+                  310.9995008179984,
+                  374.9544832530201
+                ],
+                [
+                  0.0036997880000000003,
+                  0.9854052090000001,
+                  5.936345988,
+                  313.97869364660016,
+                  364.83279209443293
+                ],
+                [
+                  0.003935308,
+                  0.9856208420000001,
+                  6.921966830000001,
+                  313.91000174727935,
+                  357.58188137330325
+                ],
+                [
+                  0.0037014810000000004,
+                  0.9953577050000001,
+                  7.9173245350000006,
+                  310.8392477198687,
+                  351.70544668210636
+                ],
+                [
+                  0.003675863,
+                  0.9854848650000001,
+                  8.9028094,
+                  313.95331498508097,
+                  347.5265237447125
+                ],
+                [
+                  0.0039830970000000005,
+                  0.985289752,
+                  9.888099152,
+                  314.015485907921,
+                  344.18734989017076
+                ],
+                [
+                  0.003618449,
+                  0.9959566700000001,
+                  10.884055822,
+                  310.65231003912544,
+                  341.11869173878074
+                ],
+                [
+                  0.0036406280000000004,
+                  0.9848674100000001,
+                  11.868923232,
+                  314.1501455859677,
+                  338.88087777016597
+                ],
+                [
+                  0.003681048,
+                  0.985646996,
+                  12.854570228,
+                  313.9016721909382,
+                  336.965552830869
+                ],
+                [
+                  0.0036189300000000002,
+                  0.9955003000000001,
+                  13.850070528000002,
+                  310.7947232505856,
+                  335.0844744171706
+                ],
+                [
+                  0.00367393,
+                  0.985602304,
+                  14.835672832,
+                  313.91590601879824,
+                  333.67814859547855
+                ],
+                [
+                  0.003691071,
+                  1.337099153,
+                  16.172771985,
+                  231.39364013520918,
+                  325.221680542006
+                ]
+              ]
+            },
+            "name": "timestamp",
+            "path": "/entry/instrument/performance/timestamp",
+            "type": "dataset"
+          }
+        }
+      },
+      "mtime_utc": "2026-06-06T13:23:34.517608+00:00",
+      "name": "cell32_initialmap_S1_map_1_0001.h5",
+      "path": "\\\\cars6\\Data\\dac_user\\2026\\IDD_2026-2\\ASU\\Pease\\cell32\\initalmapc\\cell32_initialmap_S1_map_1_0001.h5",
+      "size_bytes": 165197284
+    }
+  ]
+}

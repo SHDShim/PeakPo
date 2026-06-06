@@ -4,8 +4,11 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.10.12"
+__version__ = "7.11.0"
 """
+7.11.0: add metadata-driven map construction using dioptas_batch_gui metadata;
+        keep file-order map construction as the default with Ignore metadata enabled;
+        add progress dialogs for map loading and processing.
 7.10.12: start map pixels from the top-left corner.
 7.10.11: add Ignore filenumber option for map data input order.
 7.10.10: fix Windows spinbox layout and make xlwt import lazy.

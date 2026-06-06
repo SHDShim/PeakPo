@@ -2256,10 +2256,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_MapOrder.setMinimumSize(QtCore.QSize(110, 28))
         self.comboBox_MapOrder.setMaximumWidth(150)
         self.checkBox_MapIgnoreFileNumber = QtWidgets.QCheckBox(
-            "Ignore filenumber", self.groupBox_MapLoad
+            "Ignore metadata", self.groupBox_MapLoad
         )
         self.checkBox_MapIgnoreFileNumber.setObjectName("checkBox_MapIgnoreFileNumber")
-        self.checkBox_MapIgnoreFileNumber.setChecked(False)
+        self.checkBox_MapIgnoreFileNumber.setChecked(True)
         self.gridLayout_MapLoad.addWidget(self.pushButton_MapLoadChi, 0, 0, 1, 1)
         self.gridLayout_MapLoad.addWidget(self.label_MapLoaded, 0, 1, 1, 1)
         self.gridLayout_MapLoad.addWidget(self.label_MapNx, 0, 2, 1, 1)

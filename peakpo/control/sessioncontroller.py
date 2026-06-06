@@ -452,7 +452,16 @@ class SessionController(object):
                 "mask_max": self.widget.spinBox_MaskMax.value(),
                 "hist": cake_hist,
             },
+            "map": self._collect_map_ui_state(),
             "diff": self._collect_diff_ui_state(),
+        }
+
+    def _collect_map_ui_state(self):
+        if not hasattr(self.widget, "checkBox_MapIgnoreFileNumber"):
+            return {}
+        return {
+            "ignore_metadata": bool(
+                self.widget.checkBox_MapIgnoreFileNumber.isChecked())
         }
 
     def _collect_diff_ui_state(self):
@@ -523,6 +532,13 @@ class SessionController(object):
                     self.widget.cake_hist_widget.spin_low_pct.setValue(float(hist["low_pct"]))
                 if "high_pct" in hist:
                     self.widget.cake_hist_widget.spin_high_pct.setValue(float(hist["high_pct"]))
+        map_state = (ui_state or {}).get("map", {})
+        if map_state != {} and hasattr(self.widget, "checkBox_MapIgnoreFileNumber"):
+            if "ignore_metadata" in map_state:
+                ignore_metadata = bool(map_state.get("ignore_metadata", True))
+            else:
+                ignore_metadata = not bool(map_state.get("use_hdf5_coordinates", False))
+            self.widget.checkBox_MapIgnoreFileNumber.setChecked(ignore_metadata)
         self._apply_diff_ui_state((ui_state or {}).get("diff", {}))
 
     def _apply_diff_ui_state(self, diff):

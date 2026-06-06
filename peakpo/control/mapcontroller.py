@@ -7,15 +7,21 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.widgets import RectangleSelector
 from matplotlib import colors as mcolors
+from matplotlib import cm
 import matplotlib.patches as mpatches
 
 from .xrdiohelpers import (
+    DioptasMetadataCollection,
+    MapPointInfo,
+    build_coordinate_grid,
+    extract_scan_coordinates,
     load_chi_xy,
     load_bgsub_or_raw_xy,
     refresh_temp_bgsub_for_chi_files,
     find_temp_cake_triplet,
     load_cake_data,
 )
+from ..utils import get_temp_dir
 from ..utils.dialogs import dialog_openfiles_hide_param_dirs
 
 
@@ -49,8 +55,14 @@ class MapController(object):
         self._roi_1d = None
         self._roi_2d = None
         self._map_data = None
+        self._map_points = []
+        self._coord_x = []
+        self._coord_y = []
+        self._coord_to_file = {}
+        self._map_coordinate_mode = False
 
         self._sync_ui_from_roi = False
+        self._progress_dialog = None
 
         self._build_canvas()
         self._connect_channel()
@@ -106,7 +118,7 @@ class MapController(object):
         self.widget.comboBox_MapOrder.currentIndexChanged.connect(self._on_grid_changed)
         if hasattr(self.widget, "checkBox_MapIgnoreFileNumber"):
             self.widget.checkBox_MapIgnoreFileNumber.stateChanged.connect(
-                self._on_file_order_mode_changed
+                self._on_metadata_mode_changed
             )
 
         self.widget.pushButton_MapSetRoi.clicked.connect(self._arm_roi_selection)
@@ -164,6 +176,41 @@ class MapController(object):
     def _set_status(self, msg):
         return
 
+    def _open_progress(self, title, label, maximum):
+        dlg = QtWidgets.QProgressDialog(label, "", 0, max(1, int(maximum)), self.widget)
+        dlg.setWindowTitle(title)
+        dlg.setCancelButton(None)
+        dlg.setWindowModality(QtCore.Qt.ApplicationModal)
+        dlg.setMinimumDuration(0)
+        dlg.setAutoClose(False)
+        dlg.setAutoReset(False)
+        dlg.setValue(0)
+        dlg.show()
+        QtWidgets.QApplication.processEvents()
+        self._progress_dialog = dlg
+        return dlg
+
+    def _update_progress(self, value, label=None, maximum=None):
+        dlg = self._progress_dialog
+        if dlg is None:
+            return
+        if maximum is not None:
+            dlg.setMaximum(max(1, int(maximum)))
+        if label is not None:
+            dlg.setLabelText(str(label))
+        dlg.setValue(min(max(0, int(value)), dlg.maximum()))
+        QtWidgets.QApplication.processEvents()
+
+    def _close_progress(self):
+        dlg = self._progress_dialog
+        self._progress_dialog = None
+        if dlg is None:
+            return
+        dlg.setValue(dlg.maximum())
+        dlg.close()
+        dlg.deleteLater()
+        QtWidgets.QApplication.processEvents()
+
     def _default_hover_text(self):
         if not self._chi_files:
             return "Load CHI files to start."
@@ -198,14 +245,19 @@ class MapController(object):
         self._chi_input_files = list(files)
         self._roi_1d = None
         self._roi_2d = None
-        self._refresh_loaded_files(reset_grid=True)
-        nx, ny = self._grid
-        order_text = "input order" if self._ignore_file_numbers() else "filename order"
-        self._set_status(
-            f"Loaded {len(self._chi_files)} CHI files using {order_text}. "
-            f"Guessed grid: {nx} x {ny}"
-        )
-        self._set_default_1d_full_range_roi()
+        self._open_progress("Map Loading", "Preparing selected CHI files...", 4)
+        try:
+            self._refresh_loaded_files(reset_grid=True, progress=True)
+            nx, ny = self._grid
+            order_text = "input order" if self._ignore_file_numbers() else "filename order"
+            self._set_status(
+                f"Loaded {len(self._chi_files)} CHI files using {order_text}. "
+                f"Guessed grid: {nx} x {ny}"
+            )
+            self._update_progress(3, "Selecting full-pattern ROI...")
+            self._set_default_1d_full_range_roi()
+        finally:
+            self._close_progress()
         if self._roi_1d is not None:
             self._compute_map()
         else:
@@ -244,10 +296,75 @@ class MapController(object):
         return (2, name_lower)
 
     def _ignore_file_numbers(self):
+        return False
+
+    def _ignore_metadata(self):
         return bool(
             getattr(self.widget, "checkBox_MapIgnoreFileNumber", None) and
             self.widget.checkBox_MapIgnoreFileNumber.isChecked()
         )
+
+    def _h5_candidates_for_chi(self, chi_path):
+        folder = os.path.dirname(chi_path)
+        stem = os.path.splitext(os.path.basename(chi_path))[0]
+        candidates = [
+            os.path.join(folder, stem + ".h5"),
+            os.path.join(folder, stem + ".hdf5"),
+        ]
+        return [c for c in candidates if os.path.exists(c)]
+
+    def _has_complete_coordinate_assignment(self):
+        if len(self._map_points) != len(self._chi_files):
+            return False
+        if not self._map_points:
+            return False
+        if not all(p.x_pos is not None and p.y_pos is not None for p in self._map_points):
+            return False
+        test_values = np.arange(len(self._map_points), dtype=float)
+        return build_coordinate_grid(
+            test_values,
+            [p.x_pos for p in self._map_points],
+            [p.y_pos for p in self._map_points],
+        ) is not None
+
+    def _detect_scan_coordinates(self, progress=False):
+        points = []
+        total = len(self._chi_files)
+        metadata_cache = {}
+        for i, chi_path in enumerate(self._chi_files):
+            if progress:
+                self._update_progress(
+                    2,
+                    f"Checking metadata: {os.path.basename(chi_path)}",
+                )
+            x_pos = None
+            y_pos = None
+            if not self._ignore_metadata():
+                param_dir = get_temp_dir(chi_path)
+                if param_dir not in metadata_cache:
+                    metadata_cache[param_dir] = DioptasMetadataCollection.from_param_dir(param_dir)
+                metadata = metadata_cache[param_dir]
+                coords = metadata.get_coordinates(filename=chi_path, frame_index=None)
+                if coords is not None:
+                    x_pos, y_pos = coords
+                else:
+                    for h5_path in self._h5_candidates_for_chi(chi_path):
+                        coords = extract_scan_coordinates(h5_path, frame_index=None)
+                        if coords is not None:
+                            x_pos, y_pos = coords
+                            break
+            points.append(MapPointInfo(
+                filepath=chi_path,
+                filename=os.path.basename(chi_path),
+                frame_index=None,
+                x_pos=x_pos,
+                y_pos=y_pos,
+            ))
+            if progress and total > 0:
+                QtWidgets.QApplication.processEvents()
+        self._map_points = points
+        valid_coords = self._has_complete_coordinate_assignment()
+        return valid_coords
 
     def _ordered_chi_files(self, files):
         ordered = list(files)
@@ -255,13 +372,19 @@ class MapController(object):
             return ordered
         return sorted(ordered, key=self._filename_sort_key)
 
-    def _refresh_loaded_files(self, reset_grid=False, preferred_chi=None):
+    def _refresh_loaded_files(self, reset_grid=False, preferred_chi=None, progress=False):
+        if progress:
+            self._update_progress(1, "Sorting files and building map grid...")
         self._chi_files = self._ordered_chi_files(self._chi_input_files)
         self._pos_idx = self._derive_position_indices(self._chi_files)
         self._rebuild_linear_lookup()
         self._chi_cache = {}
         self._cake_cache = {}
         self._map_data = None
+        self._map_coordinate_mode = False
+        self._coord_x = []
+        self._coord_y = []
+        self._coord_to_file = {}
         self._clear_hover_file()
 
         if reset_grid:
@@ -278,16 +401,28 @@ class MapController(object):
             )
 
         self._set_loaded_count()
+        if progress:
+            self._update_progress(2, "Previewing map center file...")
         if preferred_chi and (preferred_chi in self._chi_files):
             self._load_file_to_main_plot(self._chi_files.index(preferred_chi))
         else:
             self._preview_center_file()
+        self._detect_scan_coordinates(progress=progress)
 
     def _on_file_order_mode_changed(self):
         if not self._chi_input_files:
             return
         preferred_chi = self._current_displayed_chi()
         self._refresh_loaded_files(reset_grid=False, preferred_chi=preferred_chi)
+        if (self._roi_1d is not None) or (self._roi_2d is not None):
+            self._compute_map()
+        else:
+            self._draw_map()
+
+    def _on_metadata_mode_changed(self):
+        if not self._chi_files:
+            return
+        self._detect_scan_coordinates(progress=False)
         if (self._roi_1d is not None) or (self._roi_2d is not None):
             self._compute_map()
         else:
@@ -416,6 +551,8 @@ class MapController(object):
             return None
         x = int(round(xdata))
         y = int(round(ydata))
+        if self._map_coordinate_mode:
+            return self._coord_to_file.get((x, y), None)
         lin = self._grid_to_linear(x, y)
         if lin is None:
             return None
@@ -426,10 +563,18 @@ class MapController(object):
             return ""
         file_idx = self._file_idx_from_map_coords(event.xdata, event.ydata)
         if file_idx is None:
+            if self._map_coordinate_mode and event.inaxes == self._map_ax:
+                return "No diffraction pattern available"
             return ""
         if (file_idx < 0) or (file_idx >= len(self._chi_files)):
             return ""
-        return os.path.basename(self._chi_files[file_idx])
+        base = os.path.basename(self._chi_files[file_idx])
+        if self._map_coordinate_mode:
+            x = int(round(event.xdata))
+            y = int(round(event.ydata))
+            if 0 <= x < len(self._coord_x) and 0 <= y < len(self._coord_y):
+                return f"{base} | x={self._coord_x[x]:.6g}, y={self._coord_y[y]:.6g}, row={y}, col={x}"
+        return base
 
     def _arm_roi_selection(self):
         if self.widget.tabWidget.currentWidget() != self.widget.tab_Map:
@@ -554,7 +699,7 @@ class MapController(object):
             return self._chi_files[0]
         return None
 
-    def _refresh_temp_bgsub_if_requested(self):
+    def _refresh_temp_bgsub_if_requested(self, progress_offset=0, progress_span=None):
         use_bgsub = bool(
             getattr(self.widget, "checkBox_BgSub", None) and
             self.widget.checkBox_BgSub.isChecked()
@@ -571,11 +716,22 @@ class MapController(object):
             int(self.widget.spinBox_BGParam1.value()),
             int(self.widget.spinBox_BGParam2.value()),
         ]
+
+        def on_bg_progress(i, total, chi_path):
+            if progress_span is None:
+                return
+            value = progress_offset + min(int(i), int(total))
+            label = "Refreshing temporary background files..."
+            if chi_path:
+                label = f"Refreshing background: {os.path.basename(chi_path)}"
+            self._update_progress(value, label)
+
         result = refresh_temp_bgsub_for_chi_files(
             self._chi_files,
             preferred_chi=self._preferred_bg_reference_chi(),
             bg_roi=bg_roi,
             bg_params=bg_params,
+            progress_callback=on_bg_progress,
         )
         ref_name = os.path.basename(result["reference"]) if result["reference"] else "N/A"
         if result["updated"] > 0:
@@ -595,7 +751,12 @@ class MapController(object):
             return
         nx, ny = self._grid
         n = len(self._chi_files)
-        if nx * ny != n:
+        coordinate_requested = not self._ignore_metadata()
+        coordinate_ready = (
+            coordinate_requested and
+            self._has_complete_coordinate_assignment()
+        )
+        if (not coordinate_ready) and nx * ny != n:
             self._set_status(
                 f"Grid mismatch: Nx*Ny ({nx}x{ny}={nx * ny}) must equal loaded files ({n})."
             )
@@ -603,49 +764,96 @@ class MapController(object):
         if (self._roi_1d is None) and (self._roi_2d is None):
             self._set_status("Select ROI first.")
             return
-        self._refresh_temp_bgsub_if_requested()
 
-        values = np.full(n, np.nan, dtype=float)
-        failures = []
-        for i, chi_path in enumerate(self._chi_files):
-            try:
-                if self._roi_1d is not None:
-                    x, y = self._load_bgsub_xy_if_requested(chi_path)
-                    xmin, xmax = self._roi_1d
-                    m = (x >= xmin) & (x <= xmax)
-                    if not np.any(m):
-                        values[i] = np.nan
+        use_bgsub = bool(
+            getattr(self.widget, "checkBox_BgSub", None) and
+            self.widget.checkBox_BgSub.isChecked() and
+            self._roi_1d is not None
+        )
+        progress_max = n + (n if use_bgsub else 0) + 2
+        self._open_progress("Map Processing", "Preparing map computation...", progress_max)
+
+        try:
+            self._refresh_temp_bgsub_if_requested(
+                progress_offset=0,
+                progress_span=n if use_bgsub else None,
+            )
+            compute_offset = n if use_bgsub else 0
+
+            values = np.full(n, np.nan, dtype=float)
+            failures = []
+            for i, chi_path in enumerate(self._chi_files):
+                self._update_progress(
+                    compute_offset + i,
+                    f"Integrating ROI: {os.path.basename(chi_path)}",
+                )
+                try:
+                    if self._roi_1d is not None:
+                        x, y = self._load_bgsub_xy_if_requested(chi_path)
+                        xmin, xmax = self._roi_1d
+                        m = (x >= xmin) & (x <= xmax)
+                        if not np.any(m):
+                            values[i] = np.nan
+                        else:
+                            # Requested behavior: add all intensities in ROI range.
+                            values[i] = float(np.nansum(y[m]))
                     else:
-                        # Requested behavior: add all intensities in ROI range.
-                        values[i] = float(np.nansum(y[m]))
-                else:
-                    cake = self._load_cake_data(chi_path)
-                    if cake is None:
-                        raise RuntimeError("No cake temp files")
-                    tth, azi, intensity = cake
-                    xmin, xmax, ymin, ymax = self._roi_2d
-                    mt = (tth >= xmin) & (tth <= xmax)
-                    ma = (azi >= ymin) & (azi <= ymax)
-                    if (not np.any(mt)) or (not np.any(ma)):
-                        values[i] = np.nan
-                    else:
-                        sub = intensity[np.ix_(ma, mt)]
-                        values[i] = float(np.nansum(sub))
-            except Exception as exc:
-                failures.append((chi_path, str(exc)))
-                values[i] = np.nan
+                        cake = self._load_cake_data(chi_path)
+                        if cake is None:
+                            raise RuntimeError("No cake temp files")
+                        tth, azi, intensity = cake
+                        xmin, xmax, ymin, ymax = self._roi_2d
+                        mt = (tth >= xmin) & (tth <= xmax)
+                        ma = (azi >= ymin) & (azi <= ymax)
+                        if (not np.any(mt)) or (not np.any(ma)):
+                            values[i] = np.nan
+                        else:
+                            sub = intensity[np.ix_(ma, mt)]
+                            values[i] = float(np.nansum(sub))
+                except Exception as exc:
+                    failures.append((chi_path, str(exc)))
+                    values[i] = np.nan
 
-        grid = np.full((ny, nx), np.nan, dtype=float)
-        for i, val in enumerate(values):
-            lin_pos = self._pos_idx[i] if i < len(self._pos_idx) else i
-            x, y = self._linear_to_grid(lin_pos)
-            if (y < ny) and (x < nx):
-                grid[y, x] = val
-        self._map_data = grid
+            self._update_progress(compute_offset + n, "Building map grid...")
+            self._map_coordinate_mode = False
+            self._coord_x = []
+            self._coord_y = []
+            self._coord_to_file = {}
+            coord_grid = None
+            if coordinate_ready:
+                coord_grid = build_coordinate_grid(
+                    values,
+                    [p.x_pos for p in self._map_points],
+                    [p.y_pos for p in self._map_points],
+                )
+            if coord_grid is not None:
+                grid, x_vals, y_vals, coord_to_index = coord_grid
+                self._map_data = grid
+                self._coord_x = x_vals
+                self._coord_y = y_vals
+                x_to_col = {round(x, 12): i for i, x in enumerate(x_vals)}
+                y_to_row = {round(y, 12): i for i, y in enumerate(y_vals)}
+                self._coord_to_file = {
+                    (x_to_col[key[0]], y_to_row[key[1]]): idx
+                    for key, idx in coord_to_index.items()
+                }
+                self._map_coordinate_mode = True
+            else:
+                grid = np.full((ny, nx), np.nan, dtype=float)
+                for i, val in enumerate(values):
+                    lin_pos = self._pos_idx[i] if i < len(self._pos_idx) else i
+                    x, y = self._linear_to_grid(lin_pos)
+                    if (y < ny) and (x < nx):
+                        grid[y, x] = val
+                self._map_data = grid
 
-        # Recomputing map should always refresh Min/Max from new data.
-        self._scale_reset()
-        self._draw_map()
+            self._update_progress(compute_offset + n + 1, "Drawing map...")
+
+            # Recomputing map should always refresh Min/Max from new data.
+            self._scale_reset()
+            self._draw_map()
+        finally:
+            self._close_progress()
 
         if failures:
             first_path, first_err = failures[0]
@@ -668,6 +876,11 @@ class MapController(object):
         cmap = str(self.widget.comboBox_MapCmap.currentText())
         if self.widget.checkBox_MapReverseCmap.isChecked() and (not cmap.endswith("_r")):
             cmap = cmap + "_r"
+        return cmap
+
+    def _map_cmap_for_plot(self):
+        cmap = cm.get_cmap(self._effective_cmap()).copy()
+        cmap.set_bad((0.0, 0.0, 0.0, 0.0))
         return cmap
 
     def _current_vrange(self, data):
@@ -747,7 +960,7 @@ class MapController(object):
 
         im_kwargs = {
             "origin": "upper",
-            "cmap": self._effective_cmap(),
+            "cmap": self._map_cmap_for_plot(),
             "extent": [-0.5, data.shape[1] - 0.5, data.shape[0] - 0.5, -0.5],
             "interpolation": "nearest",
         }
@@ -771,12 +984,31 @@ class MapController(object):
         self._map_ax.set_anchor("C")
         self._map_ax.set_xlim(-0.5, data.shape[1] - 0.5)
         self._map_ax.set_ylim(data.shape[0] - 0.5, -0.5)
-        self._map_ax.set_axis_off()
+        if self._map_coordinate_mode:
+            self._map_ax.set_axis_on()
+            self._map_ax.set_xlabel("x position", color="white")
+            self._map_ax.set_ylabel("y position", color="white")
+            self._map_ax.tick_params(colors="white", labelsize=8)
+            xticks = np.arange(len(self._coord_x))
+            yticks = np.arange(len(self._coord_y))
+            if xticks.size > 12:
+                xticks = np.unique(np.linspace(0, len(self._coord_x) - 1, 12).astype(int))
+            if yticks.size > 12:
+                yticks = np.unique(np.linspace(0, len(self._coord_y) - 1, 12).astype(int))
+            self._map_ax.set_xticks(xticks)
+            self._map_ax.set_xticklabels([f"{self._coord_x[i]:.6g}" for i in xticks])
+            self._map_ax.set_yticks(yticks)
+            self._map_ax.set_yticklabels([f"{self._coord_y[i]:.6g}" for i in yticks])
+        else:
+            self._map_ax.set_axis_off()
         self._map_canvas.draw_idle()
 
     def _on_map_click(self, event):
         file_idx = self._file_idx_from_map_coords(event.xdata, event.ydata)
         if file_idx is None:
+            if self._map_coordinate_mode and event.inaxes == self._map_ax:
+                self._set_status("No diffraction pattern available.")
+                return
             if event.inaxes == self._map_ax:
                 x = "NA" if event.xdata is None else int(round(event.xdata))
                 y = "NA" if event.ydata is None else int(round(event.ydata))
