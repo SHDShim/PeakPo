@@ -4,8 +4,10 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.11.3"
+__version__ = "7.11.4"
 """
+7.11.4: keep File > Metadata tied to the current CHI file only;
+        show horizontal and vertical map coordinates in hover text.
 7.11.3: add search controls to File > Metadata;
         keep coordinate tick labels visible without map axis titles.
 7.11.2: regularize JSON metadata coordinates against the expected map grid;

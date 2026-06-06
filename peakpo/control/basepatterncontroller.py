@@ -1,4 +1,5 @@
 import os
+import json
 from qtpy import QtWidgets
 from ..utils import get_sorted_filelist, find_from_filelist, readchi, \
     make_filename, writechi, get_directory, dialog_openfile_hide_param_dirs
@@ -6,6 +7,7 @@ from ..utils import undo_button_press, get_temp_dir
 import datetime
 from .mplcontroller import MplController
 from .cakecontroller import CakeController
+from .xrdiohelpers import DioptasMetadataCollection
 
 
 class BasePatternController(object):
@@ -81,6 +83,7 @@ class BasePatternController(object):
         #    '1D Pattern: ' + self.model.get_base_ptn_filename())
         self.widget.lineEdit_DiffractionPatternFileName.setText(
             str(self.model.get_base_ptn_filename()))
+        self._update_metadata_tab_for_chi(new_filename)
         # Prefer loading full PARAM session state when available for this CHI.
         if self.session_ctrl is not None:
             loaded_param = self.session_ctrl.autoload_param_for_chi(new_filename)
@@ -141,6 +144,58 @@ class BasePatternController(object):
         # Keep backup table in File > Data synchronized right after CHI load.
         if self.session_ctrl is not None:
             self.session_ctrl.refresh_backup_table()
+
+    def _metadata_tab_widgets(self):
+        path_widget = getattr(self.widget, "lineEdit_MetadataJsonPath", None)
+        text_widget = getattr(self.widget, "plainTextEdit_MetadataJson", None)
+        return path_widget, text_widget
+
+    def _clear_metadata_tab(self):
+        path_widget, text_widget = self._metadata_tab_widgets()
+        if path_widget is not None:
+            path_widget.setText("")
+        if text_widget is not None:
+            text_widget.setPlainText("")
+        if hasattr(self.widget, "lineEdit_MetadataSearch"):
+            self.widget.lineEdit_MetadataSearch.setText("")
+        if hasattr(self.widget, "label_MetadataSearchStatus"):
+            self.widget.label_MetadataSearchStatus.setText("")
+
+    def _update_metadata_tab_for_chi(self, chi_path):
+        path_widget, text_widget = self._metadata_tab_widgets()
+        if path_widget is None or text_widget is None:
+            return
+        self._clear_metadata_tab()
+
+        param_dir = get_temp_dir(chi_path)
+        collection = DioptasMetadataCollection.from_param_dir(param_dir)
+        if not collection.exports:
+            return
+
+        paths = []
+        sections = []
+        for export in collection.exports:
+            path = str(getattr(export, "path", "") or "")
+            if not path:
+                continue
+            paths.append(path)
+            sections.append(
+                f"# {path}\n" +
+                json.dumps(
+                    getattr(export, "payload", None),
+                    indent=2,
+                    sort_keys=True,
+                    allow_nan=True,
+                )
+            )
+        if not sections:
+            return
+
+        if len(paths) == 1:
+            path_widget.setText(paths[0])
+        else:
+            path_widget.setText(f"{len(paths)} metadata JSON files")
+        text_widget.setPlainText("\n\n".join(sections))
 
     def _update_bg_params_in_widget(self):
         self.widget.spinBox_BGParam0.setValue(
