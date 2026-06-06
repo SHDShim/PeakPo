@@ -2669,6 +2669,38 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.lineEdit_MetadataJsonPath.setReadOnly(True)
         self.lineEdit_MetadataJsonPath.setPlaceholderText("No metadata JSON file loaded")
 
+        self.frame_MetadataSearch = QtWidgets.QFrame(self.tabWidget_3PageMetadata)
+        self.frame_MetadataSearch.setObjectName("frame_MetadataSearch")
+        self.horizontalLayout_MetadataSearch = QtWidgets.QHBoxLayout(
+            self.frame_MetadataSearch)
+        self.horizontalLayout_MetadataSearch.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_MetadataSearch.setSpacing(6)
+        self.lineEdit_MetadataSearch = QtWidgets.QLineEdit(self.frame_MetadataSearch)
+        self.lineEdit_MetadataSearch.setObjectName("lineEdit_MetadataSearch")
+        self.lineEdit_MetadataSearch.setPlaceholderText("Search metadata")
+        self.pushButton_MetadataSearchPrev = QtWidgets.QPushButton(
+            "Previous", self.frame_MetadataSearch)
+        self.pushButton_MetadataSearchPrev.setObjectName(
+            "pushButton_MetadataSearchPrev")
+        self.pushButton_MetadataSearchNext = QtWidgets.QPushButton(
+            "Next", self.frame_MetadataSearch)
+        self.pushButton_MetadataSearchNext.setObjectName(
+            "pushButton_MetadataSearchNext")
+        self.label_MetadataSearchStatus = QtWidgets.QLabel(
+            "", self.frame_MetadataSearch)
+        self.label_MetadataSearchStatus.setObjectName("label_MetadataSearchStatus")
+        self.label_MetadataSearchStatus.setMinimumWidth(80)
+        self.label_MetadataSearchStatus.setAlignment(
+            QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        self.horizontalLayout_MetadataSearch.addWidget(
+            self.lineEdit_MetadataSearch, 1)
+        self.horizontalLayout_MetadataSearch.addWidget(
+            self.pushButton_MetadataSearchPrev)
+        self.horizontalLayout_MetadataSearch.addWidget(
+            self.pushButton_MetadataSearchNext)
+        self.horizontalLayout_MetadataSearch.addWidget(
+            self.label_MetadataSearchStatus)
+
         self.plainTextEdit_MetadataJson = QtWidgets.QPlainTextEdit(
             self.tabWidget_3PageMetadata)
         self.plainTextEdit_MetadataJson.setObjectName("plainTextEdit_MetadataJson")
@@ -2681,7 +2713,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.plainTextEdit_MetadataJson.setFont(font)
 
         self.verticalLayout_FileMetadata.addWidget(self.lineEdit_MetadataJsonPath)
+        self.verticalLayout_FileMetadata.addWidget(self.frame_MetadataSearch)
         self.verticalLayout_FileMetadata.addWidget(self.plainTextEdit_MetadataJson, 1)
+        self.lineEdit_MetadataSearch.textChanged.connect(self._metadata_search_first)
+        self.pushButton_MetadataSearchNext.clicked.connect(
+            self._metadata_search_next)
+        self.pushButton_MetadataSearchPrev.clicked.connect(
+            self._metadata_search_previous)
 
         insert_idx = -1
         if hasattr(self, "tabWidget_3Page2"):
@@ -2693,6 +2731,55 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 insert_idx, self.tabWidget_3PageMetadata, "Metadata")
         else:
             self.tabWidget_3.addTab(self.tabWidget_3PageMetadata, "Metadata")
+
+    def _metadata_search_flags(self, backward=False):
+        flags = QtGui.QTextDocument.FindFlag(0)
+        if backward:
+            flags |= QtGui.QTextDocument.FindFlag.FindBackward
+        return flags
+
+    def _set_metadata_search_status(self, text):
+        if hasattr(self, "label_MetadataSearchStatus"):
+            self.label_MetadataSearchStatus.setText(text)
+
+    def _metadata_search_first(self):
+        if not hasattr(self, "plainTextEdit_MetadataJson"):
+            return
+        query = self.lineEdit_MetadataSearch.text()
+        if not query:
+            self._set_metadata_search_status("")
+            return
+        cursor = self.plainTextEdit_MetadataJson.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.Start)
+        self.plainTextEdit_MetadataJson.setTextCursor(cursor)
+        self._metadata_find(query, backward=False)
+
+    def _metadata_search_next(self):
+        if not hasattr(self, "lineEdit_MetadataSearch"):
+            return
+        self._metadata_find(self.lineEdit_MetadataSearch.text(), backward=False)
+
+    def _metadata_search_previous(self):
+        if not hasattr(self, "lineEdit_MetadataSearch"):
+            return
+        self._metadata_find(self.lineEdit_MetadataSearch.text(), backward=True)
+
+    def _metadata_find(self, query, backward=False):
+        if not query or not hasattr(self, "plainTextEdit_MetadataJson"):
+            self._set_metadata_search_status("")
+            return
+        found = self.plainTextEdit_MetadataJson.find(
+            query, self._metadata_search_flags(backward=backward))
+        if not found:
+            cursor = self.plainTextEdit_MetadataJson.textCursor()
+            if backward:
+                cursor.movePosition(QtGui.QTextCursor.End)
+            else:
+                cursor.movePosition(QtGui.QTextCursor.Start)
+            self.plainTextEdit_MetadataJson.setTextCursor(cursor)
+            found = self.plainTextEdit_MetadataJson.find(
+                query, self._metadata_search_flags(backward=backward))
+        self._set_metadata_search_status("Found" if found else "No match")
 
     def _move_backup_into_file_data_tab(self):
         # Move backup table/tools under File > Data, below Raw image handling.

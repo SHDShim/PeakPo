@@ -1029,7 +1029,16 @@ class MapController(object):
         self._map_ax.set_ylim(data.shape[0] - 0.5, -0.5)
         if self._map_coordinate_mode:
             self._map_ax.set_axis_on()
-            self._map_ax.tick_params(colors="white", labelsize=8)
+            self._map_ax.set_xlabel("")
+            self._map_ax.set_ylabel("")
+            self._map_ax.tick_params(
+                colors="white",
+                labelsize=8,
+                bottom=True,
+                left=True,
+                labelbottom=True,
+                labelleft=True,
+            )
             xticks = np.arange(len(self._coord_x))
             yticks = np.arange(len(self._coord_y))
             if xticks.size > 12:
