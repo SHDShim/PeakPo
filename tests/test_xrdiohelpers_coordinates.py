@@ -156,6 +156,33 @@ class CoordinateGridTests(unittest.TestCase):
         self.assertEqual(unique_x, [0.0, 0.001, 0.002, 0.003])
         self.assertTrue(np.isnan(grid[0, 2]))
 
+    def test_target_shape_regularizes_noisy_positions(self):
+        values = [10.0, 20.0, 30.0, 40.0, 50.0, 60.0]
+        xs = [0.1001, 0.1998, 0.3002, 0.0997, 0.2003, 0.2999]
+        ys = [0.0002, -0.0001, 0.0003, 0.1002, 0.0997, 0.1001]
+
+        grid, unique_x, unique_y, coord_to_index = build_coordinate_grid(
+            values, xs, ys, target_shape=(2, 3))
+
+        self.assertEqual(grid.shape, (2, 3))
+        self.assertEqual(unique_x, [0.1, 0.2, 0.3])
+        self.assertEqual(unique_y, [0.0, 0.1])
+        self.assertFalse(np.isnan(grid).any())
+        self.assertEqual(grid[1, 2], 60.0)
+        self.assertEqual(coord_to_index[(0.3, 0.1)], 5)
+
+    def test_target_shape_uses_min_max_for_irregular_metadata_steps(self):
+        grid, unique_x, unique_y, __ = build_coordinate_grid(
+            [1.0, 2.0, 4.0],
+            [0.6546, 0.6506, 0.6424],
+            [-0.05, -0.05, -0.05],
+            target_shape=(1, 4),
+        )
+        self.assertEqual(grid.shape, (1, 4))
+        self.assertEqual(unique_x, [0.642, 0.646, 0.651, 0.655])
+        self.assertEqual(unique_y, [-0.05])
+        self.assertTrue(np.isnan(grid[0, 1]))
+
 
 class DioptasMetadataTests(unittest.TestCase):
     def test_parse_map_filename_ignores_final_numeric_block(self):

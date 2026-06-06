@@ -253,6 +253,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._setup_cake_colormap_control()
         self._setup_plot_control_export()
         self._move_backup_into_file_data_tab()
+        self._setup_file_metadata_tab()
         self._setup_backup_comment_button()
         self._layout_backup_buttons()
         self._compact_file_data_layout()
@@ -2648,6 +2649,50 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _setup_backup_comment_button(self):
         return
+
+    def _setup_file_metadata_tab(self):
+        if not hasattr(self, "tabWidget_3"):
+            return
+        if hasattr(self, "tabWidget_3PageMetadata"):
+            return
+
+        self.tabWidget_3PageMetadata = QtWidgets.QWidget()
+        self.tabWidget_3PageMetadata.setObjectName("tabWidget_3PageMetadata")
+        self.verticalLayout_FileMetadata = QtWidgets.QVBoxLayout(
+            self.tabWidget_3PageMetadata)
+        self.verticalLayout_FileMetadata.setContentsMargins(8, 8, 8, 8)
+        self.verticalLayout_FileMetadata.setSpacing(6)
+
+        self.lineEdit_MetadataJsonPath = QtWidgets.QLineEdit(
+            self.tabWidget_3PageMetadata)
+        self.lineEdit_MetadataJsonPath.setObjectName("lineEdit_MetadataJsonPath")
+        self.lineEdit_MetadataJsonPath.setReadOnly(True)
+        self.lineEdit_MetadataJsonPath.setPlaceholderText("No metadata JSON file loaded")
+
+        self.plainTextEdit_MetadataJson = QtWidgets.QPlainTextEdit(
+            self.tabWidget_3PageMetadata)
+        self.plainTextEdit_MetadataJson.setObjectName("plainTextEdit_MetadataJson")
+        self.plainTextEdit_MetadataJson.setReadOnly(True)
+        self.plainTextEdit_MetadataJson.setLineWrapMode(QtWidgets.QPlainTextEdit.NoWrap)
+        self.plainTextEdit_MetadataJson.setPlaceholderText(
+            "Metadata JSON content will appear here when a metadata file is provided.")
+        font = QtGui.QFont("Menlo")
+        font.setStyleHint(QtGui.QFont.Monospace)
+        self.plainTextEdit_MetadataJson.setFont(font)
+
+        self.verticalLayout_FileMetadata.addWidget(self.lineEdit_MetadataJsonPath)
+        self.verticalLayout_FileMetadata.addWidget(self.plainTextEdit_MetadataJson, 1)
+
+        insert_idx = -1
+        if hasattr(self, "tabWidget_3Page2"):
+            idx_config = self.tabWidget_3.indexOf(self.tabWidget_3Page2)
+            if idx_config >= 0:
+                insert_idx = idx_config + 1
+        if insert_idx >= 0:
+            self.tabWidget_3.insertTab(
+                insert_idx, self.tabWidget_3PageMetadata, "Metadata")
+        else:
+            self.tabWidget_3.addTab(self.tabWidget_3PageMetadata, "Metadata")
 
     def _move_backup_into_file_data_tab(self):
         # Move backup table/tools under File > Data, below Raw image handling.

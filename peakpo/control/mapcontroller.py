@@ -1,6 +1,7 @@
 import os
 import math
 import re
+import json
 import numpy as np
 from qtpy import QtWidgets, QtCore
 from matplotlib.figure import Figure
@@ -321,16 +322,55 @@ class MapController(object):
         if not all(p.x_pos is not None and p.y_pos is not None for p in self._map_points):
             return False
         test_values = np.arange(len(self._map_points), dtype=float)
+        nx, ny = self._grid
         return build_coordinate_grid(
             test_values,
             [p.x_pos for p in self._map_points],
             [p.y_pos for p in self._map_points],
+            target_shape=(ny, nx),
         ) is not None
+
+    def _show_metadata_json_exports(self, exports):
+        path_widget = getattr(self.widget, "lineEdit_MetadataJsonPath", None)
+        text_widget = getattr(self.widget, "plainTextEdit_MetadataJson", None)
+        if path_widget is None or text_widget is None:
+            return
+
+        unique = []
+        seen = set()
+        for export in exports or []:
+            path = str(getattr(export, "path", "") or "")
+            if path in seen:
+                continue
+            seen.add(path)
+            unique.append(export)
+
+        if not unique:
+            path_widget.setText("")
+            text_widget.setPlainText("")
+            return
+
+        paths = [str(getattr(export, "path", "") or "") for export in unique]
+        if len(paths) == 1:
+            path_widget.setText(paths[0])
+        else:
+            path_widget.setText(f"{len(paths)} metadata JSON files")
+
+        sections = []
+        for export in unique:
+            path = str(getattr(export, "path", "") or "")
+            payload = getattr(export, "payload", None)
+            sections.append(
+                f"# {path}\n" +
+                json.dumps(payload, indent=2, sort_keys=True, allow_nan=True)
+            )
+        text_widget.setPlainText("\n\n".join(sections))
 
     def _detect_scan_coordinates(self, progress=False):
         points = []
         total = len(self._chi_files)
         metadata_cache = {}
+        metadata_exports = []
         for i, chi_path in enumerate(self._chi_files):
             if progress:
                 self._update_progress(
@@ -339,10 +379,11 @@ class MapController(object):
                 )
             x_pos = None
             y_pos = None
+            param_dir = get_temp_dir(chi_path)
+            if param_dir not in metadata_cache:
+                metadata_cache[param_dir] = DioptasMetadataCollection.from_param_dir(param_dir)
+                metadata_exports.extend(metadata_cache[param_dir].exports)
             if not self._ignore_metadata():
-                param_dir = get_temp_dir(chi_path)
-                if param_dir not in metadata_cache:
-                    metadata_cache[param_dir] = DioptasMetadataCollection.from_param_dir(param_dir)
                 metadata = metadata_cache[param_dir]
                 coords = metadata.get_coordinates(filename=chi_path, frame_index=None)
                 if coords is not None:
@@ -363,6 +404,7 @@ class MapController(object):
             if progress and total > 0:
                 QtWidgets.QApplication.processEvents()
         self._map_points = points
+        self._show_metadata_json_exports(metadata_exports)
         valid_coords = self._has_complete_coordinate_assignment()
         return valid_coords
 
@@ -825,6 +867,7 @@ class MapController(object):
                     values,
                     [p.x_pos for p in self._map_points],
                     [p.y_pos for p in self._map_points],
+                    target_shape=(ny, nx),
                 )
             if coord_grid is not None:
                 grid, x_vals, y_vals, coord_to_index = coord_grid
@@ -986,8 +1029,6 @@ class MapController(object):
         self._map_ax.set_ylim(data.shape[0] - 0.5, -0.5)
         if self._map_coordinate_mode:
             self._map_ax.set_axis_on()
-            self._map_ax.set_xlabel("x position", color="white")
-            self._map_ax.set_ylabel("y position", color="white")
             self._map_ax.tick_params(colors="white", labelsize=8)
             xticks = np.arange(len(self._coord_x))
             yticks = np.arange(len(self._coord_y))

@@ -413,7 +413,56 @@ def _bin_to_coord(bin_value, decimals=3):
     return round(float(bin_value) / float(10 ** int(decimals)), int(decimals))
 
 
-def build_coordinate_grid(values, x_positions, y_positions, decimals=3):
+def _clean_axis_from_range(positions, count, decimals=3):
+    count = int(count)
+    if count <= 0:
+        return []
+    finite = [float(pos) for pos in positions if np.isfinite(float(pos))]
+    if not finite:
+        return []
+    if count == 1:
+        return [round(float(np.nanmean(finite)), int(decimals))]
+    axis = np.linspace(min(finite), max(finite), count)
+    return [round(float(v), int(decimals)) for v in axis]
+
+
+def _nearest_axis_index(value, axis):
+    if not axis:
+        return None
+    if len(axis) == 1:
+        return 0
+    arr = np.asarray(axis, dtype=float)
+    return int(np.nanargmin(np.abs(arr - float(value))))
+
+
+def _build_coordinate_grid_for_shape(values, valid, nx, ny, decimals=3):
+    x_axis = _clean_axis_from_range(
+        [x for __, __, x, __ in valid], nx, decimals=decimals)
+    y_axis = _clean_axis_from_range(
+        [y for __, __, __, y in valid], ny, decimals=decimals)
+    if len(x_axis) != int(nx) or len(y_axis) != int(ny):
+        return None
+
+    grid = np.full((int(ny), int(nx)), np.nan, dtype=float)
+    coord_to_index = {}
+    duplicates = set()
+    for idx, value, x, y in valid:
+        col = _nearest_axis_index(x, x_axis)
+        row = _nearest_axis_index(y, y_axis)
+        if col is None or row is None:
+            continue
+        key = (x_axis[col], y_axis[row])
+        if key in coord_to_index:
+            duplicates.add(key)
+            continue
+        grid[row, col] = value
+        coord_to_index[key] = idx
+    if duplicates:
+        return None
+    return grid, x_axis, y_axis, coord_to_index
+
+
+def build_coordinate_grid(values, x_positions, y_positions, decimals=3, target_shape=None):
     valid = []
     for idx, (value, x, y) in enumerate(zip(values, x_positions, y_positions)):
         if x is None or y is None:
@@ -421,21 +470,38 @@ def build_coordinate_grid(values, x_positions, y_positions, decimals=3):
         valid.append((
             idx,
             float(value),
-            _coord_to_bin(x, decimals=decimals),
-            _coord_to_bin(y, decimals=decimals),
+            float(x),
+            float(y),
         ))
     if not valid:
         return None
+    if target_shape is not None:
+        try:
+            ny, nx = target_shape
+        except Exception:
+            return None
+        return _build_coordinate_grid_for_shape(
+            values, valid, nx=nx, ny=ny, decimals=decimals)
+
+    binned = [
+        (
+            idx,
+            value,
+            _coord_to_bin(x, decimals=decimals),
+            _coord_to_bin(y, decimals=decimals),
+        )
+        for idx, value, x, y in valid
+    ]
     unique_x = _uniform_axis_from_bins(
-        [x_bin for __, __, x_bin, __ in valid], decimals=decimals)
+        [x_bin for __, __, x_bin, __ in binned], decimals=decimals)
     unique_y = _uniform_axis_from_bins(
-        [y_bin for __, __, __, y_bin in valid], decimals=decimals)
+        [y_bin for __, __, __, y_bin in binned], decimals=decimals)
     x_to_col = {x: i for i, x in enumerate(unique_x)}
     y_to_row = {y: i for i, y in enumerate(unique_y)}
     grid = np.full((len(unique_y), len(unique_x)), np.nan, dtype=float)
     coord_to_index = {}
     duplicates = set()
-    for idx, value, x_bin, y_bin in valid:
+    for idx, value, x_bin, y_bin in binned:
         key = (_bin_to_coord(x_bin, decimals=decimals),
                _bin_to_coord(y_bin, decimals=decimals))
         if key in coord_to_index:
