@@ -296,7 +296,7 @@ class MapController(object):
         return (2, name_lower)
 
     def _ignore_file_numbers(self):
-        return False
+        return self._ignore_metadata()
 
     def _ignore_metadata(self):
         return bool(
@@ -831,10 +831,10 @@ class MapController(object):
                 self._map_data = grid
                 self._coord_x = x_vals
                 self._coord_y = y_vals
-                x_to_col = {round(x, 12): i for i, x in enumerate(x_vals)}
-                y_to_row = {round(y, 12): i for i, y in enumerate(y_vals)}
+                x_to_col = {float(x): i for i, x in enumerate(x_vals)}
+                y_to_row = {float(y): i for i, y in enumerate(y_vals)}
                 self._coord_to_file = {
-                    (x_to_col[key[0]], y_to_row[key[1]]): idx
+                    (x_to_col[float(key[0])], y_to_row[float(key[1])]): idx
                     for key, idx in coord_to_index.items()
                 }
                 self._map_coordinate_mode = True

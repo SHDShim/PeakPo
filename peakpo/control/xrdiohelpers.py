@@ -2,6 +2,7 @@ import os
 import glob
 import re
 import json
+import math
 from dataclasses import dataclass
 import numpy as np
 
@@ -386,33 +387,72 @@ class DioptasMetadataCollection:
         return [export.get_snapshot_mapping() for export in self.exports]
 
 
-def build_coordinate_grid(values, x_positions, y_positions):
+def _coord_to_bin(value, decimals=3):
+    scale = 10 ** int(decimals)
+    return int(np.rint(float(value) * scale))
+
+
+def _uniform_axis_from_bins(bins, decimals=3):
+    unique_bins = sorted(set(int(b) for b in bins))
+    if len(unique_bins) <= 1:
+        return unique_bins
+    diffs = [
+        b1 - b0 for b0, b1 in zip(unique_bins[:-1], unique_bins[1:])
+        if (b1 - b0) > 0
+    ]
+    if not diffs:
+        return unique_bins
+    step = int(diffs[0])
+    for diff in diffs[1:]:
+        step = int(math.gcd(step, int(diff)))
+    step = max(step, 1)
+    return list(range(unique_bins[0], unique_bins[-1] + step, step))
+
+
+def _bin_to_coord(bin_value, decimals=3):
+    return round(float(bin_value) / float(10 ** int(decimals)), int(decimals))
+
+
+def build_coordinate_grid(values, x_positions, y_positions, decimals=3):
     valid = []
     for idx, (value, x, y) in enumerate(zip(values, x_positions, y_positions)):
         if x is None or y is None:
             continue
-        valid.append((idx, float(value), float(x), float(y)))
+        valid.append((
+            idx,
+            float(value),
+            _coord_to_bin(x, decimals=decimals),
+            _coord_to_bin(y, decimals=decimals),
+        ))
     if not valid:
         return None
-    unique_x = sorted({round(x, 12) for __, __, x, __ in valid})
-    unique_y = sorted({round(y, 12) for __, __, __, y in valid})
+    unique_x = _uniform_axis_from_bins(
+        [x_bin for __, __, x_bin, __ in valid], decimals=decimals)
+    unique_y = _uniform_axis_from_bins(
+        [y_bin for __, __, __, y_bin in valid], decimals=decimals)
     x_to_col = {x: i for i, x in enumerate(unique_x)}
     y_to_row = {y: i for i, y in enumerate(unique_y)}
     grid = np.full((len(unique_y), len(unique_x)), np.nan, dtype=float)
     coord_to_index = {}
     duplicates = set()
-    for idx, value, x, y in valid:
-        key = (round(x, 12), round(y, 12))
+    for idx, value, x_bin, y_bin in valid:
+        key = (_bin_to_coord(x_bin, decimals=decimals),
+               _bin_to_coord(y_bin, decimals=decimals))
         if key in coord_to_index:
             duplicates.add(key)
             continue
-        row = y_to_row[key[1]]
-        col = x_to_col[key[0]]
+        row = y_to_row[y_bin]
+        col = x_to_col[x_bin]
         grid[row, col] = value
         coord_to_index[key] = idx
     if duplicates:
         return None
-    return grid, [float(x) for x in unique_x], [float(y) for y in unique_y], coord_to_index
+    return (
+        grid,
+        [_bin_to_coord(x, decimals=decimals) for x in unique_x],
+        [_bin_to_coord(y, decimals=decimals) for y in unique_y],
+        coord_to_index,
+    )
 
 
 def load_chi_xy(chi_path, chi_cache):

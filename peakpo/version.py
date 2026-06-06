@@ -4,8 +4,10 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.11.0"
+__version__ = "7.11.1"
 """
+7.11.1: preserve selected file-list order when Ignore metadata is enabled;
+        normalize metadata map coordinates to the third decimal place before plotting.
 7.11.0: add metadata-driven map construction using dioptas_batch_gui metadata;
         keep file-order map construction as the default with Ignore metadata enabled;
         add progress dialogs for map loading and processing.

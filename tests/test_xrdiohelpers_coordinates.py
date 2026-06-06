@@ -133,11 +133,28 @@ class CoordinateGridTests(unittest.TestCase):
     def test_float_noise_normalization(self):
         grid, unique_x, unique_y, coord_to_index = build_coordinate_grid(
             [1.0, 2.0],
-            [0.2000000000001, 0.4],
-            [0.1999999999999, 0.2],
+            [0.2004, 0.4],
+            [0.1996, 0.2],
         )
         self.assertEqual(unique_x[0], 0.2)
         self.assertEqual(unique_y[0], 0.2)
+
+    def test_float_noise_duplicate_pixel_is_invalid(self):
+        result = build_coordinate_grid(
+            [1.0, 2.0],
+            [0.2004, 0.1996],
+            [0.1004, 0.0996],
+        )
+        self.assertIsNone(result)
+
+    def test_uniform_axis_fills_missing_binned_positions(self):
+        grid, unique_x, unique_y, __ = build_coordinate_grid(
+            [1.0, 2.0, 4.0],
+            [0.0, 0.001, 0.003],
+            [0.0, 0.0, 0.0],
+        )
+        self.assertEqual(unique_x, [0.0, 0.001, 0.002, 0.003])
+        self.assertTrue(np.isnan(grid[0, 2]))
 
 
 class DioptasMetadataTests(unittest.TestCase):
@@ -193,9 +210,10 @@ class DioptasMetadataTests(unittest.TestCase):
             [c[0] for c in coords],
             [c[1] for c in coords],
         )
-        self.assertEqual(grid.shape, (1, 3))
-        self.assertEqual(unique_x, [0.6424, 0.6506, 0.6546])
-        self.assertFalse(np.isnan(grid).any())
+        self.assertEqual(grid.shape, (1, 14))
+        self.assertEqual(unique_x[0], 0.642)
+        self.assertEqual(unique_x[-1], 0.655)
+        self.assertTrue(np.isnan(grid).any())
 
 
 if __name__ == "__main__":
