@@ -116,10 +116,7 @@ class MapController(object):
         self.widget.spinBox_MapNx.valueChanged.connect(self._on_grid_changed)
         self.widget.spinBox_MapNy.valueChanged.connect(self._on_grid_changed)
         self.widget.comboBox_MapOrder.currentIndexChanged.connect(self._on_grid_changed)
-        if hasattr(self.widget, "checkBox_MapIgnoreFileNumber"):
-            self.widget.checkBox_MapIgnoreFileNumber.stateChanged.connect(
-                self._on_metadata_mode_changed
-            )
+
 
         self.widget.pushButton_MapSetRoi.clicked.connect(self._arm_roi_selection)
         self.widget.pushButton_MapClearRoi.clicked.connect(self._clear_roi)
@@ -253,9 +250,10 @@ class MapController(object):
             self._refresh_loaded_files(reset_grid=True, progress=True)
             nx, ny = self._grid
             order_text = "input order" if self._ignore_file_numbers() else "filename order"
+            coord_source = "metadata" if self._has_complete_coordinate_assignment() else "guessed"
             self._set_status(
                 f"Loaded {len(self._chi_files)} CHI files using {order_text}. "
-                f"Guessed grid: {nx} x {ny}"
+                f"Grid ({coord_source}): {nx} x {ny}"
             )
             self._update_progress(3, "Selecting full-pattern ROI...")
             self._set_default_1d_full_range_roi()
@@ -302,10 +300,8 @@ class MapController(object):
         return self._ignore_metadata()
 
     def _ignore_metadata(self):
-        return bool(
-            getattr(self.widget, "checkBox_MapIgnoreFileNumber", None) and
-            self.widget.checkBox_MapIgnoreFileNumber.isChecked()
-        )
+        # Automatically decide: use metadata positions if available, otherwise use input file order
+        return not self._has_complete_coordinate_assignment()
 
     def _h5_candidates_for_chi(self, chi_path):
         folder = os.path.dirname(chi_path)
@@ -336,6 +332,12 @@ class MapController(object):
         points = []
         total = len(self._chi_files)
         metadata_cache = {}
+        # Always try to extract metadata coordinates during initial detection.
+        # The _ignore_metadata() check cannot be used here because
+        # _has_complete_coordinate_assignment() depends on _map_points being
+        # populated, which only happens AFTER this loop completes.
+        # Metadata is never skipped — the automatic decision via _ignore_metadata()
+        # happens later after _map_points is populated.
         for i, chi_path in enumerate(self._chi_files):
             if progress:
                 self._update_progress(
@@ -347,17 +349,16 @@ class MapController(object):
             param_dir = get_temp_dir(chi_path)
             if param_dir not in metadata_cache:
                 metadata_cache[param_dir] = DioptasMetadataCollection.from_param_dir(param_dir)
-            if not self._ignore_metadata():
-                metadata = metadata_cache[param_dir]
-                coords = metadata.get_coordinates(filename=chi_path, frame_index=None)
-                if coords is not None:
-                    x_pos, y_pos = coords
-                else:
-                    for h5_path in self._h5_candidates_for_chi(chi_path):
-                        coords = extract_scan_coordinates(h5_path, frame_index=None)
-                        if coords is not None:
-                            x_pos, y_pos = coords
-                            break
+            metadata = metadata_cache[param_dir]
+            coords = metadata.get_coordinates(filename=chi_path, frame_index=None)
+            if coords is not None:
+                x_pos, y_pos = coords
+            else:
+                for h5_path in self._h5_candidates_for_chi(chi_path):
+                    coords = extract_scan_coordinates(h5_path, frame_index=None)
+                    if coords is not None:
+                        x_pos, y_pos = coords
+                        break
             points.append(MapPointInfo(
                 filepath=chi_path,
                 filename=os.path.basename(chi_path),
@@ -370,6 +371,27 @@ class MapController(object):
         self._map_points = points
         valid_coords = self._has_complete_coordinate_assignment()
         return valid_coords
+
+    def _derive_grid_dims_from_coordinates(self):
+        """Derive grid dimensions (Nx, Ny) from metadata coordinates if available.
+
+        Returns:
+            tuple or None: (nx, ny) if coordinates are complete and valid, None otherwise.
+        """
+        if not self._map_points:
+            return None
+        if not self._has_complete_coordinate_assignment():
+            return None
+        x_positions = [p.x_pos for p in self._map_points]
+        y_positions = [p.y_pos for p in self._map_points]
+        values = np.arange(len(self._map_points), dtype=float)
+        result = build_coordinate_grid(values, x_positions, y_positions)
+        if result is None:
+            return None
+        grid, unique_x, unique_y, __ = result
+        nx = len(unique_x)
+        ny = len(unique_y)
+        return nx, ny
 
     def _ordered_chi_files(self, files):
         ordered = list(files)
@@ -393,7 +415,13 @@ class MapController(object):
         self._clear_hover_file()
 
         if reset_grid:
-            nx, ny = self._guess_grid_dims(len(self._chi_files))
+            # First detect coordinates from metadata before guessing grid dimensions
+            self._detect_scan_coordinates(progress=False)
+            grid_from_metadata = self._derive_grid_dims_from_coordinates()
+            if grid_from_metadata is not None:
+                nx, ny = grid_from_metadata
+            else:
+                nx, ny = self._guess_grid_dims(len(self._chi_files))
             self._sync_ui_from_roi = True
             self.widget.spinBox_MapNx.setValue(nx)
             self.widget.spinBox_MapNy.setValue(ny)
@@ -412,7 +440,9 @@ class MapController(object):
             self._load_file_to_main_plot(self._chi_files.index(preferred_chi))
         else:
             self._preview_center_file()
-        self._detect_scan_coordinates(progress=progress)
+        # Only run full coordinate detection with progress if not already done above
+        if not reset_grid:
+            self._detect_scan_coordinates(progress=progress)
 
     def _on_file_order_mode_changed(self):
         if not self._chi_input_files:
@@ -590,14 +620,18 @@ class MapController(object):
         if (file_idx < 0) or (file_idx >= len(self._chi_files)):
             return ""
         base = os.path.basename(self._chi_files[file_idx])
+        x = int(round(event.xdata))
+        y = int(round(event.ydata))
         if self._map_coordinate_mode:
-            x = int(round(event.xdata))
-            y = int(round(event.ydata))
             if 0 <= x < len(self._coord_x) and 0 <= y < len(self._coord_y):
                 return (
                     f"{base} | Horizontal={self._coord_x[x]:.6g}, "
                     f"Vertical={self._coord_y[y]:.6g}"
                 )
+        else:
+            # No metadata coordinates: show generic pixel position (column, row)
+            # with origin (0, 0) at top-left
+            return f"{base} | Pixel=({x}, {y})"
         return base
 
     def _arm_roi_selection(self):

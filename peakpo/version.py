@@ -4,8 +4,11 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.11.5"
+__version__ = "7.11.6"
 """
+7.11.6: show pixel coordinates in hover text when metadata coordinates unavailable;
+        use generic (column, row) with origin (0,0) at top-left as fallback.
+----------------ASU models-------------
 7.11.5: add structured File > Metadata table with grouped scientific metadata;
         keep raw metadata JSON searchable below the table.
 7.11.4: keep File > Metadata tied to the current CHI file only;

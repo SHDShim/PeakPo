@@ -457,12 +457,9 @@ class SessionController(object):
         }
 
     def _collect_map_ui_state(self):
-        if not hasattr(self.widget, "checkBox_MapIgnoreFileNumber"):
-            return {}
-        return {
-            "ignore_metadata": bool(
-                self.widget.checkBox_MapIgnoreFileNumber.isChecked())
-        }
+        # Map state no longer includes checkbox-based ignore_metadata
+        # The code now automatically decides whether to use metadata based on availability
+        return {}
 
     def _collect_diff_ui_state(self):
         if (not hasattr(self.widget, "checkBox_Diff")) and \
@@ -532,13 +529,7 @@ class SessionController(object):
                     self.widget.cake_hist_widget.spin_low_pct.setValue(float(hist["low_pct"]))
                 if "high_pct" in hist:
                     self.widget.cake_hist_widget.spin_high_pct.setValue(float(hist["high_pct"]))
-        map_state = (ui_state or {}).get("map", {})
-        if map_state != {} and hasattr(self.widget, "checkBox_MapIgnoreFileNumber"):
-            if "ignore_metadata" in map_state:
-                ignore_metadata = bool(map_state.get("ignore_metadata", True))
-            else:
-                ignore_metadata = not bool(map_state.get("use_hdf5_coordinates", False))
-            self.widget.checkBox_MapIgnoreFileNumber.setChecked(ignore_metadata)
+        # Map ignore_metadata checkbox is no longer used - decision is automatic
         self._apply_diff_ui_state((ui_state or {}).get("diff", {}))
 
     def _apply_diff_ui_state(self, diff):
