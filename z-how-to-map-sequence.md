@@ -7,8 +7,10 @@
 3. Check `Nx`, `Ny`:
 - They are auto-guessed.
 - `Nx * Ny` must equal number of loaded files.
+- Leave `Input order / ignore metadata` checked to use the selected file order.
+- Uncheck it to use metadata coordinates or map file numbers when available.
 4. Choose ROI:
-- Click `Select ROI`.
+- Click the global ROI mouse-mode button.
 - Drag on 1D pattern for 1D ROI, or on cake image for 2D ROI.
 5. Click `Compute Map` (or ROI selection auto-computes).
 6. Click a pixel in map image to load that file into main 1D/2D view.
@@ -30,7 +32,7 @@
 1. Open the `Seq` tab.
 2. Click `Load CHI files` and select sequence `.chi` files.
 3. Choose ROI:
-- Click `Select ROI`.
+- Click the global ROI mouse-mode button.
 - Drag on 1D pattern or 2D cake.
 4. Click `Compute Seq.` (or ROI selection auto-computes).
 5. Read result:

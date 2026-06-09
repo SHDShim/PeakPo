@@ -2257,9 +2257,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_MapOrder.setMinimumSize(QtCore.QSize(110, 28))
         self.comboBox_MapOrder.setMaximumWidth(150)
         self.checkBox_MapIgnoreFileNumber = QtWidgets.QCheckBox(
-            "Ignore metadata", self.groupBox_MapLoad
+            "Input order / ignore metadata", self.groupBox_MapLoad
         )
         self.checkBox_MapIgnoreFileNumber.setObjectName("checkBox_MapIgnoreFileNumber")
+        self.checkBox_MapIgnoreFileNumber.setToolTip(
+            "Use selected file order and Nx/Ny grid. Uncheck to use map file numbers or metadata coordinates when available."
+        )
         self.checkBox_MapIgnoreFileNumber.setChecked(True)
         self.gridLayout_MapLoad.addWidget(self.pushButton_MapLoadChi, 0, 0, 1, 1)
         self.gridLayout_MapLoad.addWidget(self.label_MapLoaded, 0, 1, 1, 1)
@@ -2310,6 +2313,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.lineEdit_MapHoverFile.setObjectName("lineEdit_MapHoverFile")
         self.lineEdit_MapHoverFile.setReadOnly(True)
         self.lineEdit_MapHoverFile.setPlaceholderText("Hover over a map pixel to see its file name")
+        self.lineEdit_MapStatus = QtWidgets.QLineEdit(self.mapContents)
+        self.lineEdit_MapStatus.setObjectName("lineEdit_MapStatus")
+        self.lineEdit_MapStatus.setReadOnly(True)
+        self.lineEdit_MapStatus.setPlaceholderText("Map status")
 
         self.groupBox_MapScale = QtWidgets.QGroupBox("Map Colors", self.mapContents)
         self.groupBox_MapScale.setObjectName("groupBox_MapScale")
@@ -2411,6 +2418,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.verticalLayout_MapContents.addWidget(self.groupBox_MapRoi)
         self.verticalLayout_MapContents.addWidget(self.groupBox_MapCanvas, 1)
         self.verticalLayout_MapContents.addWidget(self.lineEdit_MapHoverFile)
+        self.verticalLayout_MapContents.addWidget(self.lineEdit_MapStatus)
         self.verticalLayout_MapContents.addWidget(self.groupBox_MapScale)
         self.verticalLayout_MapContents.addWidget(self.groupBox_MapExport)
         self.verticalLayout_MapContents.addStretch(1)
@@ -2520,6 +2528,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.lineEdit_SeqHoverFile.setObjectName("lineEdit_SeqHoverFile")
         self.lineEdit_SeqHoverFile.setReadOnly(True)
         self.lineEdit_SeqHoverFile.setPlaceholderText("Hover over a sequence point to see its file name")
+        self.lineEdit_SeqStatus = QtWidgets.QLineEdit(self.seqContents)
+        self.lineEdit_SeqStatus.setObjectName("lineEdit_SeqStatus")
+        self.lineEdit_SeqStatus.setReadOnly(True)
+        self.lineEdit_SeqStatus.setPlaceholderText("Sequence status")
 
         self.groupBox_SeqExport = QtWidgets.QGroupBox("Export", self.seqContents)
         self.groupBox_SeqExport.setObjectName("groupBox_SeqExport")
@@ -2537,6 +2549,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.verticalLayout_SeqContents.addWidget(self.groupBox_SeqRoi)
         self.verticalLayout_SeqContents.addWidget(self.groupBox_SeqCanvas, 1)
         self.verticalLayout_SeqContents.addWidget(self.lineEdit_SeqHoverFile)
+        self.verticalLayout_SeqContents.addWidget(self.lineEdit_SeqStatus)
         self.verticalLayout_SeqContents.addWidget(self.groupBox_SeqExport)
         self.verticalLayout_SeqContents.addStretch(1)
         self.scrollArea_Seq.setWidget(self.seqContents)

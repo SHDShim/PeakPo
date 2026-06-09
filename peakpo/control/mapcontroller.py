@@ -174,7 +174,10 @@ class MapController(object):
         return bool(sel_1d_active or sel_2d_active)
 
     def _set_status(self, msg):
-        return
+        text = str(msg or "")
+        if hasattr(self.widget, "lineEdit_MapStatus"):
+            self.widget.lineEdit_MapStatus.setText(text)
+            self.widget.lineEdit_MapStatus.setToolTip(text)
 
     def _open_progress(self, title, label, maximum):
         dlg = QtWidgets.QProgressDialog(label, "", 0, max(1, int(maximum)), self.widget)
@@ -424,7 +427,12 @@ class MapController(object):
     def _on_metadata_mode_changed(self):
         if not self._chi_files:
             return
-        self._detect_scan_coordinates(progress=False)
+        preferred_chi = self._current_displayed_chi()
+        self._refresh_loaded_files(
+            reset_grid=False,
+            preferred_chi=preferred_chi,
+            progress=False,
+        )
         if (self._roi_1d is not None) or (self._roi_2d is not None):
             self._compute_map()
         else:
@@ -459,13 +467,24 @@ class MapController(object):
         nx = int(self.widget.spinBox_MapNx.value())
         ny = int(self.widget.spinBox_MapNy.value())
         self._grid = (nx, ny)
-        self._preview_center_file()
         n = len(self._chi_files)
-        if n > 0 and (nx * ny != n):
+        coordinate_ready = (
+            (not self._ignore_metadata()) and
+            self._has_complete_coordinate_assignment()
+        )
+        if n > 0 and (not coordinate_ready) and (nx * ny != n):
             self._set_status(
                 f"Grid mismatch: Nx*Ny ({nx}x{ny}={nx * ny}) must equal loaded files ({n})."
             )
-        self._draw_map()
+            self._map_data = None
+            self._draw_map()
+            return
+        self._preview_center_file()
+        if (self._roi_1d is not None) or (self._roi_2d is not None):
+            self._compute_map()
+        else:
+            self._map_data = None
+            self._draw_map()
 
     def _set_default_1d_full_range_roi(self):
         if not self._chi_files:
@@ -627,14 +646,10 @@ class MapController(object):
         self._roi_2d = None
         self.deactivate_interactions()
         self._clear_roi_overlays()
-        self._set_default_1d_full_range_roi()
-        if self._roi_1d is not None:
-            self._set_status("ROI reset to full diffraction pattern.")
-            self.refresh_roi_overlays()
-            self._compute_map()
-        else:
-            self.widget.lineEdit_MapRoiSummary.setText("")
-            self._set_status("ROI cleared.")
+        self._map_data = None
+        self.widget.lineEdit_MapRoiSummary.setText("")
+        self._draw_map()
+        self._set_status("ROI cleared.")
 
     def _on_roi_1d_selected(self, eclick, erelease):
         if (eclick.xdata is None) or (erelease.xdata is None):

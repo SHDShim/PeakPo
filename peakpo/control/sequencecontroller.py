@@ -118,7 +118,10 @@ class SequenceController(object):
         return bool(sel_1d_active or sel_2d_active)
 
     def _set_status(self, msg):
-        return
+        text = str(msg or "")
+        if hasattr(self.widget, "lineEdit_SeqStatus"):
+            self.widget.lineEdit_SeqStatus.setText(text)
+            self.widget.lineEdit_SeqStatus.setToolTip(text)
 
     def _default_hover_text(self):
         if not self._chi_files:
@@ -295,14 +298,11 @@ class SequenceController(object):
         self._roi_2d = None
         self.deactivate_interactions()
         self._clear_roi_overlays()
-        self._set_default_1d_full_range_roi()
-        if self._roi_1d is not None:
-            self._set_status("ROI reset to full diffraction pattern.")
-            self.refresh_roi_overlays()
-            self._compute_sequence()
-        else:
-            self.widget.lineEdit_SeqRoiSummary.setText("")
-            self._set_status("ROI cleared.")
+        self._seq_x = None
+        self._seq_y = None
+        self.widget.lineEdit_SeqRoiSummary.setText("")
+        self._draw_sequence()
+        self._set_status("ROI cleared.")
 
     def _on_roi_1d_selected(self, eclick, erelease):
         if (eclick.xdata is None) or (erelease.xdata is None):
