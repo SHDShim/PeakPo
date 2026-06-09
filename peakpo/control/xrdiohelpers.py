@@ -254,6 +254,10 @@ def _metadata_dataset_values(payload, wanted_names):
     return None
 
 
+def _metadata_first_present(payload, names):
+    return _metadata_dataset_values(payload, names)
+
+
 def _metadata_scalar(payload, key, default=None):
     value = payload.get(key, default)
     try:
@@ -312,6 +316,134 @@ class DioptasMetadataExport:
             "xrd_file_numbers": self.xrd_file_numbers,
             "xrd_file_names": self.xrd_file_names,
         }
+
+    def frame_index_for_file(self, filename=None):
+        parsed = parse_dioptas_map_filename(filename or "")
+        if parsed is not None:
+            return max(0, int(parsed["snapshot_index"]) - 1)
+        if self.image_index is not None:
+            return int(self.image_index)
+        return 0
+
+    def _frame_index(self, frame_index=None):
+        if frame_index is not None:
+            try:
+                return int(frame_index)
+            except Exception:
+                return 0
+        if self.image_index is not None:
+            return int(self.image_index)
+        return 0
+
+    def _metadata_value(self, names, frame_index=None):
+        value = _metadata_first_present(self.payload, names)
+        if isinstance(value, (list, tuple)):
+            if not value:
+                return None
+            idx = self._frame_index(frame_index=frame_index)
+            if idx < 0 or idx >= len(value):
+                idx = 0
+            return value[idx]
+        return value
+
+    def _row(self, parameter, names, unit="", source="", frame_index=None):
+        return {
+            "parameter": parameter,
+            "value": self._metadata_value(names, frame_index=frame_index),
+            "unit": unit,
+            "source": source,
+        }
+
+    def get_position(self, frame_index=None):
+        return [
+            self._row("Horizontal", ("Horizontal", "Sample Horizontal"), "", "x_pos", frame_index),
+            self._row("Vertical", ("Vertical", "Sample Vertical"), "", "y_pos", frame_index),
+            self._row("Focus", ("Focus", "Sample Focus"), "", "z_pos", frame_index),
+        ]
+
+    def get_temperature(self, frame_index=None):
+        t_ds = self._metadata_value(("T DS (K)", "T_DS", "T DS"), frame_index=frame_index)
+        t_us = self._metadata_value(("T US (K)", "T_US", "T US"), frame_index=frame_index)
+        rows = [
+            {"parameter": "T_DS", "value": t_ds, "unit": "K", "source": ""},
+            {"parameter": "T_US", "value": t_us, "unit": "K", "source": ""},
+        ]
+        try:
+            t_avg = (float(t_ds) + float(t_us)) / 2.0
+            delta_t = float(t_ds) - float(t_us)
+        except Exception:
+            t_avg = None
+            delta_t = None
+        rows.extend([
+            {"parameter": "T_avg", "value": t_avg, "unit": "K", "source": "derived"},
+            {"parameter": "\u0394T", "value": delta_t, "unit": "K", "source": "derived"},
+        ])
+        return rows
+
+    def get_burst_temperature(self, frame_index=None):
+        t_ds = self._metadata_value(
+            ("Burst T DS (K)", "T DS Burst (K)", "Burst T_DS", "Burst T DS"),
+            frame_index=frame_index)
+        t_us = self._metadata_value(
+            ("Burst T US (K)", "T US Burst (K)", "Burst T_US", "Burst T US"),
+            frame_index=frame_index)
+        if t_ds is None and t_us is None:
+            return []
+        try:
+            t_avg = (float(t_ds) + float(t_us)) / 2.0
+            delta_t = float(t_ds) - float(t_us)
+        except Exception:
+            t_avg = None
+            delta_t = None
+        return [
+            {"parameter": "Burst T_DS", "value": t_ds, "unit": "K", "source": ""},
+            {"parameter": "Burst T_US", "value": t_us, "unit": "K", "source": ""},
+            {"parameter": "Burst T_avg", "value": t_avg, "unit": "K", "source": "derived"},
+            {"parameter": "Burst \u0394T", "value": delta_t, "unit": "K", "source": "derived"},
+        ]
+
+    def get_pressure(self, frame_index=None):
+        return [
+            self._row("Membrane Pressure", ("Membrane P (bar)", "Membrane Pressure"),
+                      "bar", "", frame_index),
+        ]
+
+    def get_beam(self, frame_index=None):
+        return [
+            self._row("Wavelength", ("Wavelength(A)", "Wavelength", "Wavelength (\u00c5)"),
+                      "\u00c5", "", frame_index),
+            self._row("Energy", ("ID Energy(eV)", "Energy", "Energy(eV)"),
+                      "eV", "", frame_index),
+            self._row("Ion Chamber", ("Ion Chamber 2", "Ion Chamber"),
+                      "", "", frame_index),
+            self._row("Ring Current", ("ID Ring Current", "Ring Current"),
+                      "mA", "", frame_index),
+        ]
+
+    def get_laser(self, frame_index=None):
+        return [
+            self._row("DS Power (%)", ("Laser Power, DS(%)", "DS Power (%)"),
+                      "%", "", frame_index),
+            self._row("US Power (%)", ("Laser Power, US(%)", "US Power (%)"),
+                      "%", "", frame_index),
+            self._row("DS Power (W)", ("Laser Power, DS(w)", "Laser Power, DS(W)"),
+                      "W", "", frame_index),
+            self._row("US Power (W)", ("Laser Power, US(W)", "US Power (W)"),
+                      "W", "", frame_index),
+            self._row("Burst DS Power (%)", ("Laser Power Burst, DS(%)",),
+                      "%", "", frame_index),
+            self._row("Burst US Power (%)", ("Laser Power Burst, US(%)",),
+                      "%", "", frame_index),
+        ]
+
+    def get_acquisition(self, frame_index=None):
+        return [
+            self._row("Exposure", ("Exposure", "T PIXIS Exposure", "T PIMAX Exposure"),
+                      "s", "", frame_index),
+            self._row("Date", ("Date",), "", "", frame_index),
+            self._row("Filename", ("XRD File Name", "T File Name"),
+                      "", "", frame_index),
+        ]
 
     def _coordinate_at_index(self, index):
         if index is None:

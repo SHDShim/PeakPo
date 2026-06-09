@@ -1,6 +1,6 @@
 import os
 import json
-from qtpy import QtWidgets
+from qtpy import QtCore, QtWidgets
 from ..utils import get_sorted_filelist, find_from_filelist, readchi, \
     make_filename, writechi, get_directory, dialog_openfile_hide_param_dirs
 from ..utils import undo_button_press, get_temp_dir
@@ -148,21 +148,24 @@ class BasePatternController(object):
     def _metadata_tab_widgets(self):
         path_widget = getattr(self.widget, "lineEdit_MetadataJsonPath", None)
         text_widget = getattr(self.widget, "plainTextEdit_MetadataJson", None)
-        return path_widget, text_widget
+        table_widget = getattr(self.widget, "tableWidget_MetadataStructured", None)
+        return path_widget, text_widget, table_widget
 
     def _clear_metadata_tab(self):
-        path_widget, text_widget = self._metadata_tab_widgets()
+        path_widget, text_widget, table_widget = self._metadata_tab_widgets()
         if path_widget is not None:
             path_widget.setText("")
         if text_widget is not None:
             text_widget.setPlainText("")
+        if table_widget is not None:
+            table_widget.setRowCount(0)
         if hasattr(self.widget, "lineEdit_MetadataSearch"):
             self.widget.lineEdit_MetadataSearch.setText("")
         if hasattr(self.widget, "label_MetadataSearchStatus"):
             self.widget.label_MetadataSearchStatus.setText("")
 
     def _update_metadata_tab_for_chi(self, chi_path):
-        path_widget, text_widget = self._metadata_tab_widgets()
+        path_widget, text_widget, table_widget = self._metadata_tab_widgets()
         if path_widget is None or text_widget is None:
             return
         self._clear_metadata_tab()
@@ -196,6 +199,70 @@ class BasePatternController(object):
         else:
             path_widget.setText(f"{len(paths)} metadata JSON files")
         text_widget.setPlainText("\n\n".join(sections))
+        if table_widget is not None:
+            export = collection.exports[0]
+            frame_index = export.frame_index_for_file(chi_path)
+            self._populate_metadata_table(table_widget, export, frame_index)
+
+    def _metadata_value_text(self, value):
+        if value is None:
+            return ""
+        try:
+            fval = float(value)
+            if fval != fval:
+                return ""
+            return f"{fval:.6g}"
+        except Exception:
+            return str(value)
+
+    def _metadata_add_group_row(self, table_widget, label):
+        row = table_widget.rowCount()
+        table_widget.insertRow(row)
+        item = QtWidgets.QTableWidgetItem(str(label))
+        font = item.font()
+        font.setBold(True)
+        item.setFont(font)
+        item.setFlags(item.flags() & ~QtCore.Qt.ItemIsEditable)
+        table_widget.setItem(row, 0, item)
+        table_widget.setSpan(row, 0, 1, table_widget.columnCount())
+
+    def _metadata_add_value_row(self, table_widget, row_data):
+        value = row_data.get("value", None)
+        if value is None:
+            return
+        row = table_widget.rowCount()
+        table_widget.insertRow(row)
+        cells = [
+            row_data.get("parameter", ""),
+            self._metadata_value_text(value),
+            row_data.get("unit", ""),
+            row_data.get("source", ""),
+        ]
+        for col, text in enumerate(cells):
+            item = QtWidgets.QTableWidgetItem(str(text))
+            item.setFlags(item.flags() & ~QtCore.Qt.ItemIsEditable)
+            table_widget.setItem(row, col, item)
+
+    def _populate_metadata_table(self, table_widget, export, frame_index=None):
+        table_widget.setRowCount(0)
+        groups = [
+            ("Temperature", export.get_temperature(frame_index=frame_index)),
+            ("Burst Temperature", export.get_burst_temperature(frame_index=frame_index)),
+            ("Laser", export.get_laser(frame_index=frame_index)),
+            ("Position", export.get_position(frame_index=frame_index)),
+            ("Acquisition", export.get_acquisition(frame_index=frame_index)),
+            ("Membrane Pressure", export.get_pressure(frame_index=frame_index)),
+            ("Beam", export.get_beam(frame_index=frame_index)),
+        ]
+        for group_name, rows in groups:
+            visible_rows = [row for row in rows if row.get("value", None) is not None]
+            if not visible_rows:
+                continue
+            self._metadata_add_group_row(table_widget, group_name)
+            for row_data in visible_rows:
+                self._metadata_add_value_row(table_widget, row_data)
+        table_widget.resizeColumnsToContents()
+        table_widget.horizontalHeader().setStretchLastSection(True)
 
     def _update_bg_params_in_widget(self):
         self.widget.spinBox_BGParam0.setValue(

@@ -1,3 +1,9 @@
+# Key Improvements in PeakPo 7.11
+- Added a `File > Metadata` viewer for metadata exported by `dioptas_batch_gui`.
+- The Metadata tab now shows a structured read-only table for temperature, laser, position, acquisition, membrane pressure, and beam information.
+- The raw metadata JSON remains available below the table with search controls for detailed inspection.
+- Metadata is tied to the current CHI file and is cleared when no metadata JSON is available.
+
 # Key Improvements in PeakPo 7.10
 - Added a `Diff` tab for subtracting reference diffraction data and visually highlighting differences.
 - Enhanced `JCPDS` compatibility, including `CIF` and `Dioptas JCPDS` formats.

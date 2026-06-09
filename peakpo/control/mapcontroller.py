@@ -847,8 +847,12 @@ class MapController(object):
             else:
                 grid = np.full((ny, nx), np.nan, dtype=float)
                 for i, val in enumerate(values):
-                    lin_pos = self._pos_idx[i] if i < len(self._pos_idx) else i
-                    x, y = self._linear_to_grid(lin_pos)
+                    if self._ignore_metadata():
+                        x = i % nx
+                        y = i // nx
+                    else:
+                        lin_pos = self._pos_idx[i] if i < len(self._pos_idx) else i
+                        x, y = self._linear_to_grid(lin_pos)
                     if (y < ny) and (x < nx):
                         grid[y, x] = val
                 self._map_data = grid
@@ -990,30 +994,7 @@ class MapController(object):
         self._map_ax.set_anchor("C")
         self._map_ax.set_xlim(-0.5, data.shape[1] - 0.5)
         self._map_ax.set_ylim(data.shape[0] - 0.5, -0.5)
-        if self._map_coordinate_mode:
-            self._map_ax.set_axis_on()
-            self._map_ax.set_xlabel("")
-            self._map_ax.set_ylabel("")
-            self._map_ax.tick_params(
-                colors="white",
-                labelsize=8,
-                bottom=True,
-                left=True,
-                labelbottom=True,
-                labelleft=True,
-            )
-            xticks = np.arange(len(self._coord_x))
-            yticks = np.arange(len(self._coord_y))
-            if xticks.size > 12:
-                xticks = np.unique(np.linspace(0, len(self._coord_x) - 1, 12).astype(int))
-            if yticks.size > 12:
-                yticks = np.unique(np.linspace(0, len(self._coord_y) - 1, 12).astype(int))
-            self._map_ax.set_xticks(xticks)
-            self._map_ax.set_xticklabels([f"{self._coord_x[i]:.6g}" for i in xticks])
-            self._map_ax.set_yticks(yticks)
-            self._map_ax.set_yticklabels([f"{self._coord_y[i]:.6g}" for i in yticks])
-        else:
-            self._map_ax.set_axis_off()
+        self._map_ax.set_axis_off()
         self._map_canvas.draw_idle()
 
     def _on_map_click(self, event):
@@ -1138,8 +1119,10 @@ class MapController(object):
             "    cbar = fig.colorbar(im, ax=ax)\n"
             "    cbar.set_label('Integrated intensity')\n"
             "    ax.set_title('Map')\n"
-            "    ax.set_xlabel('X index')\n"
-            "    ax.set_ylabel('Y index')\n"
+            "    ax.set_xticks([])\n"
+            "    ax.set_yticks([])\n"
+            "    ax.set_xlabel('')\n"
+            "    ax.set_ylabel('')\n"
             "    fig.tight_layout()\n"
             "    plt.show()\n\n"
             "if __name__ == '__main__':\n"

@@ -2663,13 +2663,44 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.verticalLayout_FileMetadata.setContentsMargins(8, 8, 8, 8)
         self.verticalLayout_FileMetadata.setSpacing(6)
 
+        self.splitter_FileMetadata = QtWidgets.QSplitter(
+            QtCore.Qt.Vertical, self.tabWidget_3PageMetadata)
+        self.splitter_FileMetadata.setObjectName("splitter_FileMetadata")
+
+        self.tableWidget_MetadataStructured = QtWidgets.QTableWidget(
+            self.splitter_FileMetadata)
+        self.tableWidget_MetadataStructured.setObjectName(
+            "tableWidget_MetadataStructured")
+        self.tableWidget_MetadataStructured.setColumnCount(4)
+        self.tableWidget_MetadataStructured.setHorizontalHeaderLabels(
+            ["Parameter", "Value", "Unit", "Source"])
+        self.tableWidget_MetadataStructured.setEditTriggers(
+            QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.tableWidget_MetadataStructured.setSelectionBehavior(
+            QtWidgets.QAbstractItemView.SelectRows)
+        self.tableWidget_MetadataStructured.setSelectionMode(
+            QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.tableWidget_MetadataStructured.setAlternatingRowColors(True)
+        self.tableWidget_MetadataStructured.verticalHeader().setVisible(False)
+        self.tableWidget_MetadataStructured.horizontalHeader().setStretchLastSection(True)
+        self.tableWidget_MetadataStructured.horizontalHeader().setSectionResizeMode(
+            0, QtWidgets.QHeaderView.ResizeToContents)
+        self.tableWidget_MetadataStructured.horizontalHeader().setSectionResizeMode(
+            1, QtWidgets.QHeaderView.Stretch)
+
+        self.widget_MetadataRaw = QtWidgets.QWidget(self.splitter_FileMetadata)
+        self.widget_MetadataRaw.setObjectName("widget_MetadataRaw")
+        self.verticalLayout_MetadataRaw = QtWidgets.QVBoxLayout(self.widget_MetadataRaw)
+        self.verticalLayout_MetadataRaw.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_MetadataRaw.setSpacing(6)
+
         self.lineEdit_MetadataJsonPath = QtWidgets.QLineEdit(
-            self.tabWidget_3PageMetadata)
+            self.widget_MetadataRaw)
         self.lineEdit_MetadataJsonPath.setObjectName("lineEdit_MetadataJsonPath")
         self.lineEdit_MetadataJsonPath.setReadOnly(True)
         self.lineEdit_MetadataJsonPath.setPlaceholderText("No metadata JSON file loaded")
 
-        self.frame_MetadataSearch = QtWidgets.QFrame(self.tabWidget_3PageMetadata)
+        self.frame_MetadataSearch = QtWidgets.QFrame(self.widget_MetadataRaw)
         self.frame_MetadataSearch.setObjectName("frame_MetadataSearch")
         self.horizontalLayout_MetadataSearch = QtWidgets.QHBoxLayout(
             self.frame_MetadataSearch)
@@ -2702,7 +2733,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.label_MetadataSearchStatus)
 
         self.plainTextEdit_MetadataJson = QtWidgets.QPlainTextEdit(
-            self.tabWidget_3PageMetadata)
+            self.widget_MetadataRaw)
         self.plainTextEdit_MetadataJson.setObjectName("plainTextEdit_MetadataJson")
         self.plainTextEdit_MetadataJson.setReadOnly(True)
         self.plainTextEdit_MetadataJson.setLineWrapMode(QtWidgets.QPlainTextEdit.NoWrap)
@@ -2712,14 +2743,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         font.setStyleHint(QtGui.QFont.Monospace)
         self.plainTextEdit_MetadataJson.setFont(font)
 
-        self.verticalLayout_FileMetadata.addWidget(self.lineEdit_MetadataJsonPath)
-        self.verticalLayout_FileMetadata.addWidget(self.frame_MetadataSearch)
-        self.verticalLayout_FileMetadata.addWidget(self.plainTextEdit_MetadataJson, 1)
+        self.verticalLayout_MetadataRaw.addWidget(self.lineEdit_MetadataJsonPath)
+        self.verticalLayout_MetadataRaw.addWidget(self.frame_MetadataSearch)
+        self.verticalLayout_MetadataRaw.addWidget(self.plainTextEdit_MetadataJson, 1)
+        self.splitter_FileMetadata.addWidget(self.tableWidget_MetadataStructured)
+        self.splitter_FileMetadata.addWidget(self.widget_MetadataRaw)
+        self.splitter_FileMetadata.setStretchFactor(0, 1)
+        self.splitter_FileMetadata.setStretchFactor(1, 1)
+        self.verticalLayout_FileMetadata.addWidget(self.splitter_FileMetadata, 1)
         self.lineEdit_MetadataSearch.textChanged.connect(self._metadata_search_first)
         self.pushButton_MetadataSearchNext.clicked.connect(
             self._metadata_search_next)
         self.pushButton_MetadataSearchPrev.clicked.connect(
             self._metadata_search_previous)
+        self.shortcut_MetadataTableCopy = QtGui.QShortcut(
+            QtGui.QKeySequence.Copy, self.tableWidget_MetadataStructured)
+        self.shortcut_MetadataTableCopy.activated.connect(
+            self._copy_metadata_table_selection)
 
         insert_idx = -1
         if hasattr(self, "tabWidget_3Page2"):
@@ -2731,6 +2771,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 insert_idx, self.tabWidget_3PageMetadata, "Metadata")
         else:
             self.tabWidget_3.addTab(self.tabWidget_3PageMetadata, "Metadata")
+
+    def _copy_metadata_table_selection(self):
+        if not hasattr(self, "tableWidget_MetadataStructured"):
+            return
+        table = self.tableWidget_MetadataStructured
+        ranges = table.selectedRanges()
+        if not ranges:
+            return
+        lines = []
+        for selected in ranges:
+            for row in range(selected.topRow(), selected.bottomRow() + 1):
+                cells = []
+                for col in range(selected.leftColumn(), selected.rightColumn() + 1):
+                    item = table.item(row, col)
+                    cells.append("" if item is None else item.text())
+                lines.append("\t".join(cells))
+        QtWidgets.QApplication.clipboard().setText("\n".join(lines))
 
     def _metadata_search_flags(self, backward=False):
         flags = QtGui.QTextDocument.FindFlag(0)

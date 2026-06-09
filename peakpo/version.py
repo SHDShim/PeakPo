@@ -4,8 +4,10 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.11.4"
+__version__ = "7.11.5"
 """
+7.11.5: add structured File > Metadata table with grouped scientific metadata;
+        keep raw metadata JSON searchable below the table.
 7.11.4: keep File > Metadata tied to the current CHI file only;
         show horizontal and vertical map coordinates in hover text.
 7.11.3: add search controls to File > Metadata;
