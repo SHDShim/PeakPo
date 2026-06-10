@@ -10,6 +10,7 @@ class _HideParamFoldersProxyModel(QtCore.QSortFilterProxyModel):
     def __init__(self, *args, **kwargs):
         super(_HideParamFoldersProxyModel, self).__init__(*args, **kwargs)
         self._hide_param_dirs = True
+        self._jcpds_only = False
 
     @staticmethod
     def _natural_sort_key(text):
@@ -28,6 +29,10 @@ class _HideParamFoldersProxyModel(QtCore.QSortFilterProxyModel):
         self._hide_param_dirs = bool(hide_param_dirs)
         self.invalidateFilter()
 
+    def set_jcpds_only(self, jcpds_only):
+        self._jcpds_only = bool(jcpds_only)
+        self.invalidateFilter()
+
     def filterAcceptsRow(self, source_row, source_parent):
         model = self.sourceModel()
         if model is None:
@@ -41,6 +46,33 @@ class _HideParamFoldersProxyModel(QtCore.QSortFilterProxyModel):
             is_dir = bool(model.isDir(index))
         except AttributeError:
             is_dir = False
+
+        # New filter: CHI with JCPDS only
+        if self._jcpds_only:
+            if is_dir:
+                # Param folder hiding is controlled by the Hide *-param checkbox
+                if self._hide_param_dirs:
+                    folder_name = str(model.fileName(index) or "")
+                    if folder_name.lower().endswith("-param"):
+                        return False
+                # Allow non-param directories for navigation
+                return True
+
+            # It's a file. Only allow .chi files that have a corresponding pkpo_jcpds.json
+            file_path = model.filePath(index)
+            if file_path.lower().endswith('.chi'):
+                # derive param folder path: /path/to/foo.chi -> /path/to/foo-param/
+                path, filename = os.path.split(file_path)
+                stem = os.path.splitext(filename)[0]
+                param_dir = os.path.join(path, stem + "-param")
+                jcpds_file = os.path.join(param_dir, "pkpo_jcpds.json")
+                if os.path.exists(jcpds_file):
+                    return True
+                return False
+            else:
+                # Not a .chi file, hide it when jcpds_only is True
+                return False
+
         if not is_dir:
             return True
 
@@ -68,6 +100,22 @@ def _attach_hide_param_checkbox(dialog, proxy, default_checked=False):
         "Hide *-param folders in file chooser", dialog)
     checkbox.setChecked(bool(default_checked))
     checkbox.toggled.connect(proxy.set_hide_param_dirs)
+
+    layout = dialog.layout()
+    if isinstance(layout, QtWidgets.QGridLayout):
+        row = layout.rowCount()
+        layout.addWidget(checkbox, row, 0, 1, layout.columnCount())
+    elif layout is not None:
+        layout.addWidget(checkbox)
+
+    return checkbox
+
+
+def _attach_jcpds_only_checkbox(dialog, proxy, default_checked=False):
+    checkbox = QtWidgets.QCheckBox(
+        "CHI with JCPDS only", dialog)
+    checkbox.setChecked(bool(default_checked))
+    checkbox.toggled.connect(proxy.set_jcpds_only)
 
     layout = dialog.layout()
     if isinstance(layout, QtWidgets.QGridLayout):
@@ -152,7 +200,8 @@ class _OpenFileDialog(QtWidgets.QFileDialog):
 
 def _build_open_dialog(
         obj, title, directory, file_filter, file_mode,
-        default_hide_param_dirs=False):
+        default_hide_param_dirs=False,
+        default_jcpds_only=False):
     dialog = _OpenFileDialog(obj, title, directory, file_filter)
     dialog.setFileMode(file_mode)
     dialog.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, True)
@@ -162,17 +211,22 @@ def _build_open_dialog(
     dialog.setProxyModel(proxy)
     _attach_hide_param_checkbox(
         dialog, proxy, default_checked=default_hide_param_dirs)
+    _attach_jcpds_only_checkbox(
+        dialog, proxy, default_checked=default_jcpds_only)
     proxy.set_hide_param_dirs(default_hide_param_dirs)
+    proxy.set_jcpds_only(default_jcpds_only)
 
     return dialog
 
 
 def dialog_openfile_hide_param_dirs(
-        obj, title, directory, file_filter, default_hide_param_dirs=False):
+        obj, title, directory, file_filter, default_hide_param_dirs=False,
+        default_jcpds_only=False):
     dialog = _build_open_dialog(
         obj, title, directory, file_filter,
         QtWidgets.QFileDialog.ExistingFile,
-        default_hide_param_dirs=default_hide_param_dirs)
+        default_hide_param_dirs=default_hide_param_dirs,
+        default_jcpds_only=default_jcpds_only)
     if _exec_dialog(dialog):
         files = dialog.selectedFiles()
         return (files[0] if files else ""), dialog.selectedNameFilter()
@@ -180,11 +234,13 @@ def dialog_openfile_hide_param_dirs(
 
 
 def dialog_openfiles_hide_param_dirs(
-        obj, title, directory, file_filter, default_hide_param_dirs=False):
+        obj, title, directory, file_filter, default_hide_param_dirs=False,
+        default_jcpds_only=False):
     dialog = _build_open_dialog(
         obj, title, directory, file_filter,
         QtWidgets.QFileDialog.ExistingFiles,
-        default_hide_param_dirs=default_hide_param_dirs)
+        default_hide_param_dirs=default_hide_param_dirs,
+        default_jcpds_only=default_jcpds_only)
     if _exec_dialog(dialog):
         files = getattr(dialog, "_expanded_selected_files", None)
         if files is None:

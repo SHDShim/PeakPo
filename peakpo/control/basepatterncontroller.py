@@ -30,9 +30,11 @@ class BasePatternController(object):
         """
         opens a file select dialog
         """
-        filen = dialog_openfile_hide_param_dirs(
+        filen, _ = dialog_openfile_hide_param_dirs(
             self.widget, "Open a Chi File", self.model.chi_path,
-            "Data files (*.chi)", default_hide_param_dirs=True)[0]
+            "Data files (*.chi)", default_hide_param_dirs=True)
+        if not filen:
+            return
         self._setshow_new_base_ptn(str(filen))
 
     def load_new_base_pattern_from_name(self):
