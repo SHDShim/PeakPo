@@ -4,8 +4,10 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.11.7"
+__version__ = "7.11.8"
 """
+7.11.8: replace CHI with JCPDS only checkbox with a three-mode chooser for
+        all CHI files, CHI with JCPDS, and CHI without JCPDS.
 7.11.7: add CHI with JCPDS only checkbox in file chooser to filter and show
         only .chi files that have a corresponding pkpo_jcpds.json file;
         fix cancel handling to prevent spurious 'file not found' errors.
