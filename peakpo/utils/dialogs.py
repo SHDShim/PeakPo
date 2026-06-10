@@ -1,4 +1,4 @@
-from qtpy import QtGui, QtWidgets, QtCore
+from qtpy import QtWidgets, QtCore
 import os.path
 import re
 import glob
@@ -198,6 +198,22 @@ class _OpenFileDialog(QtWidgets.QFileDialog):
         super(_OpenFileDialog, self).accept()
 
 
+def _add_macos_volumes_sidebar_url(dialog):
+    import sys
+    if sys.platform != 'darwin':
+        return
+    if not os.path.isdir("/Volumes"):
+        return
+
+    volumes_url = QtCore.QUrl.fromLocalFile("/Volumes")
+    try:
+        urls = list(dialog.sidebarUrls())
+    except AttributeError:
+        return
+    if volumes_url not in urls:
+        dialog.setSidebarUrls(urls + [volumes_url])
+
+
 def _build_open_dialog(
         obj, title, directory, file_filter, file_mode,
         default_hide_param_dirs=False,
@@ -209,6 +225,7 @@ def _build_open_dialog(
     proxy = _HideParamFoldersProxyModel(dialog)
     proxy.setRecursiveFilteringEnabled(False)
     dialog.setProxyModel(proxy)
+    _add_macos_volumes_sidebar_url(dialog)
     _attach_hide_param_checkbox(
         dialog, proxy, default_checked=default_hide_param_dirs)
     _attach_jcpds_only_checkbox(
