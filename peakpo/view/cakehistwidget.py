@@ -170,20 +170,26 @@ class CakeHistogramWidget(QtWidgets.QWidget):
         self.boundChanged.emit("min", vmin)
         self.boundChanged.emit("max", vmax)
 
+    def _get_pct_bounds(self):
+        """Return (low_intensity, high_intensity) based on the spin box percentages."""
+        if self._data is None:
+            return None, None
+        low_pct = float(self.spin_low_pct.value())
+        high_pct = float(self.spin_high_pct.value())
+        low_intensity = float(np.percentile(self._data, low_pct))
+        high_intensity = float(np.percentile(self._data, high_pct))
+        return low_intensity, high_intensity
+
     def _on_click(self, event):
         if event.xdata is None or self._xlims is None or event.inaxes != self.ax:
             return
         x = float(np.clip(event.xdata, self._xlims[0], self._xlims[1]))
-        # Prefer dragging when pressing near existing min/max guide lines.
+        # Only allow dragging to change bar positions — no click-to-set.
         picked = self._pick_drag_target(x)
         if picked is not None:
             self._drag_target = picked
+            self._dragging_x = x
             self._update_drag_line(x)
-            return
-        if event.button == 1:
-            self.boundChanged.emit("min", x)
-        elif event.button == 3:
-            self.boundChanged.emit("max", x)
 
     def _pick_drag_target(self, x):
         if (self._vmin is None) and (self._vmax is None):
@@ -214,18 +220,29 @@ class CakeHistogramWidget(QtWidgets.QWidget):
             return
         if event.xdata is None or self._xlims is None:
             return
-        x = float(np.clip(event.xdata, self._xlims[0], self._xlims[1]))
+        low_intensity, high_intensity = self._get_pct_bounds()
+        if self._drag_target == "min" and low_intensity is not None:
+            x_max = high_intensity if (self._vmax is None) else min(high_intensity, float(self._vmax))
+            x = float(np.clip(event.xdata, low_intensity, x_max))
+        elif self._drag_target == "max" and high_intensity is not None:
+            x_min = low_intensity if (self._vmin is None) else max(low_intensity, float(self._vmin))
+            x = float(np.clip(event.xdata, x_min, high_intensity))
+        else:
+            x = float(np.clip(event.xdata, self._xlims[0], self._xlims[1]))
+        self._dragging_x = x
         self._update_drag_line(x)
 
     def _on_release(self, event):
         if self._drag_target is None:
             return
-        if event.xdata is None or self._xlims is None:
+        x = getattr(self, "_dragging_x", None)
+        if x is None:
             self._drag_target = None
             return
-        x = float(np.clip(event.xdata, self._xlims[0], self._xlims[1]))
+        low_intensity, high_intensity = self._get_pct_bounds()
         if self._drag_target == "min":
             self.boundChanged.emit("min", x)
         elif self._drag_target == "max":
             self.boundChanged.emit("max", x)
         self._drag_target = None
+        self._dragging_x = None
