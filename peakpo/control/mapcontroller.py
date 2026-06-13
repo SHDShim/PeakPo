@@ -131,6 +131,11 @@ class MapController(object):
         self.widget.pushButton_MapScaleAuto.clicked.connect(self._auto_scale)
         self.widget.pushButton_MapScalePercentile.clicked.connect(self._scale_percentile)
         self.widget.pushButton_MapScaleReset.clicked.connect(self._scale_reset)
+        if hasattr(self.widget, "map_hist_widget"):
+            self.widget.map_hist_widget.boundChanged.connect(
+                self._set_map_bound_from_hist)
+            self.widget.map_hist_widget.rangeChanged.connect(
+                self._set_map_range_from_hist)
 
         if hasattr(self.widget, "pushButton_MapExportImage"):
             self.widget.pushButton_MapExportImage.clicked.connect(self._export_image)
@@ -978,6 +983,35 @@ class MapController(object):
         self.widget.doubleSpinBox_MapVmax.setValue(vmax)
         self._draw_map()
 
+    def _set_map_bound_from_hist(self, bound_type, intensity_value):
+        value = float(intensity_value)
+        current_min = float(self.widget.doubleSpinBox_MapVmin.value())
+        current_max = float(self.widget.doubleSpinBox_MapVmax.value())
+        min_gap = max(1e-12, abs(current_max - current_min) * 1e-9)
+        if bound_type == "min":
+            if value >= current_max:
+                value = current_max - min_gap
+            self.widget.doubleSpinBox_MapVmin.setValue(value)
+        elif bound_type == "max":
+            if value <= current_min:
+                value = current_min + min_gap
+            self.widget.doubleSpinBox_MapVmax.setValue(value)
+
+    def _set_map_range_from_hist(self, vmin, vmax):
+        vmin = float(vmin)
+        vmax = float(vmax)
+        if vmax < vmin:
+            vmin, vmax = vmax, vmin
+        blocker_min = QtCore.QSignalBlocker(self.widget.doubleSpinBox_MapVmin)
+        blocker_max = QtCore.QSignalBlocker(self.widget.doubleSpinBox_MapVmax)
+        try:
+            self.widget.doubleSpinBox_MapVmin.setValue(vmin)
+            self.widget.doubleSpinBox_MapVmax.setValue(vmax)
+        finally:
+            del blocker_max
+            del blocker_min
+        self._draw_map()
+
     def _draw_map(self):
         # Recreate axes each draw so colorbar layout adjustments do not accumulate.
         self._recreate_map_axes()
@@ -990,6 +1024,8 @@ class MapController(object):
         self._map_cbar = None
         if self._map_data is None:
             self._map_ax.set_axis_off()
+            if hasattr(self.widget, "map_hist_widget"):
+                self.widget.map_hist_widget.clear()
             self._map_canvas.draw_idle()
             return
 
@@ -1038,6 +1074,8 @@ class MapController(object):
             left=False, right=False, labelleft=False, labelright=False,
             bottom=False, top=False, labelbottom=False, labeltop=False
         )
+        if hasattr(self.widget, "map_hist_widget"):
+            self.widget.map_hist_widget.set_data(data, vmin=vmin, vmax=vmax)
 
         self._map_ax.set_aspect("equal", adjustable="box")
         self._map_ax.set_anchor("C")

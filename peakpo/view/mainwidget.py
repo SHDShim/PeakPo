@@ -2,6 +2,7 @@ import os
 from qtpy import QtCore, QtGui, QtWidgets
 from .qtd import Ui_MainWindow
 from .cakehistwidget import CakeHistogramWidget
+from .maphistwidget import MapHistogramWidget
 from ..utils import SpinBoxFixStyle, align_all_spinboxes_right
 from ..version import __version__
 from ..citation import __citation__
@@ -2304,11 +2305,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.lineEdit_MapHoverFile.setObjectName("lineEdit_MapHoverFile")
         self.lineEdit_MapHoverFile.setReadOnly(True)
         self.lineEdit_MapHoverFile.setPlaceholderText("Hover over a map pixel to see its file name")
-        self.lineEdit_MapStatus = QtWidgets.QLineEdit(self.mapContents)
-        self.lineEdit_MapStatus.setObjectName("lineEdit_MapStatus")
-        self.lineEdit_MapStatus.setReadOnly(True)
-        self.lineEdit_MapStatus.setPlaceholderText("Map status")
-
         self.groupBox_MapScale = QtWidgets.QGroupBox("Map Colors", self.mapContents)
         self.groupBox_MapScale.setObjectName("groupBox_MapScale")
         self.gridLayout_MapScale = QtWidgets.QGridLayout(self.groupBox_MapScale)
@@ -2360,6 +2356,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_MapScalePercentile.setObjectName("pushButton_MapScalePercentile")
         self.pushButton_MapScaleReset = QtWidgets.QPushButton("Reset", self.groupBox_MapScale)
         self.pushButton_MapScaleReset.setObjectName("pushButton_MapScaleReset")
+        self.map_hist_widget = MapHistogramWidget(self.groupBox_MapScale)
+        self.map_hist_widget.setMinimumHeight(125)
+        self.map_hist_widget.setMaximumHeight(155)
         self.pushButton_MapScalePercentile.setMinimumHeight(28)
         self.pushButton_MapScaleAuto.setMinimumHeight(28)
         self.pushButton_MapScaleReset.setMinimumHeight(28)
@@ -2373,20 +2372,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._set_accent_button_style(
             self.pushButton_MapCompute,
             "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
-        self.gridLayout_MapScale.addWidget(self.comboBox_MapCmap, 0, 0, 1, 2)
-        self.gridLayout_MapScale.addWidget(self.checkBox_MapReverseCmap, 1, 0, 1, 2)
-        self.gridLayout_MapScale.addWidget(self.checkBox_MapLog, 2, 0, 1, 2)
-        self.gridLayout_MapScale.addWidget(self.label_MapVmin, 0, 2, 1, 1)
-        self.gridLayout_MapScale.addWidget(self.doubleSpinBox_MapVmin, 0, 3, 1, 1)
-        self.gridLayout_MapScale.addWidget(self.pushButton_MapScalePercentile, 0, 4, 1, 1)
-        self.gridLayout_MapScale.addWidget(self.label_MapVmax, 1, 2, 1, 1)
-        self.gridLayout_MapScale.addWidget(self.doubleSpinBox_MapVmax, 1, 3, 1, 1)
-        self.gridLayout_MapScale.addWidget(self.pushButton_MapScaleAuto, 1, 4, 1, 1)
-        self.gridLayout_MapScale.addWidget(self.label_MapPct, 2, 2, 1, 1)
-        self.gridLayout_MapScale.addWidget(self.doubleSpinBox_MapPctLow, 2, 3, 1, 1)
-        self.gridLayout_MapScale.addWidget(self.pushButton_MapScaleReset, 2, 4, 1, 1)
-        self.gridLayout_MapScale.addWidget(self.label_MapPctHigh, 3, 2, 1, 1)
-        self.gridLayout_MapScale.addWidget(self.doubleSpinBox_MapPctHigh, 3, 3, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.map_hist_widget, 0, 0, 1, 5)
+        self.gridLayout_MapScale.addWidget(self.comboBox_MapCmap, 1, 0, 1, 2)
+        self.gridLayout_MapScale.addWidget(self.checkBox_MapReverseCmap, 2, 0, 1, 2)
+        self.gridLayout_MapScale.addWidget(self.checkBox_MapLog, 3, 0, 1, 2)
+        self.gridLayout_MapScale.addWidget(self.label_MapVmin, 1, 2, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.doubleSpinBox_MapVmin, 1, 3, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.pushButton_MapScalePercentile, 1, 4, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.label_MapVmax, 2, 2, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.doubleSpinBox_MapVmax, 2, 3, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.pushButton_MapScaleAuto, 2, 4, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.label_MapPct, 3, 2, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.doubleSpinBox_MapPctLow, 3, 3, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.pushButton_MapScaleReset, 3, 4, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.label_MapPctHigh, 4, 2, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.doubleSpinBox_MapPctHigh, 4, 3, 1, 1)
         self.gridLayout_MapScale.setColumnStretch(0, 1)
         self.gridLayout_MapScale.setColumnStretch(1, 1)
         self.gridLayout_MapScale.setColumnStretch(2, 0)
@@ -2409,7 +2409,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.verticalLayout_MapContents.addWidget(self.groupBox_MapRoi)
         self.verticalLayout_MapContents.addWidget(self.groupBox_MapCanvas, 1)
         self.verticalLayout_MapContents.addWidget(self.lineEdit_MapHoverFile)
-        self.verticalLayout_MapContents.addWidget(self.lineEdit_MapStatus)
         self.verticalLayout_MapContents.addWidget(self.groupBox_MapScale)
         self.verticalLayout_MapContents.addWidget(self.groupBox_MapExport)
         self.verticalLayout_MapContents.addStretch(1)
