@@ -6,7 +6,6 @@ from qtpy import QtWidgets, QtCore
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.widgets import RectangleSelector
-from matplotlib import colors as mcolors
 from matplotlib import cm
 import matplotlib.patches as mpatches
 
@@ -123,10 +122,13 @@ class MapController(object):
         self.widget.pushButton_MapCompute.clicked.connect(self._compute_map)
 
         self.widget.comboBox_MapCmap.currentIndexChanged.connect(self._draw_map)
-        self.widget.checkBox_MapReverseCmap.stateChanged.connect(self._draw_map)
         self.widget.doubleSpinBox_MapVmin.valueChanged.connect(self._draw_map)
         self.widget.doubleSpinBox_MapVmax.valueChanged.connect(self._draw_map)
-        self.widget.checkBox_MapLog.stateChanged.connect(self._draw_map)
+        self.widget.checkBox_MapLog.stateChanged.connect(self._on_map_log_changed)
+        self.widget.doubleSpinBox_MapPctLow.valueChanged.connect(
+            self._set_map_hist_view_percentages)
+        self.widget.doubleSpinBox_MapPctHigh.valueChanged.connect(
+            self._set_map_hist_view_percentages)
 
         self.widget.pushButton_MapScaleAuto.clicked.connect(self._auto_scale)
         self.widget.pushButton_MapScalePercentile.clicked.connect(self._scale_percentile)
@@ -937,10 +939,7 @@ class MapController(object):
         self._schedule_overlay_refresh()
 
     def _effective_cmap(self):
-        cmap = str(self.widget.comboBox_MapCmap.currentText())
-        if self.widget.checkBox_MapReverseCmap.isChecked() and (not cmap.endswith("_r")):
-            cmap = cmap + "_r"
-        return cmap
+        return str(self.widget.comboBox_MapCmap.currentText())
 
     def _map_cmap_for_plot(self):
         cmap = cm.get_cmap(self._effective_cmap()).copy()
@@ -953,14 +952,35 @@ class MapController(object):
             return None
         return float(np.nanmin(finite)), float(np.nanmax(finite))
 
+    def _display_map_data(self):
+        if self._map_data is None:
+            return None
+        data = np.array(self._map_data, copy=True, dtype=float)
+        if not self.widget.checkBox_MapLog.isChecked():
+            return data
+        finite = data[np.isfinite(data)]
+        if finite.size == 0 or np.nanmax(finite) <= 0:
+            self._set_status("Log scale disabled: map has no positive values.")
+            self.widget.checkBox_MapLog.setChecked(False)
+            return data
+        data[data <= 0] = np.nan
+        return np.log10(data)
+
     def _scale_reset(self):
         if self._map_data is None:
             return
-        vr = self._current_vrange(self._map_data)
+        data = self._display_map_data()
+        if data is None:
+            return
+        vr = self._current_vrange(data)
         if vr is None:
             return
         self.widget.doubleSpinBox_MapVmin.setValue(vr[0])
         self.widget.doubleSpinBox_MapVmax.setValue(vr[1])
+
+    def _on_map_log_changed(self):
+        self._scale_reset()
+        self._draw_map()
 
     def _auto_scale(self):
         self._scale_reset()
@@ -1012,6 +1032,14 @@ class MapController(object):
             del blocker_min
         self._draw_map()
 
+    def _set_map_hist_view_percentages(self):
+        if not hasattr(self.widget, "map_hist_widget"):
+            return
+        self.widget.map_hist_widget.set_view_percentages(
+            self.widget.doubleSpinBox_MapPctLow.value(),
+            self.widget.doubleSpinBox_MapPctHigh.value(),
+        )
+
     def _draw_map(self):
         # Recreate axes each draw so colorbar layout adjustments do not accumulate.
         self._recreate_map_axes()
@@ -1029,29 +1057,17 @@ class MapController(object):
             self._map_canvas.draw_idle()
             return
 
-        data = np.array(self._map_data, copy=True)
+        data = self._display_map_data()
+        if data is None:
+            return
         vmin = float(self.widget.doubleSpinBox_MapVmin.value())
         vmax = float(self.widget.doubleSpinBox_MapVmax.value())
 
         norm = None
-        label = "Integrated intensity"
-        if self.widget.checkBox_MapLog.isChecked():
-            finite = data[np.isfinite(data)]
-            if finite.size == 0 or np.nanmax(finite) <= 0:
-                self._set_status("Log scale disabled: map has no positive values.")
-                self.widget.checkBox_MapLog.setChecked(False)
-            else:
-                min_pos = np.nanmin(finite[finite > 0]) if np.any(finite > 0) else np.nan
-                if (not np.isfinite(min_pos)):
-                    self._set_status("Log scale disabled: map has no positive values.")
-                    self.widget.checkBox_MapLog.setChecked(False)
-                else:
-                    data[data <= 0] = np.nan
-                    if vmin <= 0:
-                        vmin = min_pos
-                    vmax = max(vmax, vmin * 1.001)
-                    norm = mcolors.LogNorm(vmin=vmin, vmax=vmax)
-                    label = "log10(Integrated intensity)"
+        if vmax <= vmin:
+            vr = self._current_vrange(data)
+            if vr is not None:
+                vmin, vmax = vr
 
         im_kwargs = {
             "origin": "upper",
@@ -1075,6 +1091,10 @@ class MapController(object):
             bottom=False, top=False, labelbottom=False, labeltop=False
         )
         if hasattr(self.widget, "map_hist_widget"):
+            self.widget.map_hist_widget.set_view_percentages(
+                self.widget.doubleSpinBox_MapPctLow.value(),
+                self.widget.doubleSpinBox_MapPctHigh.value(),
+            )
             self.widget.map_hist_widget.set_data(data, vmin=vmin, vmax=vmax)
 
         self._map_ax.set_aspect("equal", adjustable="box")

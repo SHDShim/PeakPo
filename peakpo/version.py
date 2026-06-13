@@ -4,8 +4,12 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.11.8"
+__version__ = "7.11.9"
 """
+7.11.9: add interactive histogram-based map and cake color-scale controls;
+        use draggable min/max bars with range sliding and fixed-percent
+        histogram views; update map log mode to plot log10 pixel values
+        with linear color scaling; list reversed map colormaps directly.
 7.11.8: replace CHI with JCPDS only checkbox with a three-mode chooser for
         all CHI files, CHI with JCPDS, and CHI without JCPDS.
 7.11.7: add CHI with JCPDS only checkbox in file chooser to filter and show

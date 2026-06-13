@@ -417,9 +417,7 @@ class SessionController(object):
                 self.widget, "Warning", "Session loading was not successful.")
 
     def _collect_ui_state(self):
-        scale_bar_value = int(self.widget.horizontalSlider_MaxScaleBars.value())
-        if hasattr(self.widget, "cake_hist_widget"):
-            scale_bar_value = int(self.widget.cake_hist_widget.combo_scale_mode.currentData())
+        scale_bar_value = 0
         cake_hist = {}
         if hasattr(self.widget, "cake_hist_widget"):
             hist = self.widget.cake_hist_widget
@@ -502,17 +500,15 @@ class SessionController(object):
         if cake != {}:
             if "azi_shift" in cake:
                 self.widget.spinBox_AziShift.setValue(int(cake["azi_shift"]))
-            if "int_max" in cake:
-                self.widget.spinBox_MaxCakeScale.setValue(int(cake["int_max"]))
             if "min_bar" in cake:
                 self.widget.horizontalSlider_VMin.setValue(int(cake["min_bar"]))
             if "max_bar" in cake:
                 self.widget.horizontalSlider_VMax.setValue(int(cake["max_bar"]))
             if "scale_bar" in cake:
-                self.widget.horizontalSlider_MaxScaleBars.setValue(int(cake["scale_bar"]))
+                self.widget.horizontalSlider_MaxScaleBars.setValue(0)
                 if hasattr(self.widget, "cake_hist_widget"):
                     combo = self.widget.cake_hist_widget.combo_scale_mode
-                    idx = combo.findData(int(cake["scale_bar"]))
+                    idx = combo.findData(0)
                     if idx >= 0:
                         combo.setCurrentIndex(idx)
             if "mask_min" in cake:
@@ -1013,13 +1009,12 @@ class SessionController(object):
                 for line in f:
                     temp_values.append(int(line.split(':')[1]))
             self.widget.spinBox_AziShift.setValue(temp_values[0])
-            self.widget.spinBox_MaxCakeScale.setValue(temp_values[1])
             self.widget.horizontalSlider_VMin.setValue(temp_values[2])
             self.widget.horizontalSlider_VMax.setValue(temp_values[3])
-            self.widget.horizontalSlider_MaxScaleBars.setValue(temp_values[4])
+            self.widget.horizontalSlider_MaxScaleBars.setValue(0)
             if hasattr(self.widget, "cake_hist_widget"):
                 combo = self.widget.cake_hist_widget.combo_scale_mode
-                idx = combo.findData(int(temp_values[4]))
+                idx = combo.findData(0)
                 if idx >= 0:
                     combo.setCurrentIndex(idx)
 
@@ -1036,9 +1031,7 @@ class SessionController(object):
                   self.widget.spinBox_MaxCakeScale.value(),
                   self.widget.horizontalSlider_VMin.value(),
                   self.widget.horizontalSlider_VMax.value(),
-                  int(self.widget.cake_hist_widget.combo_scale_mode.currentData())
-                  if hasattr(self.widget, "cake_hist_widget")
-                  else self.widget.horizontalSlider_MaxScaleBars.value()]
+                  0]
 
         with open(filen, "w") as f:
             for n, v in zip(names, values):

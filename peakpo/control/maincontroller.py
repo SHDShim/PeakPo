@@ -303,13 +303,8 @@ class MainController(object):
         self.widget.pushButton_DelTempCHI.clicked.connect(self.del_temp_chi)
         self.widget.pushButton_DelTempCake.clicked.connect(self.del_temp_cake)
         # slide bars
-        self.widget.horizontalSlider_VMin.setValue(0)
-        self.widget.horizontalSlider_VMax.setValue(100)
-        if hasattr(self.widget, "cake_hist_widget"):
-            self.widget.cake_hist_widget.combo_scale_mode.currentIndexChanged.connect(
-                self._sync_cake_scale_bar_from_combo)
-            self.widget.cake_hist_widget.combo_scale_mode.currentIndexChanged.connect(
-                self.apply_changes_to_graph)
+        self.widget.horizontalSlider_VMin.setValue(5)
+        self.widget.horizontalSlider_VMax.setValue(10)
         self.widget.horizontalSlider_MaxScaleBars.valueChanged.connect(
             self._sync_cake_scale_combo_from_slider)
         self.widget.horizontalSlider_VMin.valueChanged.connect(
@@ -1234,7 +1229,6 @@ class MainController(object):
         cake_action = self._prompt_for_nav_carry_action("2D image scale", cake_action)
         if cake_action in ("carry_blank", "overwrite_existing"):
             cake = snap["cake_z_scale"]
-            self.widget.spinBox_MaxCakeScale.setValue(int(cake["int_max"]))
             self.widget.horizontalSlider_VMin.setValue(int(cake["min_bar"]))
             self.widget.horizontalSlider_VMax.setValue(int(cake["max_bar"]))
             self._set_cake_scale_bar_value(int(cake["scale_bar"]))
@@ -1242,8 +1236,8 @@ class MainController(object):
             if hasattr(self.widget, "cake_hist_widget") and hist != {}:
                 self.widget.cake_hist_widget.check_log.setChecked(bool(hist.get("log_y", True)))
                 self.widget.cake_hist_widget.check_focus.setChecked(bool(hist.get("focus_range", True)))
-                self.widget.cake_hist_widget.spin_low_pct.setValue(float(hist.get("low_pct", 40.0)))
-                self.widget.cake_hist_widget.spin_high_pct.setValue(float(hist.get("high_pct", 99.95)))
+                self.widget.cake_hist_widget.spin_low_pct.setValue(float(hist.get("low_pct", 0.0)))
+                self.widget.cake_hist_widget.spin_high_pct.setValue(float(hist.get("high_pct", 20.0)))
             carried_any = True
         self._record_nav_carry_result(results, "cake_z_scale", cake_action)
 
@@ -1310,28 +1304,27 @@ class MainController(object):
         self.session_ctrl.refresh_backup_table()
 
     def _get_cake_scale_bar_value(self):
-        if hasattr(self.widget, "cake_hist_widget"):
-            return int(self.widget.cake_hist_widget.combo_scale_mode.currentData())
-        return int(self.widget.horizontalSlider_MaxScaleBars.value())
+        return 0
 
     def _set_cake_scale_bar_value(self, value):
-        value = int(value)
-        self.widget.horizontalSlider_MaxScaleBars.setValue(value)
+        del value
+        self.widget.horizontalSlider_MaxScaleBars.setValue(0)
         if hasattr(self.widget, "cake_hist_widget"):
             combo = self.widget.cake_hist_widget.combo_scale_mode
-            idx = combo.findData(value)
+            idx = combo.findData(0)
             if idx >= 0 and combo.currentIndex() != idx:
                 combo.setCurrentIndex(idx)
 
     def _sync_cake_scale_bar_from_combo(self):
-        self.widget.horizontalSlider_MaxScaleBars.setValue(self._get_cake_scale_bar_value())
+        self.widget.horizontalSlider_MaxScaleBars.setValue(0)
 
     def _sync_cake_scale_combo_from_slider(self):
         if not hasattr(self.widget, "cake_hist_widget"):
             return
+        if int(self.widget.horizontalSlider_MaxScaleBars.value()) != 0:
+            self.widget.horizontalSlider_MaxScaleBars.setValue(0)
         combo = self.widget.cake_hist_widget.combo_scale_mode
-        value = int(self.widget.horizontalSlider_MaxScaleBars.value())
-        idx = combo.findData(value)
+        idx = combo.findData(0)
         if idx >= 0 and combo.currentIndex() != idx:
             combo.setCurrentIndex(idx)
 

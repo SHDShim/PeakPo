@@ -17,6 +17,8 @@ class MapHistogramWidget(QtWidgets.QWidget):
         self._line_min = None
         self._line_max = None
         self._span_patch = None
+        self._view_low_pct = 0.0
+        self._view_high_pct = 100.0
         self._drag_target = None
         self._drag_start_x = None
         self._drag_start_vmin = None
@@ -65,16 +67,33 @@ class MapHistogramWidget(QtWidgets.QWidget):
 
         lo = float(arr.min())
         hi = float(arr.max())
+        self._xlims = self._calc_view_xlim(lo, hi)
+        self._redraw()
+
+    def set_view_percentages(self, low_pct, high_pct):
+        self._view_low_pct = float(np.clip(low_pct, 0.0, 100.0))
+        self._view_high_pct = float(np.clip(high_pct, 0.0, 100.0))
+        if self._view_high_pct <= self._view_low_pct:
+            self._view_high_pct = min(100.0, self._view_low_pct + 0.01)
+        if self._data is None:
+            return
+        self._xlims = self._calc_view_xlim(
+            float(np.nanmin(self._data)), float(np.nanmax(self._data)))
+        self._redraw()
+
+    def _calc_view_xlim(self, lo, hi):
         if hi <= lo:
             pad = max(1.0, 1e-6 * max(abs(lo), 1.0))
-            lo -= 0.5 * pad
-            hi += 0.5 * pad
-        else:
-            pad = 0.05 * (hi - lo)
-            lo -= pad
-            hi += pad
-        self._xlims = (lo, hi)
-        self._redraw()
+            center = lo
+            return center - 0.5 * pad, center + 0.5 * pad
+
+        span = hi - lo
+        view_lo = lo + (self._view_low_pct / 100.0) * span
+        view_hi = lo + (self._view_high_pct / 100.0) * span
+        if view_hi <= view_lo:
+            view_hi = view_lo + max(1.0, 1e-6 * max(abs(view_lo), 1.0))
+        pad = 0.05 * (view_hi - view_lo)
+        return view_lo - pad, view_hi + pad
 
     def _redraw(self):
         if self._data is None or self._xlims is None:

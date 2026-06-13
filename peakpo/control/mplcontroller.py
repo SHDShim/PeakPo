@@ -315,6 +315,13 @@ class MplController(object):
         # Get cake data
         intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
         int_plot = np.array(intensity_cake, copy=True)
+        finite_cake = np.asarray(intensity_cake, dtype=float)
+        finite_cake = finite_cake[np.isfinite(finite_cake)]
+        cake_max = None
+        if finite_cake.size > 0:
+            cake_max = float(np.nanmax(finite_cake))
+            if np.isfinite(cake_max) and cake_max > 0:
+                self.widget.spinBox_MaxCakeScale.setValue(int(np.ceil(cake_max)))
 
         diff_mode = False
         if self.diff_ctrl is not None:
@@ -338,17 +345,19 @@ class MplController(object):
         min_slider_pos = self.widget.horizontalSlider_VMin.value()
         max_slider_pos = self.widget.horizontalSlider_VMax.value()
         if (max_slider_pos <= min_slider_pos):
-            self.widget.horizontalSlider_VMin.setValue(1)
-            self.widget.horizontalSlider_VMax.setValue(99)
-        scale_bar_value = int(self.widget.horizontalSlider_MaxScaleBars.value())
-        if hasattr(self.widget, "cake_hist_widget"):
-            scale_bar_value = int(self.widget.cake_hist_widget.combo_scale_mode.currentData())
+            self.widget.horizontalSlider_VMin.setValue(5)
+            self.widget.horizontalSlider_VMax.setValue(10)
+        scale_bar_value = 0
         prefactor = self.widget.spinBox_MaxCakeScale.value() / \
             (10. ** scale_bar_value)
         climits = np.asarray([
             self.widget.horizontalSlider_VMin.value(),
             self.widget.horizontalSlider_VMax.value()]) / \
             100. * prefactor
+        if hasattr(self.widget, "cake_hist_widget"):
+            exact_bounds = self.widget.cake_hist_widget.current_bounds(data_max=cake_max)
+            if exact_bounds is not None:
+                climits = np.asarray(exact_bounds, dtype=float)
 
         # Check if ApplyMask is on
         # If so, get mask range from UI and set mask, then process cake for new mask.  Note that if mask from UI is for entire range of data, do not re-integrate.

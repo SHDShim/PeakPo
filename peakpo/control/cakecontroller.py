@@ -41,6 +41,8 @@ class CakeController(object):
         if hasattr(self.widget, "cake_hist_widget"):
             self.widget.cake_hist_widget.boundChanged.connect(
                 self._set_cake_bound_from_hist)
+            self.widget.cake_hist_widget.rangeChanged.connect(
+                self._set_cake_range_from_hist)
         """
         self.widget.pushButton_Load_CakeFormatFile.clicked.connect(
             self.load_cake_format_file)
@@ -130,16 +132,14 @@ class CakeController(object):
         self.plot_ctrl.update()
 
     def _get_cake_scale_bar_value(self):
-        if hasattr(self.widget, "cake_hist_widget"):
-            return int(self.widget.cake_hist_widget.combo_scale_mode.currentData())
-        return int(self.widget.horizontalSlider_MaxScaleBars.value())
+        return 0
 
     def _set_cake_scale_bar_value(self, value):
-        value = int(value)
-        self.widget.horizontalSlider_MaxScaleBars.setValue(value)
+        del value
+        self.widget.horizontalSlider_MaxScaleBars.setValue(0)
         if hasattr(self.widget, "cake_hist_widget"):
             combo = self.widget.cake_hist_widget.combo_scale_mode
-            idx = combo.findData(value)
+            idx = combo.findData(0)
             if idx >= 0 and combo.currentIndex() != idx:
                 combo.setCurrentIndex(idx)
 
@@ -150,7 +150,7 @@ class CakeController(object):
             return
         current_min = self.widget.horizontalSlider_VMin.value()
         current_max = self.widget.horizontalSlider_VMax.value()
-        slider_value = int(np.clip(round(intensity_value / prefactor * 100.0), 0, 1000))
+        slider_value = self._cake_slider_value_from_intensity(intensity_value, prefactor)
         if bound_type == "min":
             if slider_value == current_min:
                 current_min_intensity = current_min / 100.0 * prefactor
@@ -171,6 +171,31 @@ class CakeController(object):
             if slider_value <= current_min:
                 slider_value = min(1000, current_min + 1)
             self.widget.horizontalSlider_VMax.setValue(slider_value)
+
+    def _cake_slider_value_from_intensity(self, intensity_value, prefactor):
+        return int(np.clip(round(float(intensity_value) / prefactor * 100.0), 0, 1000))
+
+    def _set_cake_range_from_hist(self, vmin, vmax):
+        prefactor = self.widget.spinBox_MaxCakeScale.value() / \
+            (10. ** self._get_cake_scale_bar_value())
+        if prefactor <= 0:
+            return
+        min_value = self._cake_slider_value_from_intensity(vmin, prefactor)
+        max_value = self._cake_slider_value_from_intensity(vmax, prefactor)
+        if max_value <= min_value:
+            max_value = min(1000, min_value + 1)
+            if max_value <= min_value:
+                min_value = max(0, max_value - 1)
+
+        old_min_blocked = self.widget.horizontalSlider_VMin.blockSignals(True)
+        old_max_blocked = self.widget.horizontalSlider_VMax.blockSignals(True)
+        try:
+            self.widget.horizontalSlider_VMin.setValue(min_value)
+            self.widget.horizontalSlider_VMax.setValue(max_value)
+        finally:
+            self.widget.horizontalSlider_VMin.blockSignals(old_min_blocked)
+            self.widget.horizontalSlider_VMax.blockSignals(old_max_blocked)
+        self._apply_changes_to_graph()
 
     def _ignore_raw_data_missing(self):
         return self.widget.checkBox_IgnoreRawDataExistence.isChecked()
