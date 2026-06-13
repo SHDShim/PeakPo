@@ -1,1 +1,0 @@
-from .mainwidget import MainWindow

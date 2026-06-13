@@ -1,4 +1,0 @@
-- [ ] self.mask should be defined clearly whether for cake or original data.  for speed it should be better for cake.  then later when mask file from dioptas is read, which is for original image, it can be confusing.  But intensity mask can be still maintained for cake, not for original.  The decision depends on whether sectional integration is happening for existing cake or for original image file.
-- [ ] Not sure but can we add background subtraction function for cake images?
-- [ ] Update jnb-tools folder contents for import peakpo
-- [ ] Update scripts folder contents
