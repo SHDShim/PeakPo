@@ -1,0 +1,3151 @@
+import os
+from qtpy import QtCore, QtGui, QtWidgets
+from .qtd import Ui_MainWindow
+from .cakehistwidget import CakeHistogramWidget
+from .maphistwidget import MapHistogramWidget
+from ..utils import SpinBoxFixStyle, align_all_spinboxes_right
+from ..version import __version__
+from ..citation import __citation__
+from ..utils import InformationBox
+# exec(open(os.path.join(os.path.curdir, 'version.py')).read())
+# exec(open(os.path.join(os.path.curdir, 'citation.py')).read())
+
+
+class WheelCenterButton(QtWidgets.QPushButton):
+    def __init__(self, text="", parent=None):
+        super().__init__(text, parent)
+        self.setCursor(QtCore.Qt.SizeVerCursor)
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setFlat(True)
+        self.setAutoDefault(False)
+        self.setDefault(False)
+        self.setMinimumSize(64, 32)
+
+    def sizeHint(self):
+        return QtCore.QSize(72, 32)
+
+    def _groove_pitch(self):
+        return max(4.0, (self.height() - 6) / 5.0)
+
+    def paintEvent(self, event):
+        del event
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+
+        outer = QtCore.QRectF(self.rect()).adjusted(0, 0, -1, -1)
+        fill = QtGui.QLinearGradient(0, outer.top(), 0, outer.bottom())
+        fill.setColorAt(0.0, QtGui.QColor("#4c4c4c"))
+        fill.setColorAt(0.08, QtGui.QColor("#656565"))
+        fill.setColorAt(0.18, QtGui.QColor("#787878"))
+        fill.setColorAt(0.50, QtGui.QColor("#6a6a6a"))
+        fill.setColorAt(0.82, QtGui.QColor("#787878"))
+        fill.setColorAt(0.92, QtGui.QColor("#656565"))
+        fill.setColorAt(1.0, QtGui.QColor("#4c4c4c"))
+        if self.isDown():
+            fill.setColorAt(0.0, QtGui.QColor("#464646"))
+            fill.setColorAt(0.18, QtGui.QColor("#6d6d6d"))
+            fill.setColorAt(0.50, QtGui.QColor("#5f5f5f"))
+            fill.setColorAt(0.82, QtGui.QColor("#6d6d6d"))
+            fill.setColorAt(1.0, QtGui.QColor("#464646"))
+        elif self.underMouse():
+            fill.setColorAt(0.0, QtGui.QColor("#565656"))
+            fill.setColorAt(0.18, QtGui.QColor("#848484"))
+            fill.setColorAt(0.50, QtGui.QColor("#747474"))
+            fill.setColorAt(0.82, QtGui.QColor("#848484"))
+            fill.setColorAt(1.0, QtGui.QColor("#565656"))
+        painter.fillRect(outer, fill)
+        painter.setPen(QtGui.QPen(QtGui.QColor("#171717"), 1))
+        painter.drawRect(outer)
+
+        groove_area = outer.adjusted(1, 2, -1, -2)
+        groove_height = self._groove_pitch()
+        start_top = groove_area.top()
+        painter.save()
+        painter.setClipRect(groove_area)
+        top = start_top
+        while top < groove_area.bottom() + groove_height:
+            groove_rect = QtCore.QRectF(
+                groove_area.left(),
+                top,
+                groove_area.width(),
+                groove_height - 1,
+            )
+            groove_fill = QtGui.QLinearGradient(0, groove_rect.top(), 0, groove_rect.bottom())
+            groove_fill.setColorAt(0.0, QtGui.QColor(48, 48, 48, 170))
+            groove_fill.setColorAt(0.22, QtGui.QColor(132, 132, 132, 120))
+            groove_fill.setColorAt(0.52, QtGui.QColor(110, 110, 110, 90))
+            groove_fill.setColorAt(1.0, QtGui.QColor(46, 46, 46, 160))
+            painter.fillRect(groove_rect, groove_fill)
+            painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255, 24), 1))
+            painter.drawLine(
+                QtCore.QPointF(groove_rect.left(), groove_rect.top()),
+                QtCore.QPointF(groove_rect.right(), groove_rect.top()),
+            )
+            painter.setPen(QtGui.QPen(QtGui.QColor(28, 28, 28, 100), 1))
+            painter.drawLine(
+                QtCore.QPointF(groove_rect.left(), groove_rect.bottom()),
+                QtCore.QPointF(groove_rect.right(), groove_rect.bottom()),
+            )
+            top += groove_height
+        painter.restore()
+
+        painter.setPen(QtGui.QColor("#111111"))
+        font = painter.font()
+        font.setPointSize(14)
+        font.setBold(True)
+        painter.setFont(font)
+        painter.drawText(outer, QtCore.Qt.AlignCenter, self.text())
+
+        if self.hasFocus():
+            focus_pen = QtGui.QPen(QtGui.QColor("#7bb8ff"), 1)
+            painter.setPen(focus_pen)
+            painter.drawRect(outer.adjusted(1, 1, -1, -1))
+
+
+class ToolbarTumblerDoubleSpinBox(QtWidgets.QDoubleSpinBox):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setKeyboardTracking(False)
+        self.setStyle(SpinBoxFixStyle())
+        self.setFrame(False)
+        self.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
+        self.setAlignment(QtCore.Qt.AlignCenter)
+
+
+class ToolbarTumblerSpinBox(QtWidgets.QSpinBox):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setKeyboardTracking(False)
+        self.setStyle(SpinBoxFixStyle())
+        self.setFrame(False)
+        self.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
+        self.setAlignment(QtCore.Qt.AlignCenter)
+
+
+class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+    """
+    Main window
+    """
+
+    def __init__(self, parent=None):
+        # initialization of the superclass
+        super(MainWindow, self).__init__(parent)
+        self.setupUi(self)  # setup the GUI --> function generated by pyuic5
+        try:
+            env = os.environ['CONDA_DEFAULT_ENV']
+        except:
+            env = 'unknown'
+        self.setWindowTitle("PeakPo ver. " + str(__version__) + " on " + env)
+        #
+        self.build_ui()
+        self.connect_channel()
+        # the two lines needs to be considred for move from this widget file
+        self.actionCiting_PeakPo.triggered.connect(self.about)
+        self.actionShortcut_keys.triggered.connect(self.shortcutkeys)
+
+    def build_ui(self):
+        # self.pushButton_MakeBasePtn.setEnabled(False)
+        """ This was unstable feature but from 06/18/2022 it is enabled.
+        self.pushButton_SetJCPDSStepTo0001.setDisabled(True)
+        self.pushButton_SetJCPDSStepTo001.setDisabled(True)
+        self.pushButton_SetJCPDSStepTo01.setDisabled(True)
+        self.pushButton_UpdateJCPDSSteps.setDisabled(True)
+        self.doubleSpinBox_JCPDSStep.setDisabled(True)
+        """
+        self.doubleSpinBox_JCPDSStep.setKeyboardTracking(False)
+        self.doubleSpinBox_JCPDSStep.setStyle(SpinBoxFixStyle())
+        self.doubleSpinBox_Pressure.setKeyboardTracking(False)
+        self.doubleSpinBox_Pressure.setStyle(SpinBoxFixStyle())
+        self.doubleSpinBox_Temperature.setKeyboardTracking(False)
+        self.doubleSpinBox_Temperature.setStyle(SpinBoxFixStyle())
+        self.spinBox_BGParam0.setKeyboardTracking(False)
+        self.spinBox_BGParam1.setKeyboardTracking(False)
+        self.spinBox_BGParam2.setKeyboardTracking(False)
+        self.spinBox_BGParam0.setStyle(SpinBoxFixStyle())
+        self.spinBox_BGParam1.setStyle(SpinBoxFixStyle())
+        self.spinBox_BGParam2.setStyle(SpinBoxFixStyle())
+        self.doubleSpinBox_Background_ROI_max.setKeyboardTracking(False)
+        self.doubleSpinBox_Background_ROI_min.setKeyboardTracking(False)
+        self.doubleSpinBox_Background_ROI_max.setStyle(SpinBoxFixStyle())
+        self.doubleSpinBox_Background_ROI_min.setStyle(SpinBoxFixStyle())
+        self.doubleSpinBox_SetWavelength.setKeyboardTracking(False)
+        self.doubleSpinBox_SetWavelength.setStyle(SpinBoxFixStyle())
+        linethicknesses = ['0', '0.1', '0.2', '0.5', '0.75',
+                           '1', '1.5', '2', '3', '4', '5']
+        self.comboBox_BasePtnLineThickness.addItems(linethicknesses)
+        self.comboBox_PtnJCPDSBarThickness.addItems(linethicknesses)
+        self.comboBox_CakeJCPDSBarThickness.addItems(linethicknesses)
+        self.comboBox_BkgnLineThickness.addItems(linethicknesses)
+        self.comboBox_WaterfallLineThickness.addItems(linethicknesses)
+        self.comboBox_VertCursorThickness.addItems(linethicknesses)
+        self.comboBox_BasePtnLineThickness.setCurrentText('1')
+        self.comboBox_PtnJCPDSBarThickness.setCurrentText('1')
+        self.comboBox_CakeJCPDSBarThickness.setCurrentText('0.5')
+        self.comboBox_BkgnLineThickness.setCurrentText('0.5')
+        self.comboBox_WaterfallLineThickness.setCurrentText('0.5')
+        self.comboBox_VertCursorThickness.setCurrentText('1')
+        fontsizes = ['4', '6', '8', '10', '12', '14', '16', '18', '20', '24',
+                     '28', '36', '42']
+        self.comboBox_HKLFontSize.addItems(fontsizes)
+        self.comboBox_HKLFontSize.setCurrentText('8')
+        self.comboBox_PnTFontSize.addItems(fontsizes)
+        self.comboBox_PnTFontSize.setCurrentText('16')
+        self.label_LegendFontSize = QtWidgets.QLabel(self.groupBox_13)
+        self.label_LegendFontSize.setText("Legend")
+        self.comboBox_LegendFontSize = QtWidgets.QComboBox(self.groupBox_13)
+        self.comboBox_LegendFontSize.setMinimumSize(QtCore.QSize(0, 25))
+        self.comboBox_LegendFontSize.addItems(fontsizes)
+        self.comboBox_LegendFontSize.setCurrentText('12')
+        self.label_WaterfallFontSize = QtWidgets.QLabel(self.groupBox_13)
+        self.label_WaterfallFontSize.setText("Waterfall label")
+        self.comboBox_WaterfallFontSize = QtWidgets.QComboBox(self.groupBox_13)
+        self.comboBox_WaterfallFontSize.setMinimumSize(QtCore.QSize(0, 25))
+        self.comboBox_WaterfallFontSize.addItems(fontsizes)
+        self.comboBox_WaterfallFontSize.setCurrentText('12')
+        self.comboBox_PnTFontSize.setMinimumWidth(96)
+        self.comboBox_HKLFontSize.setMinimumWidth(96)
+        self.comboBox_LegendFontSize.setMinimumWidth(96)
+        self.comboBox_WaterfallFontSize.setMinimumWidth(96)
+        self.comboBox_PnTFontSize.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.comboBox_HKLFontSize.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.comboBox_LegendFontSize.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.comboBox_WaterfallFontSize.setLayoutDirection(QtCore.Qt.RightToLeft)
+        # Rebuild the original QtDesigner row layout to avoid inherited spacer
+        # artifacts and match the "Line thickness" left/right arrangement.
+        while self.horizontalLayout_4.count():
+            item = self.horizontalLayout_4.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.hide()
+        self._font_size_grid = QtWidgets.QGridLayout()
+        self._font_size_grid.setContentsMargins(0, 0, 0, 0)
+        self._font_size_grid.setHorizontalSpacing(18)
+        self._font_size_grid.setVerticalSpacing(8)
+        self._font_size_grid.setColumnStretch(2, 1)
+        self.label_15.show()
+        self.comboBox_PnTFontSize.show()
+        self.label_3.show()
+        self.comboBox_HKLFontSize.show()
+        self.label_LegendFontSize.show()
+        self.comboBox_LegendFontSize.show()
+        self.label_WaterfallFontSize.show()
+        self.comboBox_WaterfallFontSize.show()
+        self._font_size_grid.addWidget(self.label_15, 0, 0)
+        self._font_size_grid.addWidget(self.comboBox_PnTFontSize, 0, 1)
+        self._font_size_grid.addWidget(self.label_3, 0, 3)
+        self._font_size_grid.addWidget(self.comboBox_HKLFontSize, 0, 4)
+        self._font_size_grid.addWidget(self.label_LegendFontSize, 1, 0)
+        self._font_size_grid.addWidget(self.comboBox_LegendFontSize, 1, 1)
+        self._font_size_grid.addWidget(self.label_WaterfallFontSize, 1, 3)
+        self._font_size_grid.addWidget(self.comboBox_WaterfallFontSize, 1, 4)
+        self.horizontalLayout_4.addLayout(self._font_size_grid)
+        self.comboBox_Symmetry.addItems(['cubic', 'tetragonal',
+                                         'hexagonal', 'orthorhombic'])
+        self.comboBox_Symmetry.setCurrentText('cubic')
+        self._setup_plot_subtabs()
+        self._setup_pressure_temperature_grid()
+        self._setup_light_background_checkbox()
+        self._setup_jcpds_bars_layout()
+        self._compact_jcpds_config_layout()
+        self._setup_title_config_group()
+        self._setup_plot_setup_group()
+        self._setup_update_background_button()
+        self._setup_bg_default_button()
+        self._setup_cake_colormap_control()
+        self._setup_plot_control_export()
+        self._move_backup_into_file_data_tab()
+        self._setup_file_metadata_tab()
+        self._setup_backup_comment_button()
+        self._layout_backup_buttons()
+        self._compact_file_data_layout()
+        self._setup_diff_tab()
+        self._promote_diff_to_main_tab()
+        self._setup_map_tab()
+        self._promote_map_to_main_tab()
+        self._setup_seq_tab()
+        self._promote_seq_to_main_tab()
+        self._reorder_main_tabs_and_fit_tab_names()
+        self._setup_peakfit_section_buttons()
+        self._compact_peakfit_spinboxes()
+        self._normalize_misc_button_heights()
+        self._setup_toolbar_diff_toggle()
+        self._setup_mouse_mode_selector()
+        self._move_mouse_controls_to_plot_bar()
+        self._rebuild_top_left_toolbar()
+        self._spread_primary_controls_evenly()
+        self._spread_top_toolbar_even()
+        self._setup_quick_pt_wheel_controls()
+        self._apply_compact_clarity_labels()
+        self._setup_compact_help_statusbar()
+        if hasattr(self, "pushButton_S_Zoom"):
+            self.pushButton_S_Zoom.setText("⤢")
+            self.pushButton_S_Zoom.setToolTip("Fit X/Y to data (zoom out)")
+            self._set_button_height(self.pushButton_S_Zoom)
+            self._set_flat_toolbar_button_style(
+                self.pushButton_S_Zoom, compact=True)
+            self.pushButton_S_Zoom.setMinimumWidth(42)
+            self.pushButton_S_Zoom.setMaximumWidth(42)
+        if hasattr(self, "pushButton_NewBasePtn"):
+            self.pushButton_NewBasePtn.setText("Open")
+        if hasattr(self, "pushButton_LoadDPP"):
+            self.pushButton_LoadDPP.setText("Save")
+        if hasattr(self, "pushButton_S_PIncrease"):
+            self.pushButton_S_PIncrease.setMinimumWidth(56)
+            self.pushButton_S_PIncrease.setMaximumWidth(16777215)
+        if hasattr(self, "pushButton_S_PDecrease"):
+            self.pushButton_S_PDecrease.setMinimumWidth(56)
+            self.pushButton_S_PDecrease.setMaximumWidth(16777215)
+        if hasattr(self, "doubleSpinBox_ToolbarPressure"):
+            self.doubleSpinBox_ToolbarPressure.setMinimumWidth(72)
+            self.doubleSpinBox_ToolbarPressure.setMaximumWidth(160)
+        if hasattr(self, "pushButton_S_TIncrease"):
+            self.pushButton_S_TIncrease.setMinimumWidth(56)
+            self.pushButton_S_TIncrease.setMaximumWidth(16777215)
+        if hasattr(self, "pushButton_S_TDecrease"):
+            self.pushButton_S_TDecrease.setMinimumWidth(56)
+            self.pushButton_S_TDecrease.setMaximumWidth(16777215)
+        if hasattr(self, "spinBox_ToolbarTemperature"):
+            self.spinBox_ToolbarTemperature.setMinimumWidth(72)
+            self.spinBox_ToolbarTemperature.setMaximumWidth(160)
+        if hasattr(self, "pushButton_S_RoomT") and hasattr(self, "doubleSpinBox_Temperature"):
+            target_width = self.pushButton_S_RoomT.sizeHint().width() + 8
+            self.pushButton_S_RoomT.setMinimumWidth(target_width)
+            self.pushButton_S_RoomT.setMaximumWidth(target_width)
+        if hasattr(self, "pushButton_savePeakPos"):
+            self.pushButton_savePeakPos.setText("Sort")
+            self.pushButton_savePeakPos.setToolTip(
+                "Move checked JCPDS items to the top of the table")
+        for name in (
+            "pushButton_SaveTwkJCPDS",
+            "pushButton_ViewJCPDS",
+            "pushButton_savePeakPos",
+        ):
+            if hasattr(self, name):
+                button = getattr(self, name)
+                button.setMinimumHeight(20)
+                button.setMaximumHeight(25)
+        if hasattr(self, "gridLayout_2"):
+            if hasattr(self, "pushButton_savePeakPos"):
+                self.gridLayout_2.removeWidget(self.pushButton_savePeakPos)
+                self.gridLayout_2.addWidget(self.pushButton_savePeakPos, 0, 4, 1, 1)
+            if hasattr(self, "pushButton_SaveTwkJCPDS"):
+                self.gridLayout_2.removeWidget(self.pushButton_SaveTwkJCPDS)
+                self.gridLayout_2.addWidget(self.pushButton_SaveTwkJCPDS, 0, 5, 1, 1)
+            if hasattr(self, "pushButton_ViewJCPDS"):
+                self.gridLayout_2.removeWidget(self.pushButton_ViewJCPDS)
+                self.gridLayout_2.addWidget(self.pushButton_ViewJCPDS, 0, 6, 1, 1)
+        if hasattr(self, "checkBox_BgSub"):
+            self.checkBox_BgSub.setText("BG sub")
+            self.checkBox_BgSub.setToolTip("Subtract background from 1D pattern")
+        if hasattr(self, "checkBox_LongCursor"):
+            self.checkBox_LongCursor.setText("V cursor")
+            self.checkBox_LongCursor.setToolTip("Change cursor to a vertical bar")
+        if hasattr(self, "checkBox_AutoY"):
+            self.checkBox_AutoY.setText("Auto Y")
+        if hasattr(self, "pushButton_AddRemoveFromMouse"):
+            self.pushButton_AddRemoveFromMouse.setVisible(False)
+        if hasattr(self, "pushButton_MapSetRoi"):
+            self.pushButton_MapSetRoi.setVisible(False)
+            if hasattr(self, "gridLayout_MapRoi"):
+                self.gridLayout_MapRoi.removeWidget(self.pushButton_MapSetRoi)
+        if hasattr(self, "pushButton_MapClearRoi") and hasattr(self, "gridLayout_MapRoi"):
+            self.pushButton_MapClearRoi.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+            self.gridLayout_MapRoi.addWidget(self.pushButton_MapClearRoi, 0, 0, 1, 1)
+        if hasattr(self, "pushButton_MapCompute") and hasattr(self, "gridLayout_MapRoi"):
+            self.pushButton_MapCompute.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+            self.gridLayout_MapRoi.addWidget(self.pushButton_MapCompute, 0, 1, 1, 1)
+        if hasattr(self, "lineEdit_MapRoiSummary") and hasattr(self, "gridLayout_MapRoi"):
+            self.gridLayout_MapRoi.addWidget(self.lineEdit_MapRoiSummary, 1, 0, 1, 2)
+            self.gridLayout_MapRoi.setColumnStretch(0, 1)
+            self.gridLayout_MapRoi.setColumnStretch(1, 1)
+            self.gridLayout_MapRoi.setColumnStretch(2, 0)
+        if hasattr(self, "pushButton_SeqSetRoi"):
+            self.pushButton_SeqSetRoi.setVisible(False)
+            if hasattr(self, "gridLayout_SeqRoi"):
+                self.gridLayout_SeqRoi.removeWidget(self.pushButton_SeqSetRoi)
+        if hasattr(self, "pushButton_SeqClearRoi") and hasattr(self, "gridLayout_SeqRoi"):
+            self.pushButton_SeqClearRoi.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+            self.gridLayout_SeqRoi.addWidget(self.pushButton_SeqClearRoi, 0, 0, 1, 1)
+        if hasattr(self, "pushButton_SeqCompute") and hasattr(self, "gridLayout_SeqRoi"):
+            self.pushButton_SeqCompute.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+            self.gridLayout_SeqRoi.addWidget(self.pushButton_SeqCompute, 0, 1, 1, 1)
+        if hasattr(self, "lineEdit_SeqRoiSummary") and hasattr(self, "gridLayout_SeqRoi"):
+            self.gridLayout_SeqRoi.addWidget(self.lineEdit_SeqRoiSummary, 1, 0, 1, 2)
+            self.gridLayout_SeqRoi.setColumnStretch(0, 1)
+            self.gridLayout_SeqRoi.setColumnStretch(1, 1)
+            self.gridLayout_SeqRoi.setColumnStretch(2, 0)
+        # Legacy toolbar save icon is replaced by the session Save button.
+        if hasattr(self, "pushButton_S_SaveSession"):
+            self.pushButton_S_SaveSession.setVisible(False)
+        # Session save/backup icon buttons are replaced by the File>Backup tab.
+        if hasattr(self, "pushButton_SaveDPP"):
+            self.pushButton_SaveDPP.setVisible(False)
+        if hasattr(self, "pushButton_OpenBackupInfo"):
+            self.pushButton_OpenBackupInfo.setVisible(False)
+        if hasattr(self, "groupBox_2"):
+            self.groupBox_2.setVisible(False)
+        if hasattr(self, "groupBox_14"):
+            self.groupBox_14.setVisible(False)
+        # Night,cake checkbox is replaced by explicit cake colormap selector
+        # under Plot > Control.
+        if hasattr(self, "checkBox_WhiteForPeak"):
+            self.checkBox_WhiteForPeak.setVisible(False)
+        # Legacy DPP options are removed from UI; keep safe defaults in code.
+        for name in (
+            "groupBox_17", "groupBox_22",
+            "checkBox_NavDPP", "checkBox_AutoGenDPP", "checkBox_SaveDPPMove",
+            "checkBox_ForceOverwite", "checkBox_IgnoreDirChange",
+            "checkBox_AutogenMissing",
+        ):
+            if hasattr(self, name):
+                getattr(self, name).setVisible(False)
+        self._setup_nav_carryover_config()
+        self.tableWidget_DiffImgAzi.\
+            setHorizontalHeaderLabels(['Notes', '2th', 'Azi', '2th', 'Azi'])
+        self._setup_cake_scale_layout()
+        self.doubleSpinBox_Pressure.valueChanged.connect(
+            self._update_pt_spinbox_colors)
+        self.doubleSpinBox_Temperature.valueChanged.connect(
+            self._update_pt_spinbox_colors)
+        self.doubleSpinBox_Pressure.valueChanged.connect(
+            self._sync_from_main_pressure)
+        self.doubleSpinBox_Temperature.valueChanged.connect(
+            self._sync_from_main_temperature)
+        self._update_pt_spinbox_colors()
+        self._fix_tab_clipping()
+        align_all_spinboxes_right(self)
+        # navigation toolbar modification
+        """
+        self.ntb_WholePtn = QtWidgets.QPushButton()
+        self.ntb_WholePtn.setText("Z")
+        self.ntb_WholePtn.setToolTip("Zoom Out")
+        self.mpl.ntb.addWidget(self.ntb_WholePtn)
+        self.ntb_SaveSession = QtWidgets.QPushButton()
+        self.ntb_SaveSession.setText("S")
+        self.ntb_SaveSession.setToolTip("Save dpp and ppss")
+        self.mpl.ntb.addWidget(self.ntb_SaveSession)
+        self.ntb_toPkFt = QtWidgets.QPushButton()
+        self.ntb_toPkFt.setText("toPkFt")
+        self.mpl.ntb.addWidget(self.ntb_toPkFt)
+        self.ntb_fromPkFt = QtWidgets.QPushButton()
+        self.ntb_fromPkFt.setText("fromPkFt")
+        self.mpl.ntb.addWidget(self.ntb_fromPkFt)
+        self.ntb_ResetY = QtWidgets.QCheckBox()
+        self.ntb_ResetY.setCheckable(True)
+        self.ntb_ResetY.setChecked(False)
+        self.ntb_ResetY.setText("AutoYScale")
+        self.mpl.ntb.addWidget(self.ntb_ResetY)
+        self.ntb_Bgsub = QtWidgets.QCheckBox()
+        self.ntb_Bgsub.setCheckable(True)
+        self.ntb_Bgsub.setChecked(True)
+        self.ntb_Bgsub.setText("BgSub")
+        self.mpl.ntb.addWidget(self.ntb_Bgsub)
+        self.ntb_NightView = QtWidgets.QCheckBox()
+        self.ntb_NightView.setCheckable(True)
+        self.ntb_NightView.setChecked(True)
+        self.ntb_NightView.setText("Night")
+        self.mpl.ntb.addWidget(self.ntb_NightView)
+        """
+
+    def _setup_nav_carryover_config(self):
+        if not hasattr(self, "scrollAreaWidgetContents_2") or \
+                (not hasattr(self, "verticalLayout_31")):
+            return
+        if hasattr(self, "groupBox_NavCarry"):
+            return
+        self.groupBox_NavCarry = QtWidgets.QGroupBox(
+            "Keep these settings for the next file", self.scrollAreaWidgetContents_2)
+        self.groupBox_NavCarry.setObjectName("groupBox_NavCarry")
+        self.groupBox_NavCarry.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        self.gridLayout_NavCarry = QtWidgets.QGridLayout(self.groupBox_NavCarry)
+        self.gridLayout_NavCarry.setContentsMargins(12, 12, 12, 12)
+        self.gridLayout_NavCarry.setVerticalSpacing(0)
+
+        self.checkBox_CarryNavJCPDS = QtWidgets.QCheckBox("JCPDS")
+        self.checkBox_CarryNavPressure = QtWidgets.QCheckBox("Pressure")
+        self.checkBox_CarryNavTemperature = QtWidgets.QCheckBox("Temperature")
+        self.checkBox_CarryNavCakeZScale = QtWidgets.QCheckBox("Cake z scale")
+        self.checkBox_CarryNavBackground = QtWidgets.QCheckBox("Background")
+        self.checkBox_CarryNavWaterfall = QtWidgets.QCheckBox("Waterfall list")
+        self.checkBox_CarryNavPONI = QtWidgets.QCheckBox("PONI")
+        self.checkBox_CarryNavFits = QtWidgets.QCheckBox("Fitting results")
+
+        # Default non-carry-over categories:
+        # backup, cake z scale, background, poni, fits
+        self.checkBox_CarryNavJCPDS.setChecked(True)
+        self.checkBox_CarryNavPressure.setChecked(True)
+        self.checkBox_CarryNavTemperature.setChecked(True)
+        self.checkBox_CarryNavCakeZScale.setChecked(False)
+        self.checkBox_CarryNavBackground.setChecked(False)
+        self.checkBox_CarryNavWaterfall.setChecked(True)
+        self.checkBox_CarryNavPONI.setChecked(False)
+        self.checkBox_CarryNavFits.setChecked(False)
+
+        items = [
+            self.checkBox_CarryNavJCPDS,
+            self.checkBox_CarryNavPressure,
+            self.checkBox_CarryNavTemperature,
+            self.checkBox_CarryNavCakeZScale,
+            self.checkBox_CarryNavBackground,
+            self.checkBox_CarryNavWaterfall,
+            self.checkBox_CarryNavPONI,
+            self.checkBox_CarryNavFits,
+        ]
+        for i, cb in enumerate(items):
+            r = (i // 2) * 2
+            c = i % 2
+            self.gridLayout_NavCarry.addWidget(cb, r, c, 1, 1)
+        # Controlled vertical spacing between checkbox rows.
+        for r in (1, 3, 5):
+            spacer = QtWidgets.QSpacerItem(
+                20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+            self.gridLayout_NavCarry.addItem(spacer, r, 0, 1, 2)
+        for r in range(0, 7):
+            self.gridLayout_NavCarry.setRowStretch(r, 0)
+
+        insert_idx = self.verticalLayout_31.count()
+        if hasattr(self, "groupBox_17"):
+            idx = self.verticalLayout_31.indexOf(self.groupBox_17)
+            if idx >= 0:
+                insert_idx = idx
+        self.verticalLayout_31.insertWidget(insert_idx, self.groupBox_NavCarry)
+
+        self.groupBox_NavCarryBehavior = QtWidgets.QGroupBox(
+            "When next file already has information", self.scrollAreaWidgetContents_2)
+        self.groupBox_NavCarryBehavior.setObjectName("groupBox_NavCarryBehavior")
+        self.groupBox_NavCarryBehavior.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        self.gridLayout_NavCarryBehavior = QtWidgets.QGridLayout(
+            self.groupBox_NavCarryBehavior)
+        self.gridLayout_NavCarryBehavior.setContentsMargins(12, 12, 12, 12)
+        self.gridLayout_NavCarryBehavior.setHorizontalSpacing(16)
+        self.gridLayout_NavCarryBehavior.setVerticalSpacing(10)
+
+        self.label_CarryNavExistingJCPDS = QtWidgets.QLabel(
+            "JCPDS", self.groupBox_NavCarryBehavior)
+        self.label_CarryNavExistingJCPDS.setObjectName("label_CarryNavExistingJCPDS")
+        self.comboBox_CarryNavExistingJCPDS = QtWidgets.QComboBox(
+            self.groupBox_NavCarryBehavior)
+        self.comboBox_CarryNavExistingJCPDS.setObjectName(
+            "comboBox_CarryNavExistingJCPDS")
+        self.comboBox_CarryNavExistingJCPDS.addItem("Keep existing JCPDS")
+        self.comboBox_CarryNavExistingJCPDS.addItem(
+            "Overwrite with previous JCPDS")
+
+        self.label_CarryNavExistingOther = QtWidgets.QLabel(
+            "Other carried settings", self.groupBox_NavCarryBehavior)
+        self.label_CarryNavExistingOther.setObjectName("label_CarryNavExistingOther")
+        self.comboBox_CarryNavExistingOther = QtWidgets.QComboBox(
+            self.groupBox_NavCarryBehavior)
+        self.comboBox_CarryNavExistingOther.setObjectName(
+            "comboBox_CarryNavExistingOther")
+        self.comboBox_CarryNavExistingOther.addItem("Keep existing information")
+        self.comboBox_CarryNavExistingOther.addItem(
+            "Overwrite with carried settings")
+
+        self.gridLayout_NavCarryBehavior.addWidget(
+            self.label_CarryNavExistingJCPDS, 0, 0, 1, 1)
+        self.gridLayout_NavCarryBehavior.addWidget(
+            self.comboBox_CarryNavExistingJCPDS, 0, 1, 1, 1)
+        self.gridLayout_NavCarryBehavior.addWidget(
+            self.label_CarryNavExistingOther, 1, 0, 1, 1)
+        self.gridLayout_NavCarryBehavior.addWidget(
+            self.comboBox_CarryNavExistingOther, 1, 1, 1, 1)
+        self.gridLayout_NavCarryBehavior.setColumnStretch(1, 1)
+        self.verticalLayout_31.insertWidget(insert_idx + 1, self.groupBox_NavCarryBehavior)
+
+        self.groupBox_NavCarryNotifications = QtWidgets.QGroupBox(
+            "Notifications", self.scrollAreaWidgetContents_2)
+        self.groupBox_NavCarryNotifications.setObjectName(
+            "groupBox_NavCarryNotifications")
+        self.groupBox_NavCarryNotifications.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout_NavCarryNotifications = QtWidgets.QVBoxLayout(
+            self.groupBox_NavCarryNotifications)
+        self.verticalLayout_NavCarryNotifications.setContentsMargins(12, 12, 12, 12)
+        self.verticalLayout_NavCarryNotifications.setSpacing(10)
+
+        self.checkBox_CarryNavInlineStatus = QtWidgets.QCheckBox(
+            "Show inline status in JCPDS > Data", self.groupBox_NavCarryNotifications)
+        self.checkBox_CarryNavInlineStatus.setObjectName(
+            "checkBox_CarryNavInlineStatus")
+        self.checkBox_CarryNavInlineStatus.setChecked(True)
+        self.checkBox_CarryNavPopupConflict = QtWidgets.QCheckBox(
+            "Ask when existing information would be kept", self.groupBox_NavCarryNotifications)
+        self.checkBox_CarryNavPopupConflict.setObjectName(
+            "checkBox_CarryNavPopupConflict")
+        self.checkBox_CarryNavPopupConflict.setChecked(False)
+        self.checkBox_CarryNavPopupOverwrite = QtWidgets.QCheckBox(
+            "Ask when existing information would be overwritten",
+            self.groupBox_NavCarryNotifications)
+        self.checkBox_CarryNavPopupOverwrite.setObjectName(
+            "checkBox_CarryNavPopupOverwrite")
+        self.checkBox_CarryNavPopupOverwrite.setChecked(True)
+
+        self.verticalLayout_NavCarryNotifications.addWidget(
+            self.checkBox_CarryNavInlineStatus)
+        self.verticalLayout_NavCarryNotifications.addWidget(
+            self.checkBox_CarryNavPopupConflict)
+        self.verticalLayout_NavCarryNotifications.addWidget(
+            self.checkBox_CarryNavPopupOverwrite)
+        self.verticalLayout_31.insertWidget(
+            insert_idx + 2, self.groupBox_NavCarryNotifications)
+
+        self._nav_carry_status_text = ""
+        self._nav_carry_status_level = "white"
+        self.checkBox_CarryNavInlineStatus.toggled.connect(
+            self._sync_nav_carry_status_visibility)
+
+    def _fix_tab_clipping(self):
+        # Keep native tab visuals while nudging tab size metrics to prevent
+        # clipped ascenders/descenders on some Qt style+font combinations.
+        class _NoClipTabStyle(QtWidgets.QProxyStyle):
+            def sizeFromContents(self, contents_type, option, size, widget=None):
+                sized = super().sizeFromContents(
+                    contents_type, option, size, widget)
+                if contents_type == QtWidgets.QStyle.CT_TabBarTab:
+                    sized.setHeight(sized.height() + 4)
+                return sized
+
+        self._tabbar_styles = []
+        tab_widgets = [
+            self.tabWidget, self.tabWidget_3, self.tabWidget1,
+            self.tabWidget_5, self.tabWidget_2, self.tabWidget_4,
+            self.tabWidget_PeakFit
+        ]
+        if hasattr(self, "tabWidget_PlotSub"):
+            tab_widgets.append(self.tabWidget_PlotSub)
+        for tab_widget in tab_widgets:
+            bar = tab_widget.tabBar()
+            bar.setStyleSheet("")
+            bar.setExpanding(False)
+            tab_style = _NoClipTabStyle(bar.style())
+            self._tabbar_styles.append(tab_style)
+            bar.setStyle(tab_style)
+
+    def _setup_plot_subtabs(self):
+        # Build nested tabs inside Plot: Control / Config.
+        # Keep original widget IDs so existing controller wiring still works.
+        while self.verticalLayout_44.count():
+            item = self.verticalLayout_44.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.hide()
+                w.setParent(None)
+
+        self.tabWidget_PlotSub = QtWidgets.QTabWidget(self.tab_Plot)
+        self.tabWidget_PlotSub.setObjectName("tabWidget_PlotSub")
+
+        self.tab_PlotControl = QtWidgets.QWidget()
+        self.tab_PlotControl.setObjectName("tab_PlotControl")
+        self._plot_ctrl_layout = QtWidgets.QVBoxLayout(self.tab_PlotControl)
+        self._plot_ctrl_layout.setContentsMargins(0, 0, 0, 0)
+        self.scrollArea_PlotControl = QtWidgets.QScrollArea(self.tab_PlotControl)
+        self.scrollArea_PlotControl.setWidgetResizable(True)
+        self.scrollArea_PlotControl.setObjectName("scrollArea_PlotControl")
+        self.plotControlContents = QtWidgets.QWidget()
+        self.plotControlContents.setObjectName("plotControlContents")
+        self.verticalLayout_PlotControl = QtWidgets.QVBoxLayout(self.plotControlContents)
+        self.verticalLayout_PlotControl.setObjectName("verticalLayout_PlotControl")
+        self.scrollArea_PlotControl.setWidget(self.plotControlContents)
+        self._plot_ctrl_layout.addWidget(self.scrollArea_PlotControl)
+
+        self.tab_PlotConfig = QtWidgets.QWidget()
+        self.tab_PlotConfig.setObjectName("tab_PlotConfig")
+        self._plot_cfg_layout = QtWidgets.QVBoxLayout(self.tab_PlotConfig)
+        self._plot_cfg_layout.setContentsMargins(0, 0, 0, 0)
+        self.scrollArea_PlotConfig = QtWidgets.QScrollArea(self.tab_PlotConfig)
+        self.scrollArea_PlotConfig.setWidgetResizable(True)
+        self.scrollArea_PlotConfig.setObjectName("scrollArea_PlotConfig")
+        self.plotConfigContents = QtWidgets.QWidget()
+        self.plotConfigContents.setObjectName("plotConfigContents")
+        self.verticalLayout_PlotConfig = QtWidgets.QVBoxLayout(self.plotConfigContents)
+        self.verticalLayout_PlotConfig.setObjectName("verticalLayout_PlotConfig")
+        self.scrollArea_PlotConfig.setWidget(self.plotConfigContents)
+        self._plot_cfg_layout.addWidget(self.scrollArea_PlotConfig)
+
+        self.tabWidget_PlotSub.addTab(self.tab_PlotControl, "Control")
+        self.tabWidget_PlotSub.addTab(self.tab_PlotConfig, "Config")
+        self.verticalLayout_44.addWidget(self.tabWidget_PlotSub)
+
+        # Control tab: plot control + JCPDS bars + cake display controls
+        self.groupBox_34.setParent(self.plotControlContents)
+        self.groupBox_20.setParent(self.plotControlContents)
+        self.groupBox_29.setParent(self.plotControlContents)
+        self.groupBox_5.setParent(self.plotControlContents)
+        self.groupBox_23.setParent(self.plotControlContents)
+        self.verticalLayout_PlotControl.addWidget(self.groupBox_34)
+        self.verticalLayout_PlotControl.addWidget(self.groupBox_20)
+        self.verticalLayout_PlotControl.addWidget(self.groupBox_29)
+        self.verticalLayout_PlotControl.addWidget(self.groupBox_5)
+        self.verticalLayout_PlotControl.addWidget(self.groupBox_23)
+        self.verticalLayout_PlotControl.addStretch(1)
+
+        # Config tab: remaining plot config groups
+        self.groupBox_16.setParent(self.plotConfigContents)
+        self.groupBox_24.setParent(self.plotConfigContents)
+        self.groupBox_13.setParent(self.plotConfigContents)
+        self.groupBox_27.setParent(self.plotConfigContents)
+        self.verticalLayout_PlotConfig.addWidget(self.groupBox_16)
+        self.verticalLayout_PlotConfig.addWidget(self.groupBox_24)
+        self.verticalLayout_PlotConfig.addWidget(self.groupBox_13)
+        self.verticalLayout_PlotConfig.addWidget(self.groupBox_27)
+        self.verticalLayout_PlotConfig.addStretch(1)
+
+    def _setup_pressure_temperature_grid(self):
+        required = (
+            "groupBox", "gridLayout_10", "frame_16", "frame_17",
+            "doubleSpinBox_Pressure", "pushButton_1bar", "doubleSpinBox_PStep",
+            "pushButton_SetPStepTo1", "pushButton_SetPStepTo10",
+            "doubleSpinBox_Temperature", "pushButton_RoomT", "spinBox_TStep",
+            "pushButton_SetTStepTo100", "pushButton_SetTStepTo1000",
+        )
+        if not all(hasattr(self, name) for name in required):
+            return
+        if hasattr(self, "frame_PTGrid"):
+            return
+
+        self.frame_16.hide()
+        self.frame_17.hide()
+        self.gridLayout_10.removeWidget(self.frame_16)
+        self.gridLayout_10.removeWidget(self.frame_17)
+
+        self.frame_PTGrid = QtWidgets.QFrame(self.groupBox)
+        self.frame_PTGrid.setObjectName("frame_PTGrid")
+        self.frame_PTGrid.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.gridLayout_PTGrid = QtWidgets.QGridLayout(self.frame_PTGrid)
+        self.gridLayout_PTGrid.setContentsMargins(12, 4, 12, 4)
+        self.gridLayout_PTGrid.setHorizontalSpacing(14)
+        self.gridLayout_PTGrid.setVerticalSpacing(6)
+
+        self.label_CarryNavStatus = QtWidgets.QLabel(self.groupBox)
+        self.label_CarryNavStatus.setObjectName("label_CarryNavStatus")
+        self.label_CarryNavStatus.setWordWrap(True)
+        self.label_CarryNavStatus.setText("")
+        self.label_CarryNavStatus.setVisible(False)
+
+        rows = [
+            [
+                self.doubleSpinBox_Pressure,
+                self.pushButton_1bar,
+                self.doubleSpinBox_PStep,
+                self.pushButton_SetPStepTo1,
+                self.pushButton_SetPStepTo10,
+            ],
+            [
+                self.doubleSpinBox_Temperature,
+                self.pushButton_RoomT,
+                self.spinBox_TStep,
+                self.pushButton_SetTStepTo100,
+                self.pushButton_SetTStepTo1000,
+            ],
+        ]
+
+        col_widths = [0] * 5
+        for col in range(5):
+            for row in range(2):
+                widget = rows[row][col]
+                col_widths[col] = max(
+                    col_widths[col],
+                    widget.sizeHint().width(),
+                    widget.minimumSizeHint().width(),
+                )
+
+        col_widths[0] = max(
+            self._large_pt_spinbox_minimum_width(self.doubleSpinBox_Pressure),
+            self._large_pt_spinbox_minimum_width(self.doubleSpinBox_Temperature),
+            150,
+            col_widths[0] // 2)
+        col_widths[1] = max(72, int(col_widths[1] * 0.6))
+        col_widths[2] = min(max(col_widths[2], 64), 72)
+        col_widths[3] = max(42, int(col_widths[3] * 0.7))
+        col_widths[4] = max(42, int(col_widths[4] * 0.7))
+
+        for row in range(2):
+            for col in range(5):
+                widget = rows[row][col]
+                widget.setParent(self.frame_PTGrid)
+                widget.setMinimumWidth(col_widths[col])
+                widget.setMaximumWidth(col_widths[col])
+                widget.setSizePolicy(
+                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+                self.gridLayout_PTGrid.addWidget(widget, row, col, 1, 1)
+
+        self.gridLayout_PTGrid.setColumnStretch(0, 0)
+        self.gridLayout_PTGrid.setColumnStretch(1, 0)
+        self.gridLayout_PTGrid.setColumnStretch(2, 0)
+        self.gridLayout_PTGrid.setColumnStretch(3, 0)
+        self.gridLayout_PTGrid.setColumnStretch(4, 0)
+        self.gridLayout_10.addWidget(self.label_CarryNavStatus, 0, 1, 1, 1)
+        self.gridLayout_10.addWidget(self.frame_PTGrid, 1, 1, 4, 1)
+        self._sync_nav_carry_status_visibility()
+
+    def _large_pt_spinbox_minimum_width(self, box):
+        font_metrics = QtGui.QFontMetrics(box.font())
+        sample_values = (
+            box.textFromValue(box.minimum()),
+            box.textFromValue(box.maximum()),
+            box.textFromValue(box.value()),
+            "-1000.00",
+            "10000",
+        )
+        if hasattr(font_metrics, "horizontalAdvance"):
+            text_width = max(font_metrics.horizontalAdvance(v)
+                             for v in sample_values)
+        else:
+            text_width = max(font_metrics.width(v) for v in sample_values)
+        return text_width + 40
+
+    def set_nav_carry_status(self, text="", level="white"):
+        self._nav_carry_status_text = str(text or "")
+        self._nav_carry_status_level = str(level or "white")
+        self._sync_nav_carry_status_visibility()
+
+    def _sync_nav_carry_status_visibility(self):
+        if not hasattr(self, "label_CarryNavStatus"):
+            return
+        status_text = getattr(self, "_nav_carry_status_text", "")
+        status_level = getattr(self, "_nav_carry_status_level", "white")
+        inline_enabled = True
+        if hasattr(self, "checkBox_CarryNavInlineStatus"):
+            inline_enabled = bool(self.checkBox_CarryNavInlineStatus.isChecked())
+        visible = inline_enabled and bool(status_text)
+        self.label_CarryNavStatus.setVisible(visible)
+        if not visible:
+            self.label_CarryNavStatus.setText("")
+            return
+
+        colors = {
+            "white": "#f0f0f0",
+            "green": "#8bc34a",
+            "red": "#ef5350",
+        }
+        color = colors.get(status_level, colors["white"])
+        self.label_CarryNavStatus.setText(status_text)
+        self.label_CarryNavStatus.setStyleSheet(
+            "QLabel {"
+            "color: " + color + ";"
+            "font: 600 12pt \"Helvetica\";"
+            "padding-left: 12px;"
+            "padding-top: 0px;"
+            "padding-bottom: 1px;"
+            "}"
+        )
+
+    def _setup_jcpds_bars_layout(self):
+        if not hasattr(self, "groupBox_20"):
+            return
+        if not hasattr(self, "verticalLayout_23"):
+            return
+        if hasattr(self, "_jcpds_bars_grid"):
+            return
+
+        self.groupBox_20.setMinimumHeight(96)
+        self.groupBox_20.setMaximumHeight(112)
+        self.label_27.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft)
+        self.label_28.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft)
+        self.label_27.setMinimumWidth(60)
+        self.label_28.setMinimumWidth(60)
+        self.label_27.setMaximumWidth(60)
+        self.label_28.setMaximumWidth(60)
+        self.horizontalSlider_JCPDSBarScale.setMinimumHeight(16)
+        self.horizontalSlider_JCPDSBarPosition.setMinimumHeight(16)
+
+        # Replace stacked label/slider widgets with two compact rows.
+        while self.verticalLayout_23.count():
+            item = self.verticalLayout_23.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.setParent(self.groupBox_20)
+
+        self._jcpds_bars_grid = QtWidgets.QGridLayout()
+        self._jcpds_bars_grid.setContentsMargins(4, 0, 6, 0)
+        self._jcpds_bars_grid.setHorizontalSpacing(0)
+        self._jcpds_bars_grid.setVerticalSpacing(7)
+        self._jcpds_bars_grid.addWidget(self.label_27, 0, 0, 1, 1)
+        self._jcpds_bars_grid.addWidget(self.horizontalSlider_JCPDSBarScale, 0, 1, 1, 1)
+        self._jcpds_bars_grid.addWidget(self.label_28, 1, 0, 1, 1)
+        self._jcpds_bars_grid.addWidget(self.horizontalSlider_JCPDSBarPosition, 1, 1, 1, 1)
+        self._jcpds_bars_grid.setColumnStretch(1, 1)
+        self.verticalLayout_23.addLayout(self._jcpds_bars_grid)
+
+    def _compact_jcpds_config_layout(self):
+        if not hasattr(self, "verticalLayout_33"):
+            return
+        self.verticalLayout_33.setAlignment(QtCore.Qt.AlignTop)
+        if hasattr(self, "_jcpds_config_bottom_spacer"):
+            return
+        self._jcpds_config_bottom_spacer = QtWidgets.QSpacerItem(
+            20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout_33.addItem(self._jcpds_config_bottom_spacer)
+
+    def _setup_title_config_group(self):
+        if not hasattr(self, "verticalLayout_PlotConfig"):
+            return
+        if hasattr(self, "groupBox_TitleConfig"):
+            return
+        if not hasattr(self, "checkBox_ShortPlotTitle"):
+            return
+
+        self.groupBox_TitleConfig = QtWidgets.QGroupBox("Title", self.plotConfigContents)
+        self.groupBox_TitleConfig.setObjectName("groupBox_TitleConfig")
+        self.groupBox_TitleConfig.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        self.gridLayout_TitleConfig = QtWidgets.QGridLayout(self.groupBox_TitleConfig)
+        self.gridLayout_TitleConfig.setContentsMargins(12, 12, 12, 12)
+        self.gridLayout_TitleConfig.setHorizontalSpacing(12)
+        self.gridLayout_TitleConfig.setVerticalSpacing(10)
+
+        # Move existing title mode checkbox into the dedicated title group.
+        self.checkBox_ShortPlotTitle.setParent(self.groupBox_TitleConfig)
+        self.checkBox_ShortPlotTitle.setText("Filename only")
+        self.checkBox_ShortPlotTitle.setToolTip(
+            "Use filename (without path) as the plot title")
+        self.gridLayout_TitleConfig.addWidget(self.checkBox_ShortPlotTitle, 0, 0, 1, 2)
+
+        self.checkBox_TitleTruncateMiddle = QtWidgets.QCheckBox(
+            "Truncate middle", self.groupBox_TitleConfig)
+        self.checkBox_TitleTruncateMiddle.setObjectName("checkBox_TitleTruncateMiddle")
+        self.checkBox_TitleTruncateMiddle.setChecked(True)
+        self.checkBox_TitleTruncateMiddle.setToolTip(
+            "If checked, truncate long title in the middle. If unchecked, truncate from the left.")
+        self.gridLayout_TitleConfig.addWidget(self.checkBox_TitleTruncateMiddle, 1, 0, 1, 2)
+
+        self.label_TitleFontSize = QtWidgets.QLabel("Font size", self.groupBox_TitleConfig)
+        self.label_TitleFontSize.setObjectName("label_TitleFontSize")
+        self.spinBox_TitleFontSize = QtWidgets.QSpinBox(self.groupBox_TitleConfig)
+        self.spinBox_TitleFontSize.setObjectName("spinBox_TitleFontSize")
+        self.spinBox_TitleFontSize.setMinimum(6)
+        self.spinBox_TitleFontSize.setMaximum(72)
+        self.spinBox_TitleFontSize.setValue(12)
+        self.spinBox_TitleFontSize.setMinimumHeight(25)
+        self.spinBox_TitleFontSize.setKeyboardTracking(False)
+        self.spinBox_TitleFontSize.setStyle(SpinBoxFixStyle())
+
+        self.label_TitleMaxLength = QtWidgets.QLabel("Max length", self.groupBox_TitleConfig)
+        self.label_TitleMaxLength.setObjectName("label_TitleMaxLength")
+        self.spinBox_TitleMaxLength = QtWidgets.QSpinBox(self.groupBox_TitleConfig)
+        self.spinBox_TitleMaxLength.setObjectName("spinBox_TitleMaxLength")
+        self.spinBox_TitleMaxLength.setMinimum(20)
+        self.spinBox_TitleMaxLength.setMaximum(500)
+        self.spinBox_TitleMaxLength.setValue(140)
+        self.spinBox_TitleMaxLength.setMinimumHeight(25)
+        self.spinBox_TitleMaxLength.setKeyboardTracking(False)
+        self.spinBox_TitleMaxLength.setStyle(SpinBoxFixStyle())
+
+        self.gridLayout_TitleConfig.addWidget(self.label_TitleFontSize, 0, 2, 1, 1)
+        self.gridLayout_TitleConfig.addWidget(self.spinBox_TitleFontSize, 0, 3, 1, 1)
+        self.gridLayout_TitleConfig.addWidget(self.label_TitleMaxLength, 1, 2, 1, 1)
+        self.gridLayout_TitleConfig.addWidget(self.spinBox_TitleMaxLength, 1, 3, 1, 1)
+        self.gridLayout_TitleConfig.setColumnStretch(0, 1)
+        self.gridLayout_TitleConfig.setColumnStretch(1, 1)
+        self.gridLayout_TitleConfig.setColumnStretch(3, 1)
+
+        # Put title controls near the top of Plot > Config.
+        self.verticalLayout_PlotConfig.insertWidget(0, self.groupBox_TitleConfig)
+
+    def _apply_compact_clarity_labels(self):
+        if hasattr(self, "groupBox_34"):
+            self.groupBox_34.setTitle("What to show")
+        if hasattr(self, "groupBox_20"):
+            self.groupBox_20.setTitle("JCPDS bar properties")
+        if hasattr(self, "groupBox_18"):
+            self.groupBox_18.setVisible(False)
+        if hasattr(self, "pushButton_ForceUpdatePlot"):
+            self.pushButton_ForceUpdatePlot.setVisible(False)
+        if hasattr(self, "groupBox_16"):
+            self.groupBox_16.setTitle("Plot appearance")
+        if hasattr(self, "groupBox_24"):
+            self.groupBox_24.setTitle("Line width")
+        if hasattr(self, "groupBox_13"):
+            self.groupBox_13.setTitle("Label text")
+        if hasattr(self, "groupBox_27"):
+            self.groupBox_27.setTitle("Mouse tools")
+        if hasattr(self, "groupBox"):
+            self.groupBox.setTitle("Pressure and temperature")
+        if hasattr(self, "groupBox_8"):
+            self.groupBox_8.setTitle("JCPDS control")
+        if hasattr(self, "groupBox_NavCarry"):
+            self.groupBox_NavCarry.setTitle("Keep these settings for the next file")
+        if hasattr(self, "checkBox_CarryNavCakeZScale"):
+            self.checkBox_CarryNavCakeZScale.setText("2D image scale")
+        if hasattr(self, "checkBox_CarryNavBackground"):
+            self.checkBox_CarryNavBackground.setText("Background parameters")
+        if hasattr(self, "checkBox_CarryNavFits"):
+            self.checkBox_CarryNavFits.setText("Fitting results")
+
+        if hasattr(self, "checkBox_JCPDSinPattern"):
+            self.checkBox_JCPDSinPattern.setText("JCPDS 1D")
+        if hasattr(self, "checkBox_JCPDSinCake"):
+            self.checkBox_JCPDSinCake.setText("JCPDS 2D")
+        if hasattr(self, "checkBox_Intensity"):
+            self.checkBox_Intensity.setText("Scale by Intensity")
+        if hasattr(self, "checkBox_ShowMillerIndices"):
+            self.checkBox_ShowMillerIndices.setText("HKL 1D")
+        if hasattr(self, "checkBox_ShowMillerIndices_Cake"):
+            self.checkBox_ShowMillerIndices_Cake.setText("HKL 2D")
+        if hasattr(self, "checkBox_ShowLargePnT"):
+            self.checkBox_ShowLargePnT.setText("Pressure/temp")
+        if hasattr(self, "checkBox_ShowCakeLabels"):
+            self.checkBox_ShowCakeLabels.setText("Cake labels")
+        if hasattr(self, "checkBox_ShowWaterfallLabels"):
+            self.checkBox_ShowWaterfallLabels.setText("Stack labels")
+        if hasattr(self, "label_27"):
+            self.label_27.setText("Height")
+        if hasattr(self, "label_28"):
+            self.label_28.setText("Offset")
+
+        if hasattr(self, "tabWidget"):
+            for name, label in (
+                ("tab_Main", "File"),
+                ("tab_JCPDSList2", "JCPDS"),
+                ("tab_Plot", "Display"),
+                ("tab_Bkgn", "Pattern"),
+                ("tab_Cake1", "Cake"),
+                ("tab_Diff", "Compare"),
+                ("tab_Map", "Map"),
+                ("tab_Seq", "Sequence"),
+                ("tab_PkFt", "Fitting"),
+            ):
+                if not hasattr(self, name):
+                    continue
+                idx = self.tabWidget.indexOf(getattr(self, name))
+                if idx >= 0:
+                    self.tabWidget.setTabText(idx, label)
+                    self.tabWidget.setTabToolTip(idx, label)
+
+    def _setup_compact_help_statusbar(self):
+        self._compact_help_default = "Hover a compact control to see details."
+        self._compact_help_widgets = {}
+        if hasattr(self, "label_PlotHelp"):
+            self.label_PlotHelp.setText(self._compact_help_default)
+
+        def register(widget, message):
+            if widget is None:
+                return
+            self._compact_help_widgets[widget] = message
+            widget.setToolTip(message)
+            if hasattr(widget, "setStatusTip"):
+                widget.setStatusTip(message)
+            widget.installEventFilter(self)
+
+        register(getattr(self, "pushButton_S_PrevBasePtn", None),
+                 "Open the previous diffraction file.")
+        register(getattr(self, "pushButton_AddBasePtn", None),
+                 "Add the current diffraction file to the waterfall list.")
+        register(getattr(self, "pushButton_S_NextBasePtn", None),
+                 "Open the next diffraction file.")
+        register(getattr(self, "pushButton_NewBasePtn", None),
+                 "Open a CHI diffraction file.")
+        register(getattr(self, "pushButton_LoadDPP", None),
+                 "Open a saved PeakPo session from DPP/PARAM data.")
+        register(getattr(self, "checkBox_Diff", None),
+                 "Turn on Diff mode for pattern comparison tools.")
+        register(getattr(self, "checkBox_ShowCake", None),
+                 "Show or hide the 2D cake image.")
+        register(getattr(self, "checkBox_BgSub", None),
+                 "Subtract the fitted background from the 1D pattern.")
+        register(getattr(self, "checkBox_AutoY", None),
+                 "Automatically rescale the Y axis after updates.")
+        register(getattr(self, "checkBox_LongCursor", None),
+                 "Use a full-height vertical cursor on the plot.")
+        register(getattr(self, "pushButton_MouseModeZoom", None),
+                 "Mouse mode: drag to zoom the plot.")
+        register(getattr(self, "pushButton_MouseModeROI", None),
+                 "Mouse mode: draw a region of interest.")
+        register(getattr(self, "pushButton_MouseModePeakPick", None),
+                 "Mouse mode: add or remove peak markers.")
+        register(getattr(self, "pushButton_MouseModeJCPDS", None),
+                 "Mouse mode: inspect the nearest JCPDS line.")
+        register(getattr(self, "pushButton_S_PIncrease", None),
+                 "Pressure up. Step size comes from JCPDS > Data.")
+        register(getattr(self, "pushButton_S_PDecrease", None),
+                 "Pressure down. Step size comes from JCPDS > Data.")
+        register(getattr(self, "doubleSpinBox_ToolbarPressure", None),
+                 "Pressure tumbler. Range 0 to 1000 GPa.")
+        register(getattr(self, "pushButton_S_TIncrease", None),
+                 "Temperature up. Step size comes from JCPDS > Data.")
+        register(getattr(self, "pushButton_S_RoomT", None),
+                 "Reset temperature to 300 K. Mouse wheel also changes temperature by the step size in JCPDS > Data.")
+        register(getattr(self, "pushButton_S_TDecrease", None),
+                 "Temperature down. Step size comes from JCPDS > Data.")
+        register(getattr(self, "spinBox_ToolbarTemperature", None),
+                 "Temperature tumbler. Range 0 to 10000 K.")
+        register(getattr(self, "checkBox_JCPDSinPattern", None),
+                 "Show JCPDS reference lines in the 1D pattern.")
+        register(getattr(self, "checkBox_JCPDSinCake", None),
+                 "Show JCPDS reference lines in the 2D cake image.")
+        register(getattr(self, "checkBox_Intensity", None),
+                 "Make reference guide heights follow relative peak intensity.")
+        register(getattr(self, "checkBox_ShowMillerIndices", None),
+                 "Show Miller indices on the 1D pattern guides.")
+        register(getattr(self, "checkBox_ShowMillerIndices_Cake", None),
+                 "Show Miller indices on the 2D cake guides.")
+        register(getattr(self, "checkBox_ShowLargePnT", None),
+                 "Show the pressure and temperature label on the plot.")
+        register(getattr(self, "checkBox_ShowWaterfall", None),
+                 "Show stacked waterfall patterns on the plot.")
+        register(getattr(self, "checkBox_ShowWaterfallLabels", None),
+                 "Show file labels next to waterfall patterns.")
+        register(getattr(self, "pushButton_ExportPythonView", None),
+                 "Export the current view with reproducible Python, PDF, and PNG outputs.")
+
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.Type.Wheel:
+            if obj in (
+                getattr(self, "pushButton_S_PIncrease", None),
+                getattr(self, "pushButton_S_PDecrease", None),
+            ):
+                step_dir = 1 if event.angleDelta().y() > 0 else -1
+                self.set_pressure(
+                    float(self.doubleSpinBox_Pressure.value()) +
+                    step_dir * float(self.doubleSpinBox_PStep.value()))
+                return True
+            if obj in (
+                getattr(self, "pushButton_S_TIncrease", None),
+                getattr(self, "pushButton_S_RoomT", None),
+                getattr(self, "pushButton_S_TDecrease", None),
+            ):
+                step_dir = 1 if event.angleDelta().y() > 0 else -1
+                self.set_temperature(
+                    float(self.doubleSpinBox_Temperature.value()) +
+                    step_dir * float(self.spinBox_TStep.value()))
+                return True
+        if hasattr(self, "_compact_help_widgets") and obj in self._compact_help_widgets:
+            if event.type() in (QtCore.QEvent.Type.Enter, QtCore.QEvent.Type.FocusIn):
+                if hasattr(self, "label_PlotHelp"):
+                    self.label_PlotHelp.setText(self._compact_help_widgets[obj])
+            elif event.type() in (QtCore.QEvent.Type.Leave, QtCore.QEvent.Type.FocusOut):
+                if hasattr(self, "label_PlotHelp"):
+                    self.label_PlotHelp.setText(self._compact_help_default)
+        return super().eventFilter(obj, event)
+
+    def _setup_quick_pt_wheel_controls(self):
+        for button in (
+            getattr(self, "pushButton_S_PIncrease", None),
+            getattr(self, "pushButton_S_PDecrease", None),
+            getattr(self, "pushButton_S_TIncrease", None),
+            getattr(self, "pushButton_S_RoomT", None),
+            getattr(self, "pushButton_S_TDecrease", None),
+        ):
+            if button is None:
+                continue
+            button.installEventFilter(self)
+
+    def _setup_toolbar_step_spinboxes(self):
+        if hasattr(self, "doubleSpinBox_ToolbarPStep"):
+            return
+        self.doubleSpinBox_ToolbarPStep = QtWidgets.QDoubleSpinBox(self.frame_TopToolbarRow2)
+        self.doubleSpinBox_ToolbarPStep.setDecimals(2)
+        self.doubleSpinBox_ToolbarPStep.setRange(
+            self.doubleSpinBox_PStep.minimum(), self.doubleSpinBox_PStep.maximum())
+        self.doubleSpinBox_ToolbarPStep.setSingleStep(self.doubleSpinBox_PStep.singleStep())
+        self.doubleSpinBox_ToolbarPStep.setValue(self.doubleSpinBox_PStep.value())
+        self.doubleSpinBox_ToolbarPStep.setKeyboardTracking(False)
+        self.doubleSpinBox_ToolbarPStep.setStyle(SpinBoxFixStyle())
+        self.doubleSpinBox_ToolbarPStep.setMinimumHeight(28)
+        self.doubleSpinBox_ToolbarPStep.setMaximumHeight(28)
+        self.doubleSpinBox_ToolbarPStep.setAlignment(
+            QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
+
+        self.spinBox_ToolbarTStep = QtWidgets.QSpinBox(self.frame_TopToolbarRow2)
+        self.spinBox_ToolbarTStep.setRange(self.spinBox_TStep.minimum(), self.spinBox_TStep.maximum())
+        self.spinBox_ToolbarTStep.setSingleStep(self.spinBox_TStep.singleStep())
+        self.spinBox_ToolbarTStep.setValue(self.spinBox_TStep.value())
+        self.spinBox_ToolbarTStep.setKeyboardTracking(False)
+        self.spinBox_ToolbarTStep.setStyle(SpinBoxFixStyle())
+        self.spinBox_ToolbarTStep.setMinimumHeight(28)
+        self.spinBox_ToolbarTStep.setMaximumHeight(28)
+        self.spinBox_ToolbarTStep.setAlignment(
+            QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
+
+        self.doubleSpinBox_ToolbarPStep.valueChanged.connect(self._sync_toolbar_pstep)
+        self.spinBox_ToolbarTStep.valueChanged.connect(self._sync_toolbar_tstep)
+        self.doubleSpinBox_PStep.valueChanged.connect(self._sync_from_main_pstep)
+        self.spinBox_TStep.valueChanged.connect(self._sync_from_main_tstep)
+
+    def _sync_toolbar_pstep(self, value):
+        if float(self.doubleSpinBox_PStep.value()) == float(value):
+            return
+        blocker = QtCore.QSignalBlocker(self.doubleSpinBox_PStep)
+        self.doubleSpinBox_PStep.setValue(value)
+        del blocker
+        self.set_pstep()
+
+    def _sync_toolbar_tstep(self, value):
+        if int(self.spinBox_TStep.value()) == int(value):
+            return
+        blocker = QtCore.QSignalBlocker(self.spinBox_TStep)
+        self.spinBox_TStep.setValue(value)
+        del blocker
+        self.set_tstep()
+
+    def _sync_from_main_pstep(self, value):
+        if not hasattr(self, "doubleSpinBox_ToolbarPStep"):
+            return
+        blocker = QtCore.QSignalBlocker(self.doubleSpinBox_ToolbarPStep)
+        self.doubleSpinBox_ToolbarPStep.setValue(value)
+        del blocker
+
+    def _sync_from_main_tstep(self, value):
+        if not hasattr(self, "spinBox_ToolbarTStep"):
+            return
+        blocker = QtCore.QSignalBlocker(self.spinBox_ToolbarTStep)
+        self.spinBox_ToolbarTStep.setValue(value)
+        del blocker
+
+    def _sync_toolbar_pressure(self, value):
+        if float(self.doubleSpinBox_Pressure.value()) == float(value):
+            return
+        blocker = QtCore.QSignalBlocker(self.doubleSpinBox_Pressure)
+        self.doubleSpinBox_Pressure.setValue(value)
+        del blocker
+        self._update_pt_spinbox_colors()
+
+    def _sync_toolbar_temperature(self, value):
+        if int(round(self.doubleSpinBox_Temperature.value())) == int(value):
+            return
+        blocker = QtCore.QSignalBlocker(self.doubleSpinBox_Temperature)
+        self.doubleSpinBox_Temperature.setValue(float(value))
+        del blocker
+        self._update_pt_spinbox_colors()
+
+    def _sync_from_main_pressure(self, value):
+        if not hasattr(self, "doubleSpinBox_ToolbarPressure"):
+            return
+        blocker = QtCore.QSignalBlocker(self.doubleSpinBox_ToolbarPressure)
+        self.doubleSpinBox_ToolbarPressure.setValue(float(value))
+        del blocker
+
+    def _sync_from_main_temperature(self, value):
+        if not hasattr(self, "spinBox_ToolbarTemperature"):
+            return
+        blocker = QtCore.QSignalBlocker(self.spinBox_ToolbarTemperature)
+        self.spinBox_ToolbarTemperature.setValue(int(round(value)))
+        del blocker
+
+    def _setup_plot_setup_group(self):
+        if not hasattr(self, "gridLayout_7"):
+            return
+        if hasattr(self, "checkBox_NightView"):
+            self.checkBox_NightView.setText("Dark mode")
+            self.checkBox_NightView.setToolTip("Show in dark background")
+            self.gridLayout_7.addWidget(self.checkBox_NightView, 0, 1, 1, 1)
+        if hasattr(self, "checkBox_ShowLargePnT"):
+            self.gridLayout_7.addWidget(self.checkBox_ShowLargePnT, 0, 0, 1, 1)
+
+    def _setup_update_background_button(self):
+        if not hasattr(self, "pushButton_UpdateBackground"):
+            return
+        self.pushButton_UpdateBackground.setSizePolicy(
+            QtWidgets.QSizePolicy(
+                QtWidgets.QSizePolicy.Preferred,
+                QtWidgets.QSizePolicy.Fixed))
+        self.pushButton_UpdateBackground.setMinimumHeight(28)
+        self.pushButton_UpdateBackground.setMaximumHeight(28)
+        self.pushButton_UpdateBackground.setStyleSheet("")
+
+    def _setup_light_background_checkbox(self):
+        if (not hasattr(self, "groupBox_34")) or \
+                (not hasattr(self, "gridLayout_11")) or \
+                hasattr(self, "checkBox_LightBackground"):
+            return
+        self.checkBox_LightBackground = QtWidgets.QCheckBox(self.groupBox_34)
+        self.checkBox_LightBackground.setObjectName("checkBox_LightBackground")
+        self.checkBox_LightBackground.setMinimumSize(QtCore.QSize(0, 20))
+        self.checkBox_LightBackground.setChecked(False)
+        self.checkBox_LightBackground.setText("Light background")
+        self.checkBox_LightBackground.setToolTip(
+            "Use a lighter 1D plot background to improve visibility of dark JCPDS bars")
+        self.gridLayout_11.addWidget(self.checkBox_LightBackground, 2, 2, 1, 1)
+
+    def _set_flat_toolbar_button_style(self, button, compact=False):
+        button.setFlat(True)
+        button.setAutoDefault(False)
+        button.setDefault(False)
+        if compact:
+            button.setMinimumWidth(44)
+            button.setMaximumWidth(88)
+            padding = "2px 8px"
+            font_weight = "600"
+        else:
+            padding = "3px 14px"
+            font_weight = "500"
+        button.setStyleSheet(
+            "QPushButton {"
+            "background-color: rgba(255, 255, 255, 0.045);"
+            "color: #f2f2f2;"
+            "border: 1px solid rgba(255, 255, 255, 0.08);"
+            "border-radius: 6px;"
+            f"padding: {padding};"
+            f"font-weight: {font_weight};"
+            "}"
+            "QPushButton:hover {"
+            "background-color: rgba(255, 255, 255, 0.085);"
+            "border: 1px solid rgba(255, 255, 255, 0.16);"
+            "}"
+            "QPushButton:pressed {"
+            "background-color: rgba(255, 255, 255, 0.13);"
+            "border: 1px solid rgba(255, 255, 255, 0.2);"
+            "}"
+            "QPushButton:focus {"
+            "outline: none;"
+            "border: 1px solid rgba(255, 255, 255, 0.18);"
+            "}"
+        )
+
+    def _set_colored_flat_toolbar_button_style(
+            self, button, base_color, hover_color, pressed_color,
+            border_color, text_color="#1f1f1f", compact=False):
+        button.setFlat(True)
+        button.setAutoDefault(False)
+        button.setDefault(False)
+        if compact:
+            button.setMinimumWidth(44)
+            button.setMaximumWidth(88)
+            padding = "2px 8px"
+            font_weight = "600"
+        else:
+            padding = "3px 14px"
+            font_weight = "500"
+        button.setStyleSheet(
+            "QPushButton {"
+            f"background-color: {base_color};"
+            f"color: {text_color};"
+            f"border: 1px solid {border_color};"
+            "border-radius: 6px;"
+            f"padding: {padding};"
+            f"font-weight: {font_weight};"
+            "}"
+            "QPushButton:hover {"
+            f"background-color: {hover_color};"
+            f"border: 1px solid {border_color};"
+            "}"
+            "QPushButton:pressed {"
+            f"background-color: {pressed_color};"
+            f"border: 1px solid {border_color};"
+            "}"
+            "QPushButton:focus {"
+            "outline: none;"
+            f"border: 1px solid {border_color};"
+            "}"
+        )
+
+    def _set_accent_button_style(self, button, base_color, hover_color,
+                                 pressed_color, border_color,
+                                 text_color="white"):
+        button.setStyleSheet(
+            "QPushButton {"
+            f"background-color: {base_color};"
+            f"color: {text_color};"
+            f"border: 1px solid {border_color};"
+            "border-radius: 4px;"
+            "padding: 2px 10px;"
+            "}"
+            "QPushButton:hover {"
+            f"background-color: {hover_color};"
+            "}"
+            "QPushButton:pressed {"
+            f"background-color: {pressed_color};"
+            "}"
+            "QPushButton:checked {"
+            f"background-color: {pressed_color};"
+            f"border: 1px solid {border_color};"
+            "}"
+        )
+
+    def _set_button_height(self, button, height=28):
+        button.setMinimumHeight(height)
+        button.setMaximumHeight(height)
+
+    def _set_mouse_mode_button_style(self, button, checked_color,
+                                     hover_color, pressed_color,
+                                     border_color, segment="middle",
+                                     text_color="white"):
+        if segment == "left":
+            radius_rule = "border-top-left-radius: 6px; border-bottom-left-radius: 6px; border-top-right-radius: 0px; border-bottom-right-radius: 0px;"
+        elif segment == "right":
+            radius_rule = "border-top-left-radius: 0px; border-bottom-left-radius: 0px; border-top-right-radius: 6px; border-bottom-right-radius: 6px;"
+        elif segment == "single":
+            radius_rule = "border-radius: 6px;"
+        else:
+            radius_rule = "border-radius: 0px;"
+        button.setStyleSheet(
+            "QPushButton {"
+            "background-color: #eee8dc;"
+            "color: #2a241f;"
+            "border: 1px solid #b8ada0;"
+            f"{radius_rule}"
+            "padding: 2px 14px;"
+            "font-weight: 600;"
+            "}"
+            "QPushButton:hover {"
+            "background-color: #e3dbcf;"
+            "}"
+            "QPushButton:pressed {"
+            f"background-color: {pressed_color};"
+            f"color: {text_color};"
+            "}"
+            "QPushButton:checked {"
+            f"background-color: {checked_color};"
+            f"color: {text_color};"
+            f"border: 1px solid {border_color};"
+            "}"
+            "QPushButton:checked:hover {"
+            f"background-color: {hover_color};"
+            "}"
+        )
+
+    def _setup_bg_default_button(self):
+        if not hasattr(self, "gridLayout_5"):
+            return
+        if hasattr(self, "pushButton_ResetBGParams"):
+            return
+        self.pushButton_ResetBGParams = QtWidgets.QPushButton(
+            "Default params", self.groupBox_7)
+        self.pushButton_ResetBGParams.setObjectName("pushButton_ResetBGParams")
+        self.pushButton_ResetBGParams.setMinimumSize(QtCore.QSize(0, 25))
+        self.pushButton_ResetBGParams.setToolTip(
+            "Reset background parameters to defaults: N Points=20, N Order=10, N Iteration=20")
+        self.gridLayout_5.addWidget(self.pushButton_ResetBGParams, 3, 2, 1, 1)
+
+    def _setup_peakfit_section_buttons(self):
+        if not hasattr(self, "pushButton_PkFtSectionSetToCurrent"):
+            return
+        for name in (
+            "pushButton_PkFtSectionRemove",
+            "pushButton_PkFtSectionSetToCurrent",
+            "pushButton_PlotSelectedPkFtResults",
+            "pushButton_PkFtSectionClear",
+            "pushButton_PkFtSectionImport",
+            "pushButton_PkFtSectionSavetoXLS",
+            "pushButton_SetFitSection",
+            "pushButton_ZoomToSection",
+            "pushButton_ConductFitting",
+            "pushButton_PkSave",
+            "pushButton_ClearSection",
+            "pushButton_AddRemoveFromMouse",
+            "pushButton_AddRemoveFromJlist",
+            "pushButton_CollectPeakFitResults",
+            "pushButton_PerformUCFit",
+        ):
+            if hasattr(self, name):
+                self._set_button_height(getattr(self, name))
+        self._set_accent_button_style(
+            self.pushButton_SetFitSection,
+            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            text_color="#1f1f1f")
+        self._set_accent_button_style(
+            self.pushButton_PkSave,
+            "#1f7a3d", "#278f49", "#16592d", "#11411f")
+        self._set_accent_button_style(
+            self.pushButton_ConductFitting,
+            "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
+        self._set_accent_button_style(
+            self.pushButton_AddRemoveFromMouse,
+            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            text_color="#1f1f1f")
+        self._set_accent_button_style(
+            self.pushButton_PkFtSectionSetToCurrent,
+            "#1f7a3d", "#278f49", "#16592d", "#11411f")
+        if hasattr(self, "pushButton_CollectPeakFitResults"):
+            self._set_accent_button_style(
+                self.pushButton_CollectPeakFitResults,
+                "#1f7a3d", "#278f49", "#16592d", "#11411f")
+        if hasattr(self, "pushButton_PerformUCFit"):
+            self._set_accent_button_style(
+                self.pushButton_PerformUCFit,
+                "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
+
+    def _compact_peakfit_spinboxes(self):
+        for name in (
+            "spinBox_BGPolyOrder",
+            "spinBox_PeaksFromJlistIntensity",
+        ):
+            if not hasattr(self, name):
+                continue
+            box = getattr(self, name)
+            box.setMinimumWidth(110)
+            box.setMaximumWidth(110)
+            box.setSizePolicy(
+                QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+
+    def _normalize_misc_button_heights(self):
+        for name in (
+            "pushButton_1bar",
+            "pushButton_RoomT",
+            "pushButton_SetPStepTo1",
+            "pushButton_SetPStepTo10",
+            "pushButton_SetTStepTo100",
+            "pushButton_SetTStepTo1000",
+            "pushButton_ForceUpdatePlot",
+            "pushButton_ApplyWaterfallChange",
+            "pushButton_LoadPPSS",
+            "pushButton_SavePPSS",
+            "pushButton_ZipSession",
+            "pushButton_SaveDPPandPPSS",
+            "pushButton_DelTempCHI",
+            "pushButton_DelTempCake",
+        ):
+            if hasattr(self, name):
+                self._set_button_height(getattr(self, name))
+
+    def _setup_mouse_mode_selector(self):
+        if (not hasattr(self, "horizontalLayout_7")) or \
+                hasattr(self, "buttonGroup_MouseMode"):
+            return
+        self.pushButton_MouseModeZoom = QtWidgets.QPushButton("Zoom", self.frame_2)
+        self.pushButton_MouseModeROI = QtWidgets.QPushButton("ROI", self.frame_2)
+        self.pushButton_MouseModePeakPick = QtWidgets.QPushButton("Peak", self.frame_2)
+        self.pushButton_MouseModeJCPDS = QtWidgets.QPushButton("JCPDS", self.frame_2)
+
+        self.buttonGroup_MouseMode = QtWidgets.QButtonGroup(self)
+        self.buttonGroup_MouseMode.setExclusive(True)
+
+        for button, mode_name in (
+            (self.pushButton_MouseModeZoom, "navigate"),
+            (self.pushButton_MouseModeROI, "roi"),
+            (self.pushButton_MouseModePeakPick, "peakpick"),
+            (self.pushButton_MouseModeJCPDS, "jcpds"),
+        ):
+            button.setObjectName(f"pushButton_MouseMode_{mode_name}")
+            button.setCheckable(True)
+            button.setProperty("mouseMode", mode_name)
+            self._set_button_height(button)
+            self.buttonGroup_MouseMode.addButton(button)
+
+        self.pushButton_MouseModeZoom.setToolTip("Default navigation: rectangular zoom")
+        self.pushButton_MouseModeROI.setToolTip("Draw an ROI using the mouse")
+        self.pushButton_MouseModePeakPick.setToolTip("Add or remove peaks from the plot")
+        self.pushButton_MouseModeJCPDS.setToolTip("Click the plot to inspect nearest JCPDS line")
+
+        self._set_mouse_mode_button_style(
+            self.pushButton_MouseModeZoom,
+            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            segment="left",
+            text_color="#1f1f1f")
+        self._set_mouse_mode_button_style(
+            self.pushButton_MouseModeROI,
+            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            segment="middle",
+            text_color="#1f1f1f")
+        self._set_mouse_mode_button_style(
+            self.pushButton_MouseModePeakPick,
+            "#c27b00", "#d98b00", "#9a6100", "#7c4d00",
+            segment="middle",
+            text_color="#1f1f1f")
+        self._set_mouse_mode_button_style(
+            self.pushButton_MouseModeJCPDS,
+            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            segment="right",
+            text_color="#1f1f1f")
+
+        insert_idx = self.horizontalLayout_7.indexOf(self.checkBox_AutoY)
+        if insert_idx < 0:
+            insert_idx = 0
+        self.horizontalLayout_7.insertWidget(insert_idx, self.pushButton_MouseModeZoom)
+        self.horizontalLayout_7.insertWidget(insert_idx + 1, self.pushButton_MouseModeROI)
+        self.horizontalLayout_7.insertWidget(insert_idx + 2, self.pushButton_MouseModePeakPick)
+        self.horizontalLayout_7.insertWidget(insert_idx + 3, self.pushButton_MouseModeJCPDS)
+        self.pushButton_MouseModeZoom.setChecked(True)
+
+    def _move_mouse_controls_to_plot_bar(self):
+        if (not hasattr(self, "mpl")) or \
+                (not hasattr(self.mpl, "add_control_widget")):
+            return
+        self.frame_MouseModeGroup = QtWidgets.QFrame(self.mpl.control_bar)
+        self.frame_MouseModeGroup.setObjectName("frame_MouseModeGroup")
+        self.layout_MouseModeGroup = QtWidgets.QHBoxLayout(self.frame_MouseModeGroup)
+        self.layout_MouseModeGroup.setContentsMargins(0, 0, 0, 0)
+        self.layout_MouseModeGroup.setSpacing(0)
+        self.label_CursorPosition = QtWidgets.QLabel("", self.mpl.footer_bar)
+        self.label_CursorPosition.setObjectName("label_CursorPosition")
+        self.label_CursorPosition.setMinimumHeight(25)
+        self.label_CursorPosition.setAlignment(
+            QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        self.label_CursorPosition.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.label_PlotHelp = QtWidgets.QLabel("", self.mpl.footer_bar)
+        self.label_PlotHelp.setObjectName("label_PlotHelp")
+        self.label_PlotHelp.setMinimumHeight(25)
+        self.label_PlotHelp.setAlignment(
+            QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        self.label_PlotHelp.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        widgets = [
+            getattr(self, "checkBox_ShowCake", None),
+            getattr(self, "checkBox_BgSub", None),
+            getattr(self, "checkBox_AutoY", None),
+            getattr(self, "checkBox_LongCursor", None),
+            getattr(self, "checkBox_Diff", None),
+        ]
+        for widget in widgets:
+            if widget is None:
+                continue
+            widget.setParent(self.mpl.control_bar)
+            if widget in (
+                getattr(self, "checkBox_AutoY", None),
+                getattr(self, "checkBox_LongCursor", None),
+                getattr(self, "checkBox_ShowCake", None),
+                getattr(self, "checkBox_BgSub", None),
+                getattr(self, "checkBox_Diff", None),
+            ):
+                widget.setSizePolicy(
+                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            self.mpl.add_control_widget(widget)
+
+        for button_name in (
+            "pushButton_MouseModeZoom",
+            "pushButton_MouseModeROI",
+            "pushButton_MouseModePeakPick",
+            "pushButton_MouseModeJCPDS",
+        ):
+            button = getattr(self, button_name, None)
+            if button is None:
+                continue
+            button.setParent(self.frame_MouseModeGroup)
+            button.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+            self.layout_MouseModeGroup.addWidget(button)
+
+        toolbar_zoom = getattr(self, "pushButton_S_Zoom", None)
+        if toolbar_zoom is not None:
+            spacer = QtWidgets.QSpacerItem(
+                8, 0,
+                QtWidgets.QSizePolicy.Fixed,
+                QtWidgets.QSizePolicy.Minimum)
+            self.layout_MouseModeGroup.addItem(spacer)
+            toolbar_zoom.setParent(self.frame_MouseModeGroup)
+            toolbar_zoom.setSizePolicy(
+                QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            self._set_button_height(toolbar_zoom)
+            self.layout_MouseModeGroup.addWidget(toolbar_zoom)
+
+        insert_index = 0
+        self.mpl.insert_control_widget(insert_index, self.frame_MouseModeGroup)
+        self.mpl.footer_left.setParent(None)
+        self.mpl.footer_right.setParent(None)
+        self.mpl.footer_layout.addWidget(self.label_CursorPosition, 1)
+        self.mpl.footer_layout.addWidget(self.label_PlotHelp, 1)
+        self.mpl.show_footer()
+
+    def _rebuild_top_left_toolbar(self):
+        if (not hasattr(self, "frame_9")) or (not hasattr(self, "frame_2")):
+            return
+        row2_height = 28
+        while self.horizontalLayout_21.count():
+            item = self.horizontalLayout_21.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.hide()
+
+        self.frame_TopLeftToolbarRows = QtWidgets.QFrame(self.frame_9)
+        self.frame_TopLeftToolbarRows.setObjectName("frame_TopLeftToolbarRows")
+        self.frame_TopLeftToolbarRows.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.topLeftToolbarRows = QtWidgets.QVBoxLayout(self.frame_TopLeftToolbarRows)
+        self.topLeftToolbarRows.setContentsMargins(0, 0, 0, 0)
+        self.topLeftToolbarRows.setSpacing(6)
+
+        self.frame_TopToolbarRow1 = QtWidgets.QFrame(self.frame_9)
+        self.frame_TopToolbarRow1.setObjectName("frame_TopToolbarRow1")
+        self.frame_TopToolbarRow1.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.layout_TopToolbarRow1 = QtWidgets.QHBoxLayout(self.frame_TopToolbarRow1)
+        self.layout_TopToolbarRow1.setContentsMargins(0, 0, 0, 0)
+        self.layout_TopToolbarRow1.setSpacing(10)
+
+        self.frame_TopToolbarRow2 = QtWidgets.QFrame(self.frame_9)
+        self.frame_TopToolbarRow2.setObjectName("frame_TopToolbarRow2")
+        self.frame_TopToolbarRow2.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.frame_TopToolbarRow2.setMinimumHeight(row2_height)
+        self.frame_TopToolbarRow2.setMaximumHeight(row2_height)
+        self.layout_TopToolbarRow2 = QtWidgets.QHBoxLayout(self.frame_TopToolbarRow2)
+        self.layout_TopToolbarRow2.setContentsMargins(0, 0, 0, 0)
+        self.layout_TopToolbarRow2.setSpacing(36)
+
+        row1_widgets = [
+            getattr(self, "pushButton_S_PrevBasePtn", None),
+            getattr(self, "pushButton_AddBasePtn", None),
+            getattr(self, "pushButton_S_NextBasePtn", None),
+            getattr(self, "pushButton_NewBasePtn", None),
+            getattr(self, "pushButton_LoadDPP", None),
+        ]
+        for widget in row1_widgets:
+            if widget is None:
+                continue
+            widget.setParent(self.frame_TopToolbarRow1)
+            widget.show()
+            widget.setMinimumHeight(28)
+            widget.setMaximumHeight(28)
+            if widget in (
+                getattr(self, "pushButton_S_PrevBasePtn", None),
+                getattr(self, "pushButton_AddBasePtn", None),
+                getattr(self, "pushButton_S_NextBasePtn", None),
+            ):
+                if widget == getattr(self, "pushButton_S_PrevBasePtn", None):
+                    widget.setText("Prev")
+                elif widget == getattr(self, "pushButton_AddBasePtn", None):
+                    widget.setText("Wfall+")
+                elif widget == getattr(self, "pushButton_S_NextBasePtn", None):
+                    widget.setText("Next")
+                self._set_flat_toolbar_button_style(widget, compact=True)
+                widget.setMinimumWidth(84)
+                widget.setMaximumWidth(16777215)
+                widget.setSizePolicy(
+                    QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+                self.layout_TopToolbarRow1.addWidget(widget, 1)
+            elif widget in (
+                getattr(self, "pushButton_NewBasePtn", None),
+                getattr(self, "pushButton_LoadDPP", None),
+            ):
+                if widget == getattr(self, "pushButton_NewBasePtn", None):
+                    self._set_colored_flat_toolbar_button_style(
+                        widget,
+                        "#2f8a57", "#3a9d66", "#267048", "#225f3d",
+                        text_color="#f3fff7")
+                elif widget == getattr(self, "pushButton_LoadDPP", None):
+                    self._set_colored_flat_toolbar_button_style(
+                        widget,
+                        "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+                        text_color="#1f1f1f")
+                else:
+                    self._set_flat_toolbar_button_style(widget, compact=False)
+                widget.setMinimumWidth(0)
+                widget.setMaximumWidth(16777215)
+                widget.setSizePolicy(
+                    QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+                self.layout_TopToolbarRow1.addWidget(widget, 2)
+            else:
+                widget.setSizePolicy(
+                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+                self.layout_TopToolbarRow1.addWidget(widget, 0)
+            if widget == getattr(self, "pushButton_S_NextBasePtn", None):
+                self.layout_TopToolbarRow1.addSpacing(28)
+
+        toolbar_p_inc = getattr(self, "pushButton_S_PIncrease", None)
+        toolbar_p_dec = getattr(self, "pushButton_S_PDecrease", None)
+        toolbar_t_inc = getattr(self, "pushButton_S_TIncrease", None)
+        toolbar_t_dec = getattr(self, "pushButton_S_TDecrease", None)
+
+        for widget, text in (
+            (toolbar_p_inc, "▲"),
+            (toolbar_p_dec, "▼"),
+            (toolbar_t_inc, "▲"),
+            (toolbar_t_dec, "▼"),
+        ):
+            if widget is None:
+                continue
+            widget.setParent(self.frame_TopToolbarRow2)
+            widget.show()
+            widget.setText(text)
+            widget.setMinimumHeight(row2_height)
+            widget.setMaximumHeight(row2_height)
+            widget.setFlat(False)
+            widget.setAutoDefault(False)
+            widget.setDefault(False)
+            widget.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+
+        if not hasattr(self, "frame_PWheelGroup"):
+            self.frame_PWheelGroup = QtWidgets.QFrame(self.frame_TopToolbarRow2)
+            self.layout_PWheelGroup = QtWidgets.QHBoxLayout(self.frame_PWheelGroup)
+            self.layout_PWheelGroup.setContentsMargins(0, 0, 0, 0)
+            self.layout_PWheelGroup.setSpacing(4)
+        self.frame_PWheelGroup.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.frame_PWheelGroup.setMinimumHeight(row2_height)
+        self.frame_PWheelGroup.setMaximumHeight(row2_height)
+        if not hasattr(self, "frame_TWheelGroup"):
+            self.frame_TWheelGroup = QtWidgets.QFrame(self.frame_TopToolbarRow2)
+            self.layout_TWheelGroup = QtWidgets.QHBoxLayout(self.frame_TWheelGroup)
+            self.layout_TWheelGroup.setContentsMargins(0, 0, 0, 0)
+            self.layout_TWheelGroup.setSpacing(4)
+        self.frame_TWheelGroup.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.frame_TWheelGroup.setMinimumHeight(row2_height)
+        self.frame_TWheelGroup.setMaximumHeight(row2_height)
+
+        if not hasattr(self, "doubleSpinBox_ToolbarPressure"):
+            self.doubleSpinBox_ToolbarPressure = ToolbarTumblerDoubleSpinBox(
+                self.frame_PWheelGroup)
+            self.doubleSpinBox_ToolbarPressure.valueChanged.connect(
+                self._sync_toolbar_pressure)
+        self.doubleSpinBox_ToolbarPressure.setParent(self.frame_PWheelGroup)
+        self.doubleSpinBox_ToolbarPressure.setToolTip("Pressure tumbler.")
+        self.doubleSpinBox_ToolbarPressure.setDecimals(2)
+        self.doubleSpinBox_ToolbarPressure.setRange(0.0, 1000.0)
+        self.doubleSpinBox_ToolbarPressure.setSingleStep(
+            self.doubleSpinBox_Pressure.singleStep())
+        self.doubleSpinBox_ToolbarPressure.setValue(
+            float(self.doubleSpinBox_Pressure.value()))
+        self.doubleSpinBox_ToolbarPressure.setMinimumHeight(row2_height)
+        self.doubleSpinBox_ToolbarPressure.setMaximumHeight(row2_height)
+        self.doubleSpinBox_ToolbarPressure.setMinimumWidth(72)
+        self.doubleSpinBox_ToolbarPressure.setMaximumWidth(160)
+        self.doubleSpinBox_ToolbarPressure.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self._set_toolbar_tumbler_style(self.doubleSpinBox_ToolbarPressure)
+
+        if not hasattr(self, "spinBox_ToolbarTemperature"):
+            self.spinBox_ToolbarTemperature = ToolbarTumblerSpinBox(
+                self.frame_TWheelGroup)
+            self.spinBox_ToolbarTemperature.valueChanged.connect(
+                self._sync_toolbar_temperature)
+        self.spinBox_ToolbarTemperature.setParent(self.frame_TWheelGroup)
+        self.spinBox_ToolbarTemperature.setToolTip("Temperature tumbler.")
+        self.spinBox_ToolbarTemperature.setRange(0, 10000)
+        self.spinBox_ToolbarTemperature.setSingleStep(
+            max(1, int(self.spinBox_TStep.value())))
+        self.spinBox_ToolbarTemperature.setValue(
+            int(round(self.doubleSpinBox_Temperature.value())))
+        self.spinBox_ToolbarTemperature.setMinimumHeight(row2_height)
+        self.spinBox_ToolbarTemperature.setMaximumHeight(row2_height)
+        self.spinBox_ToolbarTemperature.setMinimumWidth(72)
+        self.spinBox_ToolbarTemperature.setMaximumWidth(160)
+        self.spinBox_ToolbarTemperature.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self._set_toolbar_tumbler_style(self.spinBox_ToolbarTemperature)
+
+        toolbar_roomt = getattr(self, "pushButton_S_RoomT", None)
+        if toolbar_roomt is not None:
+            toolbar_roomt.setParent(self.frame_TopToolbarRow2)
+            toolbar_roomt.show()
+            toolbar_roomt.setMinimumHeight(row2_height)
+            toolbar_roomt.setMaximumHeight(row2_height)
+            toolbar_roomt.setText("300 K")
+            self._set_flat_toolbar_button_style(toolbar_roomt, compact=True)
+            tight_width = toolbar_roomt.sizeHint().width() + 8
+            toolbar_roomt.setMinimumWidth(tight_width)
+            toolbar_roomt.setMaximumWidth(tight_width)
+            toolbar_roomt.setSizePolicy(
+                QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+
+        for group_layout, widgets in (
+            (self.layout_PWheelGroup, (toolbar_p_inc, self.doubleSpinBox_ToolbarPressure, toolbar_p_dec)),
+            (self.layout_TWheelGroup, (toolbar_t_inc, self.spinBox_ToolbarTemperature, toolbar_t_dec)),
+        ):
+            while group_layout.count():
+                item = group_layout.takeAt(0)
+                child = item.widget()
+                if child is not None:
+                    child.hide()
+            for widget in widgets:
+                if widget is not None:
+                    widget.show()
+                    group_layout.addWidget(widget)
+            left_button, _, right_button = widgets
+            if left_button is not None:
+                self._set_thumbwheel_arrow_button_style(left_button, "left")
+            if right_button is not None:
+                self._set_thumbwheel_arrow_button_style(right_button, "right")
+
+        for widget, stretch in (
+            (self.frame_PWheelGroup, 1),
+            (self.frame_TWheelGroup, 1),
+            (toolbar_roomt, 0),
+        ):
+            if widget is not None:
+                self.layout_TopToolbarRow2.addWidget(widget, stretch)
+
+        self.topLeftToolbarRows.addWidget(self.frame_TopToolbarRow1)
+        self.topLeftToolbarRows.addWidget(self.frame_TopToolbarRow2)
+        self.horizontalLayout_21.addWidget(self.frame_TopLeftToolbarRows, 1)
+        self.frame_2.setVisible(False)
+
+    def _set_thumbwheel_arrow_button_style(self, button, side):
+        if side == "left":
+            radius_rule = (
+                "border-top-left-radius: 3px;"
+                "border-bottom-left-radius: 3px;"
+                "border-top-right-radius: 0px;"
+                "border-bottom-right-radius: 0px;"
+            )
+        else:
+            radius_rule = (
+                "border-top-left-radius: 0px;"
+                "border-bottom-left-radius: 0px;"
+                "border-top-right-radius: 3px;"
+                "border-bottom-right-radius: 3px;"
+            )
+        button.setStyleSheet(
+            "QPushButton {"
+            "background-color: #444444;"
+            "color: #ffffff;"
+            "border: 1px solid rgba(255, 255, 255, 0.10);"
+            + radius_rule +
+            "padding: 0px;"
+            "font-weight: 700;"
+            "}"
+            "QPushButton:hover {"
+            "background-color: #505050;"
+            "}"
+            "QPushButton:pressed {"
+            "background-color: #383838;"
+            "}"
+            "QPushButton:focus {"
+            "outline: none;"
+            "border: 1px solid rgba(255, 255, 255, 0.16);"
+            + radius_rule +
+            "}"
+        )
+
+    def _set_toolbar_tumbler_style(self, box):
+        box.setStyleSheet(
+            "QAbstractSpinBox {"
+            "background-color: #444444;"
+            "color: #ffffff;"
+            "border: 1px solid rgba(255, 255, 255, 0.10);"
+            "border-radius: 0px;"
+            "padding: 0px 6px 0px 6px;"
+            "font: 700 13pt \"Helvetica\";"
+            "selection-background-color: #1565c0;"
+            "}"
+            "QAbstractSpinBox:hover {"
+            "background-color: #505050;"
+            "}"
+            "QAbstractSpinBox:focus {"
+            "border: 1px solid rgba(255, 255, 255, 0.18);"
+            "}"
+        )
+
+    def _spread_primary_controls_evenly(self):
+        if not hasattr(self, "horizontalLayout_7"):
+            return
+        layout = self.horizontalLayout_7
+        layout.setSpacing(18)
+        widgets = [
+            getattr(self, "pushButton_NewBasePtn", None),
+            getattr(self, "pushButton_LoadDPP", None),
+            getattr(self, "checkBox_Diff", None),
+        ]
+        for widget in widgets:
+            if widget is None:
+                continue
+            widget.setMinimumWidth(0)
+            widget.setMaximumWidth(16777215)
+            widget.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            w = item.widget()
+            if w in widgets:
+                layout.setStretch(i, 1)
+
+    def _setup_cake_scale_layout(self):
+        self.groupBox_29.setTitle("2D Cake scale")
+        self.groupBox_29.setMinimumHeight(230)
+        self.groupBox_29.setMaximumHeight(360)
+        self.pushButton_ResetCakeScale.setText("Reset")
+        self.pushButton_ResetCakeScale.setVisible(False)
+        self.spinBox_MaxCakeScale.setVisible(False)
+        self.pushButton_ResetCakeScale.setMinimumHeight(25)
+        self.pushButton_ResetCakeScale.setMaximumHeight(25)
+        self.spinBox_MaxCakeScale.setMinimumHeight(25)
+        self.spinBox_MaxCakeScale.setMaximumHeight(25)
+
+        self.cake_hist_widget = CakeHistogramWidget(self.groupBox_29)
+        self.cake_hist_widget.setMinimumHeight(125)
+        self.cake_hist_widget.setMaximumHeight(155)
+
+        # Hide legacy controls replaced by histogram-driven controls.
+        self.label_8.setVisible(False)
+        self.horizontalSlider_VMin.setVisible(False)
+        self.label_9.setVisible(False)
+        self.horizontalSlider_VMax.setVisible(False)
+
+        # Clear and rebuild group layout to match requested arrangement.
+        while self.verticalLayout_11.count():
+            item = self.verticalLayout_11.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.setParent(self.groupBox_29)
+
+        # Compact block below the histogram.
+        self.frame_CakeTopGrid = QtWidgets.QFrame(self.groupBox_29)
+        self.frame_CakeTopGrid.setObjectName("frame_CakeTopGrid")
+        self.gridLayout_CakeTop = QtWidgets.QGridLayout(self.frame_CakeTopGrid)
+        self.gridLayout_CakeTop.setContentsMargins(0, 0, 0, 0)
+        self.gridLayout_CakeTop.setHorizontalSpacing(10)
+        self.gridLayout_CakeTop.setVerticalSpacing(8)
+
+        self.cake_hist_widget.check_log.setParent(self.frame_CakeTopGrid)
+        self.cake_hist_widget.check_focus.setParent(self.frame_CakeTopGrid)
+        self.cake_hist_widget.check_focus.setVisible(False)
+        self.cake_hist_widget.label_low.setParent(self.frame_CakeTopGrid)
+        self.cake_hist_widget.spin_low_pct.setParent(self.frame_CakeTopGrid)
+        self.cake_hist_widget.label_high.setParent(self.frame_CakeTopGrid)
+        self.cake_hist_widget.spin_high_pct.setParent(self.frame_CakeTopGrid)
+        self.cake_hist_widget.button_apply_pct.setParent(self.frame_CakeTopGrid)
+        self.cake_hist_widget.combo_scale_mode.setParent(self.frame_CakeTopGrid)
+        self.cake_hist_widget.button_apply_pct.setVisible(False)
+        self.cake_hist_widget.combo_scale_mode.setVisible(False)
+        self.cake_hist_widget.spin_low_pct.setMinimumHeight(25)
+        self.cake_hist_widget.spin_high_pct.setMinimumHeight(25)
+        for spin in (self.cake_hist_widget.spin_low_pct,
+                     self.cake_hist_widget.spin_high_pct):
+            spin.setMinimumWidth(110)
+            spin.setMaximumWidth(110)
+            spin.setSizePolicy(
+                QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+
+        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.check_log, 0, 0, 1, 1)
+        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.label_low, 0, 2, 1, 1)
+        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.spin_low_pct, 0, 3, 1, 1)
+        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.label_high, 0, 4, 1, 1)
+        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.spin_high_pct, 0, 5, 1, 1)
+
+        if hasattr(self, "groupBox_CakeColormap"):
+            self.groupBox_CakeColormap.setVisible(False)
+        if hasattr(self, "label_CakeColormap"):
+            self.label_CakeColormap.setVisible(False)
+        if hasattr(self, "comboBox_CakeColormap"):
+            self.comboBox_CakeColormap.setParent(self.frame_CakeTopGrid)
+            self.comboBox_CakeColormap.setMinimumHeight(25)
+            # Keep colormap selector compact (do not stretch across the row).
+            log_w = self.cake_hist_widget.check_log.sizeHint().width()
+            target_w = max(160, int(log_w))
+            self.comboBox_CakeColormap.setMinimumWidth(target_w)
+            self.comboBox_CakeColormap.setMaximumWidth(target_w)
+            self.comboBox_CakeColormap.setSizePolicy(
+                QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            self.gridLayout_CakeTop.addWidget(self.comboBox_CakeColormap, 1, 0, 1, 2)
+
+        self.gridLayout_CakeTop.setColumnStretch(1, 1)
+        self.gridLayout_CakeTop.setColumnStretch(3, 1)
+
+        # Histogram plot
+        self.cake_hist_widget.canvas.setParent(self.groupBox_29)
+
+        # Hide legacy scale slider; the histogram widget now exposes a combo box.
+        self.label_19.setVisible(False)
+        self.horizontalSlider_MaxScaleBars.setVisible(False)
+
+        self.verticalLayout_11.setContentsMargins(10, 0, 10, 0)
+        self.verticalLayout_11.setSpacing(6)
+        self.verticalLayout_11.addWidget(self.cake_hist_widget.canvas)
+        self.verticalLayout_11.addWidget(self.frame_CakeTopGrid)
+
+    def _setup_cake_colormap_control(self):
+        if not hasattr(self, "verticalLayout_PlotControl"):
+            return
+        if hasattr(self, "groupBox_CakeColormap"):
+            return
+        self.groupBox_CakeColormap = QtWidgets.QGroupBox(
+            "2D Cake colormap", self.plotControlContents)
+        self.groupBox_CakeColormap.setObjectName("groupBox_CakeColormap")
+        self.horizontalLayout_CakeColormap = QtWidgets.QHBoxLayout(
+            self.groupBox_CakeColormap)
+        self.horizontalLayout_CakeColormap.setObjectName("horizontalLayout_CakeColormap")
+        self.label_CakeColormap = QtWidgets.QLabel("Colormap", self.groupBox_CakeColormap)
+        self.label_CakeColormap.setObjectName("label_CakeColormap")
+        self.comboBox_CakeColormap = QtWidgets.QComboBox(self.groupBox_CakeColormap)
+        self.comboBox_CakeColormap.setObjectName("comboBox_CakeColormap")
+        self.comboBox_CakeColormap.addItems([
+            "inferno", "inferno_r",
+            "magma", "magma_r",
+            "gray", "gray_r",
+            "viridis", "viridis_r",
+        ])
+        self.comboBox_CakeColormap.setCurrentText("gray_r")
+        self.horizontalLayout_CakeColormap.addWidget(self.label_CakeColormap)
+        self.horizontalLayout_CakeColormap.addWidget(self.comboBox_CakeColormap, 1)
+        idx_gray = self.verticalLayout_PlotControl.indexOf(self.groupBox_29)
+        if idx_gray < 0:
+            self.verticalLayout_PlotControl.insertWidget(0, self.groupBox_CakeColormap)
+        else:
+            self.verticalLayout_PlotControl.insertWidget(idx_gray + 1, self.groupBox_CakeColormap)
+
+    def _setup_diff_tab(self):
+        # Build Diff tab with the same container pattern used by other tabs:
+        # QScrollArea -> content widget -> inner boxed panel.
+        if not hasattr(self, "tabWidget_5"):
+            return
+        if hasattr(self, "tab_Diff"):
+            return
+        self.tab_Diff = QtWidgets.QWidget()
+        self.tab_Diff.setObjectName("tab_Diff")
+        self.verticalLayout_Diff = QtWidgets.QVBoxLayout(self.tab_Diff)
+        self.verticalLayout_Diff.setObjectName("verticalLayout_Diff")
+        self.verticalLayout_Diff.setContentsMargins(12, 12, 12, 12)
+        self.verticalLayout_Diff.setSpacing(0)
+
+        self.scrollArea_Diff = QtWidgets.QScrollArea(self.tab_Diff)
+        self.scrollArea_Diff.setObjectName("scrollArea_Diff")
+        self.scrollArea_Diff.setWidgetResizable(True)
+        self.scrollArea_Diff.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.diffContents = QtWidgets.QWidget()
+        self.diffContents.setObjectName("diffContents")
+        self.verticalLayout_DiffContents = QtWidgets.QVBoxLayout(self.diffContents)
+        self.verticalLayout_DiffContents.setObjectName("verticalLayout_DiffContents")
+        self.verticalLayout_DiffContents.setContentsMargins(8, 8, 8, 8)
+        self.verticalLayout_DiffContents.setSpacing(8)
+
+        # Reference picker.
+        self.groupBox_DiffRef = QtWidgets.QGroupBox("Reference", self.diffContents)
+        self.groupBox_DiffRef.setObjectName("groupBox_DiffRef")
+        self.gridLayout_DiffRef = QtWidgets.QGridLayout(self.groupBox_DiffRef)
+        self.gridLayout_DiffRef.setObjectName("gridLayout_DiffRef")
+        self.lineEdit_DiffRefChi = QtWidgets.QLineEdit(self.groupBox_DiffRef)
+        self.lineEdit_DiffRefChi.setObjectName("lineEdit_DiffRefChi")
+        self.pushButton_DiffRefBrowse = QtWidgets.QPushButton("Browse...", self.groupBox_DiffRef)
+        self.pushButton_DiffRefBrowse.setObjectName("pushButton_DiffRefBrowse")
+        self.pushButton_DiffRefBrowse.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.pushButton_DiffRefClear = QtWidgets.QPushButton("Clear", self.groupBox_DiffRef)
+        self.pushButton_DiffRefClear.setObjectName("pushButton_DiffRefClear")
+        self.pushButton_DiffRefClear.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.checkBox_UseDiffMode = QtWidgets.QCheckBox("Enable Diff mode", self.groupBox_DiffRef)
+        self.checkBox_UseDiffMode.setObjectName("checkBox_UseDiffMode")
+        self.label_DiffStatus = QtWidgets.QLabel("No reference selected", self.groupBox_DiffRef)
+        self.label_DiffStatus.setObjectName("label_DiffStatus")
+        self.gridLayout_DiffRef.addWidget(self.lineEdit_DiffRefChi, 0, 0, 1, 3)
+        self.horizontalLayout_DiffRefButtons = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_DiffRefButtons.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_DiffRefButtons.setSpacing(8)
+        self.horizontalLayout_DiffRefButtons.addWidget(self.pushButton_DiffRefBrowse, 1)
+        self.horizontalLayout_DiffRefButtons.addWidget(self.pushButton_DiffRefClear, 1)
+        self.gridLayout_DiffRef.addLayout(self.horizontalLayout_DiffRefButtons, 1, 0, 1, 3)
+        self.gridLayout_DiffRef.addWidget(self.checkBox_UseDiffMode, 2, 0, 1, 1)
+        self.gridLayout_DiffRef.addWidget(self.label_DiffStatus, 2, 1, 1, 2)
+        self.gridLayout_DiffRef.setColumnStretch(0, 1)
+        self.gridLayout_DiffRef.setColumnStretch(1, 1)
+        self.gridLayout_DiffRef.setColumnStretch(2, 1)
+
+        # 2D rendering controls for diff cake.
+        self.groupBox_DiffCake = QtWidgets.QGroupBox("Diff 2D Scale", self.diffContents)
+        self.groupBox_DiffCake.setObjectName("groupBox_DiffCake")
+        self.gridLayout_DiffCake = QtWidgets.QGridLayout(self.groupBox_DiffCake)
+        self.gridLayout_DiffCake.setObjectName("gridLayout_DiffCake")
+        self.label_DiffScaleMode = QtWidgets.QLabel("Mode", self.groupBox_DiffCake)
+        self.label_DiffScaleMode.setObjectName("label_DiffScaleMode")
+        self.comboBox_DiffScaleMode = QtWidgets.QComboBox(self.groupBox_DiffCake)
+        self.comboBox_DiffScaleMode.setObjectName("comboBox_DiffScaleMode")
+        self.comboBox_DiffScaleMode.addItems([
+            "0 Centered",
+            "Free range",
+        ])
+        self.label_DiffCmap = QtWidgets.QLabel("Colormap", self.groupBox_DiffCake)
+        self.label_DiffCmap.setObjectName("label_DiffCmap")
+        self.comboBox_DiffCmap = QtWidgets.QComboBox(self.groupBox_DiffCake)
+        self.comboBox_DiffCmap.setObjectName("comboBox_DiffCmap")
+        self.label_DiffVmin = QtWidgets.QLabel("Min", self.groupBox_DiffCake)
+        self.label_DiffVmin.setObjectName("label_DiffVmin")
+        self.doubleSpinBox_DiffVmin = QtWidgets.QDoubleSpinBox(self.groupBox_DiffCake)
+        self.doubleSpinBox_DiffVmin.setObjectName("doubleSpinBox_DiffVmin")
+        self.doubleSpinBox_DiffVmin.setDecimals(0)
+        self.doubleSpinBox_DiffVmin.setMinimum(-1e9)
+        self.doubleSpinBox_DiffVmin.setMaximum(1e9)
+        self.doubleSpinBox_DiffVmin.setSingleStep(1.0)
+        self.doubleSpinBox_DiffVmin.setValue(-1000.0)
+        self.label_DiffVmax = QtWidgets.QLabel("Max", self.groupBox_DiffCake)
+        self.label_DiffVmax.setObjectName("label_DiffVmax")
+        self.doubleSpinBox_DiffVmax = QtWidgets.QDoubleSpinBox(self.groupBox_DiffCake)
+        self.doubleSpinBox_DiffVmax.setObjectName("doubleSpinBox_DiffVmax")
+        self.doubleSpinBox_DiffVmax.setDecimals(0)
+        self.doubleSpinBox_DiffVmax.setMinimum(-1e9)
+        self.doubleSpinBox_DiffVmax.setMaximum(1e9)
+        self.doubleSpinBox_DiffVmax.setSingleStep(1.0)
+        self.doubleSpinBox_DiffVmax.setValue(1000.0)
+        self.gridLayout_DiffCake.addWidget(self.label_DiffScaleMode, 0, 0, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.comboBox_DiffScaleMode, 0, 1, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.label_DiffCmap, 0, 2, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.comboBox_DiffCmap, 0, 3, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.label_DiffVmin, 1, 0, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.doubleSpinBox_DiffVmin, 1, 1, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.label_DiffVmax, 1, 2, 1, 1)
+        self.gridLayout_DiffCake.addWidget(self.doubleSpinBox_DiffVmax, 1, 3, 1, 1)
+
+        for button in (
+            self.pushButton_DiffRefBrowse,
+            self.pushButton_DiffRefClear,
+        ):
+            self._set_button_height(button)
+
+        self.verticalLayout_DiffContents.addWidget(self.groupBox_DiffRef)
+        self.verticalLayout_DiffContents.addWidget(self.groupBox_DiffCake)
+        self.verticalLayout_DiffContents.addStretch(1)
+        self.scrollArea_Diff.setWidget(self.diffContents)
+        self.verticalLayout_Diff.addWidget(self.scrollArea_Diff, 1)
+        self.tabWidget_5.addTab(self.tab_Diff, "Diff")
+        # Diff mode toggle is shown in the top toolbar.
+        self.checkBox_UseDiffMode.setVisible(False)
+        self.checkBox_UseDiffMode.setChecked(False)
+        self.checkBox_UseDiffMode.setEnabled(False)
+
+    def _promote_diff_to_main_tab(self):
+        if (not hasattr(self, "tab_Diff")) or (not hasattr(self, "tabWidget")):
+            return
+        # Remove Diff from Pattern subtabs.
+        if hasattr(self, "tabWidget_5"):
+            idx_sub = self.tabWidget_5.indexOf(self.tab_Diff)
+            if idx_sub >= 0:
+                self.tabWidget_5.removeTab(idx_sub)
+        # Insert Diff as top-level tab right before Fits.
+        if self.tabWidget.indexOf(self.tab_Diff) < 0:
+            idx_fits = self.tabWidget.indexOf(self.tab_PkFt) \
+                if hasattr(self, "tab_PkFt") else -1
+            if idx_fits < 0:
+                self.tabWidget.addTab(self.tab_Diff, "Diff")
+            else:
+                self.tabWidget.insertTab(idx_fits, self.tab_Diff, "Diff")
+
+    def _setup_map_tab(self):
+        if not hasattr(self, "tabWidget_5"):
+            return
+        if hasattr(self, "tab_Map"):
+            return
+
+        self.tab_Map = QtWidgets.QWidget()
+        self.tab_Map.setObjectName("tab_Map")
+        self.verticalLayout_Map = QtWidgets.QVBoxLayout(self.tab_Map)
+        self.verticalLayout_Map.setContentsMargins(12, 12, 12, 12)
+        self.verticalLayout_Map.setSpacing(8)
+
+        self.scrollArea_Map = QtWidgets.QScrollArea(self.tab_Map)
+        self.scrollArea_Map.setWidgetResizable(True)
+        self.scrollArea_Map.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.scrollArea_Map.setObjectName("scrollArea_Map")
+
+        self.mapContents = QtWidgets.QWidget()
+        self.mapContents.setObjectName("mapContents")
+        self.verticalLayout_MapContents = QtWidgets.QVBoxLayout(self.mapContents)
+        self.verticalLayout_MapContents.setContentsMargins(8, 8, 8, 8)
+        self.verticalLayout_MapContents.setSpacing(8)
+
+        self.groupBox_MapLoad = QtWidgets.QGroupBox("Data", self.mapContents)
+        self.groupBox_MapLoad.setObjectName("groupBox_MapLoad")
+        self.gridLayout_MapLoad = QtWidgets.QGridLayout(self.groupBox_MapLoad)
+        self.gridLayout_MapLoad.setHorizontalSpacing(12)
+        self.gridLayout_MapLoad.setVerticalSpacing(8)
+        self.pushButton_MapLoadChi = QtWidgets.QPushButton("Load CHI files", self.groupBox_MapLoad)
+        self.pushButton_MapLoadChi.setObjectName("pushButton_MapLoadChi")
+        self.pushButton_MapLoadChi.setMinimumSize(QtCore.QSize(140, 28))
+        self.pushButton_MapLoadChi.setMaximumWidth(180)
+        self.label_MapLoaded = QtWidgets.QLabel("Loaded: 0", self.groupBox_MapLoad)
+        self.label_MapLoaded.setObjectName("label_MapLoaded")
+        self.label_MapLoaded.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        self.label_MapNx = QtWidgets.QLabel("Nx", self.groupBox_MapLoad)
+        self.spinBox_MapNx = QtWidgets.QSpinBox(self.groupBox_MapLoad)
+        self.spinBox_MapNx.setObjectName("spinBox_MapNx")
+        self.spinBox_MapNx.setMinimum(1)
+        self.spinBox_MapNx.setMaximum(9999)
+        self.spinBox_MapNx.setValue(1)
+        self.spinBox_MapNx.setMinimumSize(QtCore.QSize(90, 28))
+        self.label_MapNy = QtWidgets.QLabel("Ny", self.groupBox_MapLoad)
+        self.spinBox_MapNy = QtWidgets.QSpinBox(self.groupBox_MapLoad)
+        self.spinBox_MapNy.setObjectName("spinBox_MapNy")
+        self.spinBox_MapNy.setMinimum(1)
+        self.spinBox_MapNy.setMaximum(9999)
+        self.spinBox_MapNy.setValue(1)
+        self.spinBox_MapNy.setMinimumSize(QtCore.QSize(90, 28))
+        self.label_MapOrder = QtWidgets.QLabel("Order", self.groupBox_MapLoad)
+        self.label_MapOrder.setVisible(False)
+        self.comboBox_MapOrder = QtWidgets.QComboBox(self.groupBox_MapLoad)
+        self.comboBox_MapOrder.setObjectName("comboBox_MapOrder")
+        self.comboBox_MapOrder.addItems(["Row-major", "Snake"])
+        self.comboBox_MapOrder.setMinimumSize(QtCore.QSize(110, 28))
+        self.comboBox_MapOrder.setMaximumWidth(150)
+        self.gridLayout_MapLoad.addWidget(self.pushButton_MapLoadChi, 0, 0, 1, 1)
+        self.gridLayout_MapLoad.addWidget(self.label_MapLoaded, 0, 1, 1, 1)
+        self.gridLayout_MapLoad.addWidget(self.label_MapNx, 0, 2, 1, 1)
+        self.gridLayout_MapLoad.addWidget(self.spinBox_MapNx, 0, 3, 1, 1)
+        self.gridLayout_MapLoad.addWidget(self.comboBox_MapOrder, 1, 0, 1, 1)
+        self.gridLayout_MapLoad.addWidget(self.label_MapNy, 1, 2, 1, 1)
+        self.gridLayout_MapLoad.addWidget(self.spinBox_MapNy, 1, 3, 1, 1)
+        self.gridLayout_MapLoad.setColumnStretch(0, 1)
+        self.gridLayout_MapLoad.setColumnStretch(1, 1)
+        self.gridLayout_MapLoad.setColumnStretch(2, 0)
+        self.gridLayout_MapLoad.setColumnStretch(3, 0)
+
+        self.groupBox_MapRoi = QtWidgets.QGroupBox("ROI", self.mapContents)
+        self.groupBox_MapRoi.setObjectName("groupBox_MapRoi")
+        self.gridLayout_MapRoi = QtWidgets.QGridLayout(self.groupBox_MapRoi)
+        self.gridLayout_MapRoi.setHorizontalSpacing(8)
+        self.gridLayout_MapRoi.setVerticalSpacing(8)
+        self.pushButton_MapSetRoi = QtWidgets.QPushButton("Select ROI", self.groupBox_MapRoi)
+        self.pushButton_MapSetRoi.setObjectName("pushButton_MapSetRoi")
+        self.pushButton_MapSetRoi.setCheckable(True)
+        self.pushButton_MapClearRoi = QtWidgets.QPushButton("Clear ROI", self.groupBox_MapRoi)
+        self.pushButton_MapClearRoi.setObjectName("pushButton_MapClearRoi")
+        self.pushButton_MapCompute = QtWidgets.QPushButton("Compute Map", self.groupBox_MapRoi)
+        self.pushButton_MapCompute.setObjectName("pushButton_MapCompute")
+        self.pushButton_MapSetRoi.setMinimumHeight(28)
+        self.pushButton_MapClearRoi.setMinimumHeight(28)
+        self.pushButton_MapCompute.setMinimumHeight(28)
+        self.lineEdit_MapRoiSummary = QtWidgets.QLineEdit(self.groupBox_MapRoi)
+        self.lineEdit_MapRoiSummary.setObjectName("lineEdit_MapRoiSummary")
+        self.lineEdit_MapRoiSummary.setReadOnly(True)
+        self.lineEdit_MapRoiSummary.setPlaceholderText("No ROI selected")
+        self.gridLayout_MapRoi.addWidget(self.pushButton_MapSetRoi, 0, 0, 1, 1)
+        self.gridLayout_MapRoi.addWidget(self.pushButton_MapClearRoi, 0, 1, 1, 1)
+        self.gridLayout_MapRoi.addWidget(self.pushButton_MapCompute, 0, 2, 1, 1)
+        self.gridLayout_MapRoi.addWidget(self.lineEdit_MapRoiSummary, 1, 0, 1, 3)
+        self.gridLayout_MapRoi.setColumnStretch(0, 1)
+        self.gridLayout_MapRoi.setColumnStretch(1, 1)
+        self.gridLayout_MapRoi.setColumnStretch(2, 1)
+
+        self.groupBox_MapCanvas = QtWidgets.QGroupBox("Map", self.mapContents)
+        self.groupBox_MapCanvas.setObjectName("groupBox_MapCanvas")
+        self.verticalLayout_MapCanvas = QtWidgets.QVBoxLayout(self.groupBox_MapCanvas)
+        self.verticalLayout_MapCanvas.setObjectName("verticalLayout_MapCanvas")
+        self.groupBox_MapCanvas.setMinimumHeight(320)
+        self.lineEdit_MapHoverFile = QtWidgets.QLineEdit(self.mapContents)
+        self.lineEdit_MapHoverFile.setObjectName("lineEdit_MapHoverFile")
+        self.lineEdit_MapHoverFile.setReadOnly(True)
+        self.lineEdit_MapHoverFile.setPlaceholderText("Hover over a map pixel to see its file name")
+        self.groupBox_MapScale = QtWidgets.QGroupBox("Map Colors", self.mapContents)
+        self.groupBox_MapScale.setObjectName("groupBox_MapScale")
+        self.gridLayout_MapScale = QtWidgets.QGridLayout(self.groupBox_MapScale)
+        self.gridLayout_MapScale.setHorizontalSpacing(10)
+        self.gridLayout_MapScale.setVerticalSpacing(8)
+        self.label_MapCmap = QtWidgets.QLabel("Colormap", self.groupBox_MapScale)
+        self.label_MapCmap.setVisible(False)
+        self.comboBox_MapCmap = QtWidgets.QComboBox(self.groupBox_MapScale)
+        self.comboBox_MapCmap.setObjectName("comboBox_MapCmap")
+        map_cmaps = ["viridis", "magma", "inferno", "gray", "cividis", "turbo"]
+        map_cmaps += [f"{name}_r" for name in map_cmaps]
+        self.comboBox_MapCmap.addItems(map_cmaps)
+        self.comboBox_MapCmap.setMinimumSize(QtCore.QSize(120, 28))
+        self.comboBox_MapCmap.setMaximumWidth(150)
+        self.checkBox_MapReverseCmap = QtWidgets.QCheckBox("Reverse", self.groupBox_MapScale)
+        self.checkBox_MapReverseCmap.setObjectName("checkBox_MapReverseCmap")
+        self.checkBox_MapReverseCmap.setVisible(False)
+        self.checkBox_MapLog = QtWidgets.QCheckBox("Log scale", self.groupBox_MapScale)
+        self.checkBox_MapLog.setObjectName("checkBox_MapLog")
+        self.label_MapVmin = QtWidgets.QLabel("Min", self.groupBox_MapScale)
+        self.doubleSpinBox_MapVmin = QtWidgets.QDoubleSpinBox(self.groupBox_MapScale)
+        self.doubleSpinBox_MapVmin.setObjectName("doubleSpinBox_MapVmin")
+        self.doubleSpinBox_MapVmin.setDecimals(6)
+        self.doubleSpinBox_MapVmin.setMinimum(-1e12)
+        self.doubleSpinBox_MapVmin.setMaximum(1e12)
+        self.doubleSpinBox_MapVmin.setMinimumSize(QtCore.QSize(100, 28))
+        self.label_MapVmin.setVisible(False)
+        self.doubleSpinBox_MapVmin.setVisible(False)
+        self.label_MapVmax = QtWidgets.QLabel("Max", self.groupBox_MapScale)
+        self.doubleSpinBox_MapVmax = QtWidgets.QDoubleSpinBox(self.groupBox_MapScale)
+        self.doubleSpinBox_MapVmax.setObjectName("doubleSpinBox_MapVmax")
+        self.doubleSpinBox_MapVmax.setDecimals(6)
+        self.doubleSpinBox_MapVmax.setMinimum(-1e12)
+        self.doubleSpinBox_MapVmax.setMaximum(1e12)
+        self.doubleSpinBox_MapVmax.setMinimumSize(QtCore.QSize(100, 28))
+        self.label_MapVmax.setVisible(False)
+        self.doubleSpinBox_MapVmax.setVisible(False)
+        self.pushButton_MapScaleAuto = QtWidgets.QPushButton("Auto", self.groupBox_MapScale)
+        self.pushButton_MapScaleAuto.setObjectName("pushButton_MapScaleAuto")
+        self.label_MapPct = QtWidgets.QLabel("Low %", self.groupBox_MapScale)
+        self.doubleSpinBox_MapPctLow = QtWidgets.QDoubleSpinBox(self.groupBox_MapScale)
+        self.doubleSpinBox_MapPctLow.setObjectName("doubleSpinBox_MapPctLow")
+        self.doubleSpinBox_MapPctLow.setDecimals(2)
+        self.doubleSpinBox_MapPctLow.setRange(0.0, 100.0)
+        self.doubleSpinBox_MapPctLow.setValue(0.0)
+        self.doubleSpinBox_MapPctLow.setMinimumSize(QtCore.QSize(100, 28))
+        self.label_MapPctHigh = QtWidgets.QLabel("High %", self.groupBox_MapScale)
+        self.label_MapPctHigh.setObjectName("label_MapPctHigh")
+        self.doubleSpinBox_MapPctHigh = QtWidgets.QDoubleSpinBox(self.groupBox_MapScale)
+        self.doubleSpinBox_MapPctHigh.setObjectName("doubleSpinBox_MapPctHigh")
+        self.doubleSpinBox_MapPctHigh.setDecimals(2)
+        self.doubleSpinBox_MapPctHigh.setRange(0.0, 100.0)
+        self.doubleSpinBox_MapPctHigh.setValue(100.0)
+        self.doubleSpinBox_MapPctHigh.setMinimumSize(QtCore.QSize(100, 28))
+        self.pushButton_MapScalePercentile = QtWidgets.QPushButton("Apply %", self.groupBox_MapScale)
+        self.pushButton_MapScalePercentile.setObjectName("pushButton_MapScalePercentile")
+        self.pushButton_MapScaleReset = QtWidgets.QPushButton("Reset", self.groupBox_MapScale)
+        self.pushButton_MapScaleReset.setObjectName("pushButton_MapScaleReset")
+        self.pushButton_MapScalePercentile.setVisible(False)
+        self.pushButton_MapScaleAuto.setVisible(False)
+        self.pushButton_MapScaleReset.setVisible(False)
+        self.map_hist_widget = MapHistogramWidget(self.groupBox_MapScale)
+        self.map_hist_widget.setMinimumHeight(125)
+        self.map_hist_widget.setMaximumHeight(155)
+        for spin in (self.doubleSpinBox_MapPctLow, self.doubleSpinBox_MapPctHigh):
+            spin.setMinimumWidth(110)
+            spin.setMaximumWidth(110)
+            spin.setSizePolicy(
+                QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self.pushButton_MapScalePercentile.setMinimumHeight(28)
+        self.pushButton_MapScaleAuto.setMinimumHeight(28)
+        self.pushButton_MapScaleReset.setMinimumHeight(28)
+        self._set_accent_button_style(
+            self.pushButton_MapLoadChi,
+            "#1f7a3d", "#278f49", "#16592d", "#11411f")
+        self._set_accent_button_style(
+            self.pushButton_MapSetRoi,
+            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            text_color="#1f1f1f")
+        self._set_accent_button_style(
+            self.pushButton_MapCompute,
+            "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
+        self.gridLayout_MapScale.addWidget(self.map_hist_widget, 0, 0, 1, 5)
+        self.gridLayout_MapScale.addWidget(self.comboBox_MapCmap, 1, 0, 1, 2)
+        self.gridLayout_MapScale.addWidget(self.checkBox_MapLog, 2, 0, 1, 2)
+        self.gridLayout_MapScale.addWidget(self.label_MapPct, 1, 2, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.doubleSpinBox_MapPctLow, 1, 3, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.label_MapPctHigh, 2, 2, 1, 1)
+        self.gridLayout_MapScale.addWidget(self.doubleSpinBox_MapPctHigh, 2, 3, 1, 1)
+        self.gridLayout_MapScale.setColumnStretch(0, 1)
+        self.gridLayout_MapScale.setColumnStretch(1, 1)
+        self.gridLayout_MapScale.setColumnStretch(2, 0)
+        self.gridLayout_MapScale.setColumnStretch(3, 0)
+        self.gridLayout_MapScale.setColumnStretch(4, 0)
+
+        self.groupBox_MapExport = QtWidgets.QGroupBox("Export", self.mapContents)
+        self.groupBox_MapExport.setObjectName("groupBox_MapExport")
+        self.horizontalLayout_MapExport = QtWidgets.QHBoxLayout(self.groupBox_MapExport)
+        self.horizontalLayout_MapExport.setSpacing(8)
+        self.pushButton_MapExportNpy = QtWidgets.QPushButton(
+            "Export to PY, PDF, and PNG", self.groupBox_MapExport)
+        self.pushButton_MapExportNpy.setObjectName("pushButton_MapExportNpy")
+        self.pushButton_MapExportNpy.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.horizontalLayout_MapExport.addWidget(self.pushButton_MapExportNpy)
+        self.pushButton_MapExportNpy.setMinimumHeight(28)
+
+        self.verticalLayout_MapContents.addWidget(self.groupBox_MapLoad)
+        self.verticalLayout_MapContents.addWidget(self.groupBox_MapRoi)
+        self.verticalLayout_MapContents.addWidget(self.groupBox_MapCanvas, 1)
+        self.verticalLayout_MapContents.addWidget(self.lineEdit_MapHoverFile)
+        self.verticalLayout_MapContents.addWidget(self.groupBox_MapScale)
+        self.verticalLayout_MapContents.addWidget(self.groupBox_MapExport)
+        self.verticalLayout_MapContents.addStretch(1)
+        self.scrollArea_Map.setWidget(self.mapContents)
+        self.verticalLayout_Map.addWidget(self.scrollArea_Map, 1)
+
+        self.tabWidget_5.addTab(self.tab_Map, "Map")
+
+    def _promote_map_to_main_tab(self):
+        if (not hasattr(self, "tab_Map")) or (not hasattr(self, "tabWidget")):
+            return
+        if hasattr(self, "tabWidget_5"):
+            idx_sub = self.tabWidget_5.indexOf(self.tab_Map)
+            if idx_sub >= 0:
+                self.tabWidget_5.removeTab(idx_sub)
+        if self.tabWidget.indexOf(self.tab_Map) < 0:
+            idx_fits = self.tabWidget.indexOf(self.tab_PkFt) \
+                if hasattr(self, "tab_PkFt") else -1
+            if idx_fits < 0:
+                self.tabWidget.addTab(self.tab_Map, "Map")
+            else:
+                self.tabWidget.insertTab(idx_fits, self.tab_Map, "Map")
+
+    def _setup_seq_tab(self):
+        if not hasattr(self, "tabWidget_5"):
+            return
+        if hasattr(self, "tab_Seq"):
+            return
+
+        self.tab_Seq = QtWidgets.QWidget()
+        self.tab_Seq.setObjectName("tab_Seq")
+        self.verticalLayout_Seq = QtWidgets.QVBoxLayout(self.tab_Seq)
+        self.verticalLayout_Seq.setContentsMargins(12, 12, 12, 12)
+        self.verticalLayout_Seq.setSpacing(8)
+
+        self.scrollArea_Seq = QtWidgets.QScrollArea(self.tab_Seq)
+        self.scrollArea_Seq.setWidgetResizable(True)
+        self.scrollArea_Seq.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.scrollArea_Seq.setObjectName("scrollArea_Seq")
+
+        self.seqContents = QtWidgets.QWidget()
+        self.seqContents.setObjectName("seqContents")
+        self.verticalLayout_SeqContents = QtWidgets.QVBoxLayout(self.seqContents)
+        self.verticalLayout_SeqContents.setContentsMargins(8, 8, 8, 8)
+        self.verticalLayout_SeqContents.setSpacing(8)
+
+        self.groupBox_SeqLoad = QtWidgets.QGroupBox("Data", self.seqContents)
+        self.groupBox_SeqLoad.setObjectName("groupBox_SeqLoad")
+        self.gridLayout_SeqLoad = QtWidgets.QGridLayout(self.groupBox_SeqLoad)
+        self.gridLayout_SeqLoad.setHorizontalSpacing(12)
+        self.gridLayout_SeqLoad.setVerticalSpacing(8)
+        self.pushButton_SeqLoadChi = QtWidgets.QPushButton("Load CHI files", self.groupBox_SeqLoad)
+        self.pushButton_SeqLoadChi.setObjectName("pushButton_SeqLoadChi")
+        self.pushButton_SeqLoadChi.setMinimumSize(QtCore.QSize(140, 28))
+        self.pushButton_SeqLoadChi.setMaximumWidth(180)
+        self.label_SeqLoaded = QtWidgets.QLabel("Loaded: 0", self.groupBox_SeqLoad)
+        self.label_SeqLoaded.setObjectName("label_SeqLoaded")
+        self.label_SeqLoaded.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        self.gridLayout_SeqLoad.addWidget(self.pushButton_SeqLoadChi, 0, 0, 1, 1)
+        self.gridLayout_SeqLoad.addWidget(self.label_SeqLoaded, 0, 1, 1, 1)
+        self.gridLayout_SeqLoad.setColumnStretch(0, 1)
+        self.gridLayout_SeqLoad.setColumnStretch(1, 1)
+
+        self.groupBox_SeqRoi = QtWidgets.QGroupBox("ROI", self.seqContents)
+        self.groupBox_SeqRoi.setObjectName("groupBox_SeqRoi")
+        self.gridLayout_SeqRoi = QtWidgets.QGridLayout(self.groupBox_SeqRoi)
+        self.gridLayout_SeqRoi.setHorizontalSpacing(8)
+        self.gridLayout_SeqRoi.setVerticalSpacing(8)
+        self.pushButton_SeqSetRoi = QtWidgets.QPushButton("Select ROI", self.groupBox_SeqRoi)
+        self.pushButton_SeqSetRoi.setObjectName("pushButton_SeqSetRoi")
+        self.pushButton_SeqSetRoi.setCheckable(True)
+        self.pushButton_SeqClearRoi = QtWidgets.QPushButton("Clear ROI", self.groupBox_SeqRoi)
+        self.pushButton_SeqClearRoi.setObjectName("pushButton_SeqClearRoi")
+        self.pushButton_SeqCompute = QtWidgets.QPushButton("Compute Seq.", self.groupBox_SeqRoi)
+        self.pushButton_SeqCompute.setObjectName("pushButton_SeqCompute")
+        self.pushButton_SeqSetRoi.setMinimumHeight(28)
+        self.pushButton_SeqClearRoi.setMinimumHeight(28)
+        self.pushButton_SeqCompute.setMinimumHeight(28)
+        self._set_accent_button_style(
+            self.pushButton_SeqLoadChi,
+            "#1f7a3d", "#278f49", "#16592d", "#11411f")
+        self._set_accent_button_style(
+            self.pushButton_SeqSetRoi,
+            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            text_color="#1f1f1f")
+        self._set_accent_button_style(
+            self.pushButton_SeqCompute,
+            "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
+        self.lineEdit_SeqRoiSummary = QtWidgets.QLineEdit(self.groupBox_SeqRoi)
+        self.lineEdit_SeqRoiSummary.setObjectName("lineEdit_SeqRoiSummary")
+        self.lineEdit_SeqRoiSummary.setReadOnly(True)
+        self.lineEdit_SeqRoiSummary.setPlaceholderText("No ROI selected")
+        self.gridLayout_SeqRoi.addWidget(self.pushButton_SeqSetRoi, 0, 0, 1, 1)
+        self.gridLayout_SeqRoi.addWidget(self.pushButton_SeqClearRoi, 0, 1, 1, 1)
+        self.gridLayout_SeqRoi.addWidget(self.pushButton_SeqCompute, 0, 2, 1, 1)
+        self.gridLayout_SeqRoi.addWidget(self.lineEdit_SeqRoiSummary, 1, 0, 1, 3)
+        self.gridLayout_SeqRoi.setColumnStretch(0, 1)
+        self.gridLayout_SeqRoi.setColumnStretch(1, 1)
+        self.gridLayout_SeqRoi.setColumnStretch(2, 1)
+
+        self.groupBox_SeqCanvas = QtWidgets.QGroupBox("Sequence", self.seqContents)
+        self.groupBox_SeqCanvas.setObjectName("groupBox_SeqCanvas")
+        self.verticalLayout_SeqCanvas = QtWidgets.QVBoxLayout(self.groupBox_SeqCanvas)
+        self.verticalLayout_SeqCanvas.setObjectName("verticalLayout_SeqCanvas")
+        self.groupBox_SeqCanvas.setMinimumHeight(320)
+        self.lineEdit_SeqHoverFile = QtWidgets.QLineEdit(self.seqContents)
+        self.lineEdit_SeqHoverFile.setObjectName("lineEdit_SeqHoverFile")
+        self.lineEdit_SeqHoverFile.setReadOnly(True)
+        self.lineEdit_SeqHoverFile.setPlaceholderText("Hover over a sequence point to see its file name")
+        self.lineEdit_SeqStatus = QtWidgets.QLineEdit(self.seqContents)
+        self.lineEdit_SeqStatus.setObjectName("lineEdit_SeqStatus")
+        self.lineEdit_SeqStatus.setReadOnly(True)
+        self.lineEdit_SeqStatus.setPlaceholderText("Sequence status")
+
+        self.groupBox_SeqExport = QtWidgets.QGroupBox("Export", self.seqContents)
+        self.groupBox_SeqExport.setObjectName("groupBox_SeqExport")
+        self.horizontalLayout_SeqExport = QtWidgets.QHBoxLayout(self.groupBox_SeqExport)
+        self.horizontalLayout_SeqExport.setSpacing(8)
+        self.pushButton_SeqExportNpy = QtWidgets.QPushButton(
+            "Export to PY, PDF, and PNG", self.groupBox_SeqExport)
+        self.pushButton_SeqExportNpy.setObjectName("pushButton_SeqExportNpy")
+        self.pushButton_SeqExportNpy.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.horizontalLayout_SeqExport.addWidget(self.pushButton_SeqExportNpy)
+        self.pushButton_SeqExportNpy.setMinimumHeight(28)
+
+        self.verticalLayout_SeqContents.addWidget(self.groupBox_SeqLoad)
+        self.verticalLayout_SeqContents.addWidget(self.groupBox_SeqRoi)
+        self.verticalLayout_SeqContents.addWidget(self.groupBox_SeqCanvas, 1)
+        self.verticalLayout_SeqContents.addWidget(self.lineEdit_SeqHoverFile)
+        self.verticalLayout_SeqContents.addWidget(self.lineEdit_SeqStatus)
+        self.verticalLayout_SeqContents.addWidget(self.groupBox_SeqExport)
+        self.verticalLayout_SeqContents.addStretch(1)
+        self.scrollArea_Seq.setWidget(self.seqContents)
+        self.verticalLayout_Seq.addWidget(self.scrollArea_Seq, 1)
+
+        self.tabWidget_5.addTab(self.tab_Seq, "Seq")
+
+    def _promote_seq_to_main_tab(self):
+        if (not hasattr(self, "tab_Seq")) or (not hasattr(self, "tabWidget")):
+            return
+        if hasattr(self, "tabWidget_5"):
+            idx_sub = self.tabWidget_5.indexOf(self.tab_Seq)
+            if idx_sub >= 0:
+                self.tabWidget_5.removeTab(idx_sub)
+        if self.tabWidget.indexOf(self.tab_Seq) < 0:
+            idx_fits = self.tabWidget.indexOf(self.tab_PkFt) \
+                if hasattr(self, "tab_PkFt") else -1
+            if idx_fits < 0:
+                self.tabWidget.addTab(self.tab_Seq, "Seq")
+            else:
+                self.tabWidget.insertTab(idx_fits, self.tab_Seq, "Seq")
+
+    def _reorder_main_tabs_and_fit_tab_names(self):
+        if hasattr(self, "tabWidget_4"):
+            if hasattr(self, "tabWidget_4Page1"):
+                idx0 = self.tabWidget_4.indexOf(self.tabWidget_4Page1)
+                if idx0 >= 0:
+                    self.tabWidget_4.setTabText(idx0, "PeakFit")
+            if hasattr(self, "tabWidget_4Page2"):
+                idx1 = self.tabWidget_4.indexOf(self.tabWidget_4Page2)
+                if idx1 >= 0:
+                    self.tabWidget_4.setTabText(idx1, "CellFit")
+
+        if not hasattr(self, "tabWidget"):
+            return
+        # Place Pattern between Plot and Cake, then keep Diff before Fits.
+        desired = []
+        for name in (
+            "tab_Main",      # File
+            "tab_JCPDSList2",# JCPDS
+            "tab_Plot",      # Plot
+            "tab_Bkgn",      # Pattern
+            "tab_Cake1",     # Cake
+            "tab_Diff",      # Diff
+            "tab_Map",       # Map
+            "tab_Seq",       # Seq
+            "tab_PkFt",      # Fits
+        ):
+            if hasattr(self, name):
+                desired.append(getattr(self, name))
+        for target_idx, tab in enumerate(desired):
+            cur_idx = self.tabWidget.indexOf(tab)
+            if cur_idx < 0 or cur_idx == target_idx:
+                continue
+            self.tabWidget.tabBar().moveTab(cur_idx, target_idx)
+
+    def _setup_toolbar_diff_toggle(self):
+        if (not hasattr(self, "horizontalLayout_7")) or hasattr(self, "checkBox_Diff"):
+            return
+        self.checkBox_Diff = QtWidgets.QCheckBox(self.frame_2)
+        self.checkBox_Diff.setObjectName("checkBox_Diff")
+        self.checkBox_Diff.setMinimumSize(QtCore.QSize(0, 25))
+        self.checkBox_Diff.setChecked(False)
+        self.checkBox_Diff.setEnabled(False)
+        self.checkBox_Diff.setText("Diff")
+        self.checkBox_Diff.setToolTip("Enable Diff mode")
+        idx = self.horizontalLayout_7.indexOf(self.checkBox_ShowCake)
+        if idx < 0:
+            idx = self.horizontalLayout_7.count() - 1
+        self.horizontalLayout_7.insertWidget(idx + 1, self.checkBox_Diff)
+
+    def _spread_top_toolbar_even(self):
+        if not hasattr(self, "horizontalLayout_7"):
+            return
+        layout = self.horizontalLayout_7
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            w = item.widget()
+            if w is None:
+                layout.setStretch(i, 0)
+                continue
+            w.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+            w.setMinimumWidth(0)
+            w.setMaximumWidth(16777215)
+            layout.setStretch(i, 1)
+
+    def _setup_plot_control_export(self):
+        if not hasattr(self, "verticalLayout_PlotControl"):
+            return
+        if hasattr(self, "pushButton_ExportPythonView"):
+            return
+        self.groupBox_PythonExport = QtWidgets.QGroupBox("Export", self.plotControlContents)
+        self.groupBox_PythonExport.setObjectName("groupBox_PythonExport")
+        self.horizontalLayout_PythonExport = QtWidgets.QHBoxLayout(self.groupBox_PythonExport)
+        self.horizontalLayout_PythonExport.setContentsMargins(12, 12, 12, 12)
+        self.horizontalLayout_PythonExport.setObjectName("horizontalLayout_PythonExport")
+        self.pushButton_ExportPythonView = QtWidgets.QPushButton(self.groupBox_PythonExport)
+        self.pushButton_ExportPythonView.setObjectName("pushButton_ExportPythonView")
+        self.pushButton_ExportPythonView.setMinimumSize(QtCore.QSize(0, 25))
+        self.pushButton_ExportPythonView.setMaximumSize(QtCore.QSize(16777215, 16777215))
+        self.pushButton_ExportPythonView.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.pushButton_ExportPythonView.setText("Export view")
+        self.pushButton_ExportPythonView.setToolTip(
+            "Export current on-screen view as a Python reproducible package with PDF and PNG previews")
+        self.horizontalLayout_PythonExport.addWidget(self.pushButton_ExportPythonView, 1)
+        # Place at the top in Plot > Control.
+        self.verticalLayout_PlotControl.insertWidget(0, self.groupBox_PythonExport)
+
+    def _setup_backup_comment_button(self):
+        return
+
+    def _setup_file_metadata_tab(self):
+        if not hasattr(self, "tabWidget_3"):
+            return
+        if hasattr(self, "tabWidget_3PageMetadata"):
+            return
+
+        self.tabWidget_3PageMetadata = QtWidgets.QWidget()
+        self.tabWidget_3PageMetadata.setObjectName("tabWidget_3PageMetadata")
+        self.verticalLayout_FileMetadata = QtWidgets.QVBoxLayout(
+            self.tabWidget_3PageMetadata)
+        self.verticalLayout_FileMetadata.setContentsMargins(8, 8, 8, 8)
+        self.verticalLayout_FileMetadata.setSpacing(6)
+
+        self.splitter_FileMetadata = QtWidgets.QSplitter(
+            QtCore.Qt.Vertical, self.tabWidget_3PageMetadata)
+        self.splitter_FileMetadata.setObjectName("splitter_FileMetadata")
+
+        self.tableWidget_MetadataStructured = QtWidgets.QTableWidget(
+            self.splitter_FileMetadata)
+        self.tableWidget_MetadataStructured.setObjectName(
+            "tableWidget_MetadataStructured")
+        self.tableWidget_MetadataStructured.setColumnCount(4)
+        self.tableWidget_MetadataStructured.setHorizontalHeaderLabels(
+            ["Parameter", "Value", "Unit", "Source"])
+        self.tableWidget_MetadataStructured.setEditTriggers(
+            QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.tableWidget_MetadataStructured.setSelectionBehavior(
+            QtWidgets.QAbstractItemView.SelectRows)
+        self.tableWidget_MetadataStructured.setSelectionMode(
+            QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.tableWidget_MetadataStructured.setAlternatingRowColors(True)
+        self.tableWidget_MetadataStructured.verticalHeader().setVisible(False)
+        self.tableWidget_MetadataStructured.horizontalHeader().setStretchLastSection(True)
+        self.tableWidget_MetadataStructured.horizontalHeader().setSectionResizeMode(
+            0, QtWidgets.QHeaderView.ResizeToContents)
+        self.tableWidget_MetadataStructured.horizontalHeader().setSectionResizeMode(
+            1, QtWidgets.QHeaderView.Stretch)
+
+        self.widget_MetadataRaw = QtWidgets.QWidget(self.splitter_FileMetadata)
+        self.widget_MetadataRaw.setObjectName("widget_MetadataRaw")
+        self.verticalLayout_MetadataRaw = QtWidgets.QVBoxLayout(self.widget_MetadataRaw)
+        self.verticalLayout_MetadataRaw.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_MetadataRaw.setSpacing(6)
+
+        self.lineEdit_MetadataJsonPath = QtWidgets.QLineEdit(
+            self.widget_MetadataRaw)
+        self.lineEdit_MetadataJsonPath.setObjectName("lineEdit_MetadataJsonPath")
+        self.lineEdit_MetadataJsonPath.setReadOnly(True)
+        self.lineEdit_MetadataJsonPath.setPlaceholderText("No metadata JSON file loaded")
+
+        self.frame_MetadataSearch = QtWidgets.QFrame(self.widget_MetadataRaw)
+        self.frame_MetadataSearch.setObjectName("frame_MetadataSearch")
+        self.horizontalLayout_MetadataSearch = QtWidgets.QHBoxLayout(
+            self.frame_MetadataSearch)
+        self.horizontalLayout_MetadataSearch.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_MetadataSearch.setSpacing(6)
+        self.lineEdit_MetadataSearch = QtWidgets.QLineEdit(self.frame_MetadataSearch)
+        self.lineEdit_MetadataSearch.setObjectName("lineEdit_MetadataSearch")
+        self.lineEdit_MetadataSearch.setPlaceholderText("Search metadata")
+        self.pushButton_MetadataSearchPrev = QtWidgets.QPushButton(
+            "Previous", self.frame_MetadataSearch)
+        self.pushButton_MetadataSearchPrev.setObjectName(
+            "pushButton_MetadataSearchPrev")
+        self.pushButton_MetadataSearchNext = QtWidgets.QPushButton(
+            "Next", self.frame_MetadataSearch)
+        self.pushButton_MetadataSearchNext.setObjectName(
+            "pushButton_MetadataSearchNext")
+        self.label_MetadataSearchStatus = QtWidgets.QLabel(
+            "", self.frame_MetadataSearch)
+        self.label_MetadataSearchStatus.setObjectName("label_MetadataSearchStatus")
+        self.label_MetadataSearchStatus.setMinimumWidth(80)
+        self.label_MetadataSearchStatus.setAlignment(
+            QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        self.horizontalLayout_MetadataSearch.addWidget(
+            self.lineEdit_MetadataSearch, 1)
+        self.horizontalLayout_MetadataSearch.addWidget(
+            self.pushButton_MetadataSearchPrev)
+        self.horizontalLayout_MetadataSearch.addWidget(
+            self.pushButton_MetadataSearchNext)
+        self.horizontalLayout_MetadataSearch.addWidget(
+            self.label_MetadataSearchStatus)
+
+        self.plainTextEdit_MetadataJson = QtWidgets.QPlainTextEdit(
+            self.widget_MetadataRaw)
+        self.plainTextEdit_MetadataJson.setObjectName("plainTextEdit_MetadataJson")
+        self.plainTextEdit_MetadataJson.setReadOnly(True)
+        self.plainTextEdit_MetadataJson.setLineWrapMode(QtWidgets.QPlainTextEdit.NoWrap)
+        self.plainTextEdit_MetadataJson.setPlaceholderText(
+            "Metadata JSON content will appear here when a metadata file is provided.")
+        font = QtGui.QFont("Menlo")
+        font.setStyleHint(QtGui.QFont.Monospace)
+        self.plainTextEdit_MetadataJson.setFont(font)
+
+        self.verticalLayout_MetadataRaw.addWidget(self.lineEdit_MetadataJsonPath)
+        self.verticalLayout_MetadataRaw.addWidget(self.frame_MetadataSearch)
+        self.verticalLayout_MetadataRaw.addWidget(self.plainTextEdit_MetadataJson, 1)
+        self.splitter_FileMetadata.addWidget(self.tableWidget_MetadataStructured)
+        self.splitter_FileMetadata.addWidget(self.widget_MetadataRaw)
+        self.splitter_FileMetadata.setStretchFactor(0, 1)
+        self.splitter_FileMetadata.setStretchFactor(1, 1)
+        self.verticalLayout_FileMetadata.addWidget(self.splitter_FileMetadata, 1)
+        self.lineEdit_MetadataSearch.textChanged.connect(self._metadata_search_first)
+        self.pushButton_MetadataSearchNext.clicked.connect(
+            self._metadata_search_next)
+        self.pushButton_MetadataSearchPrev.clicked.connect(
+            self._metadata_search_previous)
+        self.shortcut_MetadataTableCopy = QtGui.QShortcut(
+            QtGui.QKeySequence.Copy, self.tableWidget_MetadataStructured)
+        self.shortcut_MetadataTableCopy.activated.connect(
+            self._copy_metadata_table_selection)
+
+        insert_idx = -1
+        if hasattr(self, "tabWidget_3Page2"):
+            idx_config = self.tabWidget_3.indexOf(self.tabWidget_3Page2)
+            if idx_config >= 0:
+                insert_idx = idx_config + 1
+        if insert_idx >= 0:
+            self.tabWidget_3.insertTab(
+                insert_idx, self.tabWidget_3PageMetadata, "Metadata")
+        else:
+            self.tabWidget_3.addTab(self.tabWidget_3PageMetadata, "Metadata")
+
+    def _copy_metadata_table_selection(self):
+        if not hasattr(self, "tableWidget_MetadataStructured"):
+            return
+        table = self.tableWidget_MetadataStructured
+        ranges = table.selectedRanges()
+        if not ranges:
+            return
+        lines = []
+        for selected in ranges:
+            for row in range(selected.topRow(), selected.bottomRow() + 1):
+                cells = []
+                for col in range(selected.leftColumn(), selected.rightColumn() + 1):
+                    item = table.item(row, col)
+                    cells.append("" if item is None else item.text())
+                lines.append("\t".join(cells))
+        QtWidgets.QApplication.clipboard().setText("\n".join(lines))
+
+    def _metadata_search_flags(self, backward=False):
+        flags = QtGui.QTextDocument.FindFlag(0)
+        if backward:
+            flags |= QtGui.QTextDocument.FindFlag.FindBackward
+        return flags
+
+    def _set_metadata_search_status(self, text):
+        if hasattr(self, "label_MetadataSearchStatus"):
+            self.label_MetadataSearchStatus.setText(text)
+
+    def _metadata_search_first(self):
+        if not hasattr(self, "plainTextEdit_MetadataJson"):
+            return
+        query = self.lineEdit_MetadataSearch.text()
+        if not query:
+            self._set_metadata_search_status("")
+            return
+        cursor = self.plainTextEdit_MetadataJson.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.Start)
+        self.plainTextEdit_MetadataJson.setTextCursor(cursor)
+        self._metadata_find(query, backward=False)
+
+    def _metadata_search_next(self):
+        if not hasattr(self, "lineEdit_MetadataSearch"):
+            return
+        self._metadata_find(self.lineEdit_MetadataSearch.text(), backward=False)
+
+    def _metadata_search_previous(self):
+        if not hasattr(self, "lineEdit_MetadataSearch"):
+            return
+        self._metadata_find(self.lineEdit_MetadataSearch.text(), backward=True)
+
+    def _metadata_find(self, query, backward=False):
+        if not query or not hasattr(self, "plainTextEdit_MetadataJson"):
+            self._set_metadata_search_status("")
+            return
+        found = self.plainTextEdit_MetadataJson.find(
+            query, self._metadata_search_flags(backward=backward))
+        if not found:
+            cursor = self.plainTextEdit_MetadataJson.textCursor()
+            if backward:
+                cursor.movePosition(QtGui.QTextCursor.End)
+            else:
+                cursor.movePosition(QtGui.QTextCursor.Start)
+            self.plainTextEdit_MetadataJson.setTextCursor(cursor)
+            found = self.plainTextEdit_MetadataJson.find(
+                query, self._metadata_search_flags(backward=backward))
+        self._set_metadata_search_status("Found" if found else "No match")
+
+    def _move_backup_into_file_data_tab(self):
+        # Move backup table/tools under File > Data, below Raw image handling.
+        if not hasattr(self, "tabWidget_3"):
+            return
+        if not hasattr(self, "tabWidget_3Page1"):
+            return
+        if not hasattr(self, "tabWidget_3Page3"):
+            return
+        if not hasattr(self, "verticalLayout_2"):
+            return
+        if not hasattr(self, "frame_BackupTools"):
+            return
+        if not hasattr(self, "tableWidget_BackupInfo"):
+            return
+        if hasattr(self, "groupBox_FileDataBackup"):
+            # Already moved/rebuilt.
+            idx_backup = self.tabWidget_3.indexOf(self.tabWidget_3Page3)
+            if idx_backup >= 0:
+                self.tabWidget_3.removeTab(idx_backup)
+            return
+
+        self.groupBox_FileDataBackup = QtWidgets.QGroupBox(
+            "Backup", self.scrollAreaWidgetContents)
+        self.groupBox_FileDataBackup.setObjectName("groupBox_FileDataBackup")
+        self.groupBox_FileDataBackup.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout_FileDataBackup = QtWidgets.QVBoxLayout(
+            self.groupBox_FileDataBackup)
+        self.verticalLayout_FileDataBackup.setContentsMargins(12, 12, 12, 12)
+        self.verticalLayout_FileDataBackup.setSpacing(8)
+
+        self.frame_BackupTools.setParent(self.groupBox_FileDataBackup)
+        self.tableWidget_BackupInfo.setParent(self.groupBox_FileDataBackup)
+        self.verticalLayout_FileDataBackup.addWidget(self.frame_BackupTools)
+        self.verticalLayout_FileDataBackup.addWidget(self.tableWidget_BackupInfo, 1)
+
+        insert_idx = self.verticalLayout_2.indexOf(self.groupBox_36)
+        if insert_idx < 0:
+            self.verticalLayout_2.addWidget(self.groupBox_FileDataBackup)
+        else:
+            self.verticalLayout_2.insertWidget(insert_idx + 1, self.groupBox_FileDataBackup)
+
+        idx_backup = self.tabWidget_3.indexOf(self.tabWidget_3Page3)
+        if idx_backup >= 0:
+            self.tabWidget_3.removeTab(idx_backup)
+
+    def _layout_backup_buttons(self):
+        if not hasattr(self, "horizontalLayout_BackupTools"):
+            return
+        if not hasattr(self, "pushButton_BackupRestore"):
+            return
+        self.frame_BackupTools.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.horizontalLayout_BackupTools.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_BackupTools.setSpacing(0)
+        self.pushButton_BackupRestore.setText("Restore")
+        common_h = 30
+        self.pushButton_BackupRestore.setMinimumHeight(common_h)
+        self.pushButton_BackupRestore.setMaximumHeight(common_h)
+        self.pushButton_BackupRestore.setMinimumWidth(0)
+        self.pushButton_BackupRestore.setMaximumWidth(16777215)
+        self.pushButton_BackupRestore.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+
+        # Rebuild row to remove spacer and keep only Restore.
+        while self.horizontalLayout_BackupTools.count():
+            item = self.horizontalLayout_BackupTools.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.setParent(None)
+        self.horizontalLayout_BackupTools.addWidget(self.pushButton_BackupRestore, 1)
+        self.horizontalLayout_BackupTools.setStretch(0, 1)
+
+    def _compact_file_data_layout(self):
+        if hasattr(self, "groupBox_28"):
+            self.groupBox_28.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        if hasattr(self, "verticalLayout_26"):
+            self.verticalLayout_26.setContentsMargins(12, 8, 12, 8)
+            self.verticalLayout_26.setSpacing(6)
+        if hasattr(self, "frame_24"):
+            self.frame_24.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        if hasattr(self, "horizontalLayout_2"):
+            self.horizontalLayout_2.setContentsMargins(8, 6, 8, 6)
+            self.horizontalLayout_2.setSpacing(8)
+        if hasattr(self, "frame_6"):
+            self.frame_6.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        if hasattr(self, "horizontalLayout_13"):
+            self.horizontalLayout_13.setContentsMargins(8, 4, 8, 4)
+            self.horizontalLayout_13.setSpacing(10)
+        if hasattr(self, "frame_23"):
+            self.frame_23.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+            self.frame_23.setMinimumHeight(0)
+        if hasattr(self, "horizontalLayout_6"):
+            self.horizontalLayout_6.setContentsMargins(12, 4, 12, 4)
+            self.horizontalLayout_6.setSpacing(18)
+
+        if hasattr(self, "groupBox_FileDataBackup"):
+            self.groupBox_FileDataBackup.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+        if hasattr(self, "tableWidget_BackupInfo"):
+            self.tableWidget_BackupInfo.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+            self.tableWidget_BackupInfo.setMinimumHeight(300)
+            self.tableWidget_BackupInfo.setEditTriggers(
+                QtWidgets.QAbstractItemView.DoubleClicked |
+                QtWidgets.QAbstractItemView.EditKeyPressed |
+                QtWidgets.QAbstractItemView.SelectedClicked)
+        if hasattr(self, "verticalLayout_2"):
+            for i in range(self.verticalLayout_2.count()):
+                item = self.verticalLayout_2.itemAt(i)
+                w = item.widget()
+                self.verticalLayout_2.setStretch(i, 0)
+                if w is getattr(self, "groupBox_FileDataBackup", None):
+                    self.verticalLayout_2.setStretch(i, 1)
+
+    def closeEvent(self, event):
+        try:
+            if hasattr(self, 'mpl') and hasattr(self.mpl, 'shutdown'):
+                self.mpl.shutdown()
+        except Exception:
+            pass
+        super().closeEvent(event)
+
+    def connect_channel(self):
+        self.pushButton_RoomT.clicked.connect(
+            lambda: self.set_temperature(300))
+        self.pushButton_S_RoomT.clicked.connect(
+            lambda: self.set_temperature(300))
+        self.pushButton_1bar.clicked.connect(
+            lambda: self.set_pressure(0.0))
+        self.pushButton_SetPStepTo1.clicked.connect(
+            lambda: self.set_q_pstep(1.))
+        self.pushButton_SetPStepTo10.clicked.connect(
+            lambda: self.set_q_pstep(10.))
+        self.pushButton_SetTStepTo100.clicked.connect(
+            lambda: self.set_q_tstep(100))
+        self.pushButton_SetTStepTo1000.clicked.connect(
+            lambda: self.set_q_tstep(1000))
+        self.doubleSpinBox_PStep.valueChanged.connect(self.set_pstep)
+        self.spinBox_TStep.valueChanged.connect(self.set_tstep)
+        """
+        self.pushButton_SetUCFitStepTo0_01.clicked.connect(
+            lambda: self.set_ustep(0.01))
+        self.pushButton_SetUCFitStepTo0_001.clicked.connect(
+            lambda: self.set_ustep(0.001))
+        self.pushButton_SetUCFitStepTo0_0001.clicked.connect(
+            lambda: self.set_ustep(0.0001))
+        """
+        self.pushButton_SetJCPDSStepTo0001.clicked.connect(
+            lambda: self.set_jstep(0.001))
+        self.pushButton_SetJCPDSStepTo001.clicked.connect(
+            lambda: self.set_jstep(0.01))
+        self.pushButton_SetJCPDSStepTo01.clicked.connect(
+            lambda: self.set_jstep(0.1))
+        self.pushButton_AboutPeakpo.clicked.connect(self.about)
+        self.pushButton_Help.clicked.connect(self.shortcutkeys)
+
+    """
+    def set_ustep(self, value):
+        self.doubleSpinBox_UCFitStep.setValue(value)
+    """
+
+    def set_jstep(self, value):
+        self.doubleSpinBox_JCPDSStep.setValue(value)
+
+    def set_pstep(self):
+        self.doubleSpinBox_Pressure.setSingleStep(
+            self.doubleSpinBox_PStep.value())
+        if hasattr(self, "doubleSpinBox_ToolbarPressure"):
+            self.doubleSpinBox_ToolbarPressure.setSingleStep(
+                self.doubleSpinBox_PStep.value())
+
+    def set_tstep(self):
+        self.doubleSpinBox_Temperature.setSingleStep(
+            self.spinBox_TStep.value())
+        if hasattr(self, "spinBox_ToolbarTemperature"):
+            self.spinBox_ToolbarTemperature.setSingleStep(
+                max(1, int(self.spinBox_TStep.value())))
+
+    def set_temperature(self, temperature):
+        self.doubleSpinBox_Temperature.setValue(temperature)
+
+    def set_pressure(self, pressure):
+        self.doubleSpinBox_Pressure.setValue(pressure)
+
+    def set_q_pstep(self, value=1.):
+        self.doubleSpinBox_PStep.setValue(value)
+
+    def set_q_tstep(self, value=1000.):
+        self.spinBox_TStep.setValue(value)
+
+    def _update_pt_spinbox_colors(self):
+        p = float(self.doubleSpinBox_Pressure.value())
+        t = float(self.doubleSpinBox_Temperature.value())
+        self._set_pt_spinbox_style(
+            self.doubleSpinBox_Pressure,
+            alert=(p > 0.0),
+            alert_bg="#1565c0")   # blue
+        self._set_pt_spinbox_style(
+            self.doubleSpinBox_Temperature,
+            alert=(t > 300.0),
+            alert_bg="#c62828")   # red
+
+    def _set_pt_spinbox_style(self, box, alert=False, alert_bg="#2b2b2b"):
+        bg = alert_bg if alert else "#2b2b2b"
+        box.setStyleSheet(
+            "QDoubleSpinBox {"
+            "font: 75 24pt \"Helvetica\";"
+            "color: #f0f0f0;"
+            "background-color: " + bg + ";"
+            "padding: 0px;"
+            "}"
+            "QDoubleSpinBox::edit-field {"
+            "margin: 0px;"
+            "padding: 0px;"
+            "}"
+            "QDoubleSpinBox::up-button {"
+            "subcontrol-origin: border;"
+            "subcontrol-position: top right;"
+            "width: 24px;"
+            "margin: 0px;"
+            "}"
+            "QDoubleSpinBox::down-button {"
+            "subcontrol-origin: border;"
+            "subcontrol-position: bottom right;"
+            "width: 24px;"
+            "margin: 0px;"
+            "}"
+        )
+
+    def about(self):
+        information = 'PeakPo ver.' + __version__ + '<br>' + \
+            'A Visual Diffraction Analysis Tool<br>' + \
+            'by S.-H. Dan Shim, SHDShim@gmail.com<br>' + \
+            'Arizona State University<br><br>' + \
+            'Source: https://github.com/SHDShim/peakpo-v7 <br><br>' + \
+            'Manual: https://github.com/SHDShim/PeakPo/wiki <br><br>' + \
+            'how to cite: ' + str(__citation__) + '<br><br>' + \
+            'WARNING. Use at your own risk. ' + \
+            'This is a free software and no support is provided.<br>'
+        infobox = InformationBox(title="About PeakPo")
+        infobox.setText(information)
+        infobox.exec()
+
+        """
+        self.textEdit_about.setText(
+            'PeakPo ver.' + __version__ + '<br>' +
+            'A Visual Diffraction Analysis Tool<br>' +
+            'by S.-H. Dan Shim, SHDShim@gmail.com<br>' +
+            'Arizona State University<br><br>' +
+            'Source: https://github.com/SHDShim/peakpo-v7 <br><br>' +
+            'Manual: https://github.com/SHDShim/PeakPo/wiki <br><br>'
+            'how to cite: ' + str(__citation__) + '<br><br>'
+            'WARNING. Use at your own risk. ' +
+            'This is a free software and no support is provided.<br>')
+        """
+
+    def shortcutkeys(self):
+        information = '** Shortcut Keys ** <br><br>' + \
+            'To activate shortcut keys: <br>' + \
+            ' - Mouse click the plotting area. <br>' + \
+            ' - Make sure no toolbar buttons are in blue. <br><br>' + \
+            'Save session: s<br>' + \
+            'Rescale vertical: v<br>' + \
+            'Whole spectrum: w<br>' + \
+            'Home or Reset: H or R<br>' + \
+            'Back: left arrow<br>' + \
+            'Forward: right arrow<br>' + \
+            'Pan: p<br>' + \
+            'Zoom: o<br>' + \
+            'Peak position read: i<br>' + \
+            'Constrain pan/zoom to x axis: hold x when panning/zooming<br>' + \
+            'Constrain pan/zoom to y axis: hold y when panning/zooming<br>' + \
+            'Preserve aspect ratio: hold CTRL when panning/zooming<br>' + \
+            'Toggle x scale (log/lin): L or k when mouse is over an axes<br>' + \
+            'Toggle y scale (log/lin): l when mouse is over an axes<br>'
+        infobox = InformationBox(title="Help")
+        infobox.setText(information)
+        infobox.exec()
+
+        """
+        self.textEdit_shortcuts.setText(
+            '** Shortcut Keys ** <br><br>' +
+            'To activate shortcut keys: <br>' +
+            ' - Mouse click the plotting area. <br>' +
+            ' - Make sure no toolbar buttons are in blue. <br><br>' +
+            'Save session: s<br>' +
+            'Rescale vertical: v<br>' +
+            'Whole spectrum: w<br>' +
+            'Home or Reset: H or R<br>' +
+            'Back: left arrow<br>' +
+            'Forward: right arrow<br>' +
+            'Pan: p<br>' +
+            'Zoom: o<br>' +
+            'Peak position read: i<br>' +
+            'Constrain pan/zoom to x axis: hold x when panning/zooming<br>' +
+            'Constrain pan/zoom to y axis: hold y when panning/zooming<br>' +
+            'Preserve aspect ratio: hold CTRL when panning/zooming<br>' +
+            'Toggle x scale (log/lin): L or k when mouse is over an axes<br>' +
+            'Toggle y scale (log/lin): l when mouse is over an axes<br>')
+        """

@@ -1,0 +1,21 @@
+VERSION:   4
+COMMENT: Argon FCC (made by Shim, EOS from Finger et al and Ross et al)
+K0:       215.0
+K0P:      3.6
+DK0DT:    0.0
+DK0PDT:   0.0
+SYMMETRY: HEXAGONAL
+A:        6.76
+B:        6.76
+C:        4.72
+ALPHA:    90.0
+BETA:     90.0
+GAMMA:    120.0
+VOLUME:   186.795333362
+ALPHAT:   0.0
+DALPHADT: 0.0
+DIHKL:    2.74806	100	1	1	1
+DIHKL:    2.92717	40	2	0	0
+DIHKL:    1.69	25	2	2	0
+DIHKL:    1.53539	30	3	1	1
+DIHKL:    1.37403	12	2	2	2

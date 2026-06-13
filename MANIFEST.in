@@ -1,0 +1,25 @@
+include README.md
+include LICENSE
+include AUTHORS
+include pyproject.toml
+include setup.py
+
+recursive-include peakpo *.py *.mplstyle *.icns *.ico
+exclude peakpo/error.log
+
+prune jupyter-tools
+prune environments
+prune scripts
+prune shortcuts
+prune skills
+prune tests
+prune ui
+
+exclude 0-ToDo.md
+exclude links.txt
+exclude .gitignore
+exclude *.metadata*.json
+
+global-exclude __pycache__/*
+global-exclude *.py[cod]
+global-exclude .DS_Store

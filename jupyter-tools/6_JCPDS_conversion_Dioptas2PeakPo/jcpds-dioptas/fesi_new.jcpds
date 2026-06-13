@@ -1,0 +1,15 @@
+VERSION: 4
+COMMENT: aa
+K0:       170.000
+K0P:       5.00000
+SYMMETRY: CUBIC
+A:       4.48796
+ALPHAT:      0.000000
+DIHKL:   3.174        22     1   1   0
+DIHKL:   2.591        13     1   1   1
+DIHKL:   2.0076      100     2   1   0
+DIHKL:   1.823        48     2   1   1
+DIHKL:   1.199        20     3   2   1
+DIHKL:   0.9794        8     4   2   1
+DIHKL:   0.8334        9     5   2   0
+DIHKL:   0.8194        8     5   2   1

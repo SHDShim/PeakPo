@@ -1,0 +1,60 @@
+data_global
+_chemical_name_mineral 'Bridgmanite'
+loop_
+_publ_author_name
+'Horiuchi H'
+'Ito E'
+'Weidner D J'
+_journal_name_full 'American Mineralogist'
+_journal_volume 72 
+_journal_year 1987
+_journal_page_first 357
+_journal_page_last 360
+_publ_section_title
+;
+ Perovskite-type MgSiO3: Single-crystal X-ray diffraction study
+;
+_database_code_amcsd 0001071
+_chemical_compound_source 'Synthetic'
+_chemical_formula_sum 'Mg Si O3'
+_cell_length_a 4.7754
+_cell_length_b 4.9292
+_cell_length_c 6.8969
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_cell_volume 162.345
+_exptl_crystal_density_diffrn      4.107
+_symmetry_space_group_name_H-M 'P b n m'
+loop_
+_space_group_symop_operation_xyz
+  'x,y,z'
+  'x,y,1/2-z'
+  '-x,-y,1/2+z'
+  '1/2+x,1/2-y,1/2+z'
+  '1/2-x,1/2+y,1/2-z'
+  '1/2-x,1/2+y,z'
+  '1/2+x,1/2-y,-z'
+  '-x,-y,-z'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Mg   0.51410   0.55600   0.25000
+Si   0.50000   0.00000   0.50000
+O1   0.10280   0.46600   0.25000
+O2   0.19610   0.20140   0.55310
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_12
+_atom_site_aniso_U_13
+_atom_site_aniso_U_23
+Mg 0.00555 0.00565 0.00619 0.00052 0.00000 0.00000
+Si 0.00342 0.00367 0.00241 -0.00005 0.00003 -0.00016
+O1 0.00434 0.00581 0.00217 0.00013 0.00000 0.00000
+O2 0.00430 0.00449 0.00431 0.00083 0.00048 0.00083
+
