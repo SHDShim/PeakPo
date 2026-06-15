@@ -53,6 +53,11 @@ qt.conf
 .github/
 
 # =========================
+# opencode configuration
+# =========================
+.opencode/
+
+# =========================
 # Skills (local customizations)
 # =========================
 skills/
