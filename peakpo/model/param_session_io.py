@@ -978,6 +978,47 @@ def list_backup_events(param_dir):
     return index.get("events", [])
 
 
+def export_jcpds_share(model, export_dir):
+    os.makedirs(export_dir, exist_ok=True)
+    chi_root = export_dir
+    jcpds_data = {
+        "schema": 1,
+        "saved_pressure": getattr(model, "saved_pressure", 0.0),
+        "saved_temperature": getattr(model, "saved_temperature", 298.0),
+        "phases": [_serialize_jcpds_item(j, chi_root) for j in getattr(model, "jcpds_lst", [])],
+    }
+    jcpds_json_path = os.path.join(export_dir, JCPDS_FILE)
+    _atomic_write_json(jcpds_json_path, jcpds_data)
+    return jcpds_data.get("phases", [])
+
+
+def validate_jcpds_share(share_dir):
+    if not os.path.isdir(share_dir):
+        return False, "Directory does not exist."
+    jcpds_json_path = os.path.join(share_dir, JCPDS_FILE)
+    if not os.path.exists(jcpds_json_path):
+        return False, f"Required file '{JCPDS_FILE}' not found in the selected folder."
+    try:
+        with open(jcpds_json_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as exc:
+        return False, f"Failed to read '{JCPDS_FILE}': {exc}"
+    if not isinstance(data, dict):
+        return False, f"'{JCPDS_FILE}' is not a valid JSON object."
+    phases = data.get("phases", data.get("items", []))
+    if not isinstance(phases, list):
+        return False, f"'{JCPDS_FILE}' does not contain a valid phases list."
+    return True, ""
+
+
+def load_jcpds_share(share_dir):
+    jcpds_json_path = os.path.join(share_dir, JCPDS_FILE)
+    with open(jcpds_json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    phases = data.get("phases", data.get("items", []))
+    return [_load_jcpds_item(p, share_dir) for p in phases]
+
+
 def restore_to_backup_event(param_dir, event_id=None, event_index=None):
     events = list_backup_events(param_dir)
     if not events:

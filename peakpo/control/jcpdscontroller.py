@@ -13,6 +13,10 @@ from ..utils import xls_jlist, dialog_savefile, \
     dialog_openfiles_hide_param_dirs, make_filename, get_temp_dir, \
     InformationBox, extract_filename, extract_extension, align_spinbox_right
 from ..ds_jcpds import JCPDS
+from ..model.param_session_io import (
+    export_jcpds_share, validate_jcpds_share, load_jcpds_share,
+    save_model_to_param,
+)
 import pymatgen as mg
 import datetime
 
@@ -34,7 +38,10 @@ class JcpdsController(object):
     def connect_channel(self):
         if hasattr(self.widget, "pushButton_SaveJlist"):
             self.widget.pushButton_SaveJlist.clicked.connect(
-                self.save_jlist_to_folder)
+                self.export_jcpds_share_set)
+        if hasattr(self.widget, "pushButton_ImportJlistSet"):
+            self.widget.pushButton_ImportJlistSet.clicked.connect(
+                self.import_jcpds_share_set)
         self.widget.pushButton_RemoveJCPDS.clicked.connect(self.remove_a_jcpds)
         self.widget.pushButton_AddToJlist.clicked.connect(
             lambda: self.make_jlist(append=True))
@@ -361,44 +368,125 @@ class JcpdsController(object):
         phase_to_save.write_to_file(out_path)
 
     def save_jlist_to_folder(self):
+        return self.export_jcpds_share_set()
+
+    def export_jcpds_share_set(self):
         if not self.model.jcpds_exist():
             return
-
-        folder = QtWidgets.QFileDialog.getExistingDirectory(
-            self.widget,
-            "Choose folder to save JCPDS list",
-            self.model.jcpds_path,
-            QtWidgets.QFileDialog.ShowDirsOnly,
-        )
-        if folder in ("", None):
+        if not self.model.base_ptn_exist():
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Open a CHI file before exporting a JCPDS Share set.")
             return
+
+        chi_folder = os.path.dirname(self.model.get_base_ptn_filename())
+        base_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        share_folder_name = f"JCPDS-share-{base_date}"
+        share_folder = os.path.join(chi_folder, share_folder_name)
+        suffix = 2
+        while os.path.exists(share_folder):
+            share_folder = os.path.join(chi_folder, f"{share_folder_name}-{suffix}")
+            suffix += 1
+
+        os.makedirs(share_folder, exist_ok=True)
 
         used_paths = set()
         saved_count = 0
         failed = []
         for phase in self.model.jcpds_lst:
             out_path = self._make_unique_jcpds_export_path(
-                folder, getattr(phase, "name", "jcpds"), used_paths)
+                share_folder, getattr(phase, "name", "jcpds"), used_paths)
             try:
                 self._write_untweaked_jcpds(phase, out_path)
                 saved_count += 1
             except Exception as exc:
                 failed.append(f"{getattr(phase, 'name', 'jcpds')}: {exc}")
 
-        self.model.set_jcpds_path(folder)
+        try:
+            phases_exported = export_jcpds_share(self.model, share_folder)
+        except Exception as exc:
+            failed.append(f"pkpo_jcpds.json: {exc}")
+            phases_exported = []
+
+        self.model.set_jcpds_path(share_folder)
         if failed:
             QtWidgets.QMessageBox.warning(
                 self.widget,
-                "Partial Save",
-                f"Saved {saved_count} JCPDS file(s) to:\n{folder}\n\n"
+                "Partial Export",
+                f"Saved {saved_count} JCPDS file(s) and pkpo_jcpds.json to:\n{share_folder}\n\n"
                 "Failed:\n" + "\n".join(failed),
             )
             return
 
         QtWidgets.QMessageBox.information(
             self.widget,
-            "JCPDS Saved",
-            f"Saved {saved_count} JCPDS file(s) to:\n{folder}",
+            "JCPDS Share Exported",
+            f"Exported {saved_count} JCPDS file(s) and pkpo_jcpds.json to:\n{share_folder}",
+        )
+
+    def import_jcpds_share_set(self):
+        folder = QtWidgets.QFileDialog.getExistingDirectory(
+            self.widget,
+            "Choose JCPDS Share Set Folder",
+            self.model.jcpds_path,
+            QtWidgets.QFileDialog.ShowDirsOnly,
+        )
+        if folder in ("", None):
+            return
+
+        valid, err_msg = validate_jcpds_share(folder)
+        if not valid:
+            QtWidgets.QMessageBox.critical(
+                self.widget, "Invalid JCPDS Share Set", err_msg)
+            return
+
+        existing_has_jcpds = self.model.jcpds_exist()
+        do_backup = False
+        if existing_has_jcpds:
+            reply = QtWidgets.QMessageBox.question(
+                self.widget, "JCPDS Table Not Empty",
+                "Current JCPDS table already contains information.\n\n"
+                "Do you want to save the current JCPDS table to the backup queue before importing?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel,
+                QtWidgets.QMessageBox.Yes)
+            if reply == QtWidgets.QMessageBox.Cancel:
+                return
+            do_backup = (reply == QtWidgets.QMessageBox.Yes)
+
+        if do_backup:
+            try:
+                save_model_to_param(
+                    self.model,
+                    ui_state=None,
+                    reason="before JCPDS Share import",
+                    force_backup=True,
+                    create_backup=True,
+                )
+            except Exception:
+                pass
+
+        try:
+            imported_phases = load_jcpds_share(folder)
+        except Exception as exc:
+            QtWidgets.QMessageBox.critical(
+                self.widget, "Import Failed",
+                f"Failed to import JCPDS Share set:\n{exc}")
+            return
+
+        self.model.reset_jcpds_lst()
+        for phase in imported_phases:
+            self.model.jcpds_lst.append(phase)
+
+        self.jcpdstable_ctrl.update()
+        if self.model.base_ptn_exist():
+            self._apply_changes_to_graph()
+        else:
+            self._apply_changes_to_graph(limits=(0., 25., 0., 100.))
+
+        QtWidgets.QMessageBox.information(
+            self.widget,
+            "JCPDS Share Imported",
+            f"Imported {len(imported_phases)} JCPDS item(s) from:\n{folder}",
         )
 
     def view_jcpds(self):

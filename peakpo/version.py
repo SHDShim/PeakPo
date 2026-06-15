@@ -4,8 +4,14 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.11.9"
+__version__ = "7.11.10"
 """
+7.11.10: rename JCPDS Export group to JCPDS Share; add Export Set, Import Set,
+         and Export to Excel buttons.  Export Set saves all current JCPDS cards
+         and a pkpo_jcpds.json into a new JCPDS-share-YYYY-MM-DD folder next to
+         the chi file.  Import Set opens a directory chooser, validates the
+         share folder, and repopulates the JCPDS table; if the table is not empty
+         the user is asked whether to save a backup snapshot first.
 7.11.9: add interactive histogram-based map and cake color-scale controls;
         use draggable min/max bars with range sliding and fixed-percent
         histogram views; update map log mode to plot log10 pixel values
