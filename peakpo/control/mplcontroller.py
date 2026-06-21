@@ -27,6 +27,7 @@ class MplController(object):
         self._toolbar_active = False
         self._update_delay_ms = 25
         self._pending_update_args = None
+        self._last_auto_cake_filename = None
         self._update_timer = QtCore.QTimer(self.widget)
         self._update_timer.setSingleShot(True)
         self._update_timer.timeout.connect(self._flush_update_request)
@@ -354,10 +355,7 @@ class MplController(object):
             self.widget.horizontalSlider_VMin.value(),
             self.widget.horizontalSlider_VMax.value()]) / \
             100. * prefactor
-        if hasattr(self.widget, "cake_hist_widget"):
-            exact_bounds = self.widget.cake_hist_widget.current_bounds(data_max=cake_max)
-            if exact_bounds is not None:
-                climits = np.asarray(exact_bounds, dtype=float)
+        hist_widget = getattr(self.widget, "cake_hist_widget", None)
 
         # Check if ApplyMask is on
         # If so, get mask range from UI and set mask, then process cake for new mask.  Note that if mask from UI is for entire range of data, do not re-integrate.
@@ -409,6 +407,35 @@ class MplController(object):
             combined_mask = zero_mask | ~np.isfinite(int_plot)
         int_new = ma.masked_where(combined_mask, int_plot, copy=False)
 
+        if hist_widget is not None:
+            data_signature = hist_widget.data_signature_for_values(int_new)
+            try:
+                cake_filename = self.model.get_base_ptn_filename()
+            except Exception:
+                cake_filename = None
+            is_new_cake_file = (
+                cake_filename is not None and
+                cake_filename != self._last_auto_cake_filename)
+
+            auto_bounds = None
+            if (not diff_mode) and is_new_cake_file:
+                auto_bounds = hist_widget.auto_edge_bounds_for_values(
+                    int_new,
+                    self._cake_hist_edge_width_percent(),
+                    self._cake_hist_edge_position_percent())
+                self._last_auto_cake_filename = cake_filename
+
+            if auto_bounds is not None:
+                hist_widget.apply_auto_view(
+                    auto_bounds["low_pct"], auto_bounds["high_pct"])
+                climits = np.asarray([
+                    auto_bounds["vmin"], auto_bounds["vmax"]], dtype=float)
+            else:
+                exact_bounds = hist_widget.current_bounds(
+                    data_signature=data_signature)
+                if exact_bounds is not None:
+                    climits = np.asarray(exact_bounds, dtype=float)
+
 
         imshow_kwargs = {
             "origin": "lower",
@@ -422,8 +449,8 @@ class MplController(object):
         else:
             imshow_kwargs["norm"] = norm
         self.widget.mpl.canvas.ax_cake.imshow(int_new, **imshow_kwargs)
-        if hasattr(self.widget, "cake_hist_widget"):
-            self.widget.cake_hist_widget.set_data(
+        if hist_widget is not None:
+            hist_widget.set_data(
                 int_new, vmin=float(climits[0]), vmax=float(climits[1]))
 
         # get gray scale color map and make sure masked data points are colored red
@@ -477,6 +504,18 @@ class MplController(object):
                     (azi_max - azi_min),
                     linewidth=0, facecolor='r', alpha=0.2)
                 self.widget.mpl.canvas.ax_cake.add_patch(rect)
+
+    def _cake_hist_edge_width_percent(self):
+        spin = getattr(self.widget, "doubleSpinBox_CakeHistEdgePct", None)
+        if spin is None:
+            return 30.0
+        return float(spin.value())
+
+    def _cake_hist_edge_position_percent(self):
+        spin = getattr(self.widget, "doubleSpinBox_CakeHistEdgePositionPct", None)
+        if spin is None:
+            return 75.0
+        return float(spin.value())
 
     def _plot_jcpds(self, axisrange):
         import matplotlib.transforms as transforms

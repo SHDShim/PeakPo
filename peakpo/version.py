@@ -4,8 +4,11 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.11.10"
+__version__ = "7.11.11"
 """
+7.11.11: refine 2D cake histogram color-scale controls; add compact Full and
+         Edge controls, configurable edge-based color range settings, and keep
+         min/max guide bars visible within the histogram range.
 7.11.10: rename JCPDS Export group to JCPDS Share; add Export Set, Import Set,
          and Export to Excel buttons.  Export Set saves all current JCPDS cards
          and a pkpo_jcpds.json into a new JCPDS-share-YYYY-MM-DD folder next to

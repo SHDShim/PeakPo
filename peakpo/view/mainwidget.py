@@ -3,7 +3,7 @@ from qtpy import QtCore, QtGui, QtWidgets
 from .qtd import Ui_MainWindow
 from .cakehistwidget import CakeHistogramWidget
 from .maphistwidget import MapHistogramWidget
-from ..utils import SpinBoxFixStyle, align_all_spinboxes_right
+from ..utils import SpinBoxFixStyle, align_all_spinboxes_right, align_spinbox_right
 from ..version import __version__
 from ..citation import __citation__
 from ..utils import InformationBox
@@ -248,6 +248,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._setup_jcpds_bars_layout()
         self._compact_jcpds_config_layout()
         self._setup_title_config_group()
+        self._setup_histogram_config_group()
         self._setup_plot_setup_group()
         self._setup_update_background_button()
         self._setup_bg_default_button()
@@ -948,6 +949,68 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Put title controls near the top of Plot > Config.
         self.verticalLayout_PlotConfig.insertWidget(0, self.groupBox_TitleConfig)
+
+    def _setup_histogram_config_group(self):
+        if not hasattr(self, "verticalLayout_PlotConfig"):
+            return
+        if hasattr(self, "groupBox_HistogramConfig"):
+            return
+
+        self.groupBox_HistogramConfig = QtWidgets.QGroupBox(
+            "Histogram", self.plotConfigContents)
+        self.groupBox_HistogramConfig.setObjectName("groupBox_HistogramConfig")
+        self.gridLayout_HistogramConfig = QtWidgets.QGridLayout(
+            self.groupBox_HistogramConfig)
+        self.gridLayout_HistogramConfig.setContentsMargins(12, 12, 12, 12)
+        self.gridLayout_HistogramConfig.setHorizontalSpacing(12)
+        self.gridLayout_HistogramConfig.setVerticalSpacing(10)
+
+        self.label_CakeHistEdgePct = QtWidgets.QLabel(
+            "Color range +/- %", self.groupBox_HistogramConfig)
+        self.label_CakeHistEdgePct.setObjectName("label_CakeHistEdgePct")
+        self.doubleSpinBox_CakeHistEdgePct = QtWidgets.QDoubleSpinBox(
+            self.groupBox_HistogramConfig)
+        self.doubleSpinBox_CakeHistEdgePct.setObjectName(
+            "doubleSpinBox_CakeHistEdgePct")
+        align_spinbox_right(self.doubleSpinBox_CakeHistEdgePct)
+        self.doubleSpinBox_CakeHistEdgePct.setRange(0.0, 100.0)
+        self.doubleSpinBox_CakeHistEdgePct.setDecimals(2)
+        self.doubleSpinBox_CakeHistEdgePct.setSingleStep(0.25)
+        self.doubleSpinBox_CakeHistEdgePct.setValue(30.0)
+        self.doubleSpinBox_CakeHistEdgePct.setToolTip(
+            "Percent offset used by the 2D histogram Edge button and "
+            "new-file auto edge scaling.")
+
+        self.label_CakeHistEdgePositionPct = QtWidgets.QLabel(
+            "Edge pos. in color range %", self.groupBox_HistogramConfig)
+        self.label_CakeHistEdgePositionPct.setObjectName(
+            "label_CakeHistEdgePositionPct")
+        self.doubleSpinBox_CakeHistEdgePositionPct = QtWidgets.QDoubleSpinBox(
+            self.groupBox_HistogramConfig)
+        self.doubleSpinBox_CakeHistEdgePositionPct.setObjectName(
+            "doubleSpinBox_CakeHistEdgePositionPct")
+        align_spinbox_right(self.doubleSpinBox_CakeHistEdgePositionPct)
+        self.doubleSpinBox_CakeHistEdgePositionPct.setRange(0.01, 99.99)
+        self.doubleSpinBox_CakeHistEdgePositionPct.setDecimals(2)
+        self.doubleSpinBox_CakeHistEdgePositionPct.setSingleStep(1.0)
+        self.doubleSpinBox_CakeHistEdgePositionPct.setValue(75.0)
+        self.doubleSpinBox_CakeHistEdgePositionPct.setToolTip(
+            "Position of the detected edge between the blue and orange bars. "
+            "75 means the edge is 75% of the way from blue to orange.")
+
+        self.gridLayout_HistogramConfig.addWidget(
+            self.label_CakeHistEdgePct, 0, 0, 1, 1)
+        self.gridLayout_HistogramConfig.addWidget(
+            self.doubleSpinBox_CakeHistEdgePct, 0, 1, 1, 1)
+        self.gridLayout_HistogramConfig.addWidget(
+            self.label_CakeHistEdgePositionPct, 0, 3, 1, 1)
+        self.gridLayout_HistogramConfig.addWidget(
+            self.doubleSpinBox_CakeHistEdgePositionPct, 0, 4, 1, 1)
+        self.gridLayout_HistogramConfig.setColumnStretch(2, 1)
+        self.gridLayout_HistogramConfig.setColumnStretch(5, 1)
+
+        self.verticalLayout_PlotConfig.insertWidget(
+            1, self.groupBox_HistogramConfig)
 
     def _apply_compact_clarity_labels(self):
         if hasattr(self, "groupBox_34"):
@@ -1953,6 +2016,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.cake_hist_widget = CakeHistogramWidget(self.groupBox_29)
         self.cake_hist_widget.setMinimumHeight(125)
         self.cake_hist_widget.setMaximumHeight(155)
+        if hasattr(self, "doubleSpinBox_CakeHistEdgePct"):
+            self.cake_hist_widget.set_edge_width_percent(
+                self.doubleSpinBox_CakeHistEdgePct.value())
+            self.doubleSpinBox_CakeHistEdgePct.valueChanged.connect(
+                self.cake_hist_widget.set_edge_width_percent)
+        if hasattr(self, "doubleSpinBox_CakeHistEdgePositionPct"):
+            self.cake_hist_widget.set_edge_position_percent(
+                self.doubleSpinBox_CakeHistEdgePositionPct.value())
+            self.doubleSpinBox_CakeHistEdgePositionPct.valueChanged.connect(
+                self.cake_hist_widget.set_edge_position_percent)
 
         # Hide legacy controls replaced by histogram-driven controls.
         self.label_8.setVisible(False)
@@ -1976,6 +2049,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.gridLayout_CakeTop.setVerticalSpacing(8)
 
         self.cake_hist_widget.check_log.setParent(self.frame_CakeTopGrid)
+        self.cake_hist_widget.button_reset_view.setParent(self.frame_CakeTopGrid)
+        self.cake_hist_widget.button_edge.setParent(self.frame_CakeTopGrid)
         self.cake_hist_widget.check_focus.setParent(self.frame_CakeTopGrid)
         self.cake_hist_widget.check_focus.setVisible(False)
         self.cake_hist_widget.label_low.setParent(self.frame_CakeTopGrid)
@@ -1986,20 +2061,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.cake_hist_widget.combo_scale_mode.setParent(self.frame_CakeTopGrid)
         self.cake_hist_widget.button_apply_pct.setVisible(False)
         self.cake_hist_widget.combo_scale_mode.setVisible(False)
+        self.cake_hist_widget.button_reset_view.setMinimumHeight(25)
+        self.cake_hist_widget.button_edge.setMinimumHeight(25)
         self.cake_hist_widget.spin_low_pct.setMinimumHeight(25)
         self.cake_hist_widget.spin_high_pct.setMinimumHeight(25)
+        self.cake_hist_widget.label_low.setMinimumWidth(0)
+        self.cake_hist_widget.label_low.setMaximumWidth(60)
+        self.cake_hist_widget.label_high.setMinimumWidth(0)
+        self.cake_hist_widget.label_high.setMaximumWidth(65)
         for spin in (self.cake_hist_widget.spin_low_pct,
                      self.cake_hist_widget.spin_high_pct):
-            spin.setMinimumWidth(110)
-            spin.setMaximumWidth(110)
+            spin.setMinimumWidth(74)
+            spin.setMaximumWidth(74)
             spin.setSizePolicy(
                 QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
 
         self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.check_log, 0, 0, 1, 1)
-        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.label_low, 0, 2, 1, 1)
-        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.spin_low_pct, 0, 3, 1, 1)
-        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.label_high, 0, 4, 1, 1)
-        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.spin_high_pct, 0, 5, 1, 1)
+        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.button_reset_view, 0, 3, 1, 1)
+        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.button_edge, 0, 5, 1, 1)
+        self.gridLayout_CakeTop.setColumnStretch(2, 1)
+        self.gridLayout_CakeTop.setColumnStretch(4, 1)
 
         if hasattr(self, "groupBox_CakeColormap"):
             self.groupBox_CakeColormap.setVisible(False)
@@ -2008,17 +2089,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(self, "comboBox_CakeColormap"):
             self.comboBox_CakeColormap.setParent(self.frame_CakeTopGrid)
             self.comboBox_CakeColormap.setMinimumHeight(25)
-            # Keep colormap selector compact (do not stretch across the row).
-            log_w = self.cake_hist_widget.check_log.sizeHint().width()
-            target_w = max(160, int(log_w))
+            # Keep colormap selector compact: text width plus arrow/padding.
+            text_w = self.comboBox_CakeColormap.fontMetrics().horizontalAdvance(
+                self.comboBox_CakeColormap.currentText())
+            target_w = max(84, int(text_w + 48))
             self.comboBox_CakeColormap.setMinimumWidth(target_w)
             self.comboBox_CakeColormap.setMaximumWidth(target_w)
             self.comboBox_CakeColormap.setSizePolicy(
                 QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
             self.gridLayout_CakeTop.addWidget(self.comboBox_CakeColormap, 1, 0, 1, 2)
 
-        self.gridLayout_CakeTop.setColumnStretch(1, 1)
-        self.gridLayout_CakeTop.setColumnStretch(3, 1)
+        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.label_low, 1, 2, 1, 1)
+        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.spin_low_pct, 1, 3, 1, 1)
+        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.label_high, 1, 4, 1, 1)
+        self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.spin_high_pct, 1, 5, 1, 1)
 
         # Histogram plot
         self.cake_hist_widget.canvas.setParent(self.groupBox_29)

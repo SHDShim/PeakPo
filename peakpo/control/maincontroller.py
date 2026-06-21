@@ -939,6 +939,9 @@ class MainController(object):
             ("plot_cfg/jcpds_thickness_pattern", "comboBox_PtnJCPDSBarThickness"),
             ("plot_cfg/jcpds_thickness_cake", "comboBox_CakeJCPDSBarThickness"),
             ("plot_cfg/light_background", "checkBox_LightBackground"),
+            ("plot_cfg/cake_hist_edge_percent", "doubleSpinBox_CakeHistEdgePct"),
+            ("plot_cfg/cake_hist_edge_position_percent",
+             "doubleSpinBox_CakeHistEdgePositionPct"),
         ]
 
     def _carry_nav_setting_bindings(self):

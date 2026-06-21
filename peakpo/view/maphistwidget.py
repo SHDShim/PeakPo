@@ -7,6 +7,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 class MapHistogramWidget(QtWidgets.QWidget):
     boundChanged = QtCore.Signal(str, float)
     rangeChanged = QtCore.Signal(float, float)
+    _GUIDE_MARGIN_FRACTION = 0.05
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -67,7 +68,7 @@ class MapHistogramWidget(QtWidgets.QWidget):
 
         lo = float(arr.min())
         hi = float(arr.max())
-        self._xlims = self._calc_view_xlim(lo, hi)
+        self._xlims = self._calc_view_xlim(lo, hi, self._vmin, self._vmax)
         self._redraw()
 
     def set_view_percentages(self, low_pct, high_pct):
@@ -78,22 +79,52 @@ class MapHistogramWidget(QtWidgets.QWidget):
         if self._data is None:
             return
         self._xlims = self._calc_view_xlim(
-            float(np.nanmin(self._data)), float(np.nanmax(self._data)))
+            float(np.nanmin(self._data)), float(np.nanmax(self._data)),
+            self._vmin, self._vmax)
         self._redraw()
 
-    def _calc_view_xlim(self, lo, hi):
+    def _calc_view_xlim(self, lo, hi, vmin=None, vmax=None):
         if hi <= lo:
             pad = max(1.0, 1e-6 * max(abs(lo), 1.0))
             center = lo
-            return center - 0.5 * pad, center + 0.5 * pad
+            return self._expand_view_for_guides(
+                center - 0.5 * pad, center + 0.5 * pad, vmin, vmax)
 
         span = hi - lo
         view_lo = lo + (self._view_low_pct / 100.0) * span
         view_hi = lo + (self._view_high_pct / 100.0) * span
         if view_hi <= view_lo:
             view_hi = view_lo + max(1.0, 1e-6 * max(abs(view_lo), 1.0))
-        pad = 0.05 * (view_hi - view_lo)
-        return view_lo - pad, view_hi + pad
+        return self._expand_view_for_guides(view_lo, view_hi, vmin, vmax)
+
+    def _expand_view_for_guides(self, view_lo, view_hi, vmin=None, vmax=None):
+        bounds = [float(view_lo), float(view_hi)]
+        for value in (vmin, vmax):
+            if value is None:
+                continue
+            value = float(value)
+            if np.isfinite(value):
+                bounds.append(value)
+        lo = min(bounds)
+        hi = max(bounds)
+        if hi <= lo:
+            pad = max(0.5, 0.5e-6 * max(abs(lo), 1.0))
+            return lo - pad, hi + pad
+        margin = self._GUIDE_MARGIN_FRACTION
+        pad = margin / (1.0 - 2.0 * margin) * (hi - lo)
+        return lo - pad, hi + pad
+
+    def _ensure_guides_in_xrange(self):
+        if self._xlims is None or self._vmin is None or self._vmax is None:
+            return
+        guide_lo = min(self._vmin, self._vmax)
+        guide_hi = max(self._vmin, self._vmax)
+        if self._xlims[0] <= guide_lo and guide_hi <= self._xlims[1]:
+            return
+        x0, x1 = self._expand_view_for_guides(
+            self._xlims[0], self._xlims[1], self._vmin, self._vmax)
+        self._xlims = (x0, x1)
+        self.ax.set_xlim(x0, x1)
 
     def _redraw(self):
         if self._data is None or self._xlims is None:
@@ -130,6 +161,8 @@ class MapHistogramWidget(QtWidgets.QWidget):
         x0, x1 = self._xlims
         if self._vmin is None or self._vmax is None:
             return
+        self._ensure_guides_in_xrange()
+        x0, x1 = self._xlims
         left = float(np.clip(min(self._vmin, self._vmax), x0, x1))
         right = float(np.clip(max(self._vmin, self._vmax), x0, x1))
         if right > left:
@@ -206,6 +239,7 @@ class MapHistogramWidget(QtWidgets.QWidget):
     def _update_guides(self, vmin, vmax):
         self._vmin = float(vmin)
         self._vmax = float(vmax)
+        self._ensure_guides_in_xrange()
         if self._line_min is not None:
             self._line_min.set_xdata([self._vmin, self._vmin])
         if self._line_max is not None:
