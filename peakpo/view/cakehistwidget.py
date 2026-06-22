@@ -280,28 +280,8 @@ class CakeHistogramWidget(QtWidgets.QWidget):
         if not np.isfinite(data_max) or data_max <= 0:
             return None
 
-        # The visible saturation edge is clearest in a log-count histogram.
-        # Find the strongest drop after the main low-intensity peak.
-        hist, edges = np.histogram(arr, bins=256, range=(0.0, data_max))
-        counts = np.log10(hist.astype(float) + 1.0)
-        if counts.size < 5 or np.max(counts) <= 0:
-            return None
-
-        kernel = np.array([1.0, 2.0, 3.0, 2.0, 1.0], dtype=float)
-        kernel /= kernel.sum()
-        smooth = np.convolve(counts, kernel, mode="same")
-        peak_idx = int(np.argmax(smooth))
-        if peak_idx >= smooth.size - 2:
-            return None
-
-        drops = smooth[:-1] - smooth[1:]
-        start = min(peak_idx + 1, drops.size - 1)
-        search = drops[start:]
-        if search.size == 0:
-            return None
-        edge_idx = int(start + np.argmax(search) + 1)
-        edge = float(edges[edge_idx])
-        if not np.isfinite(edge) or edge <= 0:
+        edge = self._detect_largest_drop_edge(arr, data_max)
+        if edge is None:
             return None
 
         width = self._edge_width_percent
@@ -330,6 +310,69 @@ class CakeHistogramWidget(QtWidgets.QWidget):
             "high_pct": high_pct,
             "data_signature": self.data_signature_for_values(values),
         }
+
+    @staticmethod
+    def _detect_largest_drop_edge(arr, data_max):
+        hist_max = CakeHistogramWidget._edge_histogram_upper_bound(arr, data_max)
+        if not np.isfinite(hist_max) or hist_max <= 0:
+            return None
+
+        # The visible saturation edge is clearest in a log-count histogram.
+        # Find the strongest populated drop after the main low-intensity peak.
+        hist, edges = np.histogram(arr, bins=256, range=(0.0, hist_max))
+        counts = np.log10(hist.astype(float) + 1.0)
+        if counts.size < 5 or np.max(counts) <= 0:
+            return None
+
+        kernel = np.array([1.0, 2.0, 3.0, 2.0, 1.0], dtype=float)
+        kernel /= kernel.sum()
+        smooth = np.convolve(counts, kernel, mode="same")
+        hist_smooth = np.convolve(hist.astype(float), kernel, mode="same")
+        peak_idx = int(np.argmax(smooth))
+        if peak_idx >= smooth.size - 2:
+            return None
+
+        drops = smooth[:-1] - smooth[1:]
+        start = min(peak_idx + 1, drops.size - 1)
+        if start >= drops.size:
+            return None
+
+        # Ignore sparse tails: a low-count bin followed by zero can be a
+        # large log-scale drop but is not the dominant image-background edge.
+        min_populated_count = max(3.0, 0.02 * float(np.max(hist_smooth)))
+        populated = hist_smooth[:-1] >= min_populated_count
+        candidates = np.flatnonzero((drops > 0.0) & populated)
+        candidates = candidates[candidates >= start]
+        if candidates.size == 0:
+            return None
+
+        scores = drops[candidates]
+        edge_idx = int(candidates[int(np.argmax(scores))] + 1)
+        edge = float(edges[edge_idx])
+        if not np.isfinite(edge) or edge <= 0:
+            return None
+        return edge
+
+    @staticmethod
+    def _edge_histogram_upper_bound(arr, data_max):
+        data_max = float(data_max)
+        if not np.isfinite(data_max) or data_max <= 0:
+            return None
+
+        q25, q75, q999 = np.nanpercentile(arr, [25.0, 75.0, 99.9])
+        iqr = float(q75 - q25)
+        if np.isfinite(iqr) and iqr > 0:
+            robust_upper = float(q75 + 8.0 * iqr)
+        else:
+            robust_upper = float(q999)
+
+        if not np.isfinite(robust_upper) or robust_upper <= 0:
+            robust_upper = float(q999)
+        if not np.isfinite(robust_upper) or robust_upper <= 0:
+            return data_max
+
+        hist_max = max(float(q999), robust_upper)
+        return min(data_max, hist_max)
 
     def apply_auto_view(self, low_pct, high_pct):
         blocker_low = QtCore.QSignalBlocker(self.spin_low_pct)

@@ -33,6 +33,7 @@ setup(
         "qtpy",
         "pyqt6",
         "pyfai",
+        "dioptas",
         "pytheos",
         "lmfit",
         "periodictable",

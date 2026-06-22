@@ -6,7 +6,7 @@ from qtpy import QtWidgets, QtCore
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.widgets import RectangleSelector
-from matplotlib import cm
+from matplotlib import colormaps
 import matplotlib.patches as mpatches
 
 from .xrdiohelpers import (
@@ -942,7 +942,7 @@ class MapController(object):
         return str(self.widget.comboBox_MapCmap.currentText())
 
     def _map_cmap_for_plot(self):
-        cmap = cm.get_cmap(self._effective_cmap()).copy()
+        cmap = colormaps[self._effective_cmap()].copy()
         cmap.set_bad((0.0, 0.0, 0.0, 0.0))
         return cmap
 

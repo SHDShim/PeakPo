@@ -6,6 +6,7 @@ from qtpy import QtWidgets
 from qtpy import QtCore
 from qtpy import QtGui
 from matplotlib import colors as mcolors
+from matplotlib import colormaps
 import matplotlib.cm as cmx
 from .mplcontroller import MplController
 from .jcpdstablecontroller import JcpdsTableController
@@ -214,7 +215,7 @@ class JcpdsController(object):
             cif_k0, cif_k0p, cif_alpha = cif_params
 
         n_color = 20
-        jet = cmx.get_cmap('gist_rainbow')
+        jet = colormaps['gist_rainbow']
         cNorm = mcolors.Normalize(vmin=0, vmax=n_color)
         c_index = range(n_color)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)

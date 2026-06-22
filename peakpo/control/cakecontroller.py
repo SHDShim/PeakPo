@@ -69,6 +69,9 @@ class CakeController(object):
                 'Move the raw image file (e.g., h5, mar3450, tif, tiff, cbf) '
                 'into the same folder as the CHI file first.')
             return
+        image_file = self._associated_image_file()
+        if not self._confirm_non_h5_reprocess(image_file):
+            return
 
         success = self.produce_cake()
         if not success:
@@ -77,6 +80,36 @@ class CakeController(object):
         self.model.diff_img.write_temp_cakefiles(temp_dir=temp_dir)
         self._set_image_file_box()
         self._apply_changes_to_graph()
+
+    def _associated_image_file(self):
+        if not hasattr(self.model, "get_associated_image_candidates"):
+            return None
+        for filename in self.model.get_associated_image_candidates():
+            if os.path.exists(filename):
+                return filename
+        return None
+
+    def _confirm_non_h5_reprocess(self, image_file):
+        if image_file is None:
+            return True
+        if extract_extension(image_file).lower() in ("h5", "nxs"):
+            return True
+
+        msg = QtWidgets.QMessageBox(self.widget)
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setWindowTitle("Reprocess cake?")
+        msg.setText(
+            "This raw image is not an H5/NXS file. Reprocessing will overwrite "
+            "the existing cake files for this pattern.")
+        msg.setInformativeText(
+            "Older cake files may already be correct. If the existing cake image "
+            "looks fine, cancel and keep the current files.")
+        reprocess_button = msg.addButton(
+            "Reprocess", QtWidgets.QMessageBox.AcceptRole)
+        msg.addButton("Cancel", QtWidgets.QMessageBox.RejectRole)
+        msg.setDefaultButton(reprocess_button)
+        msg.exec()
+        return msg.clickedButton() == reprocess_button
 
     """
     def load_cake_format_file(self):

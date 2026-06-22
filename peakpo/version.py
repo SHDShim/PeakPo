@@ -4,8 +4,13 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.11.11"
+__version__ = "7.11.12"
 """
+7.11.12: use Dioptas for Update cake integration so PeakPo-generated cakes
+         match dioptas_batch_gui output; add a non-H5/NXS reprocessing warning
+         before overwriting existing cake files; fix Matplotlib colormap API
+         compatibility and make 2D cake histogram Edge scaling robust to
+         sparse high-intensity outliers.
 7.11.11: refine 2D cake histogram color-scale controls; add compact Full and
          Edge controls, configurable edge-based color range settings, and keep
          min/max guide bars visible within the histogram range.

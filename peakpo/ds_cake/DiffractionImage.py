@@ -5,6 +5,7 @@ import fabio
 import numpy.ma as ma
 import numpy as np
 import pyFAI
+from dioptas.model.Configuration import Configuration
 # import matplotlib.pyplot as plt
 import datetime
 import collections
@@ -27,27 +28,17 @@ class DiffImg(object):
         self.intensity_cake = None
         self.tth_cake = None
         self.chi_cake = None
+        self._dioptas_config = None
 
     def load(self, img_filename):
         self.img_filename = img_filename
-        if extract_extension(self.img_filename) == 'tif':
-            data = Image.open(self.img_filename)
-        elif extract_extension(self.img_filename) == 'tiff':
-            data = Image.open(self.img_filename)
-        elif extract_extension(self.img_filename) == 'h5':
-            images = fabio.open(self.img_filename)
-            data = images.data
-        elif extract_extension(self.img_filename) == 'mar3450':
-            data_fabio = fabio.open(img_filename)
-            data = data_fabio.data
-        elif extract_extension(self.img_filename) == 'cbf':
-            data_fabio = fabio.open(img_filename)
-            data = data_fabio.data
-        # Keep detector pixels in file coordinates for pyFAI.  PONI
-        # calibration parameters are defined in the same coordinate system;
-        # flipping the array here makes the loaded calibration inconsistent
-        # with the image used for cake integration.
-        self.img = np.array(data)
+        self._dioptas_config = Configuration()
+        self._dioptas_config.img_model.blockSignals(True)
+        try:
+            self._dioptas_config.img_model.load(self.img_filename, 0)
+        finally:
+            self._dioptas_config.img_model.blockSignals(False)
+        self.img = np.asarray(self._dioptas_config.img_model.img_data)
         print(str(datetime.datetime.now())[:-7], 
                 ": Load ", self.img_filename)
 
@@ -70,6 +61,9 @@ class DiffImg(object):
 
     def set_calibration(self, poni_filename):
         self.poni = pyFAI.load(poni_filename)
+        if self._dioptas_config is None:
+            self._dioptas_config = Configuration()
+        self._dioptas_config.calibration_model.load(poni_filename)
         print(str(datetime.datetime.now())[:-7], 
             ": Load ", poni_filename)
 
@@ -133,12 +127,26 @@ class DiffImg(object):
         should be for self.img
         """
         t_start = time.time()
-        n_azi_pnts = self.calculate_n_azi_pnts() * 2
-        radial_range = (0., self.calculate_max_twotheta())
-        intensity_cake, tth_cake, chi_cake = self.poni.integrate2d(
-            self.img, n_azi_pnts, 360, unit="2th_deg", method='csr',
-            radial_range=radial_range, polarization_factor=0.99, 
-            mask=self.mask, **kwargs)
+        if self._dioptas_config is None:
+            self.load(self.img_filename)
+        if self.poni is None:
+            raise RuntimeError("Cannot make cake without loaded PONI calibration.")
+
+        calibration_model = self._dioptas_config.calibration_model
+        radial_points = calibration_model.calculate_number_of_pattern_points(
+            self.img.shape, 2)
+        mask = self.mask
+        if mask is not None and np.asarray(mask).shape != self.img.shape:
+            mask = None
+        calibration_model.integrate_2d(
+            mask=mask,
+            rad_points=radial_points,
+            azimuth_points=360,
+            azimuth_range=getattr(self._dioptas_config, "cake_azimuth_range", None),
+            **kwargs)
+        intensity_cake = calibration_model.cake_img
+        tth_cake = calibration_model.cake_tth
+        chi_cake = calibration_model.cake_azi
         print(str(datetime.datetime.now())[:-7], 
             ": Caking takes {0:.2f}s".format(time.time() - t_start))
         self.intensity_cake = intensity_cake
