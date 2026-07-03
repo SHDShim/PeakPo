@@ -9,6 +9,22 @@ from ..utils import convert_wl_to_energy, get_directory, get_temp_dir, \
     dialog_openfiles_hide_param_dirs
 
 
+class _TableBackspaceKeyFilter(QtCore.QObject):
+    def __init__(self, parent, table, callback):
+        super(_TableBackspaceKeyFilter, self).__init__(parent)
+        self.table = table
+        self.callback = callback
+
+    def eventFilter(self, obj, event):
+        if obj != self.table:
+            return False
+        if event.type() != QtCore.QEvent.KeyPress:
+            return False
+        if event.key() != QtCore.Qt.Key_Backspace:
+            return False
+        return bool(self.callback())
+
+
 class WaterfallController(object):
 
     def __init__(self, model, widget):
@@ -20,6 +36,7 @@ class WaterfallController(object):
         self.waterfall_table_ctrl = \
             WaterfallTableController(self.model, self.widget)
         self.plot_ctrl = MplController(self.model, self.widget)
+        self._table_backspace_key_filters = []
         self.connect_channel()
 
     def set_navigation_helpers(
@@ -52,6 +69,14 @@ class WaterfallController(object):
             self.uncheck_all_waterfall)
         self.widget.pushButton_AddBasePtn.clicked.connect(
             self.add_base_pattern_to_waterfall)
+        self._install_table_backspace_key_filters()
+
+    def _install_table_backspace_key_filters(self):
+        table = self.widget.tableWidget_wfPatterns
+        key_filter = _TableBackspaceKeyFilter(
+            self.widget, table, self.remove_waterfall)
+        table.installEventFilter(key_filter)
+        self._table_backspace_key_filters.append(key_filter)
 
     def make_base_ptn(self):
         # read selected from the table.  It should be single item
@@ -233,26 +258,34 @@ class WaterfallController(object):
         self._apply_changes_to_graph(reinforced=True)
 
     def remove_waterfall(self):
+        table = self.widget.tableWidget_wfPatterns
+        idx_checked = []
+        selection_model = table.selectionModel()
+        if selection_model is not None:
+            idx_checked = [s.row() for s in selection_model.selectedRows()]
+            if idx_checked == []:
+                idx_checked = sorted(
+                    {s.row() for s in selection_model.selectedIndexes()})
+        if idx_checked == [] and table.currentRow() >= 0:
+            idx_checked = [table.currentRow()]
+        valid_rows = [
+            idx for idx in idx_checked
+            if 0 <= idx < len(self.model.waterfall_ptn)
+        ]
+        if valid_rows == []:
+            QtWidgets.QMessageBox.warning(
+                self.widget, 'Warning',
+                'In order to remove, highlight the names.')
+            return False
         reply = QtWidgets.QMessageBox.question(
             self.widget, 'Message',
             'Are you sure you want to remove the highlighted pattern?',
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.Yes)
+            QtWidgets.QMessageBox.No)
         if reply == QtWidgets.QMessageBox.No:
-            return
-        # print self.widget.tableWidget_JCPDS.selectedIndexes().__len__()
-        idx_checked = [
-            s.row() for s in
-            self.widget.tableWidget_wfPatterns.selectionModel().selectedRows()]
-        if idx_checked == []:
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning',
-                'In order to remove, highlight the names.')
-            return
-        else:
-            idx_checked.reverse()
-            for idx in idx_checked:
-                self.model.waterfall_ptn.remove(self.model.waterfall_ptn[idx])
-                self.widget.tableWidget_wfPatterns.removeRow(idx)
-#        self._list_jcpds()
-            self._apply_changes_to_graph()
+            return True
+        for idx in sorted(set(valid_rows), reverse=True):
+            self.model.waterfall_ptn.pop(idx)
+            table.removeRow(idx)
+        self._apply_changes_to_graph()
+        return True

@@ -362,6 +362,8 @@ class MainController(object):
                 selection_model.selectionChanged.connect(
                     self._handle_peak_parameter_selection_changed)
         self._peakfit_drag_row = None
+        self._peakfit_drag_marked_unsaved = False
+        self._peakfit_drag_latest_center = None
 
     def _initialize_mouse_mode(self):
         self._refresh_mouse_mode_availability()
@@ -547,7 +549,8 @@ class MainController(object):
 
     def _handle_peak_parameter_selection_changed(self, _selected, _deselected):
         if hasattr(self, "plot_ctrl") and (self.plot_ctrl is not None):
-            self.plot_ctrl.update()
+            if not self.plot_ctrl.refresh_selected_peak_marker():
+                self.plot_ctrl.update()
 
     def _get_selected_peak_parameter_row(self):
         tables = [
@@ -625,13 +628,21 @@ class MainController(object):
         if not self._event_on_selected_peak(event, row):
             return False
         self._peakfit_drag_row = row
-        self._set_peak_center_from_xdata(row, event.xdata)
+        self._peakfit_drag_latest_center = None
+        self._peakfit_drag_marked_unsaved = False
+        self._set_peak_center_from_xdata(row, event.xdata, during_drag=True)
         return True
 
     def _release_peak_position_drag(self, _event):
         if self._peakfit_drag_row is None:
             return
+        row = self._peakfit_drag_row
+        center = self._peakfit_drag_latest_center
         self._peakfit_drag_row = None
+        self._peakfit_drag_latest_center = None
+        self._peakfit_drag_marked_unsaved = False
+        if center is not None:
+            self._update_peak_position_widgets(row, center)
         if hasattr(self, "plot_ctrl") and (self.plot_ctrl is not None):
             self.plot_ctrl.update()
 
@@ -643,7 +654,7 @@ class MainController(object):
             return
         if not self._is_peakfit_position_axis(event.inaxes):
             return
-        self._set_peak_center_from_xdata(row, event.xdata)
+        self._set_peak_center_from_xdata(row, event.xdata, during_drag=True)
 
     def _is_peakfit_position_axis(self, axes):
         if axes is None:
@@ -653,7 +664,7 @@ class MainController(object):
         return hasattr(self.widget.mpl.canvas, 'ax_cake') and \
             axes == self.widget.mpl.canvas.ax_cake
 
-    def _set_peak_center_from_xdata(self, row, xdata):
+    def _set_peak_center_from_xdata(self, row, xdata, during_drag=False):
         if not self.model.current_section_exist():
             return
         section = self.model.current_section
@@ -665,22 +676,38 @@ class MainController(object):
         x_max = float(np.max(section.x))
         center = min(max(float(xdata), x_min), x_max)
         section.peaks_in_queue[row]['center'] = center
-        self.peakfit_ctrl.set_tableWidget_PkParams_unsaved()
-        self._update_peak_position_widgets(row, center)
+        if during_drag:
+            self._peakfit_drag_latest_center = center
+        if (not during_drag) or (not self._peakfit_drag_marked_unsaved):
+            self.peakfit_ctrl.set_tableWidget_PkParams_unsaved()
+            if during_drag:
+                self._peakfit_drag_marked_unsaved = True
+        if not during_drag:
+            self._update_peak_position_widgets(row, center)
+        if during_drag and hasattr(self, "plot_ctrl") and \
+                (self.plot_ctrl is not None) and \
+                self.plot_ctrl.update_dragged_peak_marker(center):
+            return
         limits = self.widget.mpl.canvas.ax_pattern.axis()
         self.plot_ctrl.update(limits=limits)
 
     def _update_peak_position_widgets(self, row, center):
         if hasattr(self.widget, "tableWidget_PkParams"):
-            item = self.widget.tableWidget_PkParams.item(row, 5)
+            table = self.widget.tableWidget_PkParams
+            item = table.item(row, 5)
             if item is not None:
+                old_state = table.blockSignals(True)
                 item.setText("{:.5e}".format(center))
+                table.blockSignals(old_state)
         if hasattr(self.widget, "tableWidget_PeakConstraints"):
-            spinbox = self.widget.tableWidget_PeakConstraints.cellWidget(row, 2)
+            table = self.widget.tableWidget_PeakConstraints
+            spinbox = table.cellWidget(row, 2)
             if spinbox is not None and hasattr(spinbox, "setValue"):
+                old_table_state = table.blockSignals(True)
                 old_state = spinbox.blockSignals(True)
                 spinbox.setValue(center)
                 spinbox.blockSignals(old_state)
+                table.blockSignals(old_table_state)
 
     def _on_long_cursor_changed(self, state):
         """Keep vertical cursor and hidden zoom mode in sync."""

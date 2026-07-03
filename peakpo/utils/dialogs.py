@@ -5,6 +5,8 @@ import glob
 import fnmatch
 from .fileutils import extract_extension
 
+_FILECHOOSER_JCPDS_FILTER_SETTING = "filechooser/jcpds_filter_mode"
+
 
 class _HideParamFoldersProxyModel(QtCore.QSortFilterProxyModel):
     JCPDS_FILTER_ALL = "all"
@@ -153,6 +155,32 @@ def _resolve_jcpds_filter_mode(default_jcpds_only=False, default_jcpds_filter_mo
     return _HideParamFoldersProxyModel.JCPDS_FILTER_ALL
 
 
+def _valid_jcpds_filter_mode(mode):
+    valid_modes = {
+        _HideParamFoldersProxyModel.JCPDS_FILTER_ALL,
+        _HideParamFoldersProxyModel.JCPDS_FILTER_WITH,
+        _HideParamFoldersProxyModel.JCPDS_FILTER_WITHOUT,
+    }
+    return mode if mode in valid_modes else _HideParamFoldersProxyModel.JCPDS_FILTER_ALL
+
+
+def _file_filter_includes_chi(file_filter):
+    return ".chi" in str(file_filter or "").lower()
+
+
+def _read_saved_jcpds_filter_mode(default_mode):
+    settings = QtCore.QSettings("DS", "PeakPo")
+    mode = str(settings.value(_FILECHOOSER_JCPDS_FILTER_SETTING, default_mode))
+    return _valid_jcpds_filter_mode(mode)
+
+
+def _write_saved_jcpds_filter_mode(mode):
+    settings = QtCore.QSettings("DS", "PeakPo")
+    settings.setValue(
+        _FILECHOOSER_JCPDS_FILTER_SETTING,
+        _valid_jcpds_filter_mode(str(mode)))
+
+
 def _exec_dialog(dialog):
     exec_fn = getattr(dialog, "exec", None)
     if exec_fn is None:
@@ -213,14 +241,26 @@ class _OpenFileDialog(QtWidgets.QFileDialog):
     def __init__(self, *args, **kwargs):
         super(_OpenFileDialog, self).__init__(*args, **kwargs)
         self._expanded_selected_files = None
+        self._persist_jcpds_filter_mode = False
+        self._jcpds_filter_combo = None
+
+    def _save_persistent_state(self):
+        if not self._persist_jcpds_filter_mode:
+            return
+        combo = self._jcpds_filter_combo
+        if combo is None:
+            return
+        _write_saved_jcpds_filter_mode(combo.currentData())
 
     def accept(self):
         if self.fileMode() == QtWidgets.QFileDialog.ExistingFiles:
             expanded = _expand_selected_files(self, self.selectedFiles())
             if expanded:
                 self._expanded_selected_files = expanded
+                self._save_persistent_state()
                 self.done(QtWidgets.QDialog.Accepted)
                 return
+        self._save_persistent_state()
         super(_OpenFileDialog, self).accept()
 
 
@@ -251,6 +291,11 @@ def _build_open_dialog(
     jcpds_filter_mode = _resolve_jcpds_filter_mode(
         default_jcpds_only=default_jcpds_only,
         default_jcpds_filter_mode=default_jcpds_filter_mode)
+    remember_jcpds_filter_mode = (
+        default_jcpds_filter_mode is None and
+        _file_filter_includes_chi(file_filter))
+    if remember_jcpds_filter_mode:
+        jcpds_filter_mode = _read_saved_jcpds_filter_mode(jcpds_filter_mode)
 
     proxy = _HideParamFoldersProxyModel(dialog)
     proxy.setRecursiveFilteringEnabled(False)
@@ -258,8 +303,10 @@ def _build_open_dialog(
     _add_macos_volumes_sidebar_url(dialog)
     _attach_hide_param_checkbox(
         dialog, proxy, default_checked=default_hide_param_dirs)
-    _attach_jcpds_filter_combo(
+    combo = _attach_jcpds_filter_combo(
         dialog, proxy, default_mode=jcpds_filter_mode)
+    dialog._persist_jcpds_filter_mode = remember_jcpds_filter_mode
+    dialog._jcpds_filter_combo = combo
     proxy.set_hide_param_dirs(default_hide_param_dirs)
     proxy.set_jcpds_filter_mode(jcpds_filter_mode)
 

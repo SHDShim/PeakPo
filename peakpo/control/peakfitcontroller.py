@@ -9,6 +9,22 @@ from ..compat_pickle import PeakPoCompatDillUnpickler
 from ..model.param_session_io import load_section_from_param
 
 
+class _TableBackspaceKeyFilter(QtCore.QObject):
+    def __init__(self, parent, table, callback):
+        super(_TableBackspaceKeyFilter, self).__init__(parent)
+        self.table = table
+        self.callback = callback
+
+    def eventFilter(self, obj, event):
+        if obj != self.table:
+            return False
+        if event.type() != QtCore.QEvent.KeyPress:
+            return False
+        if event.key() != QtCore.Qt.Key_Backspace:
+            return False
+        return bool(self.callback())
+
+
 class PeakFitController(object):
 
     def __init__(self, model, widget):
@@ -18,6 +34,7 @@ class PeakFitController(object):
         self.peakfit_table_ctrl = PeakfitTableController(
             self.model, self.widget)
         self._setup_table_status_fields()
+        self._table_backspace_key_filters = []
         self.connect_channel()
 
     def connect_channel(self):
@@ -35,6 +52,8 @@ class PeakFitController(object):
             connect(self.set_section_to_current)
         self.widget.pushButton_AddRemoveFromJlist.clicked.connect(
             self.get_peaks_from_jcpds)
+        self.widget.pushButton_RestoreMissingJcpdsPeaks.clicked.connect(
+            self.restore_missing_jcpds_peaks)
         self.widget.pushButton_ZoomToSection.clicked.connect(
             self.zoom_to_section)
         self.widget.pushButton_PkFtSectionSavetoXLS.clicked.\
@@ -43,8 +62,62 @@ class PeakFitController(object):
             self.import_section_from_dpp)
         self.widget.pushButton_PlotSelectedPkFtResults.clicked.connect(
             self._plot_selected_fitting)
+        self._install_table_backspace_key_filters()
         # The line below exist in session_ctrl
         # self.widget.pushButton_PkFtSectionSavetoDPP.clicked.coonect
+
+    def _install_table_backspace_key_filters(self):
+        bindings = [
+            ("tableWidget_PkParams", self.remove_selected_peak_from_table),
+            ("tableWidget_PkFtSections", self.remove_section),
+        ]
+        for table_name, callback in bindings:
+            if not hasattr(self.widget, table_name):
+                continue
+            table = getattr(self.widget, table_name)
+            key_filter = _TableBackspaceKeyFilter(
+                self.widget, table, callback)
+            table.installEventFilter(key_filter)
+            self._table_backspace_key_filters.append(key_filter)
+
+    def remove_selected_peak_from_table(self):
+        if not self.model.current_section_exist():
+            return False
+        table = self.widget.tableWidget_PkParams
+        rows = set()
+        selection_model = table.selectionModel()
+        if selection_model is not None:
+            rows = {index.row() for index in selection_model.selectedRows()}
+            if not rows:
+                rows = {
+                    index.row()
+                    for index in selection_model.selectedIndexes()
+                }
+        if not rows and table.currentRow() >= 0:
+            rows.add(table.currentRow())
+        valid_rows = [
+            row for row in rows
+            if 0 <= row < self.model.current_section.get_number_of_peaks_in_queue()
+        ]
+        if valid_rows == []:
+            return False
+        reply = QtWidgets.QMessageBox.question(
+            self.widget, "Message",
+            "Are you sure you want to delete the selected peaks?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.No:
+            return True
+        for row in sorted(valid_rows, reverse=True):
+            self.model.current_section.peaks_in_queue.pop(row)
+        self.set_tableWidget_PkParams_unsaved()
+        self.peakfit_table_ctrl.update_peak_parameters()
+        self.peakfit_table_ctrl.update_peak_constraints()
+        next_row = min(min(valid_rows), table.rowCount() - 1)
+        if next_row >= 0:
+            table.selectRow(next_row)
+        self.plot_ctrl.update()
+        return True
 
     def _plot_selected_fitting(self):
         button = self.widget.pushButton_PlotSelectedPkFtResults
@@ -112,19 +185,8 @@ class PeakFitController(object):
                     y_range[0] - margin, y_range[1] + margin))
 
     def get_peaks_from_jcpds(self):
-        if not self.model.jcpds_exist():
-            return
-        self._sync_jcpds_display_from_table()
-        i = 0
-        for j in self.model.jcpds_lst:
-            if j.display:
-                i += 1
-        if i == 0:
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning",
-                "No JCPDS phase is selected for display.\n\n"
-                "Check the JCPDS phase checkbox for each phase you want to "
-                "import.")
+        selected_phases = self._get_selected_jcpds_phases_for_peakfit()
+        if selected_phases is None:
             return
         if not self.model.current_section_exist():
             QtWidgets.QMessageBox.warning(self.widget, "Warning",
@@ -143,48 +205,155 @@ class PeakFitController(object):
                     self.clear_this_section()
             else:
                 pass
-        x_range = self.model.current_section.get_xrange()
-        # Keep queue consistent with current section bounds.
-        x_min, x_max = min(x_range), max(x_range)
-        self.model.current_section.peaks_in_queue = [
-            p for p in self.model.current_section.peaks_in_queue
-            if (p.get('center', x_min) >= x_min) and (p.get('center', x_max) <= x_max)
-        ]
-        peaks = []
-        int_threshold = float(
-            self.widget.spinBox_PeaksFromJlistIntensity.value())
-        for j in self.model.jcpds_lst:
-            if j.display:
-                tths, intensities = j.get_tthVSint(
-                    self.widget.doubleSpinBox_SetWavelength.value())
-                for ii in range(tths.__len__()):
-                    tth = float(tths[ii])
-                    if (tth >= x_min) and (tth <= x_max) and \
-                            (intensities[ii] >= int_threshold):
-                        """
-                        height = \
-                            self.model.current_section.get_nearest_intensity(tth)
-                        """
-                        width = self.widget.doubleSpinBox_InitialFWHM.value()
-                        hkl = [j.DiffLines[ii].h, j.DiffLines[ii].k,
-                               j.DiffLines[ii].l]
-                        phasename = self._phase_name_from_jcpds_for_peakfit(j)
-                        self.model.current_section.set_single_peak(
-                            tth, width, hkl=hkl, phase_name=phasename)
-                    else:
-                        pass
+        self._normalize_current_peak_phase_names()
+        self._remove_peaks_outside_current_section()
+        candidates = self._get_jcpds_peak_candidates_for_current_section(
+            selected_phases)
+        for candidate in candidates:
+            self.model.current_section.set_single_peak(
+                candidate["tth"],
+                candidate["width"],
+                hkl=candidate["hkl"],
+                phase_name=candidate["phase"])
         self.set_tableWidget_PkParams_unsaved()
         self.peakfit_table_ctrl.update_peak_parameters()
         self.peakfit_table_ctrl.update_peak_constraints()
         self.plot_ctrl.update()
 
+    def restore_missing_jcpds_peaks(self):
+        selected_phases = self._get_selected_jcpds_phases_for_peakfit()
+        if selected_phases is None:
+            return
+        if not self.model.current_section_exist():
+            QtWidgets.QMessageBox.warning(self.widget, "Warning",
+                                          "Set a section first.")
+            return
+        names_changed = self._normalize_current_peak_phase_names()
+        candidates = self._get_jcpds_peak_candidates_for_current_section(
+            selected_phases)
+        existing_keys = self._existing_peak_phase_hkl_keys()
+        n_added = 0
+        for candidate in candidates:
+            key = self._peak_phase_hkl_key(
+                candidate["phase"], candidate["hkl"])
+            if key in existing_keys:
+                continue
+            success = self.model.current_section.set_single_peak(
+                candidate["tth"],
+                candidate["width"],
+                hkl=candidate["hkl"],
+                phase_name=candidate["phase"])
+            if success:
+                existing_keys.add(key)
+                n_added += 1
+        if n_added == 0:
+            if names_changed:
+                self.set_tableWidget_PkParams_unsaved()
+                self.peakfit_table_ctrl.update_peak_parameters()
+                self.peakfit_table_ctrl.update_peak_constraints()
+                self.plot_ctrl.update()
+                return
+            QtWidgets.QMessageBox.information(
+                self.widget, "Restore missing",
+                "No missing JCPDS peaks were found for the current section.")
+            return
+        self.set_tableWidget_PkParams_unsaved()
+        self.peakfit_table_ctrl.update_peak_parameters()
+        self.peakfit_table_ctrl.update_peak_constraints()
+        self.plot_ctrl.update()
+
+    def _get_selected_jcpds_phases_for_peakfit(self):
+        if not self.model.jcpds_exist():
+            return None
+        self._sync_jcpds_display_from_table()
+        selected_phases = [j for j in self.model.jcpds_lst if j.display]
+        if selected_phases == []:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "No JCPDS phase is selected for display.\n\n"
+                "Check the JCPDS phase checkbox for each phase you want to "
+                "import.")
+            return None
+        return selected_phases
+
+    def _remove_peaks_outside_current_section(self):
+        x_range = self.model.current_section.get_xrange()
+        x_min, x_max = min(x_range), max(x_range)
+        self.model.current_section.peaks_in_queue = [
+            p for p in self.model.current_section.peaks_in_queue
+            if (p.get('center', x_min) >= x_min) and (p.get('center', x_max) <= x_max)
+        ]
+
+    def _normalize_current_peak_phase_names(self):
+        changed = False
+        for peak in self.model.current_section.peaks_in_queue:
+            old_name = str(peak.get("phasename", ""))
+            new_name = self._normalize_peakfit_phase_name(old_name)
+            if new_name != old_name:
+                peak["phasename"] = new_name
+                changed = True
+        return changed
+
+    def _get_jcpds_peak_candidates_for_current_section(self, selected_phases):
+        x_range = self.model.current_section.get_xrange()
+        x_min, x_max = min(x_range), max(x_range)
+        int_threshold = float(
+            self.widget.spinBox_PeaksFromJlistIntensity.value())
+        width = self.widget.doubleSpinBox_InitialFWHM.value()
+        candidates = []
+        for j in selected_phases:
+            tths, intensities = j.get_tthVSint(
+                self.widget.doubleSpinBox_SetWavelength.value())
+            phasename = self._phase_name_from_jcpds_for_peakfit(j)
+            for ii in range(tths.__len__()):
+                tth = float(tths[ii])
+                if (tth < x_min) or (tth > x_max):
+                    continue
+                if intensities[ii] < int_threshold:
+                    continue
+                hkl = [j.DiffLines[ii].h, j.DiffLines[ii].k,
+                       j.DiffLines[ii].l]
+                candidates.append({
+                    "phase": phasename,
+                    "hkl": hkl,
+                    "tth": tth,
+                    "width": width,
+                })
+        return candidates
+
+    def _existing_peak_phase_hkl_keys(self):
+        keys = set()
+        for peak in self.model.current_section.peaks_in_queue:
+            keys.add(self._peak_phase_hkl_key(
+                peak.get("phasename", ""),
+                [peak.get("h", 0), peak.get("k", 0), peak.get("l", 0)]))
+        return keys
+
+    def _peak_phase_hkl_key(self, phase, hkl):
+        return (
+            self._normalize_peakfit_phase_name(str(phase)),
+            int(round(float(hkl[0]))),
+            int(round(float(hkl[1]))),
+            int(round(float(hkl[2]))),
+        )
+
     def _phase_name_from_jcpds_for_peakfit(self, jcpds):
         name = str(getattr(jcpds, "name", ""))
-        if name.endswith(".ucfit"):
-            return name[:-len(".ucfit")]
+        name = self._normalize_peakfit_phase_name(name)
+        if name != "":
+            return name
         filename = os.path.basename(str(getattr(jcpds, "file", "")))
-        if filename.endswith(".ucfit.jcpds"):
-            return filename[:-len(".ucfit.jcpds")]
+        filename = self._normalize_peakfit_phase_name(filename)
+        if filename.endswith(".jcpds"):
+            return filename[:-len(".jcpds")]
+        return filename
+
+    def _normalize_peakfit_phase_name(self, name):
+        name = str(name).strip()
+        if name.endswith(".jcpds"):
+            name = name[:-len(".jcpds")]
+        if ".ucfit" in name:
+            return name.split(".ucfit", 1)[0]
         return name
 
     def _sync_jcpds_display_from_table(self):
@@ -339,24 +508,34 @@ class PeakFitController(object):
         self._clear_current_section()
 
     def remove_section(self):
+        idx_checked = []
+        selection_model = self.widget.tableWidget_PkFtSections.selectionModel()
+        if selection_model is not None:
+            idx_checked = [item.row() for item in selection_model.selectedRows()]
+            if idx_checked == []:
+                idx_checked = sorted(
+                    {item.row() for item in selection_model.selectedIndexes()})
+        if idx_checked == []:
+            return False
+        idx_checked = [
+            idx for idx in idx_checked
+            if 0 <= idx < len(self.model.section_lst)
+        ]
+        if idx_checked == []:
+            return False
         reply = QtWidgets.QMessageBox.question(
             self.widget, 'Message',
             'Are you sure you want to delete the selected sections?',
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.Yes)
+            QtWidgets.QMessageBox.No)
         if reply == QtWidgets.QMessageBox.No:
-            return
-        idx_checked = []
-        for item in \
-                self.widget.tableWidget_PkFtSections.selectionModel().\
-                selectedRows():
-            idx_checked.append(item.row())
+            return True
         # remove checked ones
-        if idx_checked != []:
-            idx_checked.reverse()
-            for idx in idx_checked:
-                self.model.section_lst.pop(idx)
-                self.widget.tableWidget_PkFtSections.removeRow(idx)
+        for idx in sorted(idx_checked, reverse=True):
+            self.model.section_lst.pop(idx)
+            self.widget.tableWidget_PkFtSections.removeRow(idx)
+        self.set_tableWidget_PkFtSections_unsaved()
+        return True
 
     def clear_this_section(self):
         reply = QtWidgets.QMessageBox.question(

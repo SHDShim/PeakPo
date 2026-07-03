@@ -168,10 +168,11 @@ class UcfitController(object):
     def _normalize_ucfit_phase_name(self, phase_name):
         if not isinstance(phase_name, str):
             return phase_name
-        if phase_name.endswith(".ucfit.jcpds"):
-            return phase_name[:-len(".ucfit.jcpds")]
-        if phase_name.endswith(".ucfit"):
-            return phase_name[:-len(".ucfit")]
+        phase_name = phase_name.strip()
+        if phase_name.endswith(".jcpds"):
+            phase_name = phase_name[:-len(".jcpds")]
+        if ".ucfit" in phase_name:
+            return phase_name.split(".ucfit", 1)[0]
         return phase_name
 
     def _get_peakfit_result(self, section, verbose=False):

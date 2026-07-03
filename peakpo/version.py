@@ -10,9 +10,16 @@ __version__ = "7.11.13"
          selected-peak graph highlighting and drag-to-adjust peak positions in
          both 1D and Cake views, solid/thinner peak-center lines, fit progress
          dialog, clearer table status text, improved JCPDS import filtering,
+         faster selected-peak marker updates without full plot redraws,
+         lower-latency peak-position dragging with spinbox updates deferred
+         until mouse release, subdued peak-center markers that keep JCPDS bars
+         visible, non-destructive restore of missing JCPDS peaks by phase and hkl,
+         Backspace-confirmed multi-row deletion in Peak Fit, JCPDS, and
+         Waterfall tables,
          ucfit.jcpds list refresh after cell fitting, legacy .ucfit phase-name
          repair during Cell Fit collection, GSAS-style toggle plotting with
-         smaller points, and persisted top-bar checkbox states.
+         smaller points, persisted top-bar checkbox states, and remembered
+         CHI file-chooser JCPDS filter mode.
 7.11.12: use Dioptas for Update cake integration so PeakPo-generated cakes
          match dioptas_batch_gui output; add a non-H5/NXS reprocessing warning
          before overwriting existing cake files; fix Matplotlib colormap API

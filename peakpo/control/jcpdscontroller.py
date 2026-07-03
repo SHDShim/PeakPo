@@ -22,6 +22,22 @@ import pymatgen as mg
 import datetime
 
 
+class _TableBackspaceKeyFilter(QtCore.QObject):
+    def __init__(self, parent, table, callback):
+        super(_TableBackspaceKeyFilter, self).__init__(parent)
+        self.table = table
+        self.callback = callback
+
+    def eventFilter(self, obj, event):
+        if obj != self.table:
+            return False
+        if event.type() != QtCore.QEvent.KeyPress:
+            return False
+        if event.key() != QtCore.Qt.Key_Backspace:
+            return False
+        return bool(self.callback())
+
+
 class JcpdsController(object):
     JCPDS_HEADING_PREFIXES = (
         "Properties at ",
@@ -34,6 +50,7 @@ class JcpdsController(object):
         self.widget = widget
         self.jcpdstable_ctrl = JcpdsTableController(self.model, self.widget)
         self.plot_ctrl = MplController(self.model, self.widget)
+        self._table_backspace_key_filters = []
         self.connect_channel()
 
     def connect_channel(self):
@@ -63,6 +80,14 @@ class JcpdsController(object):
         if hasattr(self.widget, "pushButton_savePeakPos"):
             self.widget.pushButton_savePeakPos.clicked.connect(
                 self.sort_checked_to_top)
+        self._install_table_backspace_key_filters()
+
+    def _install_table_backspace_key_filters(self):
+        table = self.widget.tableWidget_JCPDS
+        key_filter = _TableBackspaceKeyFilter(
+            self.widget, table, self.remove_a_jcpds)
+        table.installEventFilter(key_filter)
+        self._table_backspace_key_filters.append(key_filter)
 
     def _apply_changes_to_graph(self, limits=None):
         self.plot_ctrl.update(limits=limits)
@@ -293,26 +318,37 @@ class JcpdsController(object):
         self.widget.tableWidget_JCPDS.selectRow(i + 1)
 
     def remove_a_jcpds(self):
-        reply = QtWidgets.QMessageBox.question(
-            self.widget, 'Message',
-            'Are you sure you want to remove the highlighted JPCDSs?',
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.Yes)
-        if reply == QtWidgets.QMessageBox.No:
-            return
-        idx_checked = [s.row() for s in
-                       self.widget.tableWidget_JCPDS.selectionModel().
-                       selectedRows()]
-        if idx_checked != []:
-            idx_checked.reverse()
-            for idx in idx_checked:
-                self.model.jcpds_lst.remove(self.model.jcpds_lst[idx])
-                self.widget.tableWidget_JCPDS.removeRow(idx)
-            self._apply_changes_to_graph()
-        else:
+        table = self.widget.tableWidget_JCPDS
+        idx_checked = []
+        selection_model = table.selectionModel()
+        if selection_model is not None:
+            idx_checked = [s.row() for s in selection_model.selectedRows()]
+            if idx_checked == []:
+                idx_checked = sorted(
+                    {s.row() for s in selection_model.selectedIndexes()})
+        if idx_checked == [] and table.currentRow() >= 0:
+            idx_checked = [table.currentRow()]
+        valid_rows = [
+            idx for idx in idx_checked
+            if 0 <= idx < len(self.model.jcpds_lst)
+        ]
+        if valid_rows == []:
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning',
                 'In order to remove, highlight the names.')
+            return False
+        reply = QtWidgets.QMessageBox.question(
+            self.widget, 'Message',
+            'Are you sure you want to remove the highlighted JCPDSs?',
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.No:
+            return True
+        for idx in sorted(set(valid_rows), reverse=True):
+            self.model.jcpds_lst.pop(idx)
+            table.removeRow(idx)
+        self._apply_changes_to_graph()
+        return True
 
     def sort_checked_to_top(self):
         if not self.model.jcpds_exist():

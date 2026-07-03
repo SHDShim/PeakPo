@@ -33,6 +33,7 @@ class MplController(object):
         self._update_timer.timeout.connect(self._flush_update_request)
         self._vcursor_pattern = None
         self._vcursor_cake = None
+        self._selected_peak_marker_artists = []
         
         # ✅ Wrap toolbar methods to track state
         toolbar = self.widget.mpl.canvas.toolbar
@@ -579,7 +580,8 @@ class MplController(object):
                     lw=float(
                         self.widget.comboBox_PtnJCPDSBarThickness.
                         currentText()),
-                    alpha=self.widget.doubleSpinBox_JCPDS_ptn_Alpha.value())
+                    alpha=self.widget.doubleSpinBox_JCPDS_ptn_Alpha.value(),
+                    zorder=18)
                 # hkl
                 if self.widget.checkBox_ShowMillerIndices.isChecked():
                     hkl_list = phase.get_hkl_in_text()
@@ -590,7 +592,8 @@ class MplController(object):
                             horizontalalignment='center',
                             fontsize=int(
                                 self.widget.comboBox_HKLFontSize.currentText()),
-                            alpha=self.widget.doubleSpinBox_JCPDS_ptn_Alpha.value())
+                            alpha=self.widget.doubleSpinBox_JCPDS_ptn_Alpha.value(),
+                            zorder=19)
                 # phase.name, phase.v.item()))
             if self.widget.checkBox_ShowCake.isChecked() and \
                     self.widget.checkBox_JCPDSinCake.isChecked():
@@ -599,7 +602,8 @@ class MplController(object):
                     np.ones_like(tth) * cakerange[3], colors=phase.color,
                     lw=float(
                         self.widget.comboBox_CakeJCPDSBarThickness.currentText()),
-                    alpha=self.widget.doubleSpinBox_JCPDS_cake_Alpha.value())
+                    alpha=self.widget.doubleSpinBox_JCPDS_cake_Alpha.value(),
+                    zorder=18)
                 if self.widget.checkBox_ShowMillerIndices_Cake.isChecked():
                     hkl_list = phase.get_hkl_in_text()
                     trans = transforms.blended_transform_factory(
@@ -612,7 +616,8 @@ class MplController(object):
                             transform=trans, horizontalalignment='right',
                             fontsize=int(
                                 self.widget.comboBox_HKLFontSize.currentText()),
-                            alpha=self.widget.doubleSpinBox_JCPDS_cake_Alpha.value())
+                            alpha=self.widget.doubleSpinBox_JCPDS_cake_Alpha.value(),
+                            zorder=19)
         if self.widget.checkBox_JCPDSinPattern.isChecked():
             legend_fontsize = 14
             if hasattr(self.widget, "comboBox_LegendFontSize"):
@@ -736,6 +741,7 @@ class MplController(object):
                     currentText()))
 
     def _plot_peakfit(self):
+        self._selected_peak_marker_artists = []
         if not self.model.current_section_exist():
             return
         if self.model.current_section.peaks_exist():
@@ -818,25 +824,94 @@ class MplController(object):
             return None
         return row
 
+    def _clear_selected_peak_marker(self):
+        for artist in getattr(self, "_selected_peak_marker_artists", []):
+            try:
+                artist.remove()
+            except Exception:
+                pass
+        self._selected_peak_marker_artists = []
+
+    def refresh_selected_peak_marker(self):
+        if not self.model.current_section_exist():
+            return False
+        if not self.model.current_section.peaks_exist():
+            self._clear_selected_peak_marker()
+            self.widget.mpl.canvas.draw_idle()
+            return True
+        selected_row = self._get_selected_peak_parameter_row()
+        self._clear_selected_peak_marker()
+        if selected_row is None:
+            self.widget.mpl.canvas.draw_idle()
+            return True
+        positions = self.model.current_section.get_peak_positions()
+        if selected_row >= len(positions):
+            self.widget.mpl.canvas.draw_idle()
+            return True
+        self._plot_selected_peak_marker(positions[selected_row])
+        self.widget.mpl.canvas.draw_idle()
+        return True
+
     def _plot_selected_peak_marker(self, x_center):
         fitted = self.model.current_section.fitted()
         color = 'tab:cyan' if fitted else 'tab:orange'
         linestyle = '-' if fitted else '-'
-        self.widget.mpl.canvas.ax_pattern.axvline(
+        self._selected_peak_marker_artists = []
+        line = self.widget.mpl.canvas.ax_pattern.axvline(
             x_center, c=color, ls=linestyle, lw=1.4, zorder=20)
+        self._selected_peak_marker_artists.append(line)
+        marker = self.widget.mpl.canvas.ax_pattern.plot(
+            [x_center], [0.02], marker='^', markersize=7,
+            color=color, linestyle='None',
+            transform=self.widget.mpl.canvas.ax_pattern.get_xaxis_transform(),
+            zorder=21, clip_on=False)[0]
+        self._selected_peak_marker_artists.append(marker)
         if hasattr(self.widget.mpl.canvas, 'ax_cake') and \
                 self.widget.checkBox_ShowCake.isChecked():
-            self.widget.mpl.canvas.ax_cake.axvline(
+            line = self.widget.mpl.canvas.ax_cake.axvline(
                 x_center, c=color, ls=linestyle, lw=1.2, zorder=20)
+            self._selected_peak_marker_artists.append(line)
+            marker = self.widget.mpl.canvas.ax_cake.plot(
+                [x_center], [0.02], marker='^', markersize=7,
+                color=color, linestyle='None',
+                transform=self.widget.mpl.canvas.ax_cake.get_xaxis_transform(),
+                zorder=21, clip_on=False)[0]
+            self._selected_peak_marker_artists.append(marker)
+
+    def update_dragged_peak_marker(self, x_center):
+        artists = [
+            artist for artist in getattr(
+                self, "_selected_peak_marker_artists", [])
+            if artist is not None
+        ]
+        if artists == []:
+            try:
+                self._plot_selected_peak_marker(x_center)
+                self.widget.mpl.canvas.draw_idle()
+                return True
+            except Exception:
+                return False
+        for artist in artists:
+            try:
+                xdata = artist.get_xdata()
+                if len(xdata) == 1:
+                    artist.set_xdata([x_center])
+                else:
+                    artist.set_xdata([x_center, x_center])
+            except Exception:
+                return False
+        self.widget.mpl.canvas.draw_idle()
+        return True
 
     def _plot_peak_center_marker(self, x_center):
         self.widget.mpl.canvas.ax_pattern.axvline(
-            x_center, c=self.obj_color, ls='-', lw=0.8, zorder=12)
+            x_center, c=self.obj_color, ls='-', lw=0.6, alpha=0.35,
+            zorder=8)
         if hasattr(self.widget.mpl.canvas, 'ax_cake') and \
                 self.widget.checkBox_ShowCake.isChecked():
             self.widget.mpl.canvas.ax_cake.axvline(
                 x_center, c=self._cake_peak_center_line_color(),
-                ls='-', lw=0.8, zorder=12)
+                ls='-', lw=0.6, alpha=0.35, zorder=8)
 
     def _cake_peak_center_line_color(self):
         ax_cake = getattr(self.widget.mpl.canvas, "ax_cake", None)
