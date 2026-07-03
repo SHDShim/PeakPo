@@ -10,6 +10,7 @@ from ..utils import dialog_savefile, writechi, get_directory, make_filename, \
         read_any_poni_file, dialog_openfile_hide_param_dirs
 from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
+from ..model.azimuthal_integration import provenance_for_chi
 from PIL import Image
 import json
 import datetime
@@ -247,7 +248,55 @@ class CakeController(object):
     def _warn_cannot_process_cake(self):
         QtWidgets.QMessageBox.warning(
             self.widget, 'Warning',
-            'PeakPo cannot process cake: no raw image and no existing cake files were found.')
+            'PeakPo cannot process Cake: no raw image or cached Cake files '
+            'were found for this CHI or its full-azimuth source.')
+
+    def _current_azimuth_source_chi(self):
+        if not self.model.base_ptn_exist():
+            return None
+        provenance = provenance_for_chi(self.model.get_base_ptn_filename())
+        if provenance.get("source_kind") != "azimuthal_integration":
+            return None
+        source_chi = provenance.get("source_chi", "")
+        if not source_chi:
+            return None
+        return os.path.abspath(source_chi)
+
+    def _valid_loaded_cake(self):
+        if self.model.diff_img is None:
+            return False
+        intensity, tth, chi = self.model.diff_img.get_cake()
+        return intensity is not None and tth is not None and chi is not None
+
+    def _diff_img_related_to_chi(self, chi_path):
+        if self.model.diff_img is None:
+            return False
+        img_filename = getattr(self.model.diff_img, "img_filename", None)
+        if not img_filename:
+            return False
+        img_root = os.path.splitext(os.path.basename(img_filename))[0]
+        chi_root = os.path.splitext(os.path.basename(chi_path))[0]
+        return img_root == chi_root or img_root.startswith(chi_root + "__")
+
+    def _image_candidates_for_chi(self, chi_path):
+        exts = ("tif", "tiff", "mar3450", "cbf", "h5")
+        candidates = []
+        for ext in exts:
+            for original in (True, False):
+                filen = make_filename(chi_path, ext, original=original)
+                if filen not in candidates:
+                    candidates.append(filen)
+        return candidates
+
+    def _load_cake_from_temp_for_chi(self, chi_path):
+        if self.model.diff_img is None:
+            self.model.reset_diff_img()
+        temp_dir = get_temp_dir(chi_path)
+        for candidate in self._image_candidates_for_chi(chi_path):
+            self.model.diff_img.img_filename = candidate
+            if self.model.diff_img.read_cake_from_tempfile(temp_dir=temp_dir):
+                return True
+        return False
 
     def _load_cake_from_temp_without_raw_image(self, temp_dir):
         # Temp cake files are named from the base pattern root name.
@@ -323,6 +372,12 @@ class CakeController(object):
         if not self.model.base_ptn_exist():
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning', 'Choose CHI file first.')
+            self.widget.checkBox_ShowCake.setChecked(False)
+            return False
+        if self._current_azimuth_source_chi() is not None:
+            if self.process_temp_cake():
+                return True
+            self._warn_cannot_process_cake()
             self.widget.checkBox_ShowCake.setChecked(False)
             return False
         if not self.model.associated_image_exists():
@@ -454,6 +509,19 @@ class CakeController(object):
         """
         load cake through either temporary file or make a new cake
         """
+        source_chi = self._current_azimuth_source_chi()
+        if source_chi is not None:
+            source_cake_loaded = (
+                self._valid_loaded_cake() and
+                self._diff_img_related_to_chi(source_chi))
+            if source_cake_loaded:
+                return True
+            if self._load_cake_from_temp_for_chi(source_chi):
+                print(str(datetime.datetime.now())[:-7],
+                    ": Load source Cake image from temporary file.")
+                return True
+            return False
+
         temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
         has_raw_image = self.model.associated_image_exists()
         if not has_raw_image:

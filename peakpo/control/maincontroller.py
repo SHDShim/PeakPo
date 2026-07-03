@@ -82,6 +82,8 @@ class MainController(object):
         print("  ✓ SequenceController created")
         
         self.cakeazi_ctrl = CakeAziController(self.model, self.widget)
+        self.cakeazi_ctrl.set_helpers(base_ptn_ctrl=self.base_ptn_ctrl)
+        self.base_ptn_ctrl.set_pattern_loaded_callback(self._on_base_pattern_loaded)
         print("  ✓ CakeAziController created")
         
         self.waterfall_ctrl = WaterfallController(self.model, self.widget)
@@ -167,6 +169,10 @@ class MainController(object):
             cake_plot_ctrl = getattr(self.base_ptn_ctrl.cake_ctrl, "plot_ctrl", None)
             if (cake_plot_ctrl is not None) and hasattr(cake_plot_ctrl, "set_diff_controller"):
                 cake_plot_ctrl.set_diff_controller(self.diff_ctrl)
+
+    def _on_base_pattern_loaded(self, filename):
+        if hasattr(self, "cakeazi_ctrl") and (self.cakeazi_ctrl is not None):
+            self.cakeazi_ctrl.refresh_derived_chi_ui(select_path=filename)
 
     def show_window(self):
         """Show the main window and ensure it renders"""
@@ -295,6 +301,9 @@ class MainController(object):
         if hasattr(self.widget, "pushButton_MouseHelp"):
             self.widget.pushButton_MouseHelp.clicked.connect(
                 self.show_mouse_help)
+        if hasattr(self.widget, "pushButton_ToolbarCakeZAdj"):
+            self.widget.pushButton_ToolbarCakeZAdj.clicked.connect(
+                self._apply_toolbar_cake_z_adjustment)
         if hasattr(self.widget, "checkBox_ToolbarJCPDS"):
             self.widget.checkBox_ToolbarJCPDS.clicked.connect(
                 self._on_toolbar_jcpds_toggled)
@@ -434,7 +443,9 @@ class MainController(object):
         return self.widget.tabWidget.currentIndex() in (4, 5)
 
     def _roi_mode_available(self):
-        return self._is_map_tab_active() or self._is_seq_tab_active()
+        return self._is_map_tab_active() or self._is_seq_tab_active() or \
+            (hasattr(self.widget, "tab_Cake1") and
+             self.widget.tabWidget.currentWidget() == self.widget.tab_Cake1)
 
     def _set_mouse_mode_button_state(self, mode):
         button_map = {
@@ -462,6 +473,8 @@ class MainController(object):
             self.map_ctrl.deactivate_interactions()
         if hasattr(self, "seq_ctrl") and (self.seq_ctrl is not None):
             self.seq_ctrl.deactivate_interactions()
+        if hasattr(self, "cakeazi_ctrl") and (self.cakeazi_ctrl is not None):
+            self.cakeazi_ctrl.deactivate_interactions()
 
     def _refresh_mouse_mode_availability(self, *_args):
         roi_available = self._roi_mode_available()
@@ -504,6 +517,9 @@ class MainController(object):
                 self.map_ctrl._arm_roi_selection()
             elif self._is_seq_tab_active():
                 self.seq_ctrl._arm_roi_selection()
+            elif hasattr(self.widget, "tab_Cake1") and \
+                    self.widget.tabWidget.currentWidget() == self.widget.tab_Cake1:
+                self.cakeazi_ctrl._arm_roi_selection()
         elif mode == 'peakpick':
             self._sync_peakpick_button(True)
 
@@ -538,6 +554,17 @@ class MainController(object):
         old_state = checkbox.blockSignals(True)
         checkbox.setChecked(bool(checked))
         checkbox.blockSignals(old_state)
+
+    def _apply_toolbar_cake_z_adjustment(self, checked=False):
+        del checked
+        hist = getattr(self.widget, "cake_hist_widget", None)
+        if hist is None:
+            return
+        edge_button = getattr(hist, "button_edge", None)
+        if edge_button is not None:
+            edge_button.click()
+        else:
+            hist.apply_edge_to_current_data()
 
     def _on_toolbar_jcpds_toggled(self):
         checked = self.widget.checkBox_ToolbarJCPDS.isChecked()
@@ -603,6 +630,8 @@ class MainController(object):
             ("Set ROI, then left drag", "Map or Sequence ROI", "Draw ROI on the 1D or Cake plot."),
             ("Set ROI again", "Map or Sequence ROI", "Cancel ROI selection mode."),
             ("Clear ROI", "Map or Sequence ROI", "Remove the stored ROI and its overlay."),
+            ("Set ROI, then left drag", "Cake integration", "Queue azimuthal ROI ranges on the Cake plot."),
+            ("Add ROI", "Cake integration", "Add queued azimuthal ROI ranges to the Cake integration table."),
             ("Shift + left click", "Peak fitting", "Add a peak at the clicked position."),
             ("Shift + right click", "Peak fitting", "Remove the nearest peak."),
             ("Highlight row, Shift + left drag on peak", "Peak fitting", "Move peak position; table updates on release."),
@@ -866,18 +895,11 @@ class MainController(object):
 
         if filen is None:
             return
-        else:
-            reply = QtWidgets.QMessageBox.question(
-                self.widget, 'Message',
-                'Do you want to add this file ({:s}) to the waterfall list?'.
-                format(filen),
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                QtWidgets.QMessageBox.Yes)
-            if reply == QtWidgets.QMessageBox.No:
-                return
-            else:
-                # add to waterfall
-                self.waterfall_ctrl._add_patterns([filen])
+        self.base_ptn_ctrl._setshow_new_base_ptn(filen)
+        self.cakeazi_ctrl.refresh_derived_chi_ui(select_path=filen)
+        QtWidgets.QMessageBox.information(
+            self.widget, 'Integrated',
+            'Azimuth-integrated CHI was saved and opened:\n' + filen)
 
     def quick_p_change(self, direction):
         step = self.widget.doubleSpinBox_PStep.value()
@@ -1029,6 +1051,11 @@ class MainController(object):
         if hasattr(self, "seq_ctrl") and (self.seq_ctrl is not None):
             try:
                 self.seq_ctrl.refresh_roi_overlays()
+            except Exception:
+                pass
+        if hasattr(self, "cakeazi_ctrl") and (self.cakeazi_ctrl is not None):
+            try:
+                self.cakeazi_ctrl.refresh_roi_overlays()
             except Exception:
                 pass
 

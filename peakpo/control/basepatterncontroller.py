@@ -8,6 +8,7 @@ import datetime
 from .mplcontroller import MplController
 from .cakecontroller import CakeController
 from .xrdiohelpers import DioptasMetadataCollection
+from ..model.azimuthal_integration import provenance_for_chi
 
 
 class BasePatternController(object):
@@ -16,9 +17,17 @@ class BasePatternController(object):
         self.model = model
         self.widget = widget
         self.session_ctrl = session_ctrl
+        self.pattern_loaded_callback = None
         self.plot_ctrl = MplController(self.model, self.widget)
         self.cake_ctrl = CakeController(self.model, self.widget)
         self.connect_channel()
+
+    def set_pattern_loaded_callback(self, callback):
+        self.pattern_loaded_callback = callback
+
+    def _notify_pattern_loaded(self, filename):
+        if callable(self.pattern_loaded_callback):
+            self.pattern_loaded_callback(filename)
 
     def connect_channel(self):
         self.widget.pushButton_NewBasePtn.clicked.connect(
@@ -81,12 +90,16 @@ class BasePatternController(object):
             self.widget.set_nav_carry_status("")
         self.model.set_base_ptn(
             new_filename, self.widget.doubleSpinBox_SetWavelength.value())
+        provenance = provenance_for_chi(new_filename)
+        self.model.current_pattern_provenance = provenance
+        self.model.base_ptn._pkpo_source_provenance = provenance
         self._clear_peakfit_for_new_pattern()
         # self.widget.textEdit_DiffractionPatternFileName.setText(
         #    '1D Pattern: ' + self.model.get_base_ptn_filename())
         self.widget.lineEdit_DiffractionPatternFileName.setText(
             str(self.model.get_base_ptn_filename()))
         self._update_metadata_tab_for_chi(new_filename)
+        self._notify_pattern_loaded(new_filename)
         # Prefer loading full PARAM session state when available for this CHI.
         if self.session_ctrl is not None:
             loaded_param = self.session_ctrl.autoload_param_for_chi(new_filename)
@@ -112,18 +125,22 @@ class BasePatternController(object):
                 else:
                     self._update_bgsub_from_current_values()
                     print(str(datetime.datetime.now())[:-7], 
-                        ': No temp chi file found. Force new bgsub fit.')
+                        ': No temp background-subtracted CHI found. Force new bgsub fit.')
             else:
                 os.makedirs(temp_dir)
                 self._update_bgsub_from_current_values()
                 print(str(datetime.datetime.now())[:-7], 
-                    ': No temp chi file found. Force new bgsub fit.')
+                    ': No temp background-subtracted CHI found. Force new bgsub fit.')
         else:
             self._update_bgsub_from_current_values()
             print(str(datetime.datetime.now())[:-7], 
                 ': Temp chi ignored. Force new bgsub fit.')
+        is_azimuthal_chi = (
+            provenance.get("source_kind") == "azimuthal_integration" and
+            bool(provenance.get("source_chi")))
         if (not self.model.associated_image_exists()) and \
-                (not self.widget.checkBox_IgnoreRawDataExistence.isChecked()):
+                (not self.widget.checkBox_IgnoreRawDataExistence.isChecked()) and \
+                (not is_azimuthal_chi):
             self.widget.checkBox_ShowCake.setChecked(False)
             return
         # self._update_bg_params_in_widget()
@@ -135,14 +152,17 @@ class BasePatternController(object):
 
         if self.widget.checkBox_ShowCake.isChecked() and \
                 ((self.model.poni is not None) or
-                 self.widget.checkBox_IgnoreRawDataExistence.isChecked()):
+                 self.widget.checkBox_IgnoreRawDataExistence.isChecked() or
+                 is_azimuthal_chi):
             success = self.cake_ctrl.process_temp_cake()
             if (not success) and \
-                    self.widget.checkBox_IgnoreRawDataExistence.isChecked() and \
-                    (not self.model.associated_image_exists()):
+                    ((self.widget.checkBox_IgnoreRawDataExistence.isChecked() and
+                      (not self.model.associated_image_exists())) or
+                     is_azimuthal_chi):
                 QtWidgets.QMessageBox.warning(
                     self.widget, 'Warning',
-                    'PeakPo cannot process cake: no raw image and no existing cake files were found.')
+                    'PeakPo cannot process Cake: no raw image or cached Cake files '
+                    'were found for this CHI or its full-azimuth source.')
                 self.widget.checkBox_ShowCake.setChecked(False)
         # Keep backup table in File > Data synchronized right after CHI load.
         if self.session_ctrl is not None:

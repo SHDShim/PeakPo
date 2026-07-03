@@ -49,7 +49,12 @@ __version__ = "7.11.13"
          Shift-based Peak Fit add/remove and drag-release marker refreshes;
          clear stale Cell Fit collection when Peak Fit sections are removed;
          save Cell Fit ucfit.jcpds and ucfit.output with default names without
-         filename prompts.
+         filename prompts; redesign Cake azimuthal integration around
+         azimuth-only ranges over the current CHI 2theta span, deterministic
+         derived CHI files, setup JSON save/load, backward-compatible legacy
+         marker loading, and Peak Fit / Cell Fit source provenance; add Cake
+         integration ROI picking with a Map/Sequence-style Set ROI toggle,
+         queued multi-ROI add behavior, and table-row-driven plot highlighting.
 7.11.12: use Dioptas for Update cake integration so PeakPo-generated cakes
          match dioptas_batch_gui output; add a non-H5/NXS reprocessing warning
          before overwriting existing cake files; fix Matplotlib colormap API

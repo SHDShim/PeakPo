@@ -160,7 +160,7 @@ class PlotInteractionController(object):
         self._plot_help_active = False
 
     def _roi_selector_active(self):
-        for ctrl_name in ("map_ctrl", "seq_ctrl"):
+        for ctrl_name in ("map_ctrl", "seq_ctrl", "cakeazi_ctrl"):
             ctrl = getattr(self.main, ctrl_name, None)
             is_active = getattr(ctrl, "is_roi_selection_active", None)
             if callable(is_active) and is_active():
@@ -178,7 +178,7 @@ class PlotInteractionController(object):
         return False
 
     def deactivate_roi_selectors(self):
-        for ctrl_name in ("map_ctrl", "seq_ctrl"):
+        for ctrl_name in ("map_ctrl", "seq_ctrl", "cakeazi_ctrl"):
             ctrl = getattr(self.main, ctrl_name, None)
             if ctrl is None:
                 continue

@@ -107,7 +107,8 @@ class DiffImg(object):
         self.mask is used for self.img
         """
         n_azi_pnts = self.calculate_n_azi_pnts()  # * 2 reduced number for Mar345 data
-        radial_range = (0., self.calculate_max_twotheta())
+        radial_range = kwargs.pop(
+            "radial_range", (0., self.calculate_max_twotheta()))
 
         # integrate to 1 D using pyFAI
         tth, intensity = self.poni.integrate1d(

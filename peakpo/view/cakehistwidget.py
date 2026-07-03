@@ -108,6 +108,22 @@ class CakeHistogramWidget(QtWidgets.QWidget):
         if draw:
             self.canvas.draw_idle()
 
+    def clear(self):
+        self._data = None
+        self._vmin = None
+        self._vmax = None
+        self._xlims = None
+        self._line_min = None
+        self._line_max = None
+        self._span_patch = None
+        self._data_max = None
+        self._data_signature = None
+        self._drag_target = None
+        self._drag_start_x = None
+        self._drag_start_vmin = None
+        self._drag_start_vmax = None
+        self._draw_empty_state()
+
     def _finite_array(self, values):
         if np.ma.isMaskedArray(values):
             arr = np.asarray(values.compressed(), dtype=float).ravel()
@@ -129,7 +145,7 @@ class CakeHistogramWidget(QtWidgets.QWidget):
     def set_data(self, values, vmin=None, vmax=None):
         arr = self._finite_array(values)
         if arr.size == 0:
-            self._draw_empty_state()
+            self.clear()
             return
 
         self._data = arr

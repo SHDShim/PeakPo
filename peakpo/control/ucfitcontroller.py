@@ -14,6 +14,7 @@ from ..utils import SpinBoxFixStyle
 from ..utils import xls_ucfitlist, fit_cubic_cell, \
     fit_hexagonal_cell, fit_tetragonal_cell, fit_orthorhombic_cell, \
     make_output_table, get_directory, make_filename, cal_dspacing, get_temp_dir
+from ..model.azimuthal_integration import source_label, source_ranges_label
 
 
 class UcfitController(object):
@@ -213,6 +214,9 @@ class UcfitController(object):
                   " created in {2:} has {3:d} peaks".format(
                       section.x.min(), section.x.max(),
                       section.timestamp, n_peaks))
+        provenance = getattr(section, "source_provenance", {}) or {}
+        source_text = source_label(provenance)
+        azimuth_text = source_ranges_label(provenance)
         for i in range(int(n_peaks)):
             label = "p{:d}_".format(i)
             section.fit_result.params[label+'center'].value
@@ -236,7 +240,10 @@ class UcfitController(object):
                       'display': True,
                       'twoth': twoth,
                       'dsp': dsp,
-                      'Q': q}
+                      'Q': q,
+                      'source': source_text,
+                      'azimuth': azimuth_text,
+                      'source_provenance': provenance}
             peaks.append(peak_i)
         return peaks
 

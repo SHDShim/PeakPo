@@ -12,6 +12,11 @@ import numpy.ma as ma
 from qtpy import QtWidgets
 from qtpy import QtCore
 from ..ds_jcpds import convert_tth
+from ..model.azimuthal_integration import (
+    normalize_range,
+    normalize_ranges,
+    provenance_for_chi,
+)
 
 
 class MplController(object):
@@ -222,19 +227,142 @@ class MplController(object):
         tth_list = []
         note_list = []
         for i in range(n_row):
-            azi_min = float(
-                self.widget.tableWidget_DiffImgAzi.item(i, 2).text())
-            azi_max = float(
-                self.widget.tableWidget_DiffImgAzi.item(i, 4).text())
-            tth_min = float(
-                self.widget.tableWidget_DiffImgAzi.item(i, 1).text())
-            tth_max = float(
-                self.widget.tableWidget_DiffImgAzi.item(i, 3).text())
-            note_i = self.widget.tableWidget_DiffImgAzi.item(i, 0).text()
-            tth_list.append([tth_min, tth_max])
-            azi_list.append([azi_min, azi_max])
-            note_list.append(note_i)
+            parsed = self._read_cake_azi_table_row(i)
+            if parsed is None:
+                continue
+            tth_list.append(parsed["tth"])
+            azi_list.append([parsed["azi_min"], parsed["azi_max"]])
+            note_list.append(parsed["label"])
         return tth_list, azi_list, note_list
+
+    def _read_cake_azi_table_row(self, row):
+        table = self.widget.tableWidget_DiffImgAzi
+        item0 = table.item(row, 0)
+        if item0 is not None and (item0.flags() & QtCore.Qt.ItemIsUserCheckable):
+            if item0.checkState() != QtCore.Qt.Checked:
+                return None
+            label_item = table.item(row, 1)
+            min_item = table.item(row, 2)
+            max_item = table.item(row, 3)
+            label = "" if label_item is None else label_item.text()
+            tth = None
+        else:
+            label_item = table.item(row, 0)
+            min_item = table.item(row, 2)
+            max_item = table.item(row, 4)
+            tth_min_item = table.item(row, 1)
+            tth_max_item = table.item(row, 3)
+            label = "" if label_item is None else label_item.text()
+            try:
+                tth = [
+                    float(tth_min_item.text()),
+                    float(tth_max_item.text()),
+                ]
+            except (AttributeError, TypeError, ValueError):
+                tth = None
+        try:
+            azi = normalize_range({
+                "label": label,
+                "azi_min": float(min_item.text()),
+                "azi_max": float(max_item.text()),
+            })
+        except (AttributeError, TypeError, ValueError):
+            return None
+        if azi is None:
+            return None
+        return {
+            "label": azi["label"],
+            "azi_min": azi["azi_min"],
+            "azi_max": azi["azi_max"],
+            "tth": tth,
+        }
+
+    def _current_pattern_provenance(self):
+        provenance = getattr(self.model, "current_pattern_provenance", None)
+        if provenance is None:
+            base_ptn = getattr(self.model, "base_ptn", None)
+            provenance = getattr(base_ptn, "_pkpo_source_provenance", None)
+        if isinstance(provenance, dict):
+            return provenance
+        try:
+            if self.model.base_ptn_exist():
+                return provenance_for_chi(self.model.get_base_ptn_filename())
+        except Exception:
+            pass
+        return {}
+
+    @staticmethod
+    def _wrap_angle_to_axis(value, axis_min, span):
+        if span <= 0:
+            return float(value)
+        return ((float(value) - axis_min) % span) + axis_min
+
+    def _shift_azimuth_range_to_current_view(
+            self, range_info, saved_shift, axis_min, axis_max):
+        span = float(axis_max - axis_min)
+        if span <= 0:
+            return []
+        try:
+            current_shift = float(self.widget.spinBox_AziShift.value())
+        except Exception:
+            current_shift = 0.0
+        try:
+            saved_shift = float(saved_shift)
+        except (TypeError, ValueError):
+            saved_shift = current_shift
+        width = float(range_info["azi_max"]) - float(range_info["azi_min"])
+        if width <= 0:
+            return []
+        if width >= span:
+            return [(axis_min, axis_max)]
+        start = self._wrap_angle_to_axis(
+            float(range_info["azi_min"]) + current_shift - saved_shift,
+            axis_min, span)
+        end = start + width
+        if end <= axis_max:
+            return [(start, end)]
+        return [(start, axis_max), (axis_min, end - span)]
+
+    def _derived_azimuth_overlay_ranges(self, axis_min, axis_max):
+        provenance = self._current_pattern_provenance()
+        if provenance.get("source_kind") != "azimuthal_integration":
+            return []
+        ranges = normalize_ranges(provenance.get("azimuth_ranges", []))
+        saved_shift = provenance.get("azimuth_shift")
+        overlay_ranges = []
+        for range_info in ranges:
+            overlay_ranges.extend(self._shift_azimuth_range_to_current_view(
+                range_info, saved_shift, axis_min, axis_max))
+        return overlay_ranges
+
+    def _plot_derived_azimuth_overlay(self, tth_min, tth_max, chi_min, chi_max):
+        import matplotlib.patches as patches
+
+        ranges = self._derived_azimuth_overlay_ranges(chi_min, chi_max)
+        if ranges == []:
+            return
+        color = "#ffbf47"
+        for idx, (azi_min, azi_max) in enumerate(ranges):
+            if azi_max <= azi_min:
+                continue
+            rect = patches.Rectangle(
+                (tth_min, azi_min),
+                tth_max - tth_min,
+                azi_max - azi_min,
+                linewidth=1.5,
+                edgecolor=color,
+                facecolor=color,
+                alpha=0.22)
+            self.widget.mpl.canvas.ax_cake.add_patch(rect)
+            show_labels = getattr(self.widget, "checkBox_ShowCakeLabels", None)
+            if idx == 0 and show_labels is not None and show_labels.isChecked():
+                self.widget.mpl.canvas.ax_cake.text(
+                    tth_max,
+                    azi_max,
+                    "derived 1D",
+                    color=color,
+                    horizontalalignment="right",
+                    verticalalignment="bottom")
 
     def zoom_out_graph(self):
         if not self.model.base_ptn_exist():
@@ -321,6 +449,21 @@ class MplController(object):
         import matplotlib.pyplot as plt
         import matplotlib.colors as mcolors
 
+        def _coerce_cake_arrays(intensity, tth, chi):
+            if intensity is None or tth is None or chi is None:
+                return None
+            try:
+                cake = ma.asarray(intensity, dtype=float)
+                tth_arr = np.asarray(tth, dtype=float).ravel()
+                chi_arr = np.asarray(chi, dtype=float).ravel()
+            except (TypeError, ValueError):
+                return None
+            if cake.ndim != 2 or cake.size == 0:
+                return None
+            if tth_arr.size == 0 or chi_arr.size == 0:
+                return None
+            return cake, tth_arr, chi_arr
+
         #print(str(datetime.datetime.now())[:-7], ': Num of tth points = {0:.0f}, azi strips = {1:.0f}'.format(len(tth_cake), len(chi_cake)))
 
         # make a copy of intensity_cake and make sure it also has mask information 
@@ -330,8 +473,18 @@ class MplController(object):
 
         # Get cake data
         intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
-        int_plot = np.array(intensity_cake, copy=True)
-        finite_cake = np.asarray(intensity_cake, dtype=float)
+        coerced = _coerce_cake_arrays(intensity_cake, tth_cake, chi_cake)
+        if coerced is None:
+            hist_widget = getattr(self.widget, "cake_hist_widget", None)
+            if hist_widget is not None:
+                if hasattr(hist_widget, "clear"):
+                    hist_widget.clear()
+                elif hasattr(hist_widget, "_draw_empty_state"):
+                    hist_widget._draw_empty_state()
+            return
+        int_plot, tth_cake, chi_cake = coerced
+        int_plot = ma.array(int_plot, copy=True)
+        finite_cake = np.asarray(ma.filled(int_plot, np.nan), dtype=float)
         finite_cake = finite_cake[np.isfinite(finite_cake)]
         cake_max = None
         if finite_cake.size > 0:
@@ -342,20 +495,21 @@ class MplController(object):
         diff_mode = False
         if self.diff_ctrl is not None:
             try:
-                int_plot, tth_cake, chi_cake = self.diff_ctrl.get_display_cake(
+                diff_int, diff_tth, diff_chi = self.diff_ctrl.get_display_cake(
                     int_plot, tth_cake, chi_cake)
-                diff_mode = self.diff_ctrl.is_diff_mode_active()
+                coerced = _coerce_cake_arrays(diff_int, diff_tth, diff_chi)
+                if coerced is not None:
+                    int_plot, tth_cake, chi_cake = coerced
+                    diff_mode = self.diff_ctrl.is_diff_mode_active()
             except Exception:
                 diff_mode = False
 
         # Apply azimuthal shift after diff subtraction so the same shift is
         # effectively applied to both current and reference cake images.
         mid_angle = self.widget.spinBox_AziShift.value()
-        if mid_angle != 0:
-            int_shift = np.array(int_plot, copy=True)
-            int_shift[0:mid_angle] = int_plot[360 - mid_angle:361]
-            int_shift[mid_angle:361] = int_plot[0:360 - mid_angle]
-            int_plot = int_shift
+        if mid_angle != 0 and int_plot.ndim == 2 and int_plot.shape[0] > 1:
+            row_shift = int(round(float(mid_angle) / 360.0 * int_plot.shape[0]))
+            int_plot = ma.array(np.roll(int_plot, row_shift, axis=0), copy=False)
 
         # Get image contrast parameters from UI unless diff mode overrides.
         min_slider_pos = self.widget.horizontalSlider_VMin.value()
@@ -412,15 +566,27 @@ class MplController(object):
             zero_mask = (int_plot == 0)
             # Opaque pale yellow for masked pixels.
             cmap.set_bad(color=(1.0, 0.97, 0.55, 1.0))
+        zero_mask = np.asarray(ma.filled(zero_mask, False), dtype=bool)
 
         mask = self.model.diff_img.get_mask()
+        mask_arr = None
+        if mask is not None:
+            try:
+                candidate = np.asarray(mask, dtype=bool)
+                if candidate.shape == np.shape(int_plot):
+                    mask_arr = candidate
+            except (TypeError, ValueError):
+                mask_arr = None
         use_user_mask = (self.widget.pushButton_ApplyMask.isChecked() and
-                         (mask is not None) and np.any(mask))
+                         (mask_arr is not None) and np.any(mask_arr))
+        base_mask = ma.getmaskarray(int_plot)
+        invalid_mask = ~np.isfinite(ma.filled(int_plot, np.nan))
         if use_user_mask:
-            combined_mask = zero_mask | mask | ~np.isfinite(int_plot)
+            combined_mask = zero_mask | mask_arr | base_mask | invalid_mask
         else:
-            combined_mask = zero_mask | ~np.isfinite(int_plot)
-        int_new = ma.masked_where(combined_mask, int_plot, copy=False)
+            combined_mask = zero_mask | base_mask | invalid_mask
+        int_new = ma.masked_where(
+            combined_mask, ma.filled(int_plot, np.nan), copy=False)
 
         if hist_widget is not None:
             data_signature = hist_widget.data_signature_for_values(int_new)
@@ -493,14 +659,19 @@ class MplController(object):
         tth_list, azi_list, note_list = self._read_azilist()
         tth_min = tth_cake.min()
         tth_max = tth_cake.max()
+        chi_min = chi_cake.min()
+        chi_max = chi_cake.max()
+        self._plot_derived_azimuth_overlay(tth_min, tth_max, chi_min, chi_max)
         if azi_list is not None:
             for tth, azi, note in zip(tth_list, azi_list, note_list):
+                if tth is None:
+                    tth = [tth_min, tth_max]
                 rect = patches.Rectangle(
                     (tth_min, azi[0]), (tth_max - tth_min), (azi[1] - azi[0]),
-                    linewidth=0, edgecolor='b', facecolor='b', alpha=0.2)
+                    linewidth=0, edgecolor='gray', facecolor='gray', alpha=0.2)
                 rect1 = patches.Rectangle(
                     (tth[0], azi[0]), (tth[1] - tth[0]), (azi[1] - azi[0]),
-                    linewidth=1, edgecolor='b', facecolor='None')
+                    linewidth=1, edgecolor=self.obj_color, facecolor='None')
                 self.widget.mpl.canvas.ax_cake.add_patch(rect)
                 self.widget.mpl.canvas.ax_cake.add_patch(rect1)
                 if self.widget.checkBox_ShowCakeLabels.isChecked():
@@ -510,10 +681,11 @@ class MplController(object):
             selectedRows()
         if rows != []:
             for r in rows:
-                azi_min = float(
-                    self.widget.tableWidget_DiffImgAzi.item(r.row(), 2).text())
-                azi_max = float(
-                    self.widget.tableWidget_DiffImgAzi.item(r.row(), 4).text())
+                parsed = self._read_cake_azi_table_row(r.row())
+                if parsed is None:
+                    continue
+                azi_min = parsed["azi_min"]
+                azi_max = parsed["azi_max"]
                 rect = patches.Rectangle(
                     (tth_min, azi_min), (tth_max - tth_min),
                     (azi_max - azi_min),

@@ -40,6 +40,7 @@ class Section(object):
         self.fit_model = None
         self.peaks_in_queue = []  # list of dic, value, constraints
         self.background_anchor_ranges = []
+        self.source_provenance = {}
         self.peakinfo = {}
         self._component_cache_token = None
         self._component_cache_bgsub = None

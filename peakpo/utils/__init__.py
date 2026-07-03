@@ -6,8 +6,8 @@ from .pyqtutils import (
 )
 from .fileutils import samefilename, extract_filename, make_filename, \
     get_sorted_filelist, find_from_filelist, writechi, readchi, \
-    extract_extension, change_file_path, get_directory, get_temp_dir, \
-    get_unique_filename, backup_copy, read_any_poni_file, \
+    load_chi_xy, extract_extension, change_file_path, get_directory, \
+    get_temp_dir, get_unique_filename, backup_copy, read_any_poni_file, \
         make_poni2_from_poni21, make_converted_poni2_filename
 from .dialogs import (
     dialog_savefile,

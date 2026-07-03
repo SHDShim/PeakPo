@@ -39,6 +39,7 @@ class PeakPoModel(object):
         self.chi_path = ''
         self.current_section = None
         self.section_lst = []
+        self.current_pattern_provenance = None
         self.saved_pressure = 10.
         self.saved_temperature = 300.
 
@@ -82,6 +83,11 @@ class PeakPoModel(object):
         __, y_section_bgsub = get_DataSection(
             self.base_ptn.x_bgsub, self.base_ptn.y_bgsub, roi)
         self.current_section.set(x_section_bg, y_section_bgsub, y_section_bg)
+        provenance = getattr(self, "current_pattern_provenance", None)
+        if provenance is None and self.base_ptn is not None:
+            provenance = getattr(self.base_ptn, "_pkpo_source_provenance", None)
+        if isinstance(provenance, dict):
+            self.current_section.source_provenance = copy.deepcopy(provenance)
 
     def current_section_exists_in_list(self):
         for section in self.section_lst:

@@ -61,14 +61,14 @@ class UcfitTableController(object):
         self.phase = phase
         if self.phase == None:
             return
-        n_columns = 5
+        n_columns = 7
         n_rows = len(self.ucfit_model[self.phase])  # count for number of jcpds
         self.widget.tableWidget_UnitCell.setColumnCount(n_columns)
         self.widget.tableWidget_UnitCell.setRowCount(n_rows)
         self.widget.tableWidget_UnitCell.horizontalHeader().setVisible(True)
         self.widget.tableWidget_UnitCell.verticalHeader().setVisible(True)
         self.widget.tableWidget_UnitCell.setHorizontalHeaderLabels(
-            ['Include', 'h', 'k', 'l', 'Two Theta'])
+            ['Include', 'h', 'k', 'l', 'Two Theta', 'Source', 'Azimuth'])
         self.widget.tableWidget_UnitCell.setVerticalHeaderLabels(
             [str(i) for i in range(n_rows)])
         duplicate_rows = self._included_duplicate_rows()
@@ -109,6 +109,16 @@ class UcfitTableController(object):
             Item4.setFlags(QtCore.Qt.ItemIsEnabled)
             self._style_unit_cell_row_item(Item4, duplicate)
             self.widget.tableWidget_UnitCell.setItem(row, 4, Item4)
+            Item5 = QtWidgets.QTableWidgetItem(
+                str(self.ucfit_model[self.phase][row].get('source', 'Full CHI')))
+            Item5.setFlags(QtCore.Qt.ItemIsEnabled)
+            self._style_unit_cell_row_item(Item5, duplicate)
+            self.widget.tableWidget_UnitCell.setItem(row, 5, Item5)
+            Item6 = QtWidgets.QTableWidgetItem(
+                str(self.ucfit_model[self.phase][row].get('azimuth', '')))
+            Item6.setFlags(QtCore.Qt.ItemIsEnabled)
+            self._style_unit_cell_row_item(Item6, duplicate)
+            self.widget.tableWidget_UnitCell.setItem(row, 6, Item6)
         self.widget.tableWidget_UnitCell.resizeColumnsToContents()
 #        self.widget.tableWidget_UnitCell.resizeRowsToContents()
         try:

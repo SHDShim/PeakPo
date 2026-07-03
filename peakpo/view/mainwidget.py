@@ -418,8 +418,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if hasattr(self, name):
                 getattr(self, name).setVisible(False)
         self._setup_nav_carryover_config()
+        self._reorder_cake_subtabs()
         self.tableWidget_DiffImgAzi.\
-            setHorizontalHeaderLabels(['Notes', '2th', 'Azi', '2th', 'Azi'])
+            setHorizontalHeaderLabels(['Use', 'Label', 'Azi min', 'Azi max', 'Note'])
+        self._setup_cake_integration_chi_list()
         self._setup_cake_scale_layout()
         self.doubleSpinBox_Pressure.valueChanged.connect(
             self._update_pt_spinbox_colors)
@@ -614,6 +616,117 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._nav_carry_status_level = "white"
         self.checkBox_CarryNavInlineStatus.toggled.connect(
             self._sync_nav_carry_status_visibility)
+
+    def _reorder_cake_subtabs(self):
+        if not all(hasattr(self, name) for name in (
+                "tabWidget_2", "tabWidget_2Page1", "tabWidget_2Page2")):
+            return
+        tab_widget = self.tabWidget_2
+        config_page = self.tabWidget_2Page1
+        integration_page = self.tabWidget_2Page2
+        config_idx = tab_widget.indexOf(config_page)
+        integration_idx = tab_widget.indexOf(integration_page)
+        if config_idx < 0 or integration_idx < 0:
+            return
+
+        if integration_idx != 0:
+            tab_widget.removeTab(integration_idx)
+            tab_widget.insertTab(0, integration_page, "Integration")
+
+        config_idx = tab_widget.indexOf(config_page)
+        if config_idx >= 0:
+            tab_widget.setTabText(config_idx, "Config")
+        integration_idx = tab_widget.indexOf(integration_page)
+        if integration_idx >= 0:
+            tab_widget.setTabText(integration_idx, "Integration")
+            tab_widget.setCurrentIndex(integration_idx)
+
+    def _setup_cake_integration_chi_list(self):
+        if not hasattr(self, "verticalLayout_37") or \
+                hasattr(self, "groupBox_AziChiList"):
+            return
+
+        self.groupBox_AziChiList = QtWidgets.QGroupBox(
+            "Azimuthal CHI", self.scrollAreaWidgetContents_8)
+        self.groupBox_AziChiList.setObjectName("groupBox_AziChiList")
+        self.groupBox_AziChiList.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+
+        layout = QtWidgets.QVBoxLayout(self.groupBox_AziChiList)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
+
+        self.lineEdit_CurrentAziChiStatus = QtWidgets.QLineEdit(
+            self.groupBox_AziChiList)
+        self.lineEdit_CurrentAziChiStatus.setObjectName(
+            "lineEdit_CurrentAziChiStatus")
+        self.lineEdit_CurrentAziChiStatus.setReadOnly(True)
+        self.lineEdit_CurrentAziChiStatus.setText("Current: no CHI loaded")
+        self.lineEdit_CurrentAziChiStatus.setMinimumHeight(25)
+        self.lineEdit_CurrentAziChiStatus.setToolTip(
+            "Shows whether the active 1D pattern is the full azimuth CHI "
+            "or an azimuth-derived CHI.")
+        layout.addWidget(self.lineEdit_CurrentAziChiStatus)
+
+        self.tableWidget_AziChiList = QtWidgets.QTableWidget(
+            self.groupBox_AziChiList)
+        self.tableWidget_AziChiList.setObjectName("tableWidget_AziChiList")
+        self.tableWidget_AziChiList.setColumnCount(5)
+        self.tableWidget_AziChiList.setHorizontalHeaderLabels(
+            ["Active", "Type", "Label", "Azimuth ranges", "CHI file"])
+        self.tableWidget_AziChiList.setSelectionBehavior(
+            QtWidgets.QAbstractItemView.SelectRows)
+        self.tableWidget_AziChiList.setSelectionMode(
+            QtWidgets.QAbstractItemView.SingleSelection)
+        self.tableWidget_AziChiList.setEditTriggers(
+            QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.tableWidget_AziChiList.verticalHeader().setVisible(True)
+        self.tableWidget_AziChiList.verticalHeader().setDefaultSectionSize(24)
+        self.tableWidget_AziChiList.setMinimumHeight(110)
+        self.tableWidget_AziChiList.setMaximumHeight(170)
+        self.tableWidget_AziChiList.horizontalHeader().setStretchLastSection(True)
+        layout.addWidget(self.tableWidget_AziChiList)
+
+        button_layout = QtWidgets.QHBoxLayout()
+        button_layout.setContentsMargins(0, 0, 0, 0)
+        button_layout.setSpacing(10)
+        self.pushButton_OpenSelectedAziChi = QtWidgets.QPushButton(
+            "Open selected", self.groupBox_AziChiList)
+        self.pushButton_OpenSelectedAziChi.setObjectName(
+            "pushButton_OpenSelectedAziChi")
+        self.pushButton_OpenSelectedAziChi.setToolTip(
+            "Open the highlighted full-azimuth or azimuth-derived CHI.")
+        self.pushButton_OpenFullAziChi = QtWidgets.QPushButton(
+            "Open full azi", self.groupBox_AziChiList)
+        self.pushButton_OpenFullAziChi.setObjectName(
+            "pushButton_OpenFullAziChi")
+        self.pushButton_OpenFullAziChi.setToolTip(
+            "Return to the original full-azimuth CHI for this derived CHI set.")
+        self.pushButton_RemoveSelectedAziChi = QtWidgets.QPushButton(
+            "Remove derived", self.groupBox_AziChiList)
+        self.pushButton_RemoveSelectedAziChi.setObjectName(
+            "pushButton_RemoveSelectedAziChi")
+        self.pushButton_RemoveSelectedAziChi.setToolTip(
+            "Remove the highlighted azimuth-derived CHI file from this list. "
+            "The full-azimuth CHI cannot be removed here.")
+        self.pushButton_RefreshAziChiList = QtWidgets.QPushButton(
+            "Refresh list", self.groupBox_AziChiList)
+        self.pushButton_RefreshAziChiList.setObjectName(
+            "pushButton_RefreshAziChiList")
+        self.pushButton_RefreshAziChiList.setToolTip(
+            "Rescan saved azimuth-derived CHI files for the current source CHI.")
+        for button in (
+                self.pushButton_OpenSelectedAziChi,
+                self.pushButton_OpenFullAziChi,
+                self.pushButton_RemoveSelectedAziChi,
+                self.pushButton_RefreshAziChiList):
+            button.setMinimumHeight(25)
+            button.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+            button_layout.addWidget(button)
+        layout.addLayout(button_layout)
+
+        self.verticalLayout_37.addWidget(self.groupBox_AziChiList)
 
     def _fix_tab_clipping(self):
         # Keep native tab visuals while nudging tab size metrics to prevent
@@ -1755,6 +1868,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.checkBox_ToolbarHKL.setSizePolicy(
                     QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
                 self.mpl.add_control_widget(self.checkBox_ToolbarHKL)
+                self.pushButton_ToolbarCakeZAdj = QtWidgets.QPushButton(
+                    "Cake Z Adj", self.mpl.control_bar)
+                self.pushButton_ToolbarCakeZAdj.setObjectName(
+                    "pushButton_ToolbarCakeZAdj")
+                self.pushButton_ToolbarCakeZAdj.setToolTip(
+                    "Adjust the Cake image color scale using the same edge "
+                    "detection as Cake > Edge.")
+                self.pushButton_ToolbarCakeZAdj.setSizePolicy(
+                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+                self._set_button_height(self.pushButton_ToolbarCakeZAdj)
+                self.mpl.add_control_widget(self.pushButton_ToolbarCakeZAdj)
                 self.pushButton_MouseHelp = QtWidgets.QPushButton(
                     "Mouse Help", self.mpl.control_bar)
                 self.pushButton_MouseHelp.setObjectName("pushButton_MouseHelp")

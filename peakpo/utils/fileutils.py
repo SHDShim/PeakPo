@@ -40,6 +40,36 @@ def writechi(filen, x, y, preheader=None):
                fmt='%1.7e', header=header, comments=preheader)
 
 
+def load_chi_xy(filen):
+    """
+    Read two-theta and intensity columns from a CHI file.
+
+    PeakPo CHI files normally have three preheader lines followed by a
+    one-value point-count line.  This parser also tolerates extra text/header
+    lines so files written by older or intermediate PeakPo versions remain
+    readable.
+    """
+    rows = []
+    with open(filen) as f:
+        for line in f:
+            text = line.strip()
+            if text == "" or text.startswith("#"):
+                continue
+            values = []
+            for token in text.replace(",", " ").split():
+                try:
+                    values.append(float(token))
+                except ValueError:
+                    break
+            if len(values) >= 2:
+                rows.append(values[:2])
+
+    if rows == []:
+        raise ValueError("No two-column CHI data found in " + str(filen))
+    data = np.asarray(rows, dtype=float)
+    return data[:, 0], data[:, 1]
+
+
 def readchi(filen):
     """
     read chi with BG ROI and BG PARAMS
@@ -48,8 +78,7 @@ def readchi(filen):
         content = f.readlines()
     roi = re.findall(r"[-+]?\d*\.\d+|\d+", content[0])
     bg_params = re.findall(r"[-+]?\d*\.\d+|\d+", content[1])
-    data = np.loadtxt(filen, skiprows=4)
-    x, y = data.T
+    x, y = load_chi_xy(filen)
     return [float(r) for r in roi], [int(b) for b in bg_params], x, y
 
 

@@ -16,6 +16,7 @@ from ..ds_powdiff import PatternPeakPo
 from ..ds_jcpds import JCPDSplt, DiffractionLine
 from ..ds_section import Section
 from ..ds_cake import DiffImg
+from .azimuthal_integration import provenance_for_chi
 
 
 MANIFEST_FILE = "peakpo_manifest.json"
@@ -467,6 +468,7 @@ def _section_to_dict(section, section_tag, section_payloads):
         "timestamp": section.timestamp,
         "baseline_in_queue": section.baseline_in_queue,
         "background_anchor_ranges": getattr(section, "background_anchor_ranges", []),
+        "source_provenance": getattr(section, "source_provenance", {}) or {},
         "peaks_in_queue": section.peaks_in_queue,
         "peakinfo": section.peakinfo,
         "fit_result": fit_payload,
@@ -512,6 +514,7 @@ def _dict_to_section(payload, param_dir, missing_files=None):
     section.timestamp = payload.get("timestamp")
     section.baseline_in_queue = payload.get("baseline_in_queue", [])
     section.background_anchor_ranges = payload.get("background_anchor_ranges", [])
+    section.source_provenance = payload.get("source_provenance", {}) or {}
     section.peaks_in_queue = payload.get("peaks_in_queue", [])
     section.peakinfo = payload.get("peakinfo", {})
     fit_payload = payload.get("fit_result")
@@ -1096,6 +1099,10 @@ def load_model_from_param(model, base_chi_file, backup_event_id=None, backup_eve
     ui_data = _load_json(os.path.join(param_dir, files.get("ui_state", UI_STATE_FILE)))
 
     model.base_ptn = _load_pattern(session_data.get("base_pattern"), chi_root, param_dir)
+    base_fname = getattr(model.base_ptn, "fname", None) or base_chi_file
+    model.current_pattern_provenance = provenance_for_chi(base_fname)
+    if model.base_ptn is not None:
+        model.base_ptn._pkpo_source_provenance = model.current_pattern_provenance
     model.waterfall_ptn = [
         _load_pattern(p, chi_root, param_dir)
         for p in session_data.get("waterfall_patterns", [])

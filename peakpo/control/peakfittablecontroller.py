@@ -2,6 +2,7 @@ from qtpy import QtCore
 from qtpy import QtGui
 from qtpy import QtWidgets
 from ..ds_section.section import normalize_peak_phase_name
+from ..model.azimuthal_integration import source_label, source_ranges_label
 # from .mplcontroller import MplController
 
 
@@ -126,7 +127,7 @@ class PeakfitTableController(object):
             valid_sections.append(section)
         if len(valid_sections) != len(self.model.section_lst):
             self.model.section_lst = valid_sections
-        n_columns = 3
+        n_columns = 5
         n_rows = len(valid_sections)  # count for number of sections
         if n_rows == 0:
             self.widget.tableWidget_PkFtSections.clearContents()
@@ -139,7 +140,7 @@ class PeakfitTableController(object):
             True)
         self._widen_row_header(self.widget.tableWidget_PkFtSections)
         self.widget.tableWidget_PkFtSections.setHorizontalHeaderLabels(
-            ['Time', 'xmin', 'xmax'])
+            ['Time', 'xmin', 'xmax', 'Source', 'Azimuth'])
         i = 0
         for section in valid_sections:
             # column 0 - time
@@ -157,6 +158,16 @@ class PeakfitTableController(object):
             item3.setFlags(QtCore.Qt.ItemIsEnabled |
                            QtCore.Qt.ItemIsSelectable)
             self.widget.tableWidget_PkFtSections.setItem(i, 2, item3)
+            provenance = getattr(section, "source_provenance", {}) or {}
+            item4 = QtWidgets.QTableWidgetItem(source_label(provenance))
+            item4.setFlags(QtCore.Qt.ItemIsEnabled |
+                           QtCore.Qt.ItemIsSelectable)
+            item4.setToolTip(str(provenance.get("source_chi", "")))
+            self.widget.tableWidget_PkFtSections.setItem(i, 3, item4)
+            item5 = QtWidgets.QTableWidgetItem(source_ranges_label(provenance))
+            item5.setFlags(QtCore.Qt.ItemIsEnabled |
+                           QtCore.Qt.ItemIsSelectable)
+            self.widget.tableWidget_PkFtSections.setItem(i, 4, item5)
             i += 1
         self.widget.tableWidget_PkFtSections.resizeColumnsToContents()
         self.widget.tableWidget_PkFtSections.resizeRowsToContents()

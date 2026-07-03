@@ -2,7 +2,7 @@ import numpy as np
 import os
 import time
 import datetime
-from ..utils import writechi, readchi, make_filename
+from ..utils import writechi, readchi, make_filename, load_chi_xy
 from .background import fit_bg_cheb_auto
 
 
@@ -29,8 +29,7 @@ class Pattern(object):
         read a chi file and get raw xy
         """
         if fname.endswith('.chi'):
-            data = np.loadtxt(fname, skiprows=4)
-            twotheta, intensity = data.T
+            twotheta, intensity = load_chi_xy(fname)
         else:
             raise ValueError('Only support CHI, MSA, and EDS formats')
         # set file name information
