@@ -169,13 +169,38 @@ class MapController(object):
         self._disable_roi_selectors()
         if hasattr(self.widget, "pushButton_MapSetRoi"):
             self.widget.pushButton_MapSetRoi.setChecked(False)
+            self._update_roi_button_state(False)
 
     def is_roi_selection_active(self):
-        sel_1d_active = (self._selector_1d is not None) and \
-            bool(getattr(self._selector_1d, "active", False))
-        sel_2d_active = (self._selector_2d is not None) and \
-            bool(getattr(self._selector_2d, "active", False))
+        sel_1d_active = self._selector_is_active(self._selector_1d)
+        sel_2d_active = self._selector_is_active(self._selector_2d)
         return bool(sel_1d_active or sel_2d_active)
+
+    def _selector_is_active(self, selector):
+        if selector is None:
+            return False
+        get_active = getattr(selector, "get_active", None)
+        if callable(get_active):
+            return bool(get_active())
+        return bool(getattr(selector, "active", False))
+
+    def _update_roi_button_state(self, active):
+        button = getattr(self.widget, "pushButton_MapSetRoi", None)
+        if button is None:
+            return
+        button.setChecked(bool(active))
+        if active:
+            button.setText("ROI ON")
+            button.setStyleSheet(
+                "QPushButton { background-color: #d6a800; color: #1f1f1f; }")
+            button.setToolTip("ROI selection is active. Click again to cancel.")
+        else:
+            button.setText("Set ROI")
+            button.setStyleSheet(
+                "QPushButton { background-color: #444444; color: #f0f0f0; }"
+                "QPushButton:hover { background-color: #505050; }"
+                "QPushButton:pressed { background-color: #383838; }")
+            button.setToolTip("Click to draw an ROI on the 1D or Cake plot.")
 
     def _set_status(self, msg):
         text = str(msg or "")
@@ -575,6 +600,10 @@ class MapController(object):
 
     def _schedule_overlay_refresh(self):
         # Some redraw paths are deferred; refresh twice to survive delayed clears.
+        if self.plot_ctrl is not None:
+            flush = getattr(self.plot_ctrl, "_flush_update_request", None)
+            if callable(flush):
+                flush()
         self.refresh_roi_overlays()
         QtCore.QTimer.singleShot(0, self.refresh_roi_overlays)
         QtCore.QTimer.singleShot(80, self.refresh_roi_overlays)
@@ -644,9 +673,19 @@ class MapController(object):
     def _arm_roi_selection(self):
         if self.widget.tabWidget.currentWidget() != self.widget.tab_Map:
             self._set_status("Open Map tab first.")
+            self._update_roi_button_state(False)
+            return
+        if self.is_roi_selection_active():
+            self.deactivate_interactions()
+            self._set_status("ROI selection canceled.")
             return
         self._disable_roi_selectors()
-        self.widget.pushButton_MapSetRoi.setChecked(True)
+        self._roi_1d = None
+        self._roi_2d = None
+        self._map_data = None
+        self.widget.lineEdit_MapRoiSummary.setText("")
+        self._clear_roi_overlays()
+        self._update_roi_button_state(True)
         self._selector_1d = RectangleSelector(
             self.widget.mpl.canvas.ax_pattern,
             self._on_roi_1d_selected,
@@ -674,13 +713,32 @@ class MapController(object):
                 self._selector_1d.set_active(False)
             except Exception:
                 pass
+            self._release_selector_widgetlock(self._selector_1d)
+            try:
+                self._selector_1d.disconnect_events()
+            except Exception:
+                pass
             self._selector_1d = None
         if self._selector_2d is not None:
             try:
                 self._selector_2d.set_active(False)
             except Exception:
                 pass
+            self._release_selector_widgetlock(self._selector_2d)
+            try:
+                self._selector_2d.disconnect_events()
+            except Exception:
+                pass
             self._selector_2d = None
+        self._update_roi_button_state(False)
+
+    def _release_selector_widgetlock(self, selector):
+        try:
+            lock = self.widget.mpl.canvas.widgetlock
+            if not lock.available(selector):
+                lock.release(selector)
+        except Exception:
+            pass
 
     def _clear_roi(self):
         self._roi_1d = None
@@ -691,6 +749,30 @@ class MapController(object):
         self.widget.lineEdit_MapRoiSummary.setText("")
         self._draw_map()
         self._set_status("ROI cleared.")
+
+    def clear_roi_if_event_in_roi(self, event):
+        if not self._is_map_tab_active():
+            return False
+        if event is None:
+            return False
+        if self._roi_1d is not None and \
+                event.inaxes == self.widget.mpl.canvas.ax_pattern and \
+                event.xdata is not None:
+            xmin, xmax = self._roi_1d
+            if min(xmin, xmax) <= float(event.xdata) <= max(xmin, xmax):
+                self._clear_roi()
+                return True
+        if self._roi_2d is not None and \
+                self.widget.checkBox_ShowCake.isChecked() and \
+                event.inaxes == self.widget.mpl.canvas.ax_cake and \
+                event.xdata is not None and event.ydata is not None:
+            xmin, xmax, ymin, ymax = self._roi_2d
+            inside_x = min(xmin, xmax) <= float(event.xdata) <= max(xmin, xmax)
+            inside_y = min(ymin, ymax) <= float(event.ydata) <= max(ymin, ymax)
+            if inside_x and inside_y:
+                self._clear_roi()
+                return True
+        return False
 
     def _on_roi_1d_selected(self, eclick, erelease):
         if (eclick.xdata is None) or (erelease.xdata is None):

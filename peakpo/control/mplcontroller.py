@@ -33,7 +33,10 @@ class MplController(object):
         self._update_timer.timeout.connect(self._flush_update_request)
         self._vcursor_pattern = None
         self._vcursor_cake = None
+        self._peak_center_marker_artists = []
         self._selected_peak_marker_artists = []
+        self._jcpds_overlay_artists = []
+        self._jcpds_hkl_artists = []
         
         # ✅ Wrap toolbar methods to track state
         toolbar = self.widget.mpl.canvas.toolbar
@@ -518,10 +521,133 @@ class MplController(object):
             return 75.0
         return float(spin.value())
 
+    def _track_jcpds_artist(self, artist, hkl=False):
+        if artist is not None:
+            try:
+                artist.set_gid("peakpo_jcpds_hkl" if hkl else "peakpo_jcpds")
+            except Exception:
+                pass
+            artist._peakpo_jcpds_overlay = True
+            artist._peakpo_jcpds_hkl = bool(hkl)
+            self._jcpds_overlay_artists.append(artist)
+            if hkl:
+                self._jcpds_hkl_artists.append(artist)
+        return artist
+
+    def _artist_is_jcpds_overlay(self, artist, hkl_only=False):
+        if getattr(artist, "_peakpo_jcpds_overlay", False):
+            return (not hkl_only) or getattr(artist, "_peakpo_jcpds_hkl", False)
+        gid = None
+        try:
+            gid = artist.get_gid()
+        except Exception:
+            pass
+        if gid in ("peakpo_jcpds", "peakpo_jcpds_hkl"):
+            return (not hkl_only) or gid == "peakpo_jcpds_hkl"
+        if hkl_only:
+            return False
+        label = ""
+        try:
+            label = artist.get_label()
+        except Exception:
+            pass
+        return isinstance(label, str) and " A^3" in label
+
+    def _remove_stale_jcpds_artists_from_axes(self, hkl_only=False):
+        canvas = self.widget.mpl.canvas
+        axes = [getattr(canvas, "ax_pattern", None), getattr(canvas, "ax_cake", None)]
+        for ax in axes:
+            if ax is None:
+                continue
+            if not hkl_only:
+                legend = ax.get_legend()
+                if legend is not None:
+                    try:
+                        legend.remove()
+                    except Exception:
+                        pass
+            artist_groups = (
+                list(getattr(ax, "collections", [])) +
+                list(getattr(ax, "lines", [])) +
+                list(getattr(ax, "texts", []))
+            )
+            for artist in artist_groups:
+                if self._artist_is_jcpds_overlay(artist, hkl_only=hkl_only):
+                    try:
+                        artist.remove()
+                    except Exception:
+                        pass
+
+    def _clear_jcpds_overlay_artists(self):
+        for artist in list(self._jcpds_overlay_artists):
+            try:
+                artist.remove()
+            except Exception:
+                pass
+        self._remove_stale_jcpds_artists_from_axes(hkl_only=False)
+        self._jcpds_overlay_artists = []
+        self._jcpds_hkl_artists = []
+
+    def _clear_jcpds_hkl_artists(self):
+        hkl_artist_ids = {id(artist) for artist in self._jcpds_hkl_artists}
+        for artist in list(self._jcpds_hkl_artists):
+            try:
+                artist.remove()
+            except Exception:
+                pass
+        self._jcpds_overlay_artists = [
+            artist for artist in self._jcpds_overlay_artists
+            if id(artist) not in hkl_artist_ids]
+        self._remove_stale_jcpds_artists_from_axes(hkl_only=True)
+        self._jcpds_hkl_artists = []
+
+    def clear_jcpds_hkl_overlay(self):
+        self._clear_jcpds_hkl_artists()
+        self.widget.mpl.canvas.draw_idle()
+
+    def refresh_jcpds_overlay(self):
+        if self._is_drawing or self._toolbar_active:
+            self.update()
+            return
+        canvas = self.widget.mpl.canvas
+        if not hasattr(canvas, "ax_pattern"):
+            return
+        ax_pattern = canvas.ax_pattern
+        pattern_xlim = ax_pattern.get_xlim()
+        pattern_ylim = ax_pattern.get_ylim()
+        cake_xlim = None
+        cake_ylim = None
+        if hasattr(canvas, "ax_cake"):
+            cake_xlim = canvas.ax_cake.get_xlim()
+            cake_ylim = canvas.ax_cake.get_ylim()
+
+        self._clear_jcpds_overlay_artists()
+        if self.model.jcpds_exist():
+            axisrange = ax_pattern.axis()
+            self._plot_jcpds(axisrange)
+            if self.widget.checkBox_JCPDSinPattern.isChecked() and \
+                    (not self.widget.checkBox_Intensity.isChecked()):
+                new_low_limit = -1.1 * axisrange[3] * \
+                    self.widget.horizontalSlider_JCPDSBarScale.value() / 100.
+                ax_pattern.set_ylim(new_low_limit, axisrange[3])
+            else:
+                ax_pattern.set_ylim(pattern_ylim)
+        else:
+            ax_pattern.set_ylim(pattern_ylim)
+
+        ax_pattern.set_xlim(pattern_xlim)
+        if hasattr(canvas, "ax_cake"):
+            if cake_xlim is not None:
+                canvas.ax_cake.set_xlim(cake_xlim)
+            if cake_ylim is not None:
+                canvas.ax_cake.set_ylim(cake_ylim)
+        canvas.draw_idle()
+
     def _plot_jcpds(self, axisrange):
         import matplotlib.transforms as transforms
 
         # t_start = time.time()
+        self._clear_jcpds_overlay_artists()
         if (not self.widget.checkBox_JCPDSinPattern.isChecked()) and \
                 (not self.widget.checkBox_JCPDSinCake.isChecked()):
             return
@@ -545,6 +671,7 @@ class MplController(object):
         temperature = self.widget.doubleSpinBox_Temperature.value()
         wavelength = self.widget.doubleSpinBox_SetWavelength.value()
         use_table_0gpa = self.widget.checkBox_UseJCPDSTable1bar.isChecked()
+        legend_entries = []
         for i, phase in enumerate(selected_phases):
 #            try:
             phase.cal_dsp(pressure,
@@ -573,51 +700,57 @@ class MplController(object):
                     volume = phase.v
                 else:
                     volume = phase.v.item()
-                self.widget.mpl.canvas.ax_pattern.vlines(
+                legend_label = "{0:}, {1:.3f} A^3".format(
+                    phase.name, volume)
+                jcpds_bars = self.widget.mpl.canvas.ax_pattern.vlines(
                     tth, bar_min, bar_max, colors=phase.color,
-                    label="{0:}, {1:.3f} A^3".format(
-                        phase.name, volume),
+                    label=legend_label,
                     lw=float(
                         self.widget.comboBox_PtnJCPDSBarThickness.
                         currentText()),
                     alpha=self.widget.doubleSpinBox_JCPDS_ptn_Alpha.value(),
                     zorder=18)
+                self._track_jcpds_artist(jcpds_bars)
+                legend_entries.append((jcpds_bars, legend_label, phase.color))
                 # hkl
                 if self.widget.checkBox_ShowMillerIndices.isChecked():
                     hkl_list = phase.get_hkl_in_text()
                     for j, hkl in enumerate(hkl_list):
-                        self.widget.mpl.canvas.ax_pattern.text(
+                        self._track_jcpds_artist(
+                            self.widget.mpl.canvas.ax_pattern.text(
                             tth[j], bar_max[j], hkl, color=phase.color,
                             rotation=90, verticalalignment='bottom',
                             horizontalalignment='center',
                             fontsize=int(
                                 self.widget.comboBox_HKLFontSize.currentText()),
                             alpha=self.widget.doubleSpinBox_JCPDS_ptn_Alpha.value(),
-                            zorder=19)
+                            zorder=19), hkl=True)
                 # phase.name, phase.v.item()))
             if self.widget.checkBox_ShowCake.isChecked() and \
                     self.widget.checkBox_JCPDSinCake.isChecked():
-                self.widget.mpl.canvas.ax_cake.vlines(
+                self._track_jcpds_artist(
+                    self.widget.mpl.canvas.ax_cake.vlines(
                     tth, np.ones_like(tth) * cakerange[2],
                     np.ones_like(tth) * cakerange[3], colors=phase.color,
                     lw=float(
                         self.widget.comboBox_CakeJCPDSBarThickness.currentText()),
                     alpha=self.widget.doubleSpinBox_JCPDS_cake_Alpha.value(),
-                    zorder=18)
+                    zorder=18))
                 if self.widget.checkBox_ShowMillerIndices_Cake.isChecked():
                     hkl_list = phase.get_hkl_in_text()
                     trans = transforms.blended_transform_factory(
                         self.widget.mpl.canvas.ax_cake.transData,
                         self.widget.mpl.canvas.ax_cake.transAxes)
                     for j, hkl in enumerate(hkl_list):
-                        self.widget.mpl.canvas.ax_cake.text(
+                        self._track_jcpds_artist(
+                            self.widget.mpl.canvas.ax_cake.text(
                             tth[j], 0.99, hkl, color=phase.color,
                             rotation=90, verticalalignment='top',
                             transform=trans, horizontalalignment='right',
                             fontsize=int(
                                 self.widget.comboBox_HKLFontSize.currentText()),
                             alpha=self.widget.doubleSpinBox_JCPDS_cake_Alpha.value(),
-                            zorder=19)
+                            zorder=19), hkl=True)
         if self.widget.checkBox_JCPDSinPattern.isChecked():
             legend_fontsize = 14
             if hasattr(self.widget, "comboBox_LegendFontSize"):
@@ -626,12 +759,24 @@ class MplController(object):
                         self.widget.comboBox_LegendFontSize.currentText())
                 except Exception:
                     pass
-            leg_jcpds = self.widget.mpl.canvas.ax_pattern.legend(
-                loc=1, framealpha=0.,
-                fontsize=legend_fontsize,
-                handlelength=1)
-            for line, txt in zip(leg_jcpds.get_lines(), leg_jcpds.get_texts()):
-                txt.set_color(line.get_color())
+            unique_entries = []
+            seen_labels = set()
+            for handle, label, color in legend_entries:
+                if label in seen_labels:
+                    continue
+                seen_labels.add(label)
+                unique_entries.append((handle, label, color))
+            if unique_entries:
+                handles = [entry[0] for entry in unique_entries]
+                labels = [entry[1] for entry in unique_entries]
+                leg_jcpds = self.widget.mpl.canvas.ax_pattern.legend(
+                    handles, labels, loc=1, framealpha=0.,
+                    fontsize=legend_fontsize,
+                    handlelength=1)
+                self._track_jcpds_artist(leg_jcpds)
+                for (__handle, __label, color), txt in zip(
+                        unique_entries, leg_jcpds.get_texts()):
+                    txt.set_color(color)
         # print("JCPDS update takes {0:.2f}s at".format(time.time() - t_start),
         #      str(datetime.datetime.now())[:-7])
 
@@ -741,6 +886,7 @@ class MplController(object):
                     currentText()))
 
     def _plot_peakfit(self):
+        self._peak_center_marker_artists = []
         self._selected_peak_marker_artists = []
         if not self.model.current_section_exist():
             return
@@ -832,6 +978,30 @@ class MplController(object):
                 pass
         self._selected_peak_marker_artists = []
 
+    def _clear_peak_center_markers(self):
+        for artist in getattr(self, "_peak_center_marker_artists", []):
+            try:
+                artist.remove()
+            except Exception:
+                pass
+        self._peak_center_marker_artists = []
+
+    def refresh_peakfit_markers(self):
+        if not self.model.current_section_exist():
+            return False
+        self._clear_selected_peak_marker()
+        self._clear_peak_center_markers()
+        if not self.model.current_section.peaks_exist():
+            self.widget.mpl.canvas.draw_idle()
+            return True
+        selected_row = self._get_selected_peak_parameter_row()
+        for row, x_c in enumerate(self.model.current_section.get_peak_positions()):
+            self._plot_peak_center_marker(x_c)
+            if row == selected_row:
+                self._plot_selected_peak_marker(x_c)
+        self.widget.mpl.canvas.draw_idle()
+        return True
+
     def refresh_selected_peak_marker(self):
         if not self.model.current_section_exist():
             return False
@@ -904,14 +1074,16 @@ class MplController(object):
         return True
 
     def _plot_peak_center_marker(self, x_center):
-        self.widget.mpl.canvas.ax_pattern.axvline(
+        line = self.widget.mpl.canvas.ax_pattern.axvline(
             x_center, c=self.obj_color, ls='-', lw=0.6, alpha=0.35,
             zorder=8)
+        self._peak_center_marker_artists.append(line)
         if hasattr(self.widget.mpl.canvas, 'ax_cake') and \
                 self.widget.checkBox_ShowCake.isChecked():
-            self.widget.mpl.canvas.ax_cake.axvline(
+            line = self.widget.mpl.canvas.ax_cake.axvline(
                 x_center, c=self._cake_peak_center_line_color(),
                 ls='-', lw=0.6, alpha=0.35, zorder=8)
+            self._peak_center_marker_artists.append(line)
 
     def _cake_peak_center_line_color(self):
         ax_cake = getattr(self.widget.mpl.canvas, "ax_cake", None)
@@ -1081,6 +1253,8 @@ class MplController(object):
                     self._plot_peakfit()
             
             self.widget.mpl.canvas.ax_pattern.set_xlim(limits[0], limits[1])
+            if hasattr(self.widget.mpl.canvas, 'ax_cake'):
+                self.widget.mpl.canvas.ax_cake.set_xlim(limits[0], limits[1])
             
             if not self.widget.checkBox_AutoY.isChecked():
                 self.widget.mpl.canvas.ax_pattern.set_ylim(limits[2], limits[3])

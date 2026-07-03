@@ -3,6 +3,29 @@ import datetime
 import copy
 from lmfit.models import PolynomialModel, PseudoVoigtModel
 
+DEFAULT_CENTER_HALF_RANGE = 0.05
+DEFAULT_FWHM_MIN = 0.0
+DEFAULT_FWHM_MAX = 0.05
+DEFAULT_NL_MIN = 0.0
+DEFAULT_NL_MAX = 1.0
+PEAK_PARAM_VARY_KEYS = {
+    'amplitude': 'amplitude_vary',
+    'center': 'center_vary',
+    'sigma': 'sigma_vary',
+    'fraction': 'fraction_vary',
+}
+
+
+def normalize_peak_phase_name(phase_name):
+    if not isinstance(phase_name, str):
+        return phase_name
+    phase_name = phase_name.strip()
+    if phase_name.endswith(".jcpds"):
+        phase_name = phase_name[:-len(".jcpds")]
+    if ".ucfit" in phase_name:
+        return phase_name.split(".ucfit", 1)[0]
+    return phase_name
+
 
 class Section(object):
     def __init__(self):
@@ -13,7 +36,9 @@ class Section(object):
         self.baseline_in_queue = []  # list of dict, value, constraints
         self.parameters = None
         self.fit_result = None
+        self.fit_model = None
         self.peaks_in_queue = []  # list of dic, value, constraints
+        self.background_anchor_ranges = []
         self.peakinfo = {}
         self._component_cache_token = None
         self._component_cache_bgsub = None
@@ -32,10 +57,17 @@ class Section(object):
     def clear_queue(self):
         self.peaks_in_queue[:] = []
         self.baseline_in_queue[:] = []
+        if not hasattr(self, "background_anchor_ranges"):
+            self.background_anchor_ranges = []
+        else:
+            self.background_anchor_ranges[:] = []
 
     def invalidate_fit_result(self):
         """use with caution"""
-        # self.fit_result = None
+        self.fit_result = None
+        self.parameters = None
+        self.fit_model = None
+        self._invalidate_component_cache()
 
     def fitted(self):
         if (self.fit_result is None):
@@ -75,8 +107,23 @@ class Section(object):
             None if self.y_bg is None else len(self.y_bg),
         )
 
+    def _array_on_section_x(self, values):
+        if values is None or self.x is None:
+            return None
+        arr = np.asarray(values, dtype=float).reshape(-1)
+        n_x = len(self.x)
+        if n_x == 0 or arr.size == 0:
+            return None
+        if arr.size == n_x:
+            return arr
+        if arr.size > n_x:
+            # lmfit results made with background anchors append anchor samples
+            # after the section data; the first n_x values still match self.x.
+            return arr[:n_x]
+        return None
+
     def set_single_peak(self, x_center, fwhm, hkl=[0, 0, 0],
-                        phase_name='unknown'):
+                        phase_name='unknown', constraint_defaults=None):
         if self.x is None or len(self.x) == 0:
             return False
         x_min = float(np.min(self.x))
@@ -100,7 +147,21 @@ class Section(object):
         peak['amplitude_vary'] = True
         peak['sigma_vary'] = True
         peak['fraction_vary'] = True
-        peak['phasename'] = phase_name
+        defaults = constraint_defaults or {}
+        center_half_range = float(defaults.get(
+            "center_half_range", DEFAULT_CENTER_HALF_RANGE))
+        peak['center_min'] = x_center - center_half_range
+        peak['center_max'] = x_center + center_half_range
+        peak['sigma_min'] = float(defaults.get(
+            "fwhm_min", DEFAULT_FWHM_MIN))
+        peak['sigma_max'] = float(defaults.get(
+            "fwhm_max", DEFAULT_FWHM_MAX))
+        peak['amplitude_min'] = 0.0
+        peak['amplitude_max'] = None
+        peak['amplitude_max_enabled'] = False
+        peak['fraction_min'] = DEFAULT_NL_MIN
+        peak['fraction_max'] = DEFAULT_NL_MAX
+        peak['phasename'] = normalize_peak_phase_name(phase_name)
         peak['h'] = hkl[0]
         peak['k'] = hkl[1]
         peak['l'] = hkl[2]
@@ -162,17 +223,27 @@ class Section(object):
             prefix = "p{0:d}_".format(i)
             peak_mod = PseudoVoigtModel(prefix=prefix, )
             pars.update(peak_mod.make_params())
+            center_min = self._peak_bound(
+                peak, 'center_min', peak['center'] - DEFAULT_CENTER_HALF_RANGE)
+            center_max = self._peak_bound(
+                peak, 'center_max', peak['center'] + DEFAULT_CENTER_HALF_RANGE)
+            sigma_min = self._peak_bound(peak, 'sigma_min', DEFAULT_FWHM_MIN)
+            sigma_max = self._peak_bound(peak, 'sigma_max', DEFAULT_FWHM_MAX)
+            amp_min = self._peak_bound(peak, 'amplitude_min', 0.0)
+            amp_max = self._amplitude_max_bound(peak)
+            frac_min = self._peak_bound(peak, 'fraction_min', DEFAULT_NL_MIN)
+            frac_max = self._peak_bound(peak, 'fraction_max', DEFAULT_NL_MAX)
             pars[prefix + 'center'].set(
-                value=peak['center'], min=peak['center']-centerrange,
-                max=peak['center']+centerrange,
+                value=peak['center'], min=center_min, max=center_max,
                 vary=peak['center_vary'])
             pars[prefix + 'sigma'].set(
-                value=peak['sigma'], min=0.0, vary=peak['sigma_vary'],
-                max=maxwidth)
+                value=peak['sigma'], min=sigma_min, vary=peak['sigma_vary'],
+                max=sigma_max)
             pars[prefix + 'amplitude'].set(
-                value=peak['amplitude'], min=0, vary=peak['amplitude_vary'])
+                value=peak['amplitude'], min=amp_min, max=amp_max,
+                vary=peak['amplitude_vary'])
             pars[prefix + 'fraction'].set(
-                value=peak['fraction'], min=0., max=1.,
+                value=peak['fraction'], min=frac_min, max=frac_max,
                 vary=peak['fraction_vary'])
             peakinfo[prefix + 'phasename'] = peak['phasename']
             peakinfo[prefix + 'h'] = peak['h']
@@ -184,9 +255,73 @@ class Section(object):
         self.peakinfo = peakinfo
         self.fit_model = mod
 
+    def _peak_bound(self, peak, key, default):
+        value = peak.get(key, default)
+        if value is None:
+            return default
+        return float(value)
+
+    def _amplitude_max_bound(self, peak):
+        value = peak.get('amplitude_max', None)
+        if value is None:
+            return np.inf
+        enabled = peak.get('amplitude_max_enabled', None)
+        if enabled is not None and not bool(enabled):
+            return np.inf
+        try:
+            amp = float(peak.get('amplitude', 0.0))
+            max_value = float(value)
+        except Exception:
+            return np.inf
+        if enabled is None:
+            # Older PeakPo builds could accidentally store the initial
+            # amplitude as the max bound.  Treat that exact case as unbounded.
+            if abs(max_value - amp) <= max(1e-12, abs(amp) * 1e-10):
+                return np.inf
+        return max_value
+
+    def _background_anchor_samples(self):
+        ranges = getattr(self, "background_anchor_ranges", [])
+        if ranges == [] or self.x is None or self.y_bgsub is None:
+            return None, None
+        x_lst = []
+        y_lst = []
+        x_arr = np.asarray(self.x, dtype=float)
+        y_arr = np.asarray(self.y_bgsub, dtype=float)
+        for item in ranges:
+            if isinstance(item, dict):
+                xmin = float(item.get("xmin", item.get("x_min", 0.0)))
+                xmax = float(item.get("xmax", item.get("x_max", xmin)))
+                weight = float(item.get("weight", 10.0))
+            else:
+                xmin, xmax = float(item[0]), float(item[1])
+                weight = 10.0
+            xmin, xmax = min(xmin, xmax), max(xmin, xmax)
+            mask = (x_arr >= xmin) & (x_arr <= xmax)
+            if np.any(mask):
+                x_use = x_arr[mask]
+                y_use = y_arr[mask]
+            else:
+                x_mid = 0.5 * (xmin + xmax)
+                x_use = np.asarray([x_mid], dtype=float)
+                y_use = np.asarray([np.interp(x_mid, x_arr, y_arr)], dtype=float)
+            n_repeat = max(1, int(round(weight)))
+            for __ in range(n_repeat):
+                x_lst.extend(x_use.tolist())
+                y_lst.extend(y_use.tolist())
+        if x_lst == []:
+            return None, None
+        return np.asarray(x_lst, dtype=float), np.asarray(y_lst, dtype=float)
+
     def conduct_fitting(self):
+        x_fit = self.x
+        y_fit = self.y_bgsub
+        x_anchor, y_anchor = self._background_anchor_samples()
+        if x_anchor is not None and y_anchor is not None:
+            x_fit = np.concatenate([np.asarray(self.x, dtype=float), x_anchor])
+            y_fit = np.concatenate([np.asarray(self.y_bgsub, dtype=float), y_anchor])
         out = self.fit_model.fit(
-            self.y_bgsub, self.parameters, x=self.x)
+            y_fit, self.parameters, x=x_fit)
         self.fit_result = copy.deepcopy(out)
         self._invalidate_component_cache()
         self.timestamp = str(datetime.datetime.now())[:-7]
@@ -201,6 +336,15 @@ class Section(object):
 
     def get_timestamp(self):
         return self.timestamp
+
+    def sync_peak_vary_flags_from_fit_result(self):
+        params = getattr(getattr(self, "fit_result", None), "params", {}) or {}
+        for i, peak in enumerate(self.peaks_in_queue):
+            prefix = "p{0:d}_".format(i)
+            for param_name, vary_key in PEAK_PARAM_VARY_KEYS.items():
+                prm = params.get(prefix + param_name)
+                if prm is not None and hasattr(prm, "vary"):
+                    peak[vary_key] = bool(prm.vary)
 
     def copy_fit_result_to_queue(self):
         n_peaks = self.get_number_of_peaks_in_queue()
@@ -220,6 +364,7 @@ class Section(object):
             peak['k'] = self.peakinfo[prefix + 'k']
             peak['l'] = self.peakinfo[prefix + 'l']
             i += 1
+        self.sync_peak_vary_flags_from_fit_result()
         i = 0
         for factor in self.baseline_in_queue:
             prefix = "b_c{0:d}".format(i)
@@ -236,7 +381,17 @@ class Section(object):
         """
         token = self._get_component_cache_token()
         if token != self._component_cache_token:
-            comps = self.fit_result.eval_components(x=self.x)
+            eval_components = getattr(self.fit_result, "eval_components", None)
+            if callable(eval_components):
+                comps = eval_components(x=self.x)
+            else:
+                comps = {}
+            comps = {
+                key: value_on_x
+                for key, value in comps.items()
+                for value_on_x in (self._array_on_section_x(value),)
+                if value_on_x is not None
+            }
             self._component_cache_bgsub = comps
             self._component_cache_with_bg = None
             self._component_cache_token = token
@@ -249,14 +404,43 @@ class Section(object):
             self._component_cache_with_bg = bg_comps
         return self._component_cache_with_bg
 
+    def _fit_profile_on_section_x(self):
+        eval_func = getattr(self.fit_result, "eval", None)
+        if callable(eval_func):
+            try:
+                profile = self._array_on_section_x(eval_func(x=self.x))
+                if profile is not None:
+                    return profile
+            except Exception:
+                pass
+
+        profile = self._array_on_section_x(
+            getattr(self.fit_result, "best_fit", None))
+        if profile is not None:
+            return profile
+
+        components = self.get_individual_profiles(bgsub=True)
+        if components:
+            stacked = [
+                np.asarray(value, dtype=float)
+                for value in components.values()
+                if value is not None and len(value) == len(self.x)
+            ]
+            if stacked:
+                return np.sum(stacked, axis=0)
+
+        return np.zeros(len(self.x), dtype=float)
+
     def get_fit_profile(self, bgsub=False):
+        profile = self._fit_profile_on_section_x()
         if bgsub:
-            return self.fit_result.best_fit
+            return profile
         else:
-            return self.fit_result.best_fit + self.y_bg
+            return profile + self.y_bg
 
     def get_fit_residue(self, bgsub=False):
-        return self.y_bgsub - self.fit_result.best_fit + \
+        profile = self._fit_profile_on_section_x()
+        return self.y_bgsub - profile + \
             self.get_fit_residue_baseline(bgsub=bgsub)
 
     def get_fit_residue_baseline(self, bgsub=False):

@@ -19,7 +19,37 @@ __version__ = "7.11.13"
          ucfit.jcpds list refresh after cell fitting, legacy .ucfit phase-name
          repair during Cell Fit collection, GSAS-style toggle plotting with
          smaller points, persisted top-bar checkbox states, and remembered
-         CHI file-chooser JCPDS filter mode.
+         CHI file-chooser JCPDS filter mode; add centralized plot mouse
+         handling with Shift-based peak editing, double-click inspect,
+         persistent ROI overlays, Peak Fit constraints/background popup
+         controls, optional background anchor ranges for fitting, and default
+         Peak Fit bounds for position, FWHM, and nL; add toolbar Mouse Help;
+         clear Peak Fit Sections/Peaks tables when a new CHI file is loaded;
+         add toolbar JCPDS and HKL visibility checkboxes; make ROI selector
+         teardown robust and improve zoom rectangle styling; make Default
+         bounds editable for existing and newly added peaks; restore Fit Range
+         view after peak fitting; make toolbar JCPDS/HKL visibility toggles
+         refresh only overlay artists for faster response; make Background
+         Setup anchor-range selection repeatable and clarify the current-view
+         anchor button; make Background Setup range-from-plot mode visibly
+         active/cancelable and harden .ucfit phase-name cleanup for imported
+         and previously saved Peak Fit peaks; clamp 1D zoom drag to plot
+         limits and use a lighter zoom-rectangle redraw path; keep Map/Sequence
+         ROI overlays visible after right-click view reset and file navigation,
+         warn when moving a peak without selecting its table row, stabilize
+         repeated Background Setup range picking, and evaluate anchored fit
+         results on the original section grid for plotting; highlight fixed
+         Peak Fit parameters and checked duplicate-hkl Cell Fit rows; restore
+         Fit Range plotting for PARAM-loaded lightweight fit results; simplify
+         duplicate-hkl warning text now that overlaps are highlighted in-table;
+         sync Peak Fit vary flags from restored and completed fit results; make
+         Area max constraints opt-in and show a 10x Area suggested max value;
+         clear stale Peak Fit results after manual constraint edits; prevent
+         duplicate JCPDS legend entries when toggling HKL overlays; speed up
+         Shift-based Peak Fit add/remove and drag-release marker refreshes;
+         clear stale Cell Fit collection when Peak Fit sections are removed;
+         save Cell Fit ucfit.jcpds and ucfit.output with default names without
+         filename prompts.
 7.11.12: use Dioptas for Update cake integration so PeakPo-generated cakes
          match dioptas_batch_gui output; add a non-H5/NXS reprocessing warning
          before overwriting existing cake files; fix Matplotlib colormap API

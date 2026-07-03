@@ -81,6 +81,7 @@ class BasePatternController(object):
             self.widget.set_nav_carry_status("")
         self.model.set_base_ptn(
             new_filename, self.widget.doubleSpinBox_SetWavelength.value())
+        self._clear_peakfit_for_new_pattern()
         # self.widget.textEdit_DiffractionPatternFileName.setText(
         #    '1D Pattern: ' + self.model.get_base_ptn_filename())
         self.widget.lineEdit_DiffractionPatternFileName.setText(
@@ -146,6 +147,27 @@ class BasePatternController(object):
         # Keep backup table in File > Data synchronized right after CHI load.
         if self.session_ctrl is not None:
             self.session_ctrl.refresh_backup_table()
+
+    def _clear_peakfit_for_new_pattern(self):
+        self.model.current_section = None
+        self.model.section_lst = []
+        for table_name in (
+                "tableWidget_PkFtSections",
+                "tableWidget_PkParams",
+                "tableWidget_BackgroundConstraints",
+                "tableWidget_PeakConstraints"):
+            table = getattr(self.widget, table_name, None)
+            if table is None:
+                continue
+            table.clearContents()
+            table.setRowCount(0)
+            table.setColumnCount(0)
+        for setter_name in (
+                "set_tableWidget_PkParams_saved",
+                "set_tableWidget_PkFtSections_saved"):
+            setter = getattr(self.widget, setter_name, None)
+            if callable(setter):
+                setter()
 
     def _metadata_tab_widgets(self):
         path_widget = getattr(self.widget, "lineEdit_MetadataJsonPath", None)

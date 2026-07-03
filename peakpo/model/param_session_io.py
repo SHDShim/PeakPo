@@ -466,6 +466,7 @@ def _section_to_dict(section, section_tag, section_payloads):
         "section_csv_columns": section_csv_columns,
         "timestamp": section.timestamp,
         "baseline_in_queue": section.baseline_in_queue,
+        "background_anchor_ranges": getattr(section, "background_anchor_ranges", []),
         "peaks_in_queue": section.peaks_in_queue,
         "peakinfo": section.peakinfo,
         "fit_result": fit_payload,
@@ -510,6 +511,7 @@ def _dict_to_section(payload, param_dir, missing_files=None):
             section.y_bg = None if payload.get("y_bg") is None else np.asarray(payload.get("y_bg"), dtype=float)
     section.timestamp = payload.get("timestamp")
     section.baseline_in_queue = payload.get("baseline_in_queue", [])
+    section.background_anchor_ranges = payload.get("background_anchor_ranges", [])
     section.peaks_in_queue = payload.get("peaks_in_queue", [])
     section.peakinfo = payload.get("peakinfo", {})
     fit_payload = payload.get("fit_result")
@@ -542,6 +544,8 @@ def _dict_to_section(payload, param_dir, missing_files=None):
         if comps:
             fit_payload["components"] = comps
     section.fit_result = None if fit_payload is None else _FitResultLite(fit_payload)
+    if section.fit_result is not None:
+        section.sync_peak_vary_flags_from_fit_result()
     section.parameters = None
     section.fit_model = None
     return section

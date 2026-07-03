@@ -20,6 +20,38 @@ class UcfitTableController(object):
     def _apply_changes_to_graph(self):
         self.plot_ctrl.update()
 
+    def _included_duplicate_rows(self):
+        if self.phase is None or self.phase not in self.ucfit_model:
+            return set()
+        counts = {}
+        for peak in self.ucfit_model[self.phase]:
+            if not bool(peak.get('display', True)):
+                continue
+            hkl = self._hkl_key(peak)
+            counts[hkl] = counts.get(hkl, 0) + 1
+        duplicate_rows = set()
+        for row, peak in enumerate(self.ucfit_model[self.phase]):
+            if not bool(peak.get('display', True)):
+                continue
+            if counts.get(self._hkl_key(peak), 0) > 1:
+                duplicate_rows.add(row)
+        return duplicate_rows
+
+    def _hkl_key(self, peak):
+        return (
+            int(round(float(peak['h']))),
+            int(round(float(peak['k']))),
+            int(round(float(peak['l']))),
+        )
+
+    def _style_unit_cell_row_item(self, item, duplicate=False):
+        if duplicate:
+            item.setBackground(QtGui.QBrush(QtGui.QColor("#5c2d2d")))
+            item.setForeground(QtGui.QBrush(QtGui.QColor("#ffd6d6")))
+            item.setToolTip(
+                "Included data point has the same Miller index as another included row.")
+        return item
+
     def update(self, phase):
         """
         Show ucfit in the QTableWidget
@@ -39,7 +71,9 @@ class UcfitTableController(object):
             ['Include', 'h', 'k', 'l', 'Two Theta'])
         self.widget.tableWidget_UnitCell.setVerticalHeaderLabels(
             [str(i) for i in range(n_rows)])
+        duplicate_rows = self._included_duplicate_rows()
         for row in range(n_rows):
+            duplicate = row in duplicate_rows
             # column 0 - checkbox
             item0 = QtWidgets.QTableWidgetItem()
             item0.setFlags(
@@ -48,30 +82,40 @@ class UcfitTableController(object):
                 item0.setCheckState(QtCore.Qt.Checked)
             else:
                 item0.setCheckState(QtCore.Qt.Unchecked)
+            self._style_unit_cell_row_item(item0, duplicate)
             self.widget.tableWidget_UnitCell.setItem(row, 0, item0)
             # column 1 - h
             Item1 = QtWidgets.QTableWidgetItem(
                 "{:.0f}".format(float(self.ucfit_model[self.phase][row]['h'])))
             Item1.setFlags(QtCore.Qt.ItemIsEnabled)
+            self._style_unit_cell_row_item(Item1, duplicate)
             self.widget.tableWidget_UnitCell.setItem(row, 1, Item1)
             # column 2 - k
             Item2 = QtWidgets.QTableWidgetItem(
                 "{:.0f}".format(float(self.ucfit_model[self.phase][row]['k'])))
             Item2.setFlags(QtCore.Qt.ItemIsEnabled)
+            self._style_unit_cell_row_item(Item2, duplicate)
             self.widget.tableWidget_UnitCell.setItem(row, 2, Item2)
             # column 3 - l
             Item3 = QtWidgets.QTableWidgetItem(
                 "{:.0f}".format(float(self.ucfit_model[self.phase][row]['l'])))
             Item3.setFlags(QtCore.Qt.ItemIsEnabled)
+            self._style_unit_cell_row_item(Item3, duplicate)
             self.widget.tableWidget_UnitCell.setItem(row, 3, Item3)
             # column 4 - twoth
             Item4 = QtWidgets.QTableWidgetItem(
                 "{:.3f}".format(
                     float(self.ucfit_model[self.phase][row]['twoth'])))
             Item4.setFlags(QtCore.Qt.ItemIsEnabled)
+            self._style_unit_cell_row_item(Item4, duplicate)
             self.widget.tableWidget_UnitCell.setItem(row, 4, Item4)
         self.widget.tableWidget_UnitCell.resizeColumnsToContents()
 #        self.widget.tableWidget_UnitCell.resizeRowsToContents()
+        try:
+            self.widget.tableWidget_UnitCell.itemClicked.disconnect(
+                self._handle_ItemClicked)
+        except Exception:
+            pass
         self.widget.tableWidget_UnitCell.itemClicked.connect(
             self._handle_ItemClicked)
 
@@ -85,6 +129,7 @@ class UcfitTableController(object):
                 self.ucfit_model[self.phase][idx]['display'] = True
             elif item.checkState() == QtCore.Qt.Unchecked:
                 self.ucfit_model[self.phase][idx]['display'] = False
+            self.update(self.phase)
             self._apply_changes_to_graph()
 
     """

@@ -267,6 +267,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._promote_seq_to_main_tab()
         self._reorder_main_tabs_and_fit_tab_names()
         self._setup_peakfit_section_buttons()
+        self._setup_peakfit_popup_buttons()
         self._compact_peakfit_spinboxes()
         self._normalize_misc_button_heights()
         self._setup_toolbar_diff_toggle()
@@ -345,40 +346,52 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.checkBox_AutoY.setText("Auto Y")
         if hasattr(self, "pushButton_AddRemoveFromMouse"):
             self.pushButton_AddRemoveFromMouse.setVisible(False)
+        if hasattr(self, "groupBox_32"):
+            self.groupBox_32.setTitle(
+                "Add (Shift+left click) / Remove (Shift+right click) peaks")
+        if hasattr(self, "label_PeakDragInstruction"):
+            self.label_PeakDragInstruction.setText(
+                "Peak position can be updated by Shift+left-click hold-drag on the peak.")
         if hasattr(self, "pushButton_MapSetRoi"):
-            self.pushButton_MapSetRoi.setVisible(False)
+            self.pushButton_MapSetRoi.setVisible(True)
+            self.pushButton_MapSetRoi.setText("Set ROI")
+            self.pushButton_MapSetRoi.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
             if hasattr(self, "gridLayout_MapRoi"):
-                self.gridLayout_MapRoi.removeWidget(self.pushButton_MapSetRoi)
+                self.gridLayout_MapRoi.addWidget(self.pushButton_MapSetRoi, 0, 0, 1, 1)
         if hasattr(self, "pushButton_MapClearRoi") and hasattr(self, "gridLayout_MapRoi"):
             self.pushButton_MapClearRoi.setSizePolicy(
                 QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-            self.gridLayout_MapRoi.addWidget(self.pushButton_MapClearRoi, 0, 0, 1, 1)
+            self.gridLayout_MapRoi.addWidget(self.pushButton_MapClearRoi, 0, 1, 1, 1)
         if hasattr(self, "pushButton_MapCompute") and hasattr(self, "gridLayout_MapRoi"):
             self.pushButton_MapCompute.setSizePolicy(
                 QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-            self.gridLayout_MapRoi.addWidget(self.pushButton_MapCompute, 0, 1, 1, 1)
+            self.gridLayout_MapRoi.addWidget(self.pushButton_MapCompute, 0, 2, 1, 1)
         if hasattr(self, "lineEdit_MapRoiSummary") and hasattr(self, "gridLayout_MapRoi"):
-            self.gridLayout_MapRoi.addWidget(self.lineEdit_MapRoiSummary, 1, 0, 1, 2)
+            self.gridLayout_MapRoi.addWidget(self.lineEdit_MapRoiSummary, 1, 0, 1, 3)
             self.gridLayout_MapRoi.setColumnStretch(0, 1)
             self.gridLayout_MapRoi.setColumnStretch(1, 1)
-            self.gridLayout_MapRoi.setColumnStretch(2, 0)
+            self.gridLayout_MapRoi.setColumnStretch(2, 1)
         if hasattr(self, "pushButton_SeqSetRoi"):
-            self.pushButton_SeqSetRoi.setVisible(False)
+            self.pushButton_SeqSetRoi.setVisible(True)
+            self.pushButton_SeqSetRoi.setText("Set ROI")
+            self.pushButton_SeqSetRoi.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
             if hasattr(self, "gridLayout_SeqRoi"):
-                self.gridLayout_SeqRoi.removeWidget(self.pushButton_SeqSetRoi)
+                self.gridLayout_SeqRoi.addWidget(self.pushButton_SeqSetRoi, 0, 0, 1, 1)
         if hasattr(self, "pushButton_SeqClearRoi") and hasattr(self, "gridLayout_SeqRoi"):
             self.pushButton_SeqClearRoi.setSizePolicy(
                 QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-            self.gridLayout_SeqRoi.addWidget(self.pushButton_SeqClearRoi, 0, 0, 1, 1)
+            self.gridLayout_SeqRoi.addWidget(self.pushButton_SeqClearRoi, 0, 1, 1, 1)
         if hasattr(self, "pushButton_SeqCompute") and hasattr(self, "gridLayout_SeqRoi"):
             self.pushButton_SeqCompute.setSizePolicy(
                 QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-            self.gridLayout_SeqRoi.addWidget(self.pushButton_SeqCompute, 0, 1, 1, 1)
+            self.gridLayout_SeqRoi.addWidget(self.pushButton_SeqCompute, 0, 2, 1, 1)
         if hasattr(self, "lineEdit_SeqRoiSummary") and hasattr(self, "gridLayout_SeqRoi"):
-            self.gridLayout_SeqRoi.addWidget(self.lineEdit_SeqRoiSummary, 1, 0, 1, 2)
+            self.gridLayout_SeqRoi.addWidget(self.lineEdit_SeqRoiSummary, 1, 0, 1, 3)
             self.gridLayout_SeqRoi.setColumnStretch(0, 1)
             self.gridLayout_SeqRoi.setColumnStretch(1, 1)
-            self.gridLayout_SeqRoi.setColumnStretch(2, 0)
+            self.gridLayout_SeqRoi.setColumnStretch(2, 1)
         # Legacy toolbar save icon is replaced by the session Save button.
         if hasattr(self, "pushButton_S_SaveSession"):
             self.pushButton_S_SaveSession.setVisible(False)
@@ -1117,6 +1130,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                  "Automatically rescale the Y axis after updates.")
         register(getattr(self, "checkBox_LongCursor", None),
                  "Use a full-height vertical cursor on the plot.")
+        register(getattr(self, "checkBox_ToolbarJCPDS", None),
+                 "Show or hide JCPDS reference bars in 1D and Cake plots.")
+        register(getattr(self, "checkBox_ToolbarHKL", None),
+                 "Show or hide Miller index labels in 1D and Cake plots.")
         register(getattr(self, "pushButton_MouseModeZoom", None),
                  "Mouse mode: drag to zoom the plot.")
         register(getattr(self, "pushButton_MouseModeROI", None),
@@ -1494,6 +1511,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "pushButton_ClearSection",
             "pushButton_AddRemoveFromMouse",
             "pushButton_AddRemoveFromJlist",
+            "pushButton_PkConstraintsPopup",
+            "pushButton_PkDefaultBounds",
+            "pushButton_PkBackgroundPopup",
+            "pushButton_PkRemoveSelectedPeaks",
             "pushButton_CollectPeakFitResults",
             "pushButton_PerformUCFit",
         ):
@@ -1524,6 +1545,55 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self._set_accent_button_style(
                 self.pushButton_PerformUCFit,
                 "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
+
+    def _setup_peakfit_popup_buttons(self):
+        if not hasattr(self, "verticalLayout_40"):
+            return
+        if hasattr(self, "pushButton_PkConstraintsPopup"):
+            return
+        if hasattr(self, "tabWidget_PeakFit") and \
+                hasattr(self, "tab_PeakFitConfig"):
+            idx = self.tabWidget_PeakFit.indexOf(self.tab_PeakFitConfig)
+            if idx >= 0:
+                self.tabWidget_PeakFit.removeTab(idx)
+        self.frame_PeakTableActions = QtWidgets.QFrame(
+            self.scrollAreaWidgetContents_11)
+        self.frame_PeakTableActions.setObjectName("frame_PeakTableActions")
+        layout = QtWidgets.QHBoxLayout(self.frame_PeakTableActions)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        self.pushButton_PkConstraintsPopup = QtWidgets.QPushButton(
+            "Constraints", self.frame_PeakTableActions)
+        self.pushButton_PkConstraintsPopup.setObjectName(
+            "pushButton_PkConstraintsPopup")
+        self.pushButton_PkConstraintsPopup.setToolTip(
+            "Open constraints for the highlighted peak.")
+        self.pushButton_PkDefaultBounds = QtWidgets.QPushButton(
+            "Default bounds", self.frame_PeakTableActions)
+        self.pushButton_PkDefaultBounds.setObjectName(
+            "pushButton_PkDefaultBounds")
+        self.pushButton_PkDefaultBounds.setToolTip(
+            "Open default min/max settings for peak position and FWHM.")
+        self.pushButton_PkBackgroundPopup = QtWidgets.QPushButton(
+            "Background Setup", self.frame_PeakTableActions)
+        self.pushButton_PkBackgroundPopup.setObjectName(
+            "pushButton_PkBackgroundPopup")
+        self.pushButton_PkBackgroundPopup.setToolTip(
+            "Open background fitting setup and anchor ranges.")
+        self.pushButton_PkRemoveSelectedPeaks = QtWidgets.QPushButton(
+            "Remove peaks", self.frame_PeakTableActions)
+        self.pushButton_PkRemoveSelectedPeaks.setObjectName(
+            "pushButton_PkRemoveSelectedPeaks")
+        self.pushButton_PkRemoveSelectedPeaks.setToolTip(
+            "Remove highlighted peaks after confirmation.")
+        for button in (
+                self.pushButton_PkConstraintsPopup,
+                self.pushButton_PkDefaultBounds,
+                self.pushButton_PkBackgroundPopup,
+                self.pushButton_PkRemoveSelectedPeaks):
+            self._set_button_height(button)
+            layout.addWidget(button)
+        self.verticalLayout_40.addWidget(self.frame_PeakTableActions)
 
     def _compact_peakfit_spinboxes(self):
         for name in (
@@ -1616,6 +1686,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.horizontalLayout_7.insertWidget(insert_idx + 2, self.pushButton_MouseModePeakPick)
         self.horizontalLayout_7.insertWidget(insert_idx + 3, self.pushButton_MouseModeJCPDS)
         self.pushButton_MouseModeZoom.setChecked(True)
+        for button in (
+                self.pushButton_MouseModeZoom, self.pushButton_MouseModeROI,
+                self.pushButton_MouseModePeakPick, self.pushButton_MouseModeJCPDS):
+            button.setVisible(False)
 
     def _move_mouse_controls_to_plot_bar(self):
         if (not hasattr(self, "mpl")) or \
@@ -1661,6 +1735,35 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 widget.setSizePolicy(
                     QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
             self.mpl.add_control_widget(widget)
+            if widget == getattr(self, "checkBox_Diff", None):
+                self.checkBox_ToolbarJCPDS = QtWidgets.QCheckBox(
+                    "JCPDS", self.mpl.control_bar)
+                self.checkBox_ToolbarJCPDS.setObjectName(
+                    "checkBox_ToolbarJCPDS")
+                self.checkBox_ToolbarJCPDS.setChecked(True)
+                self.checkBox_ToolbarJCPDS.setToolTip(
+                    "Show or hide JCPDS reference bars in 1D and Cake plots")
+                self.checkBox_ToolbarJCPDS.setSizePolicy(
+                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+                self.mpl.add_control_widget(self.checkBox_ToolbarJCPDS)
+                self.checkBox_ToolbarHKL = QtWidgets.QCheckBox(
+                    "HKL", self.mpl.control_bar)
+                self.checkBox_ToolbarHKL.setObjectName("checkBox_ToolbarHKL")
+                self.checkBox_ToolbarHKL.setChecked(False)
+                self.checkBox_ToolbarHKL.setToolTip(
+                    "Show or hide Miller index labels in 1D and Cake plots")
+                self.checkBox_ToolbarHKL.setSizePolicy(
+                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+                self.mpl.add_control_widget(self.checkBox_ToolbarHKL)
+                self.pushButton_MouseHelp = QtWidgets.QPushButton(
+                    "Mouse Help", self.mpl.control_bar)
+                self.pushButton_MouseHelp.setObjectName("pushButton_MouseHelp")
+                self.pushButton_MouseHelp.setToolTip(
+                    "Show mouse actions for plot controls")
+                self.pushButton_MouseHelp.setSizePolicy(
+                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+                self._set_button_height(self.pushButton_MouseHelp)
+                self.mpl.add_control_widget(self.pushButton_MouseHelp)
 
         for button_name in (
             "pushButton_MouseModeZoom",
@@ -1671,6 +1774,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             button = getattr(self, button_name, None)
             if button is None:
                 continue
+            button.setVisible(False)
             button.setParent(self.frame_MouseModeGroup)
             button.setSizePolicy(
                 QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)

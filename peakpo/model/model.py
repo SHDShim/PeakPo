@@ -65,6 +65,10 @@ class PeakPoModel(object):
     def set_this_section_current(self, index):
         self.current_section = None
         self.current_section = copy.deepcopy(self.section_lst[index])
+        sync_vary = getattr(
+            self.current_section, "sync_peak_vary_flags_from_fit_result", None)
+        if callable(sync_vary):
+            sync_vary()
 
     def clear_section_list(self):
         self.section_lst[:] = []

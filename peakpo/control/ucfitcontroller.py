@@ -11,7 +11,7 @@ from .ucfittablecontroller import UcfitTableController
 from .jcpdstablecontroller import JcpdsTableController
 from ..ds_jcpds import JCPDSplt
 from ..utils import SpinBoxFixStyle
-from ..utils import xls_ucfitlist, dialog_savefile, fit_cubic_cell, \
+from ..utils import xls_ucfitlist, fit_cubic_cell, \
     fit_hexagonal_cell, fit_tetragonal_cell, fit_orthorhombic_cell, \
     make_output_table, get_directory, make_filename, cal_dspacing, get_temp_dir
 
@@ -45,17 +45,18 @@ class UcfitController(object):
 
     def collect_peakfit(self):
         if self.model.section_lst == []:
+            self.clear_collected_peakfit_results()
             self._warn_no_peakfit_results_to_collect()
             return
         # read data4ucfit
         # self.ucfit_model = None # without this I will have previous record in it.
         # self.phase = None # without this I will have previous record in it.
         ucfit_model = self._get_peaks_by_phase()
+        self.clear_collected_peakfit_results()
         if ucfit_model == {}:
             self._warn_no_peakfit_results_to_collect()
             return
         self._warn_duplicate_miller_indices(ucfit_model)
-        self.widget.comboBox_PeakFitLabels.clear()  # without this I will have previous record in it.
         self.ucfit_model = ucfit_model
         # update comboBox_PeakFitLabels
         self.phase = list(self.ucfit_model.keys())[0]
@@ -63,8 +64,25 @@ class UcfitController(object):
                                                     self.ucfit_model,
                                                     self.phase,
                                                     self.widget)
-        self.widget.comboBox_PeakFitLabels.addItems(self.ucfit_model.keys())
-        # self.update_ucfittable()
+        old_state = self.widget.comboBox_PeakFitLabels.blockSignals(True)
+        self.widget.comboBox_PeakFitLabels.addItems(list(self.ucfit_model.keys()))
+        self.widget.comboBox_PeakFitLabels.setCurrentIndex(0)
+        self.widget.comboBox_PeakFitLabels.blockSignals(old_state)
+        self.select_phase_to_ucfit()
+
+    def clear_collected_peakfit_results(self):
+        self.ucfit_model = None
+        self.phase = None
+        self.ucfittable_ctrl = None
+        self.template_jcpds = None
+        old_state = self.widget.comboBox_PeakFitLabels.blockSignals(True)
+        self.widget.comboBox_PeakFitLabels.clear()
+        self.widget.comboBox_PeakFitLabels.blockSignals(old_state)
+        self.widget.tableWidget_UnitCell.clearContents()
+        self.widget.tableWidget_UnitCell.setRowCount(0)
+        self.widget.tableWidget_UnitCell.setColumnCount(0)
+        self.widget.tableWidget_UnitCell.horizontalHeader().setVisible(False)
+        self.widget.tableWidget_UnitCell.verticalHeader().setVisible(False)
 
     def _warn_no_peakfit_results_to_collect(self):
         QtWidgets.QMessageBox.warning(
@@ -73,10 +91,12 @@ class UcfitController(object):
             "Make sure the peak fitting results are saved first.")
 
     def _warn_duplicate_miller_indices(self, ucfit_model):
-        duplicate_lines = []
+        duplicate_found = False
         for phase, peaks in ucfit_model.items():
             hkl_counts = {}
             for peak in peaks:
+                if not bool(peak.get('display', True)):
+                    continue
                 hkl = (
                     int(round(float(peak['h']))),
                     int(round(float(peak['k']))),
@@ -85,14 +105,16 @@ class UcfitController(object):
                 hkl_counts[hkl] = hkl_counts.get(hkl, 0) + 1
             for hkl, count in sorted(hkl_counts.items()):
                 if count > 1:
-                    duplicate_lines.append(
-                        f"{phase}: ({hkl[0]} {hkl[1]} {hkl[2]}) has {count} data points")
-        if duplicate_lines == []:
+                    duplicate_found = True
+                    break
+            if duplicate_found:
+                break
+        if not duplicate_found:
             return
         QtWidgets.QMessageBox.warning(
             self.widget, "Duplicate Miller Indices",
-            "More than one data point has the same Miller index.\n\n" +
-            "\n".join(duplicate_lines))
+            "More than one included data point has the same Miller index.\n\n"
+            "Rows with a red background are the overlapped data points.")
 
     def select_phase_to_ucfit(self):
         phase = self.widget.comboBox_PeakFitLabels.currentText()
@@ -277,6 +299,8 @@ class UcfitController(object):
         data_by_phase_df = self._get_all_peakfit_results_df()
         data_to_fit_df = data_by_phase_df[self.phase].loc[
             data_by_phase_df[self.phase]['display'] == True]
+        self._warn_duplicate_miller_indices(
+            {self.phase: data_to_fit_df.to_dict('records')})
         # number of data point check
         n_data_points = len(data_to_fit_df.index)
         if n_data_points < 2:
@@ -365,30 +389,23 @@ class UcfitController(object):
 
         self.widget.plainTextEdit_UCFitOutput.setPlainText(text_output)
 
-        # save jcpds and save output file automatically.
-        # ask for filename.  at the moment, simply overwrite
+        # Save JCPDS and output files automatically with default names.
         temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
-        ext = "ucfit.jcpds"
-        #filen_t = self.model.make_filename(ext)
-        filen_t = make_filename(self.template_jcpds.file, ext,
+        os.makedirs(temp_dir, exist_ok=True)
+        filen_j = make_filename(self.template_jcpds.file, "ucfit.jcpds",
                                 temp_dir=temp_dir)
-        filen_j = dialog_savefile(self.widget, filen_t)
-        if str(filen_j) == '':
-            return
         self._write_to_jcpds(filen_j, cell_params)
         self._load_ucfit_jcpds_to_list(filen_j)
 
-        # write to a textfile
-        ext = "ucfit.output"
-        #filen_t = self.model.make_filename(ext)
-        filen_t = make_filename(self.template_jcpds.file, ext,
+        filen_o = make_filename(self.template_jcpds.file, "ucfit.output",
                                 temp_dir=temp_dir)
-        filen_o = dialog_savefile(self.widget, filen_t)
-        if str(filen_o) == '':
-            return
-
         with open(filen_o, "w") as f:
             f.write(text_output)
+        QtWidgets.QMessageBox.information(
+            self.widget, "Unit Cell Fit Saved",
+            "Unit cell fitting results were updated and saved.\n\n"
+            "JCPDS file:\n{0}\n\n"
+            "Output file:\n{1}".format(filen_j, filen_o))
 
     def _write_to_jcpds(self, filename, cell_params):
         """

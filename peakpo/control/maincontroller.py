@@ -28,6 +28,7 @@ from .cakeazicontroller import CakeAziController
 from .exportpythoncontroller import ExportPythonController
 from .mapcontroller import MapController
 from .sequencecontroller import SequenceController
+from .plotinteractioncontroller import PlotInteractionController
 from ..utils import dialog_savefile, writechi, convert_wl_to_energy, \
     get_sorted_filelist, find_from_filelist, make_filename, \
     get_directory, get_temp_dir
@@ -104,6 +105,7 @@ class MainController(object):
         print("  ✓ JcpdsTableController created")
         
         self.peakfit_ctrl = PeakFitController(self.model, self.widget)
+        self.peakfit_ctrl.set_ucfit_controller(self.ucfit_ctrl)
         print("  ✓ PeakFitController created")
         
         self.peakfit_table_ctrl = PeakfitTableController(self.model, self.widget)
@@ -123,6 +125,8 @@ class MainController(object):
             mouse_mode_done_cb=self._finish_temporary_mouse_mode,
             export_current_view_cb=self.export_py_ctrl.export_current_view)
         self._propagate_diff_controller()
+        self.plot_interaction_ctrl = PlotInteractionController(self)
+        self.peakfit_ctrl.plot_interaction_ctrl = self.plot_interaction_ctrl
         
         self.read_setting()
         print("  ✓ read_setting() done")
@@ -193,16 +197,9 @@ class MainController(object):
         
     def connect_channel(self):
         # connecting events
-        self.widget.mpl.canvas.mpl_connect(
-            'button_press_event', self.deliver_mouse_signal)
-        self.widget.mpl.canvas.mpl_connect(
-            'button_release_event', self._release_peak_position_drag)
+        self.plot_interaction_ctrl.connect()
         self.widget.mpl.canvas.mpl_connect(
             'key_press_event', self.on_key_press)
-        self.widget.mpl.canvas.mpl_connect(
-            'motion_notify_event', self._handle_mouse_motion)
-        self.widget.mpl.canvas.mpl_connect(
-            'figure_leave_event', self._clear_cursor_position_readout)
         self.widget.spinBox_AziShift.valueChanged.connect(
             self.apply_changes_to_graph)
         self.widget.doubleSpinBox_Pressure.valueChanged.connect(
@@ -244,6 +241,8 @@ class MainController(object):
             self._on_long_cursor_changed)
         self.widget.checkBox_ShowMillerIndices.clicked.connect(
             self.apply_changes_to_graph)
+        self.widget.checkBox_ShowMillerIndices.clicked.connect(
+            self._sync_toolbar_hkl_from_detail_controls)
         self.widget.comboBox_BasePtnLineThickness.currentIndexChanged.connect(
             self.apply_changes_to_graph)
         self.widget.comboBox_PtnJCPDSBarThickness.currentIndexChanged.connect(
@@ -275,6 +274,10 @@ class MainController(object):
         if hasattr(self.widget, "checkBox_TitleTruncateMiddle"):
             self.widget.checkBox_TitleTruncateMiddle.clicked.connect(
                 self.apply_changes_to_graph)
+        self.widget.checkBox_JCPDSinPattern.clicked.connect(
+            self._sync_toolbar_jcpds_from_detail_controls)
+        self.widget.checkBox_JCPDSinCake.clicked.connect(
+            self._sync_toolbar_jcpds_from_detail_controls)
         self.widget.checkBox_ShowCakeLabels.clicked.connect(
             self.apply_changes_to_graph)
         self.widget.checkBox_ShowLargePnT.clicked.connect(
@@ -290,6 +293,15 @@ class MainController(object):
         self.widget.pushButton_S_Zoom.clicked.connect(self.plot_new_graph)
         self.widget.checkBox_AutoY.clicked.connect(self.apply_changes_to_graph)
         self.widget.checkBox_BgSub.clicked.connect(self.apply_bgsub_toggle)
+        if hasattr(self.widget, "pushButton_MouseHelp"):
+            self.widget.pushButton_MouseHelp.clicked.connect(
+                self.show_mouse_help)
+        if hasattr(self.widget, "checkBox_ToolbarJCPDS"):
+            self.widget.checkBox_ToolbarJCPDS.clicked.connect(
+                self._on_toolbar_jcpds_toggled)
+        if hasattr(self.widget, "checkBox_ToolbarHKL"):
+            self.widget.checkBox_ToolbarHKL.clicked.connect(
+                self._on_toolbar_hkl_toggled)
         if hasattr(self.widget, "checkBox_LightBackground"):
             self.widget.checkBox_LightBackground.clicked.connect(
                 self.apply_changes_to_graph)
@@ -297,6 +309,8 @@ class MainController(object):
             self.apply_changes_to_graph)
         self.widget.checkBox_ShowMillerIndices_Cake.clicked.connect(
             self.apply_changes_to_graph)
+        self.widget.checkBox_ShowMillerIndices_Cake.clicked.connect(
+            self._sync_toolbar_hkl_from_detail_controls)
         # self.widget.actionClose.triggered.connect(self.closeEvent)
         self.widget.tabWidget.currentChanged.connect(self.check_for_peakfit)
         self.widget.tabWidget.currentChanged.connect(
@@ -367,7 +381,8 @@ class MainController(object):
 
     def _initialize_mouse_mode(self):
         self._refresh_mouse_mode_availability()
-        self._set_mouse_mode('navigate')
+        self._mouse_mode = 'navigate'
+        self._deactivate_toolbar_modes()
 
     def _get_toolbar(self):
         return getattr(self.widget.mpl, "ntb", None)
@@ -520,6 +535,92 @@ class MainController(object):
             self.plot_ctrl.clear_vertical_cursor_position()
         if hasattr(self.widget, "label_CursorPosition"):
             self.widget.label_CursorPosition.setText("")
+
+    def _set_checked_no_signal(self, checkbox_name, checked):
+        checkbox = getattr(self.widget, checkbox_name, None)
+        if checkbox is None:
+            return
+        old_state = checkbox.blockSignals(True)
+        checkbox.setChecked(bool(checked))
+        checkbox.blockSignals(old_state)
+
+    def _on_toolbar_jcpds_toggled(self):
+        checked = self.widget.checkBox_ToolbarJCPDS.isChecked()
+        self._set_checked_no_signal("checkBox_JCPDSinPattern", checked)
+        self._set_checked_no_signal("checkBox_JCPDSinCake", checked)
+        self.plot_ctrl.refresh_jcpds_overlay()
+
+    def _on_toolbar_hkl_toggled(self):
+        checked = self.widget.checkBox_ToolbarHKL.isChecked()
+        self._set_checked_no_signal("checkBox_ShowMillerIndices", checked)
+        self._set_checked_no_signal("checkBox_ShowMillerIndices_Cake", checked)
+        if checked:
+            self.plot_ctrl.refresh_jcpds_overlay()
+        else:
+            self.plot_ctrl.clear_jcpds_hkl_overlay()
+
+    def _sync_toolbar_jcpds_from_detail_controls(self):
+        if not hasattr(self.widget, "checkBox_ToolbarJCPDS"):
+            return
+        checked = bool(
+            self.widget.checkBox_JCPDSinPattern.isChecked() or
+            self.widget.checkBox_JCPDSinCake.isChecked())
+        self._set_checked_no_signal("checkBox_ToolbarJCPDS", checked)
+
+    def _sync_toolbar_hkl_from_detail_controls(self):
+        if not hasattr(self.widget, "checkBox_ToolbarHKL"):
+            return
+        checked = bool(
+            self.widget.checkBox_ShowMillerIndices.isChecked() or
+            self.widget.checkBox_ShowMillerIndices_Cake.isChecked())
+        self._set_checked_no_signal("checkBox_ToolbarHKL", checked)
+
+    def _sync_toolbar_plot_checkboxes(self):
+        self._sync_toolbar_jcpds_from_detail_controls()
+        self._sync_toolbar_hkl_from_detail_controls()
+
+    def show_mouse_help(self):
+        dialog = QtWidgets.QDialog(self.widget)
+        dialog.setWindowTitle("Mouse Help")
+        dialog.setModal(False)
+        dialog.resize(720, 360)
+        layout = QtWidgets.QVBoxLayout(dialog)
+        table = QtWidgets.QTableWidget(dialog)
+        table.setColumnCount(3)
+        table.setHorizontalHeaderLabels(["Mouse action", "Context", "Result"])
+        rows = [
+            ("Left drag", "Any plot", "Zoom to the drawn rectangle."),
+            ("Very small left drag", "Any plot", "Ignored to avoid accidental zoom."),
+            ("Right click", "Any plot", "Return to the full current view."),
+            ("Left double click", "Any plot", "Inspect d-spacing and nearest JCPDS/hkl information."),
+            ("Set ROI, then left drag", "Map or Sequence ROI", "Draw ROI on the 1D or Cake plot."),
+            ("Set ROI again", "Map or Sequence ROI", "Cancel ROI selection mode."),
+            ("Clear ROI", "Map or Sequence ROI", "Remove the stored ROI and its overlay."),
+            ("Shift + left click", "Peak fitting", "Add a peak at the clicked position."),
+            ("Shift + right click", "Peak fitting", "Remove the nearest peak."),
+            ("Highlight row, Shift + left drag on peak", "Peak fitting", "Move peak position; table updates on release."),
+            ("Range button, then left drag", "Constraints/Background popup", "Set the requested visual range."),
+            ("Right click while selecting range", "Constraints/Background popup", "Cancel visual range selection."),
+        ]
+        table.setRowCount(len(rows))
+        for row, values in enumerate(rows):
+            for col, text in enumerate(values):
+                item = QtWidgets.QTableWidgetItem(text)
+                item.setFlags(QtCore.Qt.ItemIsEnabled |
+                              QtCore.Qt.ItemIsSelectable)
+                table.setItem(row, col, item)
+        table.resizeColumnsToContents()
+        table.horizontalHeader().setStretchLastSection(True)
+        layout.addWidget(table)
+        close_button = QtWidgets.QPushButton("Close", dialog)
+        close_button.clicked.connect(dialog.close)
+        row_layout = QtWidgets.QHBoxLayout()
+        row_layout.addStretch(1)
+        row_layout.addWidget(close_button)
+        layout.addLayout(row_layout)
+        self._mouse_help_dialog = dialog
+        dialog.show()
+        dialog.raise_()
 
     def _update_cursor_position_readout(self, event):
         if hasattr(self, "plot_ctrl") and (self.plot_ctrl is not None):
@@ -837,16 +938,7 @@ class MainController(object):
         if self._plot_update_deferred():
             return
         self.plot_ctrl.update()
-        if hasattr(self, "map_ctrl") and (self.map_ctrl is not None):
-            try:
-                self.map_ctrl.refresh_roi_overlays()
-            except Exception:
-                pass
-        if hasattr(self, "seq_ctrl") and (self.seq_ctrl is not None):
-            try:
-                self.seq_ctrl.refresh_roi_overlays()
-            except Exception:
-                pass
+        self._schedule_roi_overlays_after_plot_update()
 
     def apply_bgsub_toggle(self):
         if self._plot_update_deferred():
@@ -888,19 +980,22 @@ class MainController(object):
         except Exception:
             self.plot_ctrl.update()
 
-        if hasattr(self, "map_ctrl") and (self.map_ctrl is not None):
-            try:
-                self.map_ctrl.refresh_roi_overlays()
-            except Exception:
-                pass
-        if hasattr(self, "seq_ctrl") and (self.seq_ctrl is not None):
-            try:
-                self.seq_ctrl.refresh_roi_overlays()
-            except Exception:
-                pass
+        self._schedule_roi_overlays_after_plot_update()
 
     def plot_new_graph(self):
         self.plot_ctrl.zoom_out_graph()
+        self._schedule_roi_overlays_after_plot_update(flush_pending=True)
+
+    def _schedule_roi_overlays_after_plot_update(self, flush_pending=False):
+        if flush_pending:
+            flush = getattr(self.plot_ctrl, "_flush_update_request", None)
+            if callable(flush):
+                flush()
+        self._refresh_roi_overlays_after_plot()
+        QtCore.QTimer.singleShot(0, self._refresh_roi_overlays_after_plot)
+        QtCore.QTimer.singleShot(80, self._refresh_roi_overlays_after_plot)
+
+    def _refresh_roi_overlays_after_plot(self):
         if hasattr(self, "map_ctrl") and (self.map_ctrl is not None):
             try:
                 self.map_ctrl.refresh_roi_overlays()
@@ -1099,6 +1194,7 @@ class MainController(object):
             if hasattr(self.widget, attr):
                 self._load_widget_from_settings(
                     key, getattr(self.widget, attr))
+        self._sync_toolbar_plot_checkboxes()
 
     def _plot_config_setting_bindings(self):
         return [
@@ -1107,6 +1203,10 @@ class MainController(object):
             ("plot_cfg/auto_y", "checkBox_AutoY"),
             ("plot_cfg/vertical_cursor", "checkBox_LongCursor"),
             ("plot_cfg/diff_mode", "checkBox_Diff"),
+            ("plot_cfg/show_jcpds_pattern", "checkBox_JCPDSinPattern"),
+            ("plot_cfg/show_jcpds_cake", "checkBox_JCPDSinCake"),
+            ("plot_cfg/show_hkl_pattern", "checkBox_ShowMillerIndices"),
+            ("plot_cfg/show_hkl_cake", "checkBox_ShowMillerIndices_Cake"),
             ("plot_cfg/night_view", "checkBox_NightView"),
             ("plot_cfg/night_cake", "checkBox_WhiteForPeak"),
             ("plot_cfg/show_large_pt", "checkBox_ShowLargePnT"),
@@ -1529,8 +1629,6 @@ class MainController(object):
     """
 
     def on_key_press(self, event):
-        from matplotlib.backend_bases import key_press_handler
-        
         if event.key == 'i':
             if self.widget.mpl.ntb._active == 'PAN':
                 self.widget.mpl.ntb.pan()
@@ -1549,8 +1647,7 @@ class MainController(object):
             xroi, yroi = get_DataSection(x, y, [lims[0], lims[1]])
             self.plot_ctrl.update([lims[0], lims[1], yroi.min(), yroi.max()])
         else:
-            key_press_handler(event, self.widget.mpl.canvas,
-                              self.widget.mpl.ntb)
+            self._deactivate_toolbar_modes()
     """
     def to_PkFt(self):
         # listen
@@ -1637,6 +1734,11 @@ class MainController(object):
     def pick_peak(self, mouse_button, xdata, ydata):
         """
         """
+        if not self.model.current_section_exist():
+            return
+        had_fit_result = self.model.current_section.fitted()
+        if had_fit_result:
+            self.model.current_section.invalidate_fit_result()
         if mouse_button == 'left':  # left click
             if (self.model.current_section is None) or \
                     (self.model.current_section.x is None) or \
@@ -1651,7 +1753,8 @@ class MainController(object):
             x_center = float(x_arr[idx])
             success = self.model.current_section.set_single_peak(
                 x_center,
-                self.widget.doubleSpinBox_InitialFWHM.value())
+                self.widget.doubleSpinBox_InitialFWHM.value(),
+                constraint_defaults=self.peakfit_ctrl.default_peak_bounds())
             if not success:
                 QtWidgets.QMessageBox.warning(
                     self.widget, "Warning",
@@ -1666,7 +1769,8 @@ class MainController(object):
         self.peakfit_ctrl.set_tableWidget_PkParams_unsaved()
         self.peakfit_table_ctrl.update_peak_parameters()
         self.peakfit_table_ctrl.update_peak_constraints()
-        self.plot_ctrl.update()
+        if had_fit_result or not self.plot_ctrl.refresh_peakfit_markers():
+            self.plot_ctrl.update()
 
     def read_plot(self, mouse_button, xdata, ydata):
         if mouse_button == 'right':
@@ -1952,6 +2056,7 @@ class MainController(object):
                 self._apply_nav_carry_state(nav_state)
             # self.model.set_base_ptn_color(self.obj_color)
             self.plot_ctrl.update()
+            self._schedule_roi_overlays_after_plot_update(flush_pending=True)
         else:
             QtWidgets.QMessageBox.warning(self.widget, "Warning",
                                           new_filename_chi +
@@ -2122,6 +2227,7 @@ class MainController(object):
         self.peakfit_table_ctrl.update_peak_parameters()
         self.peakfit_table_ctrl.update_baseline_constraints()
         self.peakfit_table_ctrl.update_peak_constraints()
+        self._schedule_roi_overlays_after_plot_update(flush_pending=True)
         return
 
         # QtWidgets.QMessageBox.warning(self.widget, "Warning",
