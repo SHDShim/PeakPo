@@ -26,6 +26,7 @@ class MplCanvas(FigureCanvasQTAgg):
 
         self.bgColor = "black"
         self.objColor = "white"
+        self._current_h_cake = None
         self._define_axes(1)
 
         try:
@@ -40,19 +41,19 @@ class MplCanvas(FigureCanvasQTAgg):
         self.show_empty_state(draw=False)
 
     def _define_axes(self, h_cake):
+        self._current_h_cake = h_cake
         self.gs = GridSpec(100, 1)
         self.ax_pattern = self.fig.add_subplot(self.gs[h_cake + 1 : 99, 0])
         self.ax_cake = self.fig.add_subplot(self.gs[0:h_cake, 0], sharex=self.ax_pattern)
-        self.ax_pattern.set_ylabel("Intensity (arbitrary unit)")
-        self.ax_pattern.ticklabel_format(axis="y", style="sci", scilimits=(-2, 2))
-        self.ax_pattern.get_yaxis().get_offset_text().set_position((-0.04, -0.1))
+        self._apply_axes_style(h_cake)
 
-    def resize_axes(self, h_cake):
-        self.fig.clf()
-        self._define_axes(h_cake)
+    def _apply_axes_style(self, h_cake):
         self.fig.set_facecolor(self.bgColor)
         self.ax_pattern.set_facecolor(self.bgColor)
         self.ax_cake.set_facecolor(self.bgColor)
+        self.ax_pattern.set_ylabel("Intensity (arbitrary unit)")
+        self.ax_pattern.ticklabel_format(axis="y", style="sci", scilimits=(-2, 2))
+        self.ax_pattern.get_yaxis().get_offset_text().set_position((-0.04, -0.1))
         if h_cake == 1:
             self.ax_cake.tick_params(axis="y", colors=self.objColor, labelleft=False)
             self.ax_cake.spines["right"].set_visible(False)
@@ -61,6 +62,16 @@ class MplCanvas(FigureCanvasQTAgg):
             self.ax_cake.spines["bottom"].set_visible(False)
         elif h_cake >= 10:
             self.ax_cake.set_ylabel("Azimuth (degrees)")
+
+    def resize_axes(self, h_cake):
+        if self._current_h_cake == h_cake and hasattr(self, "ax_pattern") and \
+                hasattr(self, "ax_cake"):
+            self.ax_pattern.clear()
+            self.ax_cake.clear()
+            self._apply_axes_style(h_cake)
+            return
+        self.fig.clf()
+        self._define_axes(h_cake)
 
     def set_toNight(self, NightView=True):
         if NightView:

@@ -38,6 +38,7 @@ class MapController(object):
         self._map_cax = None
         self._map_cbar = None
         self._map_im = None
+        self._map_current_pixel_artist = None
 
         self._selector_1d = None
         self._selector_2d = None
@@ -96,6 +97,7 @@ class MapController(object):
         self._map_ax.set_facecolor("black")
         self._map_cax = None
         self._map_cbar = None
+        self._map_current_pixel_artist = None
 
     def _ensure_map_axes(self):
         if self._map_ax is None:
@@ -163,6 +165,7 @@ class MapController(object):
             self.deactivate_interactions()
             self._clear_roi_overlays()
         else:
+            self.refresh_current_marker()
             self.refresh_roi_overlays()
 
     def deactivate_interactions(self):
@@ -604,7 +607,10 @@ class MapController(object):
             flush = getattr(self.plot_ctrl, "_flush_update_request", None)
             if callable(flush):
                 flush()
+        self.refresh_current_marker()
         self.refresh_roi_overlays()
+        QtCore.QTimer.singleShot(0, self.refresh_current_marker)
+        QtCore.QTimer.singleShot(80, self.refresh_current_marker)
         QtCore.QTimer.singleShot(0, self.refresh_roi_overlays)
         QtCore.QTimer.singleShot(80, self.refresh_roi_overlays)
 
@@ -833,6 +839,32 @@ class MapController(object):
         if not getattr(self.model, "base_ptn", None):
             return None
         return getattr(self.model.base_ptn, "fname", None)
+
+    def _normalized_path(self, filename):
+        if not filename:
+            return None
+        try:
+            return os.path.normcase(os.path.abspath(os.path.realpath(str(filename))))
+        except Exception:
+            return os.path.normcase(os.path.abspath(str(filename)))
+
+    def _current_file_idx(self):
+        shown = self._current_displayed_chi()
+        current = self._normalized_path(shown)
+        if current is None:
+            return None
+        for idx, chi_path in enumerate(self._chi_files):
+            if self._normalized_path(chi_path) == current:
+                return idx
+
+        shown_base = os.path.basename(str(shown))
+        matches = [
+            idx for idx, chi_path in enumerate(self._chi_files)
+            if os.path.basename(str(chi_path)) == shown_base
+        ]
+        if len(matches) == 1:
+            return int(matches[0])
+        return None
 
     def _preferred_bg_reference_chi(self):
         shown = self._current_displayed_chi()
@@ -1184,7 +1216,69 @@ class MapController(object):
         self._map_ax.set_xlim(-0.5, data.shape[1] - 0.5)
         self._map_ax.set_ylim(data.shape[0] - 0.5, -0.5)
         self._map_ax.set_axis_off()
+        self._add_current_marker(draw=False)
         self._map_canvas.draw_idle()
+
+    def _current_pixel_xy(self):
+        file_idx = self._current_file_idx()
+        if file_idx is None:
+            return None
+
+        if self._map_coordinate_mode:
+            for (x, y), idx in self._coord_to_file.items():
+                if idx == file_idx:
+                    return int(x), int(y)
+            return None
+
+        lin_pos = self._pos_idx[file_idx] if file_idx < len(self._pos_idx) else file_idx
+        xy = self._linear_to_grid(lin_pos)
+        if xy is None:
+            return None
+        return int(xy[0]), int(xy[1])
+
+    def _clear_current_marker(self):
+        if self._map_current_pixel_artist is None:
+            return False
+        try:
+            self._map_current_pixel_artist.remove()
+        except Exception:
+            pass
+        self._map_current_pixel_artist = None
+        return True
+
+    def _add_current_marker(self, draw=True):
+        self._clear_current_marker()
+        if self._map_ax is None or self._map_data is None:
+            return
+        xy = self._current_pixel_xy()
+        if xy is None:
+            return
+        x, y = xy
+        rows, cols = self._map_data.shape
+        if (x < 0) or (y < 0) or (x >= cols) or (y >= rows):
+            return
+        self._map_current_pixel_artist = mpatches.Rectangle(
+            (x - 0.5, y - 0.5),
+            1.0,
+            1.0,
+            fill=False,
+            edgecolor="#ff3030",
+            linewidth=2.0,
+            zorder=10,
+            clip_on=False,
+        )
+        self._map_ax.add_patch(self._map_current_pixel_artist)
+        if draw and self._map_canvas is not None:
+            self._map_canvas.draw_idle()
+
+    def refresh_current_marker(self):
+        if self._map_ax is None:
+            return
+        changed = self._clear_current_marker()
+        self._add_current_marker(draw=False)
+        if (changed or self._map_current_pixel_artist is not None) and \
+                self._map_canvas is not None:
+            self._map_canvas.draw_idle()
 
     def _on_map_click(self, event):
         file_idx = self._file_idx_from_map_coords(event.xdata, event.ydata)

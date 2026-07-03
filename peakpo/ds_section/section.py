@@ -8,6 +8,7 @@ DEFAULT_FWHM_MIN = 0.0
 DEFAULT_FWHM_MAX = 0.05
 DEFAULT_NL_MIN = 0.0
 DEFAULT_NL_MAX = 1.0
+MAX_BACKGROUND_ANCHOR_WEIGHT = 100.0
 PEAK_PARAM_VARY_KEYS = {
     'amplitude': 'amplitude_vary',
     'center': 'center_vary',
@@ -305,7 +306,9 @@ class Section(object):
                 x_mid = 0.5 * (xmin + xmax)
                 x_use = np.asarray([x_mid], dtype=float)
                 y_use = np.asarray([np.interp(x_mid, x_arr, y_arr)], dtype=float)
-            n_repeat = max(1, int(round(weight)))
+            n_repeat = int(round(weight))
+            n_repeat = max(
+                1, min(int(MAX_BACKGROUND_ANCHOR_WEIGHT), n_repeat))
             for __ in range(n_repeat):
                 x_lst.extend(x_use.tolist())
                 y_lst.extend(y_use.tolist())

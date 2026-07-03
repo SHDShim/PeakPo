@@ -129,6 +129,7 @@ class UcfitController(object):
         # display in table
         self.update_ucfittable()
         # find matching jcpds and get symmetry
+        self.template_jcpds = None
         t_jcpds = self._get_matching_jcpds()
         if t_jcpds is None:
             # warning message that matching jcpds was not found in the list
@@ -203,24 +204,7 @@ class UcfitController(object):
         i_section = index for a section
         """
         peaks = []
-        # Fallback for sessions where transient fit_result objects were
-        # stripped for robust DPP serialization.
         if (not hasattr(section, 'fit_result')) or (section.fit_result is None):
-            for peak in section.peaks_in_queue:
-                twoth = peak['center']
-                dsp = self.model.get_base_ptn_wavelength() / 2. / \
-                    np.sin(np.deg2rad(twoth / 2.))
-                q = np.power((1./dsp), 2.)
-                peak_i = {'phase': self._normalize_ucfit_phase_name(
-                              peak['phasename']),
-                          'h': peak['h'],
-                          'k': peak['k'],
-                          'l': peak['l'],
-                          'display': True,
-                          'twoth': twoth,
-                          'dsp': dsp,
-                          'Q': q}
-                peaks.append(peak_i)
             return peaks
         n_peaks = int(len(section.peakinfo) / 4)
         if verbose:
@@ -295,6 +279,21 @@ class UcfitController(object):
         if self.phase == None:
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning", "No phase has been chosen for fitting")
+            return
+        if self.ucfit_model is None or self.phase not in self.ucfit_model:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "No peak fitting results have been collected for this phase.\n\n"
+                "Click Collect after saving peak fitting results.")
+            return
+        if self.template_jcpds is None:
+            self.template_jcpds = self._get_matching_jcpds()
+        if self.template_jcpds is None:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "No matching JCPDS template was found for this phase.\n\n"
+                "Load or select the matching JCPDS before unit-cell fitting "
+                "so PeakPo can update ucfit.jcpds.")
             return
         data_by_phase_df = self._get_all_peakfit_results_df()
         data_to_fit_df = data_by_phase_df[self.phase].loc[

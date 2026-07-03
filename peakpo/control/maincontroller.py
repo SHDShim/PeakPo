@@ -143,8 +143,9 @@ class MainController(object):
         print("MainController.__init__ - DONE\n")
 
     def _propagate_diff_controller(self):
-        # Multiple controllers keep their own MplController instances.
-        # Keep Diff behavior consistent across all redraw paths.
+        # Controllers request MplController through their constructors, but
+        # MplController is shared per main widget. Keep Diff behavior attached
+        # to that shared redraw path.
         for ctrl_name in (
             "session_ctrl",
             "base_ptn_ctrl",
@@ -240,9 +241,7 @@ class MainController(object):
         self.widget.checkBox_LongCursor.stateChanged.connect(
             self._on_long_cursor_changed)
         self.widget.checkBox_ShowMillerIndices.clicked.connect(
-            self.apply_changes_to_graph)
-        self.widget.checkBox_ShowMillerIndices.clicked.connect(
-            self._sync_toolbar_hkl_from_detail_controls)
+            self._on_detail_hkl_toggled)
         self.widget.comboBox_BasePtnLineThickness.currentIndexChanged.connect(
             self.apply_changes_to_graph)
         self.widget.comboBox_PtnJCPDSBarThickness.currentIndexChanged.connect(
@@ -275,9 +274,9 @@ class MainController(object):
             self.widget.checkBox_TitleTruncateMiddle.clicked.connect(
                 self.apply_changes_to_graph)
         self.widget.checkBox_JCPDSinPattern.clicked.connect(
-            self._sync_toolbar_jcpds_from_detail_controls)
+            self._on_detail_jcpds_toggled)
         self.widget.checkBox_JCPDSinCake.clicked.connect(
-            self._sync_toolbar_jcpds_from_detail_controls)
+            self._on_detail_jcpds_toggled)
         self.widget.checkBox_ShowCakeLabels.clicked.connect(
             self.apply_changes_to_graph)
         self.widget.checkBox_ShowLargePnT.clicked.connect(
@@ -308,9 +307,7 @@ class MainController(object):
         self.widget.checkBox_ShowWaterfallLabels.clicked.connect(
             self.apply_changes_to_graph)
         self.widget.checkBox_ShowMillerIndices_Cake.clicked.connect(
-            self.apply_changes_to_graph)
-        self.widget.checkBox_ShowMillerIndices_Cake.clicked.connect(
-            self._sync_toolbar_hkl_from_detail_controls)
+            self._on_detail_hkl_toggled)
         # self.widget.actionClose.triggered.connect(self.closeEvent)
         self.widget.tabWidget.currentChanged.connect(self.check_for_peakfit)
         self.widget.tabWidget.currentChanged.connect(
@@ -359,6 +356,8 @@ class MainController(object):
             lambda: self.goto_next_file('last'))
         self.widget.pushButton_FirstBasePtn.clicked.connect(
             lambda: self.goto_next_file('first'))
+        self.widget.lineEdit_DiffractionPatternFileName.textChanged.connect(
+            self._schedule_map_sequence_current_markers)
         if hasattr(self.widget, "buttonGroup_MouseMode"):
             self.widget.buttonGroup_MouseMode.buttonToggled.connect(
                 self._on_mouse_mode_button_toggled)
@@ -406,20 +405,16 @@ class MainController(object):
             toolbar.zoom()
         elif current_mode in ('pan/zoom', 'PAN'):
             toolbar.pan()
+        remove_rubberband = getattr(toolbar, "remove_rubberband", None)
+        if callable(remove_rubberband):
+            remove_rubberband()
 
     def _set_toolbar_zoom_active(self, enabled):
-        toolbar = self._get_toolbar()
-        if toolbar is None:
-            return
-        current_mode = self._get_toolbar_mode()
-        if current_mode in ('pan/zoom', 'PAN'):
-            toolbar.pan()
-            current_mode = self._get_toolbar_mode()
-        zoom_active = current_mode in ('zoom rect', 'ZOOM')
-        if enabled and (not zoom_active):
-            toolbar.zoom()
-        elif (not enabled) and zoom_active:
-            toolbar.zoom()
+        del enabled
+        # Native Matplotlib rubber-band zoom conflicts with the centralized
+        # PeakPo mouse controller. Keep this helper for existing call sites,
+        # but use it only to ensure native toolbar modes are off.
+        self._deactivate_toolbar_modes()
 
     def _is_map_tab_active(self):
         return hasattr(self.widget, "tab_Map") and \
@@ -555,6 +550,18 @@ class MainController(object):
         self._set_checked_no_signal("checkBox_ShowMillerIndices", checked)
         self._set_checked_no_signal("checkBox_ShowMillerIndices_Cake", checked)
         if checked:
+            self.plot_ctrl.refresh_jcpds_overlay()
+        else:
+            self.plot_ctrl.clear_jcpds_hkl_overlay()
+
+    def _on_detail_jcpds_toggled(self):
+        self._sync_toolbar_jcpds_from_detail_controls()
+        self.plot_ctrl.refresh_jcpds_overlay()
+
+    def _on_detail_hkl_toggled(self):
+        self._sync_toolbar_hkl_from_detail_controls()
+        if self.widget.checkBox_ShowMillerIndices.isChecked() or \
+                self.widget.checkBox_ShowMillerIndices_Cake.isChecked():
             self.plot_ctrl.refresh_jcpds_overlay()
         else:
             self.plot_ctrl.clear_jcpds_hkl_overlay()
@@ -995,7 +1002,25 @@ class MainController(object):
         QtCore.QTimer.singleShot(0, self._refresh_roi_overlays_after_plot)
         QtCore.QTimer.singleShot(80, self._refresh_roi_overlays_after_plot)
 
+    def _schedule_map_sequence_current_markers(self, *_args):
+        self._refresh_map_sequence_current_markers()
+        QtCore.QTimer.singleShot(0, self._refresh_map_sequence_current_markers)
+        QtCore.QTimer.singleShot(80, self._refresh_map_sequence_current_markers)
+
+    def _refresh_map_sequence_current_markers(self):
+        for ctrl_name in ("map_ctrl", "seq_ctrl"):
+            ctrl = getattr(self, ctrl_name, None)
+            if ctrl is None:
+                continue
+            refresh = getattr(ctrl, "refresh_current_marker", None)
+            if callable(refresh):
+                try:
+                    refresh()
+                except Exception:
+                    pass
+
     def _refresh_roi_overlays_after_plot(self):
+        self._refresh_map_sequence_current_markers()
         if hasattr(self, "map_ctrl") and (self.map_ctrl is not None):
             try:
                 self.map_ctrl.refresh_roi_overlays()

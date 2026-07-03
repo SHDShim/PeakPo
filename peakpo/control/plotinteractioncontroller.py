@@ -27,6 +27,7 @@ class PlotInteractionController(object):
         self._range_drag = None
         self._range_patch = None
         self._range_last_draw_px = None
+        self._plot_help_active = False
 
     def connect(self):
         canvas = self.widget.mpl.canvas
@@ -75,6 +76,7 @@ class PlotInteractionController(object):
         if self._zoom_drag is not None:
             self._update_zoom_drag(event)
             return
+        self._update_plot_mouse_help(event)
         self.main._update_cursor_position_readout(event)
 
     def on_release(self, event):
@@ -90,6 +92,7 @@ class PlotInteractionController(object):
     def on_leave(self, event=None):
         del event
         self.main._clear_cursor_position_readout()
+        self._restore_plot_mouse_help()
 
     def _is_left(self, event):
         button = getattr(event, "button", None)
@@ -119,6 +122,42 @@ class PlotInteractionController(object):
             return True
         return hasattr(self.widget.mpl.canvas, 'ax_cake') and \
             axes == self.widget.mpl.canvas.ax_cake
+
+    def _plot_mouse_help_text(self, axes):
+        if axes == self.widget.mpl.canvas.ax_pattern:
+            return (
+                "1D plot: left-drag to zoom in; right-click to return "
+                "to the full current view."
+            )
+        if hasattr(self.widget.mpl.canvas, 'ax_cake') and \
+                axes == self.widget.mpl.canvas.ax_cake:
+            return (
+                "Cake plot: left-drag to zoom in; right-click to return "
+                "to the full current view."
+            )
+        return ""
+
+    def _update_plot_mouse_help(self, event):
+        if self._range_tool is not None:
+            return
+        if event is not None and self._plot_axis(event.inaxes):
+            text = self._plot_mouse_help_text(event.inaxes)
+            if text:
+                self._set_status(text)
+                self._plot_help_active = True
+                return
+        self._restore_plot_mouse_help()
+
+    def _restore_plot_mouse_help(self):
+        if not self._plot_help_active:
+            return
+        default = getattr(
+            self.widget,
+            "_compact_help_default",
+            "Hover a compact control to see details.",
+        )
+        self._set_status(default)
+        self._plot_help_active = False
 
     def _roi_selector_active(self):
         for ctrl_name in ("map_ctrl", "seq_ctrl"):
@@ -402,6 +441,7 @@ class PlotInteractionController(object):
     def start_range_tool(self, label, callback, repeat=False,
                          cancel_callback=None):
         self.cancel_range_tool()
+        self._plot_help_active = False
         self._range_tool = {
             "label": str(label),
             "callback": callback,

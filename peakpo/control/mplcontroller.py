@@ -16,7 +16,18 @@ from ..ds_jcpds import convert_tth
 
 class MplController(object):
 
+    def __new__(cls, model, widget):
+        existing = getattr(widget, "_peakpo_mpl_controller", None)
+        if isinstance(existing, cls):
+            return existing
+        obj = super(MplController, cls).__new__(cls)
+        setattr(widget, "_peakpo_mpl_controller", obj)
+        return obj
+
     def __init__(self, model, widget):
+        if getattr(self, "_peakpo_initialized", False):
+            return
+        self._peakpo_initialized = True
         self.model = model
         self.widget = widget
         self.obj_color = 'k'

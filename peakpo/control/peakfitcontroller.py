@@ -9,7 +9,7 @@ from ..compat_pickle import PeakPoCompatDillUnpickler
 from ..model.param_session_io import load_section_from_param
 from ..ds_section.section import DEFAULT_CENTER_HALF_RANGE, DEFAULT_FWHM_MIN, \
     DEFAULT_FWHM_MAX, DEFAULT_NL_MIN, DEFAULT_NL_MAX, \
-    normalize_peak_phase_name
+    MAX_BACKGROUND_ANCHOR_WEIGHT, normalize_peak_phase_name
 
 
 class _TableBackspaceKeyFilter(QtCore.QObject):
@@ -360,13 +360,14 @@ class _BackgroundSetupDialog(QtWidgets.QDialog):
     def _section(self):
         return self.controller.model.current_section
 
-    def _spinbox(self, value, decimals=5):
+    def _spinbox(self, value, decimals=5, minimum=-1000000.0,
+                 maximum=1000000.0):
         box = QtWidgets.QDoubleSpinBox(self)
         box.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
                          QtCore.Qt.AlignVCenter)
         box.setDecimals(decimals)
-        box.setMinimum(-1000000.0)
-        box.setMaximum(1000000.0)
+        box.setMinimum(float(minimum))
+        box.setMaximum(float(maximum))
         box.setSingleStep(10 ** (-decimals))
         box.setKeyboardTracking(False)
         box.setValue(float(value))
@@ -427,7 +428,16 @@ class _BackgroundSetupDialog(QtWidgets.QDialog):
             anchor = {"xmin": min(x0, x1), "xmax": max(x0, x1), "weight": 10.0}
         for col, key in enumerate(("xmin", "xmax", "weight")):
             value = anchor.get(key, 10.0 if key == "weight" else 0.0)
-            self.table_anchor.setCellWidget(row, col, self._spinbox(value, 5))
+            if key == "weight":
+                box = self._spinbox(
+                    value, 2, minimum=1.0,
+                    maximum=MAX_BACKGROUND_ANCHOR_WEIGHT)
+                box.setToolTip(
+                    "Relative anchor strength. Values are capped to avoid "
+                    "unstable or slow fitting.")
+            else:
+                box = self._spinbox(value, 5)
+            self.table_anchor.setCellWidget(row, col, box)
         self.table_anchor.resizeColumnsToContents()
         return row
 
@@ -442,10 +452,11 @@ class _BackgroundSetupDialog(QtWidgets.QDialog):
             xmin = float(xmin_widget.value())
             xmax = float(xmax_widget.value())
             weight = float(weight_widget.value())
+            weight = max(1.0, min(MAX_BACKGROUND_ANCHOR_WEIGHT, weight))
             anchors.append({
                 "xmin": min(xmin, xmax),
                 "xmax": max(xmin, xmax),
-                "weight": max(1.0, weight),
+                "weight": weight,
             })
         return anchors
 

@@ -32,6 +32,7 @@ class SequenceController(object):
         self._seq_line = None
         self._seq_x = None
         self._seq_y = None
+        self._seq_current_marker = None
 
         self._selector_1d = None
         self._selector_2d = None
@@ -103,6 +104,7 @@ class SequenceController(object):
             self.deactivate_interactions()
             self._clear_roi_overlays()
         else:
+            self.refresh_current_marker()
             self.refresh_roi_overlays()
 
     def deactivate_interactions(self):
@@ -179,8 +181,8 @@ class SequenceController(object):
         if not files:
             return
 
-        self._chi_files = sorted(list(files), key=self._filename_sort_key)
-        self._file_numbers = self._derive_file_numbers(self._chi_files)
+        self._chi_files, self._file_numbers = \
+            self._ordered_files_and_numbers(files)
         self._chi_cache = {}
         self._cake_cache = {}
         self._roi_1d = None
@@ -205,6 +207,22 @@ class SequenceController(object):
         if nums:
             return (0, name_lower[:name_lower.rfind(nums[-1])], int(nums[-1]))
         return (1, name_lower)
+
+    def _ordered_files_and_numbers(self, files):
+        ordered_files = sorted(list(files), key=self._filename_sort_key)
+        file_numbers = self._derive_file_numbers(ordered_files)
+        if len(ordered_files) <= 1:
+            return ordered_files, file_numbers
+
+        # Plot lines in increasing displayed file-number order. Filename sort
+        # can put map_10_0001 before map_1_0001 when the final numeric block is
+        # shared; that produces a spurious line from the last point to the first.
+        if len(set(file_numbers)) == len(file_numbers):
+            pairs = list(zip(ordered_files, file_numbers))
+            pairs.sort(key=lambda pair: (pair[1], self._filename_sort_key(pair[0])))
+            ordered_files = [pair[0] for pair in pairs]
+            file_numbers = [pair[1] for pair in pairs]
+        return ordered_files, file_numbers
 
     def _derive_file_numbers(self, files):
         if not files:
@@ -260,7 +278,10 @@ class SequenceController(object):
             flush = getattr(self.plot_ctrl, "_flush_update_request", None)
             if callable(flush):
                 flush()
+        self.refresh_current_marker()
         self.refresh_roi_overlays()
+        QtCore.QTimer.singleShot(0, self.refresh_current_marker)
+        QtCore.QTimer.singleShot(80, self.refresh_current_marker)
         QtCore.QTimer.singleShot(0, self.refresh_roi_overlays)
         QtCore.QTimer.singleShot(80, self.refresh_roi_overlays)
 
@@ -447,6 +468,32 @@ class SequenceController(object):
             return None
         return getattr(self.model.base_ptn, "fname", None)
 
+    def _normalized_path(self, filename):
+        if not filename:
+            return None
+        try:
+            return os.path.normcase(os.path.abspath(os.path.realpath(str(filename))))
+        except Exception:
+            return os.path.normcase(os.path.abspath(str(filename)))
+
+    def _current_file_idx(self):
+        shown = self._current_displayed_chi()
+        current = self._normalized_path(shown)
+        if current is None:
+            return None
+        for idx, chi_path in enumerate(self._chi_files):
+            if self._normalized_path(chi_path) == current:
+                return idx
+
+        shown_base = os.path.basename(str(shown))
+        matches = [
+            idx for idx, chi_path in enumerate(self._chi_files)
+            if os.path.basename(str(chi_path)) == shown_base
+        ]
+        if len(matches) == 1:
+            return int(matches[0])
+        return None
+
     def _preferred_bg_reference_chi(self):
         shown = self._current_displayed_chi()
         if shown and (shown in self._chi_files):
@@ -563,6 +610,7 @@ class SequenceController(object):
             return
         self._clear_hover_file()
         self._seq_ax.clear()
+        self._seq_current_marker = None
         self._seq_fig.patch.set_facecolor("black")
         self._seq_ax.set_facecolor("black")
         if (self._seq_x is None) or (self._seq_y is None) or (self._seq_x.size == 0):
@@ -588,8 +636,51 @@ class SequenceController(object):
         self._seq_ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         self._seq_ax.xaxis.set_major_formatter(FormatStrFormatter("%d"))
         self._seq_ax.grid(True, alpha=0.22, linewidth=0.6)
+        self._add_current_marker(draw=False)
         self._seq_fig.tight_layout()
         self._seq_canvas.draw_idle()
+
+    def _clear_current_marker(self):
+        if self._seq_current_marker is None:
+            return False
+        try:
+            self._seq_current_marker.remove()
+        except Exception:
+            pass
+        self._seq_current_marker = None
+        return True
+
+    def _add_current_marker(self, draw=True):
+        self._clear_current_marker()
+        if (self._seq_ax is None) or (self._seq_x is None) or (self._seq_y is None):
+            return
+        idx = self._current_file_idx()
+        if idx is None or idx >= len(self._seq_x) or idx >= len(self._seq_y):
+            return
+        x = float(self._seq_x[idx])
+        y = float(self._seq_y[idx])
+        if (not np.isfinite(x)) or (not np.isfinite(y)):
+            return
+        self._seq_current_marker = self._seq_ax.scatter(
+            [x],
+            [y],
+            s=140,
+            marker="o",
+            facecolors="none",
+            edgecolors="#ff3030",
+            linewidths=2.0,
+            zorder=10,
+        )
+        if draw and self._seq_canvas is not None:
+            self._seq_canvas.draw_idle()
+
+    def refresh_current_marker(self):
+        if self._seq_ax is None:
+            return
+        changed = self._clear_current_marker()
+        self._add_current_marker(draw=False)
+        if (changed or self._seq_current_marker is not None) and self._seq_canvas is not None:
+            self._seq_canvas.draw_idle()
 
     def _nearest_seq_file_idx(self, event, max_distance_px=20.0):
         if (self._seq_x is None) or (self._seq_y is None):

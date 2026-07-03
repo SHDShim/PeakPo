@@ -10,6 +10,16 @@ class PeakfitTableController(object):
     def __init__(self, model, widget):
         self.model = model
         self.widget = widget
+        self._row_header_width = 52
+
+    def _widen_row_header(self, table):
+        if table is None:
+            return
+        header = table.verticalHeader()
+        header.setVisible(True)
+        header.setDefaultAlignment(QtCore.Qt.AlignCenter)
+        header.setMinimumWidth(self._row_header_width)
+        header.setFixedWidth(self._row_header_width)
 
     def _style_peak_parameter_item(self, item, peak, vary_key):
         if bool(peak.get(vary_key, True)):
@@ -42,6 +52,7 @@ class PeakfitTableController(object):
         self.widget.tableWidget_PkParams.setColumnCount(n_columns)
         self.widget.tableWidget_PkParams.setRowCount(n_rows)
         self.widget.tableWidget_PkParams.horizontalHeader().setVisible(True)
+        self._widen_row_header(self.widget.tableWidget_PkParams)
         self.widget.tableWidget_PkParams.setHorizontalHeaderLabels(
             ['Phase', 'h', 'k', 'l', 'Area', 'Pos', 'FWHM', 'nL'])
         row = 0
@@ -126,6 +137,7 @@ class PeakfitTableController(object):
         self.widget.tableWidget_PkFtSections.setRowCount(n_rows)
         self.widget.tableWidget_PkFtSections.horizontalHeader().setVisible(
             True)
+        self._widen_row_header(self.widget.tableWidget_PkFtSections)
         self.widget.tableWidget_PkFtSections.setHorizontalHeaderLabels(
             ['Time', 'xmin', 'xmax'])
         i = 0
@@ -239,6 +251,7 @@ class PeakfitTableController(object):
         self.widget.tableWidget_PeakConstraints.setRowCount(n_rows)
         self.widget.tableWidget_PeakConstraints.horizontalHeader().setVisible(
             True)
+        self._widen_row_header(self.widget.tableWidget_PeakConstraints)
         self.widget.tableWidget_PeakConstraints.setHorizontalHeaderLabels(
             ['Ampl', 'Vary', 'Center', 'Vary', 'FWHM', 'Vary', 'n_L', 'Vary'])
         for row in range(n_rows):
