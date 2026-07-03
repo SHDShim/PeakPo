@@ -2654,11 +2654,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if hasattr(self, "tabWidget_4Page1"):
                 idx0 = self.tabWidget_4.indexOf(self.tabWidget_4Page1)
                 if idx0 >= 0:
-                    self.tabWidget_4.setTabText(idx0, "PeakFit")
+                    self.tabWidget_4.setTabText(idx0, "Peak Fit")
             if hasattr(self, "tabWidget_4Page2"):
                 idx1 = self.tabWidget_4.indexOf(self.tabWidget_4Page2)
                 if idx1 >= 0:
-                    self.tabWidget_4.setTabText(idx1, "CellFit")
+                    self.tabWidget_4.setTabText(idx1, "Cell Fit")
 
         if not hasattr(self, "tabWidget"):
             return

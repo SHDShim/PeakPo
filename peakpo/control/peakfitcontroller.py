@@ -1,5 +1,6 @@
 import os
 import traceback
+from qtpy import QtCore
 from qtpy import QtWidgets
 from .mplcontroller import MplController
 from .peakfittablecontroller import PeakfitTableController
@@ -16,6 +17,7 @@ class PeakFitController(object):
         self.plot_ctrl = MplController(self.model, self.widget)
         self.peakfit_table_ctrl = PeakfitTableController(
             self.model, self.widget)
+        self._setup_table_status_fields()
         self.connect_channel()
 
     def connect_channel(self):
@@ -45,7 +47,13 @@ class PeakFitController(object):
         # self.widget.pushButton_PkFtSectionSavetoDPP.clicked.coonect
 
     def _plot_selected_fitting(self):
-        self.plot_ctrl.update_to_gsas_style()
+        button = self.widget.pushButton_PlotSelectedPkFtResults
+        if button.isChecked():
+            button.setText("GSAS style ON")
+            self.plot_ctrl.update_to_gsas_style()
+        else:
+            button.setText("GSAS style OFF")
+            self.plot_ctrl.update()
 
     def import_section_from_dpp(self):
         fn = dialog_openfile_hide_param_dirs(
@@ -106,11 +114,17 @@ class PeakFitController(object):
     def get_peaks_from_jcpds(self):
         if not self.model.jcpds_exist():
             return
+        self._sync_jcpds_display_from_table()
         i = 0
         for j in self.model.jcpds_lst:
             if j.display:
                 i += 1
         if i == 0:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "No JCPDS phase is selected for display.\n\n"
+                "Check the JCPDS phase checkbox for each phase you want to "
+                "import.")
             return
         if not self.model.current_section_exist():
             QtWidgets.QMessageBox.warning(self.widget, "Warning",
@@ -154,7 +168,7 @@ class PeakFitController(object):
                         width = self.widget.doubleSpinBox_InitialFWHM.value()
                         hkl = [j.DiffLines[ii].h, j.DiffLines[ii].k,
                                j.DiffLines[ii].l]
-                        phasename = j.name
+                        phasename = self._phase_name_from_jcpds_for_peakfit(j)
                         self.model.current_section.set_single_peak(
                             tth, width, hkl=hkl, phase_name=phasename)
                     else:
@@ -164,34 +178,104 @@ class PeakFitController(object):
         self.peakfit_table_ctrl.update_peak_constraints()
         self.plot_ctrl.update()
 
-    def get_style_for_unsaved(self):
-        return "Background-color:rgb(255,204,255);color:rgb(0,0,0);"
+    def _phase_name_from_jcpds_for_peakfit(self, jcpds):
+        name = str(getattr(jcpds, "name", ""))
+        if name.endswith(".ucfit"):
+            return name[:-len(".ucfit")]
+        filename = os.path.basename(str(getattr(jcpds, "file", "")))
+        if filename.endswith(".ucfit.jcpds"):
+            return filename[:-len(".ucfit.jcpds")]
+        return name
 
-    def get_style_for_saved(self):
-        return "Background-color:None;color:rgb(0,0,0);"
+    def _sync_jcpds_display_from_table(self):
+        if not hasattr(self.widget, "tableWidget_JCPDS"):
+            return
+        table = self.widget.tableWidget_JCPDS
+        n_rows = min(table.rowCount(), len(self.model.jcpds_lst))
+        for row in range(n_rows):
+            item = table.item(row, 0)
+            if item is None:
+                continue
+            self.model.jcpds_lst[row].display = (
+                item.checkState() == QtCore.Qt.Checked)
+
+    def _setup_table_status_fields(self):
+        self.lineEdit_PkFtSectionsStatus = self._ensure_status_field(
+            "lineEdit_PkFtSectionsStatus",
+            getattr(self.widget, "verticalLayout_39", None),
+            getattr(self.widget, "tableWidget_PkFtSections", None),
+            "Sections table status: no unsaved section-list changes.")
+        self.lineEdit_PkParamsStatus = self._ensure_status_field(
+            "lineEdit_PkParamsStatus",
+            getattr(self.widget, "verticalLayout_40", None),
+            getattr(self.widget, "tableWidget_PkParams", None),
+            "Peaks table status: no active peak settings.")
+
+    def _ensure_status_field(self, name, layout, before_widget, text):
+        field = getattr(self.widget, name, None)
+        if field is not None:
+            field.setText(text)
+            return field
+        if layout is None or before_widget is None:
+            return None
+        field = QtWidgets.QLineEdit(self.widget)
+        field.setObjectName(name)
+        field.setReadOnly(True)
+        field.setFocusPolicy(QtCore.Qt.NoFocus)
+        field.setText(text)
+        field.setToolTip(text)
+        field.setStyleSheet(
+            "QLineEdit {"
+            "background-color: #2f2f2f;"
+            "color: #f0f0f0;"
+            "border: 1px solid #666666;"
+            "padding: 4px 6px;"
+            "}")
+        idx = layout.indexOf(before_widget)
+        if idx < 0:
+            layout.addWidget(field)
+        else:
+            layout.insertWidget(idx, field)
+        setattr(self.widget, name, field)
+        return field
+
+    def _set_status_text(self, field, text):
+        if field is None:
+            return
+        field.setText(text)
+        field.setToolTip(text)
 
     def set_tableWidget_PkParams_saved(self):
-        self.widget.tableWidget_PkParams.setStyleSheet(
-            self.get_style_for_saved())
+        self.widget.tableWidget_PkParams.setStyleSheet("")
+        self._set_status_text(
+            self.lineEdit_PkParamsStatus,
+            "Peaks table status: current peak settings were saved to Sections.")
 
     def set_tableWidget_PkParams_unsaved(self):
-        self.widget.tableWidget_PkParams.setStyleSheet(
-            self.get_style_for_unsaved())
+        self.widget.tableWidget_PkParams.setStyleSheet("")
+        self._set_status_text(
+            self.lineEdit_PkParamsStatus,
+            "Peaks table status: unsaved peak settings. Click Save to store them in Sections.")
 
     def set_tableWidget_PkFtSections_saved(self):
-        self.widget.tableWidget_PkFtSections.setStyleSheet(
-            self.get_style_for_saved())
+        self.widget.tableWidget_PkFtSections.setStyleSheet("")
+        self._set_status_text(
+            self.lineEdit_PkFtSectionsStatus,
+            "Sections table status: no unsaved section-list changes.")
 
     def set_tableWidget_PkFtSections_unsaved(self):
-        self.widget.tableWidget_PkFtSections.setStyleSheet(
-            self.get_style_for_unsaved())
+        self.widget.tableWidget_PkFtSections.setStyleSheet("")
+        self._set_status_text(
+            self.lineEdit_PkFtSectionsStatus,
+            "Sections table status: section list changed. Save the session to keep these changes.")
 
     def set_section_to_current(self):
         if self.widget.tableWidget_PkFtSections.selectionModel().\
                 selectedRows().__len__() != 1:
             QtWidgets.QMessageBox.warning(
                 self.widget, 'Warning',
-                'Select a row to make current.')
+                'Select one whole row to make current.\n\n'
+                'Make sure the row header is selected, not just a cell.')
             return
         if self.model.current_section_exist():
             if not self.model.current_section_saved():
@@ -388,9 +472,23 @@ class PeakFitController(object):
         order = self.widget.spinBox_BGPolyOrder.value()
         maxwidth = self.widget.doubleSpinBox_MaxFWHM.value()
         centerrange = self.widget.doubleSpinBox_PeakCenterRange.value()
-        self.model.current_section.prepare_for_fitting(order,
-                                                       maxwidth, centerrange)
-        success = self.model.current_section.conduct_fitting()
+        progress = QtWidgets.QProgressDialog(self.widget)
+        progress.setLabelText("Fitting peak profiles...")
+        progress.setRange(0, 0)
+        progress.setWindowTitle("Peak fitting")
+        progress.setWindowModality(QtCore.Qt.WindowModal)
+        progress.setMinimumDuration(0)
+        progress.setCancelButton(None)
+        progress.show()
+        QtWidgets.QApplication.processEvents()
+        try:
+            self.model.current_section.prepare_for_fitting(
+                order, maxwidth, centerrange)
+            progress.setLabelText("Optimizing peak parameters...")
+            QtWidgets.QApplication.processEvents()
+            success = self.model.current_section.conduct_fitting()
+        finally:
+            progress.close()
         if success:
             QtWidgets.QMessageBox.warning(self.widget, "Information",
                                           'Fitting finished.')

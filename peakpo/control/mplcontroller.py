@@ -716,7 +716,7 @@ class MplController(object):
         if gsas_style:
             self.widget.mpl.canvas.ax_pattern.plot(
                 x, y, c=self.model.base_ptn.color, marker='o',
-                linestyle='None', ms=3)
+                linestyle='None', ms=1.5)
         else:
             self.widget.mpl.canvas.ax_pattern.plot(
                 x, y, c=self.model.base_ptn.color,
@@ -739,9 +739,11 @@ class MplController(object):
         if not self.model.current_section_exist():
             return
         if self.model.current_section.peaks_exist():
-            for x_c in self.model.current_section.get_peak_positions():
-                self.widget.mpl.canvas.ax_pattern.axvline(
-                    x_c, ls='--', dashes=(10, 5))
+            selected_row = self._get_selected_peak_parameter_row()
+            for row, x_c in enumerate(self.model.current_section.get_peak_positions()):
+                self._plot_peak_center_marker(x_c)
+                if row == selected_row:
+                    self._plot_selected_peak_marker(x_c)
         if self.model.current_section.fitted():
             bgsub = self.widget.checkBox_BgSub.isChecked()
             x_plot = self.model.current_section.x
@@ -774,6 +776,89 @@ class MplController(object):
             """
         else:
             pass
+
+    def _get_selected_peak_parameter_row(self):
+        tables = [
+            getattr(self.widget, "tableWidget_PkParams", None),
+            getattr(self.widget, "tableWidget_PeakConstraints", None),
+        ]
+        if hasattr(self.widget, "tabWidget_PeakFit"):
+            current_tab = self.widget.tabWidget_PeakFit.currentWidget()
+            if current_tab == getattr(self.widget, "tab_PeakFitConfig", None):
+                tables.reverse()
+        row = self._get_selected_row_from_table(tables[0])
+        if row is not None:
+            return row
+        return self._get_selected_row_from_table(tables[1])
+
+    def _get_selected_row_from_table(self, table):
+        if table is None:
+            return None
+        rows = set()
+        selection_model = table.selectionModel()
+        if selection_model is not None:
+            for index in selection_model.selectedRows():
+                rows.add(index.row())
+            if not rows:
+                for index in selection_model.selectedIndexes():
+                    rows.add(index.row())
+        current_item = table.currentItem()
+        current_row = table.currentRow()
+        if current_item is not None and current_item.isSelected() and \
+                current_row >= 0:
+            rows.add(current_row)
+        if len(rows) != 1:
+            return None
+        row = rows.pop()
+        if row < 0:
+            return None
+        if not self.model.current_section_exist():
+            return None
+        if row >= self.model.current_section.get_number_of_peaks_in_queue():
+            return None
+        return row
+
+    def _plot_selected_peak_marker(self, x_center):
+        fitted = self.model.current_section.fitted()
+        color = 'tab:cyan' if fitted else 'tab:orange'
+        linestyle = '-' if fitted else '-'
+        self.widget.mpl.canvas.ax_pattern.axvline(
+            x_center, c=color, ls=linestyle, lw=1.4, zorder=20)
+        if hasattr(self.widget.mpl.canvas, 'ax_cake') and \
+                self.widget.checkBox_ShowCake.isChecked():
+            self.widget.mpl.canvas.ax_cake.axvline(
+                x_center, c=color, ls=linestyle, lw=1.2, zorder=20)
+
+    def _plot_peak_center_marker(self, x_center):
+        self.widget.mpl.canvas.ax_pattern.axvline(
+            x_center, c=self.obj_color, ls='-', lw=0.8, zorder=12)
+        if hasattr(self.widget.mpl.canvas, 'ax_cake') and \
+                self.widget.checkBox_ShowCake.isChecked():
+            self.widget.mpl.canvas.ax_cake.axvline(
+                x_center, c=self._cake_peak_center_line_color(),
+                ls='-', lw=0.8, zorder=12)
+
+    def _cake_peak_center_line_color(self):
+        ax_cake = getattr(self.widget.mpl.canvas, "ax_cake", None)
+        if ax_cake is None or not getattr(ax_cake, "images", None):
+            return self.obj_color
+        image = ax_cake.images[0]
+        values = image.get_array()
+        if values is None:
+            return self.obj_color
+        try:
+            values = np.ma.masked_invalid(values)
+            if np.ma.count(values) == 0:
+                return self.obj_color
+            sample_value = float(np.ma.median(values))
+            rgba = image.cmap(image.norm(sample_value))
+            luminance = (
+                0.2126 * float(rgba[0]) +
+                0.7152 * float(rgba[1]) +
+                0.0722 * float(rgba[2]))
+            return 'k' if luminance > 0.5 else 'white'
+        except Exception:
+            return self.obj_color
 
     def _plot_peakfit_in_gsas_style(self):
         # get all the highlights

@@ -66,6 +66,23 @@ class JcpdsTableController(object):
         n_rows = self.model.jcpds_lst.__len__()
         self.widget.tableWidget_JCPDS.setColumnCount(n_columns)
         self.widget.tableWidget_JCPDS.setRowCount(n_rows)
+        self.widget.tableWidget_JCPDS.setSelectionBehavior(
+            QtWidgets.QAbstractItemView.SelectRows)
+        self.widget.tableWidget_JCPDS.setSelectionMode(
+            QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.widget.tableWidget_JCPDS.setStyleSheet(
+            "QTableWidget#tableWidget_JCPDS::item:selected {"
+            "background-color: #1565c0;"
+            "color: #ffffff;"
+            "}"
+            "QTableWidget#tableWidget_JCPDS::item:selected:!active {"
+            "background-color: #1565c0;"
+            "color: #ffffff;"
+            "}"
+            "QHeaderView::section:checked {"
+            "background-color: #1565c0;"
+            "color: #ffffff;"
+            "}")
         self.widget.tableWidget_JCPDS.horizontalHeader().setVisible(True)
         self.widget.tableWidget_JCPDS.verticalHeader().setVisible(True)
         self.widget.tableWidget_JCPDS.setHorizontalHeaderLabels(

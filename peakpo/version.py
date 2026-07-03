@@ -4,8 +4,15 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.11.12"
+__version__ = "7.11.13"
 """
+7.11.13: refine Peak Fit and Cell Fit workflows; add Constraints tab naming,
+         selected-peak graph highlighting and drag-to-adjust peak positions in
+         both 1D and Cake views, solid/thinner peak-center lines, fit progress
+         dialog, clearer table status text, improved JCPDS import filtering,
+         ucfit.jcpds list refresh after cell fitting, legacy .ucfit phase-name
+         repair during Cell Fit collection, GSAS-style toggle plotting with
+         smaller points, and persisted top-bar checkbox states.
 7.11.12: use Dioptas for Update cake integration so PeakPo-generated cakes
          match dioptas_batch_gui output; add a non-H5/NXS reprocessing warning
          before overwriting existing cake files; fix Matplotlib colormap API

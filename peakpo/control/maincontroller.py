@@ -196,9 +196,11 @@ class MainController(object):
         self.widget.mpl.canvas.mpl_connect(
             'button_press_event', self.deliver_mouse_signal)
         self.widget.mpl.canvas.mpl_connect(
+            'button_release_event', self._release_peak_position_drag)
+        self.widget.mpl.canvas.mpl_connect(
             'key_press_event', self.on_key_press)
         self.widget.mpl.canvas.mpl_connect(
-            'motion_notify_event', self._update_cursor_position_readout)
+            'motion_notify_event', self._handle_mouse_motion)
         self.widget.mpl.canvas.mpl_connect(
             'figure_leave_event', self._clear_cursor_position_readout)
         self.widget.spinBox_AziShift.valueChanged.connect(
@@ -349,6 +351,17 @@ class MainController(object):
         if hasattr(self.widget, "pushButton_AddRemoveFromMouse"):
             self.widget.pushButton_AddRemoveFromMouse.toggled.connect(
                 self._on_peakpick_button_toggled)
+        if hasattr(self.widget, "tableWidget_PkParams"):
+            selection_model = self.widget.tableWidget_PkParams.selectionModel()
+            if selection_model is not None:
+                selection_model.selectionChanged.connect(
+                    self._handle_peak_parameter_selection_changed)
+        if hasattr(self.widget, "tableWidget_PeakConstraints"):
+            selection_model = self.widget.tableWidget_PeakConstraints.selectionModel()
+            if selection_model is not None:
+                selection_model.selectionChanged.connect(
+                    self._handle_peak_parameter_selection_changed)
+        self._peakfit_drag_row = None
 
     def _initialize_mouse_mode(self):
         self._refresh_mouse_mode_availability()
@@ -525,6 +538,149 @@ class MainController(object):
             text = ""
         text = str(text).replace("\n", " ").strip()
         self.widget.label_CursorPosition.setText(text)
+
+    def _handle_mouse_motion(self, event):
+        if self._peakfit_drag_row is not None:
+            self._drag_selected_peak_position(event)
+            return
+        self._update_cursor_position_readout(event)
+
+    def _handle_peak_parameter_selection_changed(self, _selected, _deselected):
+        if hasattr(self, "plot_ctrl") and (self.plot_ctrl is not None):
+            self.plot_ctrl.update()
+
+    def _get_selected_peak_parameter_row(self):
+        tables = [
+            getattr(self.widget, "tableWidget_PkParams", None),
+            getattr(self.widget, "tableWidget_PeakConstraints", None),
+        ]
+        if hasattr(self.widget, "tabWidget_PeakFit"):
+            current_tab = self.widget.tabWidget_PeakFit.currentWidget()
+            if current_tab == getattr(self.widget, "tab_PeakFitConfig", None):
+                tables.reverse()
+        row = self._get_selected_row_from_table(tables[0])
+        if row is not None:
+            return row
+        return self._get_selected_row_from_table(tables[1])
+
+    def _get_selected_row_from_table(self, table):
+        if table is None:
+            return None
+        if table.rowCount() <= 0:
+            return None
+        rows = set()
+        selection_model = table.selectionModel()
+        if selection_model is not None:
+            for index in selection_model.selectedRows():
+                rows.add(index.row())
+            if not rows:
+                for index in selection_model.selectedIndexes():
+                    rows.add(index.row())
+        current_item = table.currentItem()
+        current_row = table.currentRow()
+        if current_item is not None and current_item.isSelected() and \
+                current_row >= 0:
+            rows.add(current_row)
+        if len(rows) != 1:
+            return None
+        row = rows.pop()
+        if row < 0 or row >= table.rowCount():
+            return None
+        if not self.model.current_section_exist():
+            return None
+        if row >= self.model.current_section.get_number_of_peaks_in_queue():
+            return None
+        return row
+
+    def _event_on_selected_peak(self, event, row):
+        if (event is None) or (event.xdata is None):
+            return False
+        if not self._is_peakfit_position_axis(event.inaxes):
+            return False
+        peak = self.model.current_section.peaks_in_queue[row]
+        center = float(peak['center'])
+        ax = event.inaxes
+        try:
+            x_center_px = ax.transData.transform((center, 0.0))[0]
+            return abs(float(event.x) - float(x_center_px)) <= 10.0
+        except Exception:
+            x_min, x_max = ax.get_xlim()
+            tolerance = abs(float(x_max) - float(x_min)) * 0.01
+            return abs(float(event.xdata) - center) <= tolerance
+
+    def _start_peak_position_drag_if_available(self, event):
+        if event.button != 1:
+            return False
+        if self._mouse_mode != 'peakpick':
+            return False
+        if self._get_toolbar_mode() not in ('', None):
+            return False
+        if not self._fits_tab_active():
+            return False
+        if not self.model.current_section_exist():
+            return False
+        row = self._get_selected_peak_parameter_row()
+        if row is None:
+            return False
+        if not self._event_on_selected_peak(event, row):
+            return False
+        self._peakfit_drag_row = row
+        self._set_peak_center_from_xdata(row, event.xdata)
+        return True
+
+    def _release_peak_position_drag(self, _event):
+        if self._peakfit_drag_row is None:
+            return
+        self._peakfit_drag_row = None
+        if hasattr(self, "plot_ctrl") and (self.plot_ctrl is not None):
+            self.plot_ctrl.update()
+
+    def _drag_selected_peak_position(self, event):
+        row = self._peakfit_drag_row
+        if row is None:
+            return
+        if (event is None) or (event.xdata is None):
+            return
+        if not self._is_peakfit_position_axis(event.inaxes):
+            return
+        self._set_peak_center_from_xdata(row, event.xdata)
+
+    def _is_peakfit_position_axis(self, axes):
+        if axes is None:
+            return False
+        if axes == self.widget.mpl.canvas.ax_pattern:
+            return True
+        return hasattr(self.widget.mpl.canvas, 'ax_cake') and \
+            axes == self.widget.mpl.canvas.ax_cake
+
+    def _set_peak_center_from_xdata(self, row, xdata):
+        if not self.model.current_section_exist():
+            return
+        section = self.model.current_section
+        if row < 0 or row >= section.get_number_of_peaks_in_queue():
+            return
+        if section.x is None or len(section.x) == 0:
+            return
+        x_min = float(np.min(section.x))
+        x_max = float(np.max(section.x))
+        center = min(max(float(xdata), x_min), x_max)
+        section.peaks_in_queue[row]['center'] = center
+        self.peakfit_ctrl.set_tableWidget_PkParams_unsaved()
+        self._update_peak_position_widgets(row, center)
+        limits = self.widget.mpl.canvas.ax_pattern.axis()
+        self.plot_ctrl.update(limits=limits)
+
+    def _update_peak_position_widgets(self, row, center):
+        if hasattr(self.widget, "tableWidget_PkParams"):
+            item = self.widget.tableWidget_PkParams.item(row, 5)
+            if item is not None:
+                item.setText("{:.5e}".format(center))
+        if hasattr(self.widget, "tableWidget_PeakConstraints"):
+            spinbox = self.widget.tableWidget_PeakConstraints.cellWidget(row, 2)
+            if spinbox is not None and hasattr(spinbox, "setValue"):
+                old_state = spinbox.blockSignals(True)
+                spinbox.setValue(center)
+                spinbox.blockSignals(old_state)
 
     def _on_long_cursor_changed(self, state):
         """Keep vertical cursor and hidden zoom mode in sync."""
@@ -919,6 +1075,11 @@ class MainController(object):
 
     def _plot_config_setting_bindings(self):
         return [
+            ("plot_cfg/show_cake", "checkBox_ShowCake"),
+            ("plot_cfg/bg_sub", "checkBox_BgSub"),
+            ("plot_cfg/auto_y", "checkBox_AutoY"),
+            ("plot_cfg/vertical_cursor", "checkBox_LongCursor"),
+            ("plot_cfg/diff_mode", "checkBox_Diff"),
             ("plot_cfg/night_view", "checkBox_NightView"),
             ("plot_cfg/night_cake", "checkBox_WhiteForPeak"),
             ("plot_cfg/show_large_pt", "checkBox_ShowLargePnT"),
@@ -1391,6 +1552,8 @@ class MainController(object):
         self.plot_ctrl.update()
 
     def deliver_mouse_signal(self, event):
+        if self._start_peak_position_drag_if_available(event):
+            return
         if self._mouse_mode == 'navigate':
             if event.button == 3:
                 self.plot_new_graph()
@@ -1418,8 +1581,9 @@ class MainController(object):
             return
         if (event.xdata is None) or (event.ydata is None):
             return
-        # Peak add/remove must come from the main 1D pattern axes.
-        if event.inaxes != self.widget.mpl.canvas.ax_pattern:
+        # Peak add/remove uses the x position and can come from either the
+        # 1D pattern axis or the cake axis.
+        if not self._is_peakfit_position_axis(event.inaxes):
             return
         if (event.button != 1) and (event.button != 3):
             return

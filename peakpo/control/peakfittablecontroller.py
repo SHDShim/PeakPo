@@ -135,6 +135,10 @@ class PeakfitTableController(object):
         n_columns = 2
         poly_order = self.model.current_section.\
             get_order_of_baseline_in_queue()
+        if hasattr(self.widget, "spinBox_BGPolyOrder") and poly_order >= 0:
+            old_state = self.widget.spinBox_BGPolyOrder.blockSignals(True)
+            self.widget.spinBox_BGPolyOrder.setValue(poly_order)
+            self.widget.spinBox_BGPolyOrder.blockSignals(old_state)
         n_rows = poly_order + 1
         self.widget.tableWidget_BackgroundConstraints.setColumnCount(n_columns)
         self.widget.tableWidget_BackgroundConstraints.setRowCount(n_rows)
@@ -201,6 +205,7 @@ class PeakfitTableController(object):
             self.widget.tableWidget_PeakConstraints.clearContents()
             return
         self.widget.tableWidget_PeakConstraints.clearContents()
+        self._apply_peak_constraints_selection_behavior()
         n_columns = 8
         n_rows = self.model.current_section.get_number_of_peaks_in_queue()
         self.widget.tableWidget_PeakConstraints.setColumnCount(n_columns)
@@ -227,7 +232,8 @@ class PeakfitTableController(object):
                 row, 0, self.PkConst_doubleSpinBox_height)
             # column 1 - fix checkbox
             item_h = QtWidgets.QTableWidgetItem()
-            item_h.setFlags(QtCore.Qt.ItemIsUserCheckable |
+            item_h.setFlags(QtCore.Qt.ItemIsSelectable |
+                            QtCore.Qt.ItemIsUserCheckable |
                             QtCore.Qt.ItemIsEnabled)
             if self.model.current_section.\
                     peaks_in_queue[row]['amplitude_vary'] == False:
@@ -252,7 +258,8 @@ class PeakfitTableController(object):
                 row, 2, self.PkConst_doubleSpinBox_pos)
             # column 3 - fix checkbox
             item_p = QtWidgets.QTableWidgetItem()
-            item_p.setFlags(QtCore.Qt.ItemIsUserCheckable |
+            item_p.setFlags(QtCore.Qt.ItemIsSelectable |
+                            QtCore.Qt.ItemIsUserCheckable |
                             QtCore.Qt.ItemIsEnabled)
             if self.model.current_section.peaks_in_queue[row][
                     'center_vary'] == False:
@@ -277,7 +284,8 @@ class PeakfitTableController(object):
                 row, 4, self.PkConst_doubleSpinBox_width)
             # column 5 - fix checkbox
             item_w = QtWidgets.QTableWidgetItem()
-            item_w.setFlags(QtCore.Qt.ItemIsUserCheckable |
+            item_w.setFlags(QtCore.Qt.ItemIsSelectable |
+                            QtCore.Qt.ItemIsUserCheckable |
                             QtCore.Qt.ItemIsEnabled)
             if self.model.current_section.peaks_in_queue[row]['sigma_vary'] \
                     == False:
@@ -302,7 +310,8 @@ class PeakfitTableController(object):
                 row, 6, self.PkConst_doubleSpinBox_nL)
             # column 7 - fix checkbox
             item_nL = QtWidgets.QTableWidgetItem()
-            item_nL.setFlags(QtCore.Qt.ItemIsUserCheckable |
+            item_nL.setFlags(QtCore.Qt.ItemIsSelectable |
+                             QtCore.Qt.ItemIsUserCheckable |
                              QtCore.Qt.ItemIsEnabled)
             if self.model.current_section.\
                     peaks_in_queue[row]['fraction_vary'] == False:
@@ -314,6 +323,51 @@ class PeakfitTableController(object):
             self._peaklist_handle_ItemClicked)
         self.widget.tableWidget_PeakConstraints.resizeColumnsToContents()
         self.widget.tableWidget_PeakConstraints.resizeRowsToContents()
+        self._sync_peak_constraints_selection_style()
+
+    def _apply_peak_constraints_selection_behavior(self):
+        table = self.widget.tableWidget_PeakConstraints
+        table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        table.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        table.setStyleSheet(
+            "QTableWidget#tableWidget_PeakConstraints::item:selected {"
+            "background-color: #1565c0;"
+            "color: #ffffff;"
+            "}"
+            "QTableWidget#tableWidget_PeakConstraints::item:selected:!active {"
+            "background-color: #1565c0;"
+            "color: #ffffff;"
+            "}")
+        try:
+            table.itemSelectionChanged.disconnect(
+                self._sync_peak_constraints_selection_style)
+        except Exception:
+            pass
+        table.itemSelectionChanged.connect(
+            self._sync_peak_constraints_selection_style)
+
+    def _sync_peak_constraints_selection_style(self):
+        table = self.widget.tableWidget_PeakConstraints
+        selected_rows = set()
+        selection_model = table.selectionModel()
+        if selection_model is not None:
+            selected_rows = {index.row()
+                             for index in selection_model.selectedRows()}
+            if not selected_rows:
+                selected_rows = {index.row()
+                                 for index in selection_model.selectedIndexes()}
+        selected_style = (
+            "QDoubleSpinBox {"
+            "background-color: #1565c0;"
+            "color: #ffffff;"
+            "selection-background-color: #0d47a1;"
+            "}")
+        for row in range(table.rowCount()):
+            style = selected_style if row in selected_rows else ""
+            for col in (0, 2, 4, 6):
+                widget = table.cellWidget(row, col)
+                if widget is not None:
+                    widget.setStyleSheet(style)
 
     def _peaklist_handle_doubleSpinBoxChanged(self, value):
         box = self.widget.sender()

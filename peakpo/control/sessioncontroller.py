@@ -1405,8 +1405,10 @@ class SessionController(object):
         print(str(datetime.datetime.now())[:-7],
                 ": Save ", filen)
         self.widget.textEdit_SessionFileName.setText(str(result.manifest_path))
-        self.widget.tableWidget_PkFtSections.setStyleSheet(
-            "Background-color:None;color:rgb(0,0,0);")
+        self.widget.tableWidget_PkFtSections.setStyleSheet("")
+        if hasattr(self.widget, "lineEdit_PkFtSectionsStatus"):
+            self.widget.lineEdit_PkFtSectionsStatus.setText(
+                "Sections table status: no unsaved section-list changes.")
 
     def save_ppss(self, quiet=False):
         """

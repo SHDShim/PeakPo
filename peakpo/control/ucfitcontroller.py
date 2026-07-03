@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 import lmfit
@@ -7,6 +8,8 @@ from qtpy import QtGui
 import datetime
 from .mplcontroller import MplController
 from .ucfittablecontroller import UcfitTableController
+from .jcpdstablecontroller import JcpdsTableController
+from ..ds_jcpds import JCPDSplt
 from ..utils import SpinBoxFixStyle
 from ..utils import xls_ucfitlist, dialog_savefile, fit_cubic_cell, \
     fit_hexagonal_cell, fit_tetragonal_cell, fit_orthorhombic_cell, \
@@ -21,6 +24,7 @@ class UcfitController(object):
         self.phase = None
         self.widget = widget
         self.ucfittable_ctrl = None
+        self.jcpdstable_ctrl = JcpdsTableController(self.model, self.widget)
         self.template_jcpds = None
         self.plot_ctrl = MplController(self.model, self.widget)
         self.connect_channel()
@@ -41,15 +45,18 @@ class UcfitController(object):
 
     def collect_peakfit(self):
         if self.model.section_lst == []:
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning",
-                "There is no peak fitting results to collect.")
+            self._warn_no_peakfit_results_to_collect()
             return
-        self.widget.comboBox_PeakFitLabels.clear()  # without this I will have previous record in it.
         # read data4ucfit
         # self.ucfit_model = None # without this I will have previous record in it.
         # self.phase = None # without this I will have previous record in it.
-        self.ucfit_model = self._get_peaks_by_phase()
+        ucfit_model = self._get_peaks_by_phase()
+        if ucfit_model == {}:
+            self._warn_no_peakfit_results_to_collect()
+            return
+        self._warn_duplicate_miller_indices(ucfit_model)
+        self.widget.comboBox_PeakFitLabels.clear()  # without this I will have previous record in it.
+        self.ucfit_model = ucfit_model
         # update comboBox_PeakFitLabels
         self.phase = list(self.ucfit_model.keys())[0]
         self.ucfittable_ctrl = UcfitTableController(self.model,
@@ -58,6 +65,34 @@ class UcfitController(object):
                                                     self.widget)
         self.widget.comboBox_PeakFitLabels.addItems(self.ucfit_model.keys())
         # self.update_ucfittable()
+
+    def _warn_no_peakfit_results_to_collect(self):
+        QtWidgets.QMessageBox.warning(
+            self.widget, "Warning",
+            "There are no peak fitting results to collect.\n\n"
+            "Make sure the peak fitting results are saved first.")
+
+    def _warn_duplicate_miller_indices(self, ucfit_model):
+        duplicate_lines = []
+        for phase, peaks in ucfit_model.items():
+            hkl_counts = {}
+            for peak in peaks:
+                hkl = (
+                    int(round(float(peak['h']))),
+                    int(round(float(peak['k']))),
+                    int(round(float(peak['l']))),
+                )
+                hkl_counts[hkl] = hkl_counts.get(hkl, 0) + 1
+            for hkl, count in sorted(hkl_counts.items()):
+                if count > 1:
+                    duplicate_lines.append(
+                        f"{phase}: ({hkl[0]} {hkl[1]} {hkl[2]}) has {count} data points")
+        if duplicate_lines == []:
+            return
+        QtWidgets.QMessageBox.warning(
+            self.widget, "Duplicate Miller Indices",
+            "More than one data point has the same Miller index.\n\n" +
+            "\n".join(duplicate_lines))
 
     def select_phase_to_ucfit(self):
         phase = self.widget.comboBox_PeakFitLabels.currentText()
@@ -97,6 +132,7 @@ class UcfitController(object):
         peaks = self._get_all_peakfit_results()
         peaks_by_phase = {}
         for peak_i in peaks:
+            peak_i['phase'] = self._normalize_ucfit_phase_name(peak_i['phase'])
             peaks_by_phase[peak_i['phase']] = []
         for peak_i in peaks:
             peaks_by_phase[peak_i['phase']].append(peak_i)
@@ -108,10 +144,35 @@ class UcfitController(object):
         """
         peaks = []
         for section in self.model.section_lst:
+            self._normalize_section_peakfit_phase_names(section)
             peaks_i = []
             peaks_i = self._get_peakfit_result(section)
             peaks += peaks_i
         return peaks
+
+    def _normalize_section_peakfit_phase_names(self, section):
+        """
+        Repair phase names saved by PeakPo versions that retained the
+        intermediate .ucfit suffix in PeakFit metadata.
+        """
+        for peak in getattr(section, 'peaks_in_queue', []):
+            if 'phasename' in peak:
+                peak['phasename'] = self._normalize_ucfit_phase_name(
+                    peak['phasename'])
+
+        for key in list(getattr(section, 'peakinfo', {}).keys()):
+            if key.endswith('phasename'):
+                section.peakinfo[key] = self._normalize_ucfit_phase_name(
+                    section.peakinfo[key])
+
+    def _normalize_ucfit_phase_name(self, phase_name):
+        if not isinstance(phase_name, str):
+            return phase_name
+        if phase_name.endswith(".ucfit.jcpds"):
+            return phase_name[:-len(".ucfit.jcpds")]
+        if phase_name.endswith(".ucfit"):
+            return phase_name[:-len(".ucfit")]
+        return phase_name
 
     def _get_peakfit_result(self, section, verbose=False):
         """
@@ -127,7 +188,8 @@ class UcfitController(object):
                 dsp = self.model.get_base_ptn_wavelength() / 2. / \
                     np.sin(np.deg2rad(twoth / 2.))
                 q = np.power((1./dsp), 2.)
-                peak_i = {'phase': peak['phasename'],
+                peak_i = {'phase': self._normalize_ucfit_phase_name(
+                              peak['phasename']),
                           'h': peak['h'],
                           'k': peak['k'],
                           'l': peak['l'],
@@ -153,12 +215,14 @@ class UcfitController(object):
             q = np.power((1./dsp), 2.)
             if verbose:
                 print(str(datetime.datetime.now())[:-7], ': ',
-                    section.peakinfo[label+'phasename'],
+                    self._normalize_ucfit_phase_name(
+                        section.peakinfo[label+'phasename']),
                       section.peakinfo[label+'h'],
                       section.peakinfo[label+'k'],
                       section.peakinfo[label+'l'],
                       section.fit_result.params[label+'center'].value)
-            peak_i = {'phase': section.peakinfo[label+'phasename'],
+            peak_i = {'phase': self._normalize_ucfit_phase_name(
+                          section.peakinfo[label+'phasename']),
                       'h': section.peakinfo[label+'h'],
                       'k': section.peakinfo[label+'k'],
                       'l': section.peakinfo[label+'l'],
@@ -311,6 +375,7 @@ class UcfitController(object):
         if str(filen_j) == '':
             return
         self._write_to_jcpds(filen_j, cell_params)
+        self._load_ucfit_jcpds_to_list(filen_j)
 
         # write to a textfile
         ext = "ucfit.output"
@@ -373,3 +438,38 @@ class UcfitController(object):
             f.write("{0:.6f} {1:.2f} {2:.1f} {3:.1f} {4:.1f} \n".format(
                     dsp, line.intensity, h, k, l))
         f.close()
+
+    def _load_ucfit_jcpds_to_list(self, filename):
+        filename_abs = os.path.abspath(str(filename))
+        new_phase = JCPDSplt()
+        try:
+            new_phase.read_file(filename_abs)
+        except Exception as exc:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "The fitted JCPDS file was saved, but could not be loaded "
+                "into the JCPDS list.\n\n" + str(exc))
+            return
+
+        replace_idx = None
+        for idx, phase in enumerate(self.model.jcpds_lst):
+            phase_file = os.path.abspath(str(getattr(phase, "file", "")))
+            if phase_file == filename_abs:
+                replace_idx = idx
+                break
+
+        if replace_idx is None:
+            new_phase.color = getattr(self.template_jcpds, "color", "r")
+            new_phase.display = True
+            self.model.jcpds_lst.append(new_phase)
+        else:
+            old_phase = self.model.jcpds_lst[replace_idx]
+            new_phase.color = getattr(old_phase, "color", "r")
+            new_phase.display = getattr(old_phase, "display", True)
+            new_phase._pkpo_locked = getattr(old_phase, "_pkpo_locked", False)
+            self.model.jcpds_lst[replace_idx] = new_phase
+
+        if hasattr(self.widget, "tableWidget_JCPDS"):
+            self.widget.tableWidget_JCPDS.clearContents()
+        self.jcpdstable_ctrl.update()
+        self.plot_ctrl.update()

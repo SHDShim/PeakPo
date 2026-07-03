@@ -6257,10 +6257,13 @@
                               </size>
                              </property>
                              <property name="toolTip">
-                              <string>Plot highlighted fit sections in GSAS style</string>
+                             <string>Plot selected fit sections in GSAS style. If multiple section rows are highlighted, fitting results for all selected rows are shown together.</string>
+                            </property>
+                            <property name="text">
+                              <string>GSAS style OFF</string>
                              </property>
-                             <property name="text">
-                              <string>GSAS style</string>
+                             <property name="checkable">
+                              <bool>true</bool>
                              </property>
                             </widget>
                            </item>
@@ -6398,10 +6401,10 @@
                            <item row="0" column="1">
                             <widget class="QPushButton" name="pushButton_ZoomToSection">
                              <property name="toolTip">
-                              <string>Zome back to the current fit section</string>
+                              <string>Zoom back to the current fit section</string>
                              </property>
                              <property name="text">
-                              <string>Zoom </string>
+                              <string>Fit Range</string>
                              </property>
                             </widget>
                            </item>
@@ -6437,7 +6440,7 @@
                            </sizepolicy>
                           </property>
                           <property name="title">
-                           <string>Add/Remove peaks</string>
+                           <string>Add (left click) / Remove (right click) peaks</string>
                           </property>
                           <property name="flat">
                            <bool>false</bool>
@@ -6488,13 +6491,23 @@
                               <string>Recieve starting peak position values from JCPDS</string>
                              </property>
                              <property name="text">
-                              <string>From JCPDS</string>
+                              <string>Import from JCPDS</string>
                              </property>
-                            </widget>
-                           </item>
-                          </layout>
-                         </widget>
-                        </item>
+                           </widget>
+                          </item>
+                          <item row="3" column="0" colspan="4">
+                           <widget class="QLabel" name="label_PeakDragInstruction">
+                            <property name="text">
+                             <string>Peak position can be updated by left-click hold-drag on the peak.</string>
+                            </property>
+                            <property name="wordWrap">
+                             <bool>true</bool>
+                            </property>
+                           </widget>
+                          </item>
+                         </layout>
+                        </widget>
+                       </item>
                         <item>
                          <widget class="QTableWidget" name="tableWidget_PkParams">
                           <property name="sizePolicy">
@@ -6513,7 +6526,7 @@
                   </widget>
                   <widget class="QWidget" name="tab_PeakFitConfig">
                    <attribute name="title">
-                    <string>Config</string>
+                    <string>Constraints</string>
                    </attribute>
                    <layout class="QVBoxLayout" name="verticalLayout_13">
                     <item>
@@ -6652,7 +6665,7 @@
                               <double>0.001000000000000</double>
                              </property>
                              <property name="value">
-                              <double>0.300000000000000</double>
+                              <double>0.100000000000000</double>
                              </property>
                             </widget>
                            </item>
