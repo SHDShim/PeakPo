@@ -1087,10 +1087,12 @@ class MplController(object):
             return
         if self.model.current_section.peaks_exist():
             selected_row = self._get_selected_peak_parameter_row()
+            peaks = self.model.current_section.peaks_in_queue
             for row, x_c in enumerate(self.model.current_section.get_peak_positions()):
                 self._plot_peak_center_marker(x_c)
                 if row == selected_row:
-                    self._plot_selected_peak_marker(x_c)
+                    peak = peaks[row] if row < len(peaks) else None
+                    self._plot_selected_peak_marker(x_c, peak=peak)
         if self.model.current_section.fitted():
             bgsub = self.widget.checkBox_BgSub.isChecked()
             x_plot = self.model.current_section.x
@@ -1190,12 +1192,25 @@ class MplController(object):
             self.widget.mpl.canvas.draw_idle()
             return True
         selected_row = self._get_selected_peak_parameter_row()
+        peaks = self.model.current_section.peaks_in_queue
         for row, x_c in enumerate(self.model.current_section.get_peak_positions()):
             self._plot_peak_center_marker(x_c)
             if row == selected_row:
-                self._plot_selected_peak_marker(x_c)
+                peak = peaks[row] if row < len(peaks) else None
+                self._plot_selected_peak_marker(x_c, peak=peak)
         self.widget.mpl.canvas.draw_idle()
         return True
+
+    def _get_selected_peak(self):
+        selected_row = self._get_selected_peak_parameter_row()
+        if selected_row is None:
+            return None
+        if not self.model.current_section.peaks_exist():
+            return None
+        peaks = self.model.current_section.peaks_in_queue
+        if selected_row >= len(peaks):
+            return None
+        return peaks[selected_row]
 
     def refresh_selected_peak_marker(self):
         if not self.model.current_section_exist():
@@ -1213,13 +1228,33 @@ class MplController(object):
         if selected_row >= len(positions):
             self.widget.mpl.canvas.draw_idle()
             return True
-        self._plot_selected_peak_marker(positions[selected_row])
+        peak = self._get_selected_peak()
+        self._plot_selected_peak_marker(positions[selected_row], peak=peak)
         self.widget.mpl.canvas.draw_idle()
         return True
 
-    def _plot_selected_peak_marker(self, x_center):
+    def _get_peak_marker_color(self, peak):
+        phase_name = peak.get('phasename', 'unknown')
+        if phase_name.lower() == 'unknown':
+            return self.obj_color
+        for phase in self.model.jcpds_lst:
+            if phase.name.lower() == phase_name.lower():
+                return phase.color
+        return self.obj_color
+
+    def _get_peak_hkl_label(self, peak):
+        h = int(peak.get('h', 0))
+        k = int(peak.get('k', 0))
+        l = int(peak.get('l', 0))
+        phase = peak.get('phasename', 'unknown')
+        return f"{phase} ({h},{k},{l})"
+
+    def _plot_selected_peak_marker(self, x_center, peak=None):
         fitted = self.model.current_section.fitted()
-        color = 'tab:cyan' if fitted else 'tab:orange'
+        if peak is not None:
+            color = self._get_peak_marker_color(peak)
+        else:
+            color = 'tab:cyan' if fitted else 'tab:orange'
         linestyle = '-' if fitted else '-'
         self._selected_peak_marker_artists = []
         line = self.widget.mpl.canvas.ax_pattern.axvline(
@@ -1231,6 +1266,18 @@ class MplController(object):
             transform=self.widget.mpl.canvas.ax_pattern.get_xaxis_transform(),
             zorder=21, clip_on=False)[0]
         self._selected_peak_marker_artists.append(marker)
+        if peak is not None:
+            label_text = self._get_peak_hkl_label(peak)
+            y_pos = 0.97
+            text_artist = self.widget.mpl.canvas.ax_pattern.text(
+                x_center, y_pos, label_text,
+                color='black', fontsize=9, fontweight='bold',
+                horizontalalignment='center', verticalalignment='top',
+                transform=self.widget.mpl.canvas.ax_pattern.get_xaxis_transform(),
+                zorder=22, clip_on=False,
+                bbox=dict(boxstyle='round,pad=0.3', facecolor='white',
+                          edgecolor=color, alpha=0.85))
+            self._selected_peak_marker_artists.append(text_artist)
         if hasattr(self.widget.mpl.canvas, 'ax_cake') and \
                 self.widget.checkBox_ShowCake.isChecked():
             line = self.widget.mpl.canvas.ax_cake.axvline(
@@ -1258,13 +1305,17 @@ class MplController(object):
                 return False
         for artist in artists:
             try:
-                xdata = artist.get_xdata()
-                if len(xdata) == 1:
-                    artist.set_xdata([x_center])
-                else:
-                    artist.set_xdata([x_center, x_center])
+                if hasattr(artist, 'get_xdata'):
+                    xdata = artist.get_xdata()
+                    if len(xdata) == 1:
+                        artist.set_xdata([x_center])
+                    else:
+                        artist.set_xdata([x_center, x_center])
+                elif hasattr(artist, 'set_position'):
+                    x, y = artist.get_position()
+                    artist.set_position((x_center, y))
             except Exception:
-                return False
+                pass
         self.widget.mpl.canvas.draw_idle()
         return True
 
