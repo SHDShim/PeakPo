@@ -122,27 +122,11 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
             value_box = self._spinbox(peak.get(value_key, 0.0), decimals)
             self.table.setCellWidget(row, 1, value_box)
             self.table.setCellWidget(row, 2, self._checkbox(peak.get(vary_key, True)))
-            min_value = peak.get(min_key, None)
-            max_value = peak.get(max_key, None)
-            if value_key == "amplitude":
-                if min_value is None:
-                    min_value = 0.0
-                if not bool(peak.get("amplitude_max_enabled",
-                                     max_value is not None)):
-                    max_value = None
-                if self._legacy_auto_amplitude_max(peak, max_value):
-                    max_value = None
-            if value_key in ("center", "sigma", "fraction"):
-                default_min, default_max = \
-                    self.controller.default_bound_values(peak, value_key)
-                if min_value is None:
-                    min_value = default_min
-                if max_value is None:
-                    max_value = default_max
-            use_min_box = self._checkbox(min_value is not None)
-            min_box = self._spinbox(
-                0.0 if min_value is None else min_value, decimals)
-            use_max_box = self._checkbox(max_value is not None)
+            min_value, max_value, use_min, use_max = \
+                self.controller._peak_constraint_state(peak, value_key)
+            use_min_box = self._checkbox(use_min)
+            min_box = self._spinbox(0.0 if min_value is None else min_value, decimals)
+            use_max_box = self._checkbox(use_max)
             max_display_value = self._suggested_max_value(peak, value_key) \
                 if max_value is None else max_value
             max_box = self._spinbox(max_display_value, decimals)
@@ -151,6 +135,13 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
             use_min_box.toggled.connect(min_box.setEnabled)
             use_max_box.toggled.connect(max_box.setEnabled)
             if value_key == "amplitude":
+                use_min_box.setChecked(True)
+                use_min_box.setEnabled(False)
+                min_box.setValue(0.0)
+                min_box.setEnabled(False)
+                use_max_box.setChecked(False)
+                use_max_box.setEnabled(False)
+                max_box.setEnabled(False)
                 value_box.valueChanged.connect(
                     lambda value, use_max_box=use_max_box, max_box=max_box:
                     self._update_suggested_amplitude_max(
@@ -170,13 +161,20 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
                 enumerate(self.PARAMS):
             peak[value_key] = float(self.table.cellWidget(row, 1).value())
             peak[vary_key] = bool(self.table.cellWidget(row, 2).isChecked())
-            peak[min_key] = float(self.table.cellWidget(row, 4).value()) \
-                if self.table.cellWidget(row, 3).isChecked() else None
-            use_max = bool(self.table.cellWidget(row, 5).isChecked())
-            peak[max_key] = float(self.table.cellWidget(row, 6).value()) \
-                if use_max else None
+            use_min = bool(self.table.cellWidget(row, 3).isChecked())
+            peak[f"{value_key}_min_enabled"] = use_min
             if value_key == "amplitude":
-                peak["amplitude_max_enabled"] = use_max
+                peak[min_key] = 0.0
+                peak["amplitude_min_enabled"] = True
+                peak[max_key] = None
+                peak["amplitude_max_enabled"] = False
+            else:
+                peak[min_key] = float(self.table.cellWidget(row, 4).value()) \
+                    if use_min else None
+                use_max = bool(self.table.cellWidget(row, 5).isChecked())
+                peak[f"{value_key}_max_enabled"] = use_max
+                peak[max_key] = float(self.table.cellWidget(row, 6).value()) \
+                    if use_max else None
         self.controller.set_tableWidget_PkParams_unsaved()
         self.controller.peakfit_table_ctrl.update_peak_parameters()
         self.controller.peakfit_table_ctrl.update_peak_constraints()
@@ -190,6 +188,8 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
             peak = self._peak()
             peak["center_min"] = float(xmin)
             peak["center_max"] = float(xmax)
+            peak["center_min_enabled"] = True
+            peak["center_max_enabled"] = True
             self.table.cellWidget(1, 3).setChecked(True)
             self.table.cellWidget(1, 4).setValue(float(xmin))
             self.table.cellWidget(1, 5).setChecked(True)
@@ -208,6 +208,8 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
             peak = self._peak()
             peak["sigma_min"] = 0.0
             peak["sigma_max"] = width
+            peak["sigma_min_enabled"] = True
+            peak["sigma_max_enabled"] = True
             self.table.cellWidget(2, 3).setChecked(True)
             self.table.cellWidget(2, 4).setValue(0.0)
             self.table.cellWidget(2, 5).setChecked(True)
@@ -547,6 +549,7 @@ class PeakFitController(object):
             self.model, self.widget)
         self._setup_table_status_fields()
         self._table_backspace_key_filters = []
+        self._constraints_tab_current_row = None
         self._constraints_dialog = None
         self._background_dialog = None
         self._default_bounds_dialog = None
@@ -600,16 +603,12 @@ class PeakFitController(object):
         if hasattr(self.widget, "pushButton_PkRemoveSelectedPeaks"):
             self.widget.pushButton_PkRemoveSelectedPeaks.clicked.connect(
                 self.remove_selected_peak_from_table)
-        if hasattr(self.widget, "pushButton_PkConstraintsPopup"):
-            self.widget.pushButton_PkConstraintsPopup.clicked.connect(
-                self.open_peak_constraints_dialog)
-        if hasattr(self.widget, "pushButton_PkDefaultBounds"):
-            self.widget.pushButton_PkDefaultBounds.clicked.connect(
-                self.open_default_peak_bounds_dialog)
-        if hasattr(self.widget, "pushButton_PkBackgroundPopup"):
-            self.widget.pushButton_PkBackgroundPopup.clicked.connect(
-                self.open_background_setup_dialog)
         self._install_table_backspace_key_filters()
+        self._connect_constraints_tab_widgets()
+        self._connect_background_tab_widgets()
+        if hasattr(self.widget, "tabWidget_PeakFit"):
+            self.widget.tabWidget_PeakFit.currentChanged.connect(
+                self._on_peakfit_tab_changed)
         # The line below exist in session_ctrl
         # self.widget.pushButton_PkFtSectionSavetoDPP.clicked.coonect
 
@@ -626,6 +625,666 @@ class PeakFitController(object):
                 self.widget, table, callback)
             table.installEventFilter(key_filter)
             self._table_backspace_key_filters.append(key_filter)
+
+    def _connect_constraints_tab_widgets(self):
+        if not hasattr(self.widget, "pushButton_SetPosRange"):
+            return
+        self.widget.pushButton_SetPosRange.clicked.connect(
+            self._arm_constraints_position_range)
+        self.widget.pushButton_SetFwhmMax.clicked.connect(
+            self._arm_constraints_fwhm_range)
+        self.widget.spinBox_CenterHalfRange.valueChanged.connect(
+            self._on_default_bounds_changed)
+        self.widget.spinBox_DefaultFwhmMin.valueChanged.connect(
+            self._on_default_bounds_changed)
+        self.widget.spinBox_DefaultFwhmMax.valueChanged.connect(
+            self._on_default_bounds_changed)
+        if hasattr(self.widget, "tableWidget_PkParams"):
+            if not hasattr(self, "_peak_table_selection_connected"):
+                sel_model = self.widget.tableWidget_PkParams.selectionModel()
+                if sel_model:
+                    sel_model.selectionChanged.connect(
+                        self._on_peak_table_selection_changed)
+                    self._peak_table_selection_connected = True
+
+    def _connect_background_tab_widgets(self):
+        if not hasattr(self.widget, "pushButton_AddCurrentView"):
+            return
+        self.widget.pushButton_AddCurrentView.clicked.connect(
+            self._add_bg_anchor_from_view)
+        self.widget.pushButton_AddRangeFromPlot.clicked.connect(
+            self._arm_bg_anchor_range)
+        self.widget.pushButton_RemoveBGAnchor.clicked.connect(
+            self._remove_bg_anchor_rows)
+        self.widget.spinBox_BGPolyOrder.valueChanged.connect(
+            self._on_bg_poly_order_changed)
+
+    def _on_peak_table_selection_changed(self):
+        self._update_constraints_tab_state()
+
+    def _update_constraints_tab_state(self):
+        if not hasattr(self.widget, "label_PeakStatus"):
+            return
+        table = self.widget.tableWidget_PkParams
+        selected_rows = set()
+        if table.selectionModel():
+            selected_rows = {r.row() for r in table.selectionModel().selectedRows()}
+            if not selected_rows:
+                selected_rows = {idx.row() for idx in table.selectionModel().selectedIndexes()}
+        if len(selected_rows) != 1:
+            self.widget.label_PeakStatus.setStyleSheet(
+                "QLineEdit { background-color: #ffcccc; color: #cc0000; font-weight: bold; }")
+            self.widget.label_PeakStatus.setText(
+                "Please select exactly one peak row in the Peaks table")
+            self._clear_peak_constraints_table()
+            self._constraints_tab_current_row = None
+            return
+        row = selected_rows.pop()
+        if not self.model.current_section_exist():
+            return
+        n_peaks = self.model.current_section.get_number_of_peaks_in_queue()
+        if row < 0 or row >= n_peaks:
+            return
+        peak = self.model.current_section.peaks_in_queue[row]
+        phase = peak.get("phasename", "Unknown")
+        h, k, l = int(peak.get("h", 0)), int(peak.get("k", 0)), int(peak.get("l", 0))
+        amplitude = peak.get("amplitude", 0.0)
+        self.widget.label_PeakStatus.setStyleSheet(
+            "QLineEdit { background-color: #ccffcc; color: #006600; font-weight: bold; }")
+        self.widget.label_PeakStatus.setText(
+            f"Phase: {phase} ({h} {k} {l}) | Intensity: {amplitude:.3f}")
+        if row == self._constraints_tab_current_row:
+            return
+        self._constraints_tab_current_row = row
+        self._clear_peak_constraints_table()
+        self._populate_peak_constraints_table(row)
+
+    def _clear_peak_constraints_table(self):
+        if not hasattr(self.widget, "tableWidget_PeakConstraintDetail"):
+            return
+        table = self.widget.tableWidget_PeakConstraintDetail
+        for r in range(table.rowCount()):
+            for c in range(table.columnCount()):
+                w = table.cellWidget(r, c)
+                if w is not None:
+                    w.setParent(None)
+                    w.deleteLater()
+        table.clearContents()
+        table.setRowCount(0)
+        table.setColumnCount(0)
+
+    def _populate_peak_constraints_table(self, peak_row):
+        if not hasattr(self.widget, "tableWidget_PeakConstraintDetail"):
+            return
+        table = self.widget.tableWidget_PeakConstraintDetail
+        table.clearContents()
+        table.setRowCount(0)
+        table.setColumnCount(0)
+        PARAMS = [
+            ("Area", "amplitude", "amplitude_vary", "amplitude_min", "amplitude_max", 3),
+            ("Position", "center", "center_vary", "center_min", "center_max", 5),
+            ("FWHM", "sigma", "sigma_vary", "sigma_min", "sigma_max", 5),
+            ("nL", "fraction", "fraction_vary", "fraction_min", "fraction_max", 3),
+        ]
+        peak = self.model.current_section.peaks_in_queue[peak_row]
+        table.setColumnCount(7)
+        table.setHorizontalHeaderLabels(
+            ["Parameter", "Value", "Vary", "Use Min", "Min", "Use Max", "Max"])
+        table.setRowCount(len(PARAMS))
+        table.horizontalHeader().setVisible(True)
+        for row, (label, value_key, vary_key, min_key, max_key, decimals) in enumerate(PARAMS):
+            lbl = QtWidgets.QLabel(label)
+            lbl.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+            table.setCellWidget(row, 0, lbl)
+            val_box = self._make_spinbox(peak.get(value_key, 0.0), decimals)
+            table.setCellWidget(row, 1, val_box)
+            vary_box = self._make_checkbox(peak.get(vary_key, True))
+            table.setCellWidget(row, 2, vary_box)
+            min_val, max_val, use_min_state, use_max_state = \
+                self._peak_constraint_state(peak, value_key)
+            use_min = self._make_checkbox(use_min_state)
+            min_box = self._make_spinbox(0.0 if min_val is None else min_val, decimals)
+            min_box.setEnabled(use_min.isChecked())
+            use_min.toggled.connect(min_box.setEnabled)
+            use_max = self._make_checkbox(use_max_state)
+            max_box = self._make_spinbox(0.0 if max_val is None else max_val, decimals)
+            max_box.setEnabled(use_max.isChecked())
+            use_max.toggled.connect(max_box.setEnabled)
+            if value_key == "amplitude":
+                use_max.setChecked(False)
+                use_max.setEnabled(False)
+                max_box.setEnabled(False)
+            table.setCellWidget(row, 3, use_min)
+            table.setCellWidget(row, 4, min_box)
+            table.setCellWidget(row, 5, use_max)
+            table.setCellWidget(row, 6, max_box)
+            val_box.valueChanged.connect(
+                lambda v, vr=row, vr_key=value_key: self._on_peak_param_changed(vr, vr_key, "value", v))
+            vary_box.toggled.connect(
+                lambda s, vr=row, vr_key=value_key: self._on_peak_param_changed(vr, vr_key, "vary", s))
+            use_min.toggled.connect(
+                lambda s, vr=row, vr_key=value_key: self._on_peak_param_changed(vr, vr_key, "use_min", s))
+            min_box.valueChanged.connect(
+                lambda v, vr=row, vr_key=value_key: self._on_peak_param_changed(vr, vr_key, "min", v))
+            use_max.toggled.connect(
+                lambda s, vr=row, vr_key=value_key: self._on_peak_param_changed(vr, vr_key, "use_max", s))
+            max_box.valueChanged.connect(
+                lambda v, vr=row, vr_key=value_key: self._on_peak_param_changed(vr, vr_key, "max", v))
+        table.resizeColumnsToContents()
+
+    def _make_spinbox(self, value, decimals=5):
+        box = QtWidgets.QDoubleSpinBox()
+        box.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
+        box.setDecimals(decimals)
+        box.setMinimum(-1000000.0)
+        box.setMaximum(1000000.0)
+        box.setSingleStep(10 ** (-decimals))
+        box.setKeyboardTracking(False)
+        box.setValue(float(value))
+        return box
+
+    def _make_checkbox(self, checked):
+        box = QtWidgets.QCheckBox()
+        box.setChecked(bool(checked))
+        box.setStyleSheet("margin-left:12px; margin-right:12px;")
+        return box
+
+    def _peak_constraint_state(self, peak, value_key):
+        """
+        Priority:
+        1. Use peak-specific user-entered bounds when explicitly enabled.
+        2. Otherwise seed from the live default-bounds UI.
+        3. Never seed an amplitude max bound.
+        """
+        defaults = self.default_peak_bounds()
+        min_key = f"{value_key}_min"
+        max_key = f"{value_key}_max"
+        min_enabled_key = f"{value_key}_min_enabled"
+        max_enabled_key = f"{value_key}_max_enabled"
+        min_val = peak.get(min_key, None)
+        max_val = peak.get(max_key, None)
+        min_enabled = peak.get(min_enabled_key, None)
+        max_enabled = peak.get(max_enabled_key, None)
+        if value_key == "amplitude":
+            return 0.0, None, True, False
+        if value_key == "center":
+            center = float(peak.get("center", 0.0))
+            if min_enabled is None:
+                min_enabled = min_val is not None if min_key in peak else True
+            if max_enabled is None:
+                max_enabled = max_val is not None if max_key in peak else True
+            if min_val is None and min_key not in peak:
+                min_val = center - defaults["center_half_range"]
+            if max_val is None and max_key not in peak:
+                max_val = center + defaults["center_half_range"]
+        elif value_key == "sigma":
+            if min_enabled is None:
+                min_enabled = min_val is not None if min_key in peak else True
+            if max_enabled is None:
+                max_enabled = max_val is not None if max_key in peak else True
+            if min_val is None and min_key not in peak:
+                min_val = defaults["fwhm_min"]
+            if max_val is None and max_key not in peak:
+                max_val = defaults["fwhm_max"]
+        elif value_key == "fraction":
+            if min_enabled is None:
+                min_enabled = min_val is not None if min_key in peak else True
+            if max_enabled is None:
+                max_enabled = max_val is not None if max_key in peak else True
+            if min_val is None and min_key not in peak:
+                min_val = DEFAULT_NL_MIN
+            if max_val is None and max_key not in peak:
+                max_val = DEFAULT_NL_MAX
+        if min_enabled is None:
+            min_enabled = min_val is not None
+        if value_key == "amplitude":
+            max_enabled = False
+        elif max_enabled is None:
+            max_enabled = max_val is not None
+        return min_val, max_val, bool(min_enabled), bool(max_enabled)
+
+    def _update_peak_constraint_min_max_widgets(self, row, value_key):
+        if not hasattr(self.widget, "tableWidget_PeakConstraintDetail"):
+            return
+        table = self.widget.tableWidget_PeakConstraintDetail
+        param_map = {
+            "amplitude": 0,
+            "center": 1,
+            "sigma": 2,
+            "fraction": 3,
+        }
+        if value_key not in param_map:
+            return
+        table_row = param_map[value_key]
+        peak = self.model.current_section.peaks_in_queue[row]
+        min_val, max_val, use_min_enabled, use_max_enabled = \
+            self._peak_constraint_state(peak, value_key)
+        use_min_box = table.cellWidget(table_row, 3)
+        min_box = table.cellWidget(table_row, 4)
+        use_max_box = table.cellWidget(table_row, 5)
+        max_box = table.cellWidget(table_row, 6)
+        if use_min_box and min_box:
+            use_min_box.blockSignals(True)
+            min_box.blockSignals(True)
+            if value_key == "amplitude":
+                use_min_box.setChecked(True)
+                use_min_box.setEnabled(False)
+                min_box.setValue(0.0)
+                min_box.setEnabled(False)
+            else:
+                use_min_box.setChecked(use_min_enabled)
+                min_box.setValue(0.0 if min_val is None else min_val)
+            use_min_box.blockSignals(False)
+            min_box.blockSignals(False)
+            if value_key != "amplitude":
+                min_box.setEnabled(use_min_box.isChecked())
+        if use_max_box and max_box:
+            use_max_box.blockSignals(True)
+            max_box.blockSignals(True)
+            use_max_box.setChecked(use_max_enabled)
+            max_box.setValue(0.0 if max_val is None else max_val)
+            use_max_box.blockSignals(False)
+            max_box.blockSignals(False)
+            max_box.setEnabled(False if value_key == "amplitude" else use_max_box.isChecked())
+
+    def _on_peak_param_changed(self, row, param_key, change_type, value):
+        if not self.model.current_section_exist():
+            return
+        self.model.current_section.invalidate_fit_result()
+        peak = self.model.current_section.peaks_in_queue[row]
+        min_key = f"{param_key}_min"
+        max_key = f"{param_key}_max"
+        if change_type == "value":
+            peak[param_key] = float(value)
+        elif change_type == "vary":
+            peak[f"{param_key}_vary"] = bool(value)
+        elif change_type == "use_min":
+            if param_key == "amplitude":
+                peak["amplitude_min"] = 0.0
+                peak["amplitude_min_enabled"] = True
+                self.set_tableWidget_PkParams_unsaved()
+                return
+            peak[f"{param_key}_min_enabled"] = bool(value)
+            if not bool(value):
+                peak[min_key] = None
+            else:
+                if param_key == "center":
+                    peak[min_key] = (
+                        float(peak.get("center", 0.0)) -
+                        float(self.default_peak_bounds()["center_half_range"]))
+                elif param_key == "sigma":
+                    peak[min_key] = DEFAULT_FWHM_MIN
+                elif param_key == "fraction":
+                    peak[min_key] = DEFAULT_NL_MIN
+                elif param_key == "amplitude":
+                    peak[min_key] = 0.0
+                else:
+                    peak[min_key] = 0.0
+        elif change_type == "min":
+            if param_key == "amplitude":
+                peak["amplitude_min"] = 0.0
+                peak["amplitude_min_enabled"] = True
+                self.set_tableWidget_PkParams_unsaved()
+                return
+            peak[f"{param_key}_min_enabled"] = True
+            peak[min_key] = float(value)
+        elif change_type == "use_max":
+            if param_key == "amplitude":
+                peak[max_key] = None
+                peak["amplitude_max_enabled"] = False
+                peak[f"{param_key}_max_enabled"] = False
+            elif not bool(value):
+                peak[f"{param_key}_max_enabled"] = False
+                peak[max_key] = None
+            else:
+                peak[f"{param_key}_max_enabled"] = True
+                if param_key == "center":
+                    peak[max_key] = (
+                        float(peak.get("center", 0.0)) +
+                        float(self.default_peak_bounds()["center_half_range"]))
+                elif param_key == "sigma":
+                    peak[max_key] = DEFAULT_FWHM_MAX
+                elif param_key == "fraction":
+                    peak[max_key] = DEFAULT_NL_MAX
+                else:
+                    peak[max_key] = 0.0
+        elif change_type == "max":
+            if param_key == "amplitude":
+                peak[max_key] = None
+                peak["amplitude_max_enabled"] = False
+                peak[f"{param_key}_max_enabled"] = False
+            else:
+                peak[f"{param_key}_max_enabled"] = True
+                peak[max_key] = float(value)
+        self.set_tableWidget_PkParams_unsaved()
+
+    def _sync_constraints_tab_row_to_model(self):
+        if not self.model.current_section_exist():
+            return
+        table = getattr(self.widget, "tableWidget_PeakConstraintDetail", None)
+        if table is None:
+            return
+        row = self._constraints_tab_current_row
+        if row is None:
+            return
+        if row < 0 or row >= self.model.current_section.get_number_of_peaks_in_queue():
+            return
+        peak = self.model.current_section.peaks_in_queue[row]
+        param_map = [
+            ("amplitude", 0),
+            ("center", 1),
+            ("sigma", 2),
+            ("fraction", 3),
+        ]
+        for param_key, table_row in param_map:
+            value_widget = table.cellWidget(table_row, 1)
+            vary_widget = table.cellWidget(table_row, 2)
+            use_min_widget = table.cellWidget(table_row, 3)
+            min_widget = table.cellWidget(table_row, 4)
+            use_max_widget = table.cellWidget(table_row, 5)
+            max_widget = table.cellWidget(table_row, 6)
+            if value_widget is None or vary_widget is None:
+                continue
+            peak[param_key] = float(value_widget.value())
+            peak[f"{param_key}_vary"] = bool(vary_widget.isChecked())
+            if use_min_widget is not None and min_widget is not None:
+                use_min = bool(use_min_widget.isChecked())
+                peak[f"{param_key}_min_enabled"] = use_min
+                if param_key == "amplitude":
+                    peak[f"{param_key}_min"] = 0.0
+                    peak[f"{param_key}_min_enabled"] = True
+                else:
+                    peak[f"{param_key}_min"] = (
+                        float(min_widget.value()) if use_min else None)
+            if param_key == "amplitude":
+                peak[f"{param_key}_min"] = 0.0
+                peak[f"{param_key}_min_enabled"] = True
+                peak[f"{param_key}_max"] = None
+                peak["amplitude_max_enabled"] = bool(
+                    False)
+                peak[f"{param_key}_max_enabled"] = False
+            elif use_max_widget is not None and max_widget is not None:
+                use_max = bool(use_max_widget.isChecked())
+                peak[f"{param_key}_max_enabled"] = use_max
+                peak[f"{param_key}_max"] = (
+                    float(max_widget.value()) if use_max else None)
+        self.model.current_section.invalidate_fit_result()
+
+    def _sync_background_tab_to_model(self):
+        if not self.model.current_section_exist():
+            return
+        table_coeff = getattr(self.widget, "tableWidget_BGCoefficients", None)
+        table_anchor = getattr(self.widget, "tableWidget_BGAnchorRanges", None)
+        if table_coeff is not None:
+            coeffs = []
+            for row in range(table_coeff.rowCount()):
+                value_widget = table_coeff.cellWidget(row, 0)
+                vary_widget = table_coeff.cellWidget(row, 1)
+                if value_widget is None or vary_widget is None:
+                    continue
+                coeffs.append({
+                    "value": float(value_widget.value()),
+                    "vary": bool(vary_widget.isChecked()),
+                })
+            self.model.current_section.baseline_in_queue = coeffs
+        if table_anchor is not None:
+            anchors = []
+            for row in range(table_anchor.rowCount()):
+                xmin_widget = table_anchor.cellWidget(row, 0)
+                xmax_widget = table_anchor.cellWidget(row, 1)
+                weight_widget = table_anchor.cellWidget(row, 2)
+                if xmin_widget is None or xmax_widget is None or weight_widget is None:
+                    continue
+                xmin = float(xmin_widget.value())
+                xmax = float(xmax_widget.value())
+                weight = float(weight_widget.value())
+                weight = max(1.0, min(MAX_BACKGROUND_ANCHOR_WEIGHT, weight))
+                anchors.append({
+                    "xmin": min(xmin, xmax),
+                    "xmax": max(xmin, xmax),
+                    "weight": weight,
+                })
+            self.model.current_section.background_anchor_ranges = anchors
+        self.model.current_section.invalidate_fit_result()
+
+    def _arm_constraints_position_range(self):
+        if self.plot_interaction_ctrl is None:
+            return
+        table = self.widget.tableWidget_PkParams
+        selected_rows = {r.row() for r in table.selectionModel().selectedRows()} if table.selectionModel() else set()
+        if not selected_rows:
+            selected_rows = {idx.row() for idx in table.selectionModel().selectedIndexes()} if table.selectionModel() else set()
+        if len(selected_rows) != 1:
+            return
+        row = selected_rows.pop()
+        def apply_range(xmin, xmax):
+            peak = self.model.current_section.peaks_in_queue[row]
+            peak["center_min"] = float(xmin)
+            peak["center_max"] = float(xmax)
+            self._update_peak_constraint_min_max_widgets(row, "center")
+            self.set_tableWidget_PkParams_unsaved()
+        self.plot_interaction_ctrl.start_range_tool(
+            "Set peak position range", apply_range)
+
+    def _arm_constraints_fwhm_range(self):
+        if self.plot_interaction_ctrl is None:
+            return
+        table = self.widget.tableWidget_PkParams
+        selected_rows = {r.row() for r in table.selectionModel().selectedRows()} if table.selectionModel() else set()
+        if not selected_rows:
+            selected_rows = {idx.row() for idx in table.selectionModel().selectedIndexes()} if table.selectionModel() else set()
+        if len(selected_rows) != 1:
+            return
+        row = selected_rows.pop()
+        def apply_range(xmin, xmax):
+            peak = self.model.current_section.peaks_in_queue[row]
+            width = abs(float(xmax) - float(xmin))
+            peak["sigma_min"] = 0.0
+            peak["sigma_max"] = width
+            self._update_peak_constraint_min_max_widgets(row, "sigma")
+            self.set_tableWidget_PkParams_unsaved()
+        self.plot_interaction_ctrl.start_range_tool(
+            "Set peak FWHM maximum", apply_range)
+
+    def _on_default_bounds_changed(self):
+        self._default_peak_bounds = {
+            "center_half_range": float(self.widget.spinBox_CenterHalfRange.value()),
+            "fwhm_min": float(self.widget.spinBox_DefaultFwhmMin.value()),
+            "fwhm_max": float(self.widget.spinBox_DefaultFwhmMax.value()),
+        }
+
+    def _current_default_peak_bounds(self):
+        if (hasattr(self.widget, "spinBox_CenterHalfRange") and
+                hasattr(self.widget, "spinBox_DefaultFwhmMin") and
+                hasattr(self.widget, "spinBox_DefaultFwhmMax")):
+            return {
+                "center_half_range": float(self.widget.spinBox_CenterHalfRange.value()),
+                "fwhm_min": float(self.widget.spinBox_DefaultFwhmMin.value()),
+                "fwhm_max": float(self.widget.spinBox_DefaultFwhmMax.value()),
+            }
+        return dict(self._default_peak_bounds)
+
+    def default_peak_bounds(self):
+        return self._current_default_peak_bounds()
+
+    def _add_bg_anchor_from_view(self):
+        if not self.model.current_section_exist():
+            return
+        x0, x1 = self.widget.mpl.canvas.ax_pattern.get_xlim()
+        self._add_bg_anchor_row({"xmin": min(x0, x1), "xmax": max(x0, x1), "weight": 10.0}, append_to_model=True)
+        label = getattr(self.widget, "label_PlotHelp", None)
+        if label:
+            label.setText("Background anchor range added from the current plot view.")
+
+    def _remove_bg_anchor_rows(self):
+        if not self.model.current_section_exist():
+            return
+        table = self.widget.tableWidget_BGAnchorRanges
+        rows = set()
+        if table.selectionModel():
+            rows = {index.row() for index in table.selectionModel().selectedRows()}
+            if not rows:
+                rows = {index.row() for index in table.selectionModel().selectedIndexes()}
+        if not rows and table.currentRow() >= 0:
+            rows.add(table.currentRow())
+        for row in sorted(rows, reverse=True):
+            table.removeRow(row)
+        anchors = []
+        for r in range(table.rowCount()):
+            xmin_w = table.cellWidget(r, 0)
+            xmax_w = table.cellWidget(r, 1)
+            weight_w = table.cellWidget(r, 2)
+            if xmin_w and xmax_w and weight_w:
+                anchors.append({
+                    "xmin": min(float(xmin_w.value()), float(xmax_w.value())),
+                    "xmax": max(float(xmin_w.value()), float(xmax_w.value())),
+                    "weight": float(weight_w.value()),
+                })
+        self.model.current_section.background_anchor_ranges = anchors
+        self.set_tableWidget_PkParams_unsaved()
+
+    def _arm_bg_anchor_range(self, checked=False):
+        if self.plot_interaction_ctrl is None:
+            return
+        if not checked:
+            self.plot_interaction_ctrl.cancel_range_tool()
+            if hasattr(self.widget, "pushButton_AddRangeFromPlot"):
+                self.widget.pushButton_AddRangeFromPlot.setText("Add range from plot")
+            return
+        def add_range(xmin, xmax):
+            self._add_bg_anchor_row({"xmin": float(xmin), "xmax": float(xmax), "weight": 10.0}, append_to_model=True)
+            if hasattr(self.widget, "pushButton_AddRangeFromPlot"):
+                self.widget.pushButton_AddRangeFromPlot.setText("Stop picking ranges")
+        def deactivate():
+            if hasattr(self.widget, "pushButton_AddRangeFromPlot"):
+                self.widget.pushButton_AddRangeFromPlot.setChecked(False)
+                self.widget.pushButton_AddRangeFromPlot.setText("Add range from plot")
+        self.plot_interaction_ctrl.start_range_tool(
+            "Add background anchor range", add_range, repeat=True, cancel_callback=deactivate)
+        if hasattr(self.widget, "pushButton_AddRangeFromPlot"):
+            self.widget.pushButton_AddRangeFromPlot.setText("Stop picking ranges")
+
+    def _add_bg_anchor_row(self, anchor=None, append_to_model=False):
+        if not hasattr(self.widget, "tableWidget_BGAnchorRanges"):
+            return
+        table = self.widget.tableWidget_BGAnchorRanges
+        if anchor is None:
+            x0, x1 = self.widget.mpl.canvas.ax_pattern.get_xlim()
+            anchor = {"xmin": min(x0, x1), "xmax": max(x0, x1), "weight": 10.0}
+        row = table.rowCount()
+        table.insertRow(row)
+        for col, key in enumerate(("xmin", "xmax", "weight")):
+            value = anchor.get(key, 10.0 if key == "weight" else 0.0)
+            decimals = 2 if key == "weight" else 5
+            box = self._make_spinbox(value, decimals)
+            if key == "weight":
+                box.setMinimum(1.0)
+                box.setMaximum(MAX_BACKGROUND_ANCHOR_WEIGHT)
+                box.setToolTip("Relative anchor strength. Values are capped to avoid unstable or slow fitting.")
+            table.setCellWidget(row, col, box)
+        table.resizeColumnsToContents()
+        if append_to_model:
+            anchors = getattr(self.model.current_section, "background_anchor_ranges", [])
+            anchors.append({
+                "xmin": min(float(anchor["xmin"]), float(anchor["xmax"])),
+                "xmax": max(float(anchor["xmin"]), float(anchor["xmax"])),
+                "weight": float(anchor["weight"]),
+            })
+            self.model.current_section.background_anchor_ranges = anchors
+            self.set_tableWidget_PkParams_unsaved()
+
+    def _on_bg_poly_order_changed(self):
+        if not self.model.current_section_exist():
+            return
+        order = int(self.widget.spinBox_BGPolyOrder.value())
+        self.model.current_section.set_baseline(order)
+        self._populate_bg_coeff_table()
+        self.set_tableWidget_PkParams_unsaved()
+
+    def _on_peakfit_tab_changed(self, index):
+        if not hasattr(self.widget, "tabWidget_PeakFit"):
+            return
+        current = self.widget.tabWidget_PeakFit.widget(index)
+        if current == getattr(self.widget, "tab_PeakFitConstraints", None):
+            self._populate_constraints_tab_from_model()
+            self._update_constraints_tab_state()
+        elif current == getattr(self.widget, "tab_PeakFitBackground", None):
+            self._populate_background_tab_from_model()
+
+    def _populate_constraints_tab_from_model(self):
+        if not hasattr(self.widget, "spinBox_CenterHalfRange"):
+            return
+        defaults = self.default_peak_bounds()
+        self.widget.spinBox_CenterHalfRange.setValue(defaults["center_half_range"])
+        self.widget.spinBox_DefaultFwhmMin.setValue(defaults["fwhm_min"])
+        self.widget.spinBox_DefaultFwhmMax.setValue(defaults["fwhm_max"])
+
+    def _populate_background_tab_from_model(self):
+        if not self.model.current_section_exist():
+            return
+        if not hasattr(self.widget, "spinBox_BGPolyOrder"):
+            return
+        order = self.model.current_section.get_order_of_baseline_in_queue()
+        self.widget.spinBox_BGPolyOrder.blockSignals(True)
+        self.widget.spinBox_BGPolyOrder.setValue(order if order >= 0 else 1)
+        self.widget.spinBox_BGPolyOrder.blockSignals(False)
+        self._populate_bg_coeff_table()
+        self._populate_bg_anchor_table()
+
+    def _populate_bg_coeff_table(self):
+        if not hasattr(self.widget, "tableWidget_BGCoefficients"):
+            return
+        if not self.model.current_section_exist():
+            return
+        table = self.widget.tableWidget_BGCoefficients
+        order = int(self.widget.spinBox_BGPolyOrder.value())
+        coeffs = getattr(self.model.current_section, "baseline_in_queue", [])
+        table.setRowCount(order + 1)
+        for row in range(order + 1):
+            coeff = coeffs[row] if row < len(coeffs) else {"value": 0.0, "vary": True}
+            val_box = self._make_spinbox(coeff.get("value", 0.0), 5)
+            val_box.valueChanged.connect(self._on_bg_coeff_changed)
+            table.setCellWidget(row, 0, val_box)
+            vary_box = self._make_checkbox(coeff.get("vary", True))
+            vary_box.toggled.connect(self._on_bg_coeff_changed)
+            table.setCellWidget(row, 1, vary_box)
+        table.resizeColumnsToContents()
+
+    def _on_bg_coeff_changed(self):
+        if not self.model.current_section_exist():
+            return
+        table = self.widget.tableWidget_BGCoefficients
+        coeffs = []
+        for row in range(table.rowCount()):
+            val_w = table.cellWidget(row, 0)
+            vary_w = table.cellWidget(row, 1)
+            if val_w and vary_w:
+                coeffs.append({"value": float(val_w.value()), "vary": bool(vary_w.isChecked())})
+        self.model.current_section.baseline_in_queue = coeffs
+        self.set_tableWidget_PkParams_unsaved()
+
+    def _populate_bg_anchor_table(self):
+        if not hasattr(self.widget, "tableWidget_BGAnchorRanges"):
+            return
+        if not self.model.current_section_exist():
+            return
+        table = self.widget.tableWidget_BGAnchorRanges
+        anchors = getattr(self.model.current_section, "background_anchor_ranges", [])
+        table.setColumnCount(3)
+        table.setHorizontalHeaderLabels(["xmin", "xmax", "weight"])
+        table.setRowCount(0)
+        for anchor in anchors:
+            row = table.rowCount()
+            table.insertRow(row)
+            for col, key in enumerate(("xmin", "xmax", "weight")):
+                value = anchor.get(key, 10.0 if key == "weight" else 0.0)
+                decimals = 2 if key == "weight" else 5
+                box = self._make_spinbox(value, decimals)
+                if key == "weight":
+                    box.setMinimum(1.0)
+                    box.setMaximum(MAX_BACKGROUND_ANCHOR_WEIGHT)
+                table.setCellWidget(row, col, box)
+            table.resizeColumnsToContents()
 
     def remove_selected_peak_from_table(self):
         if not self.model.current_section_exist():
@@ -725,20 +1384,6 @@ class PeakFitController(object):
             rows = set(range(n_peaks))
         return sorted(row for row in rows if 0 <= row < n_peaks)
 
-    def _apply_default_bounds_to_peak(self, peak):
-        center = float(peak.get("center", 0.0))
-        defaults = self.default_peak_bounds()
-        center_half_range = defaults["center_half_range"]
-        peak["center_min"] = center - center_half_range
-        peak["center_max"] = center + center_half_range
-        peak["sigma_min"] = defaults["fwhm_min"]
-        peak["sigma_max"] = defaults["fwhm_max"]
-        peak["fraction_min"] = DEFAULT_NL_MIN
-        peak["fraction_max"] = DEFAULT_NL_MAX
-
-    def default_peak_bounds(self):
-        return dict(self._default_peak_bounds)
-
     def default_bound_values(self, peak, value_key):
         defaults = self.default_peak_bounds()
         if value_key == "center":
@@ -759,6 +1404,35 @@ class PeakFitController(object):
             "fwhm_min": float(fwhm_min),
             "fwhm_max": float(fwhm_max),
         }
+        if hasattr(self.widget, "spinBox_CenterHalfRange"):
+            self.widget.spinBox_CenterHalfRange.blockSignals(True)
+            self.widget.spinBox_CenterHalfRange.setValue(float(center_half_range))
+            self.widget.spinBox_CenterHalfRange.blockSignals(False)
+        if hasattr(self.widget, "spinBox_DefaultFwhmMin"):
+            self.widget.spinBox_DefaultFwhmMin.blockSignals(True)
+            self.widget.spinBox_DefaultFwhmMin.setValue(float(fwhm_min))
+            self.widget.spinBox_DefaultFwhmMin.blockSignals(False)
+        if hasattr(self.widget, "spinBox_DefaultFwhmMax"):
+            self.widget.spinBox_DefaultFwhmMax.blockSignals(True)
+            self.widget.spinBox_DefaultFwhmMax.setValue(float(fwhm_max))
+            self.widget.spinBox_DefaultFwhmMax.blockSignals(False)
+
+    def _apply_default_bounds_to_peak(self, peak):
+        center = float(peak.get("center", 0.0))
+        defaults = self.default_peak_bounds()
+        center_half_range = defaults["center_half_range"]
+        peak["center_min"] = center - center_half_range
+        peak["center_max"] = center + center_half_range
+        peak["center_min_enabled"] = True
+        peak["center_max_enabled"] = True
+        peak["sigma_min"] = defaults["fwhm_min"]
+        peak["sigma_max"] = defaults["fwhm_max"]
+        peak["sigma_min_enabled"] = True
+        peak["sigma_max_enabled"] = True
+        peak["fraction_min"] = DEFAULT_NL_MIN
+        peak["fraction_max"] = DEFAULT_NL_MAX
+        peak["fraction_min_enabled"] = True
+        peak["fraction_max_enabled"] = True
 
     def apply_default_peak_bounds_to_all_peaks(self):
         if not self.model.current_section_exist():
@@ -1327,9 +2001,10 @@ class PeakFitController(object):
             self.plot_ctrl.update()
 
     def _clear_current_section(self):
-        '''erase only current section'''
-        self.widget.tableWidget_BackgroundConstraints.clearContents()
-        self.widget.tableWidget_PeakConstraints.clearContents()
+        if hasattr(self.widget, "tableWidget_BGCoefficients"):
+            self.widget.tableWidget_BGCoefficients.clearContents()
+        if hasattr(self.widget, "tableWidget_PeakConstraints"):
+            self.widget.tableWidget_PeakConstraints.clearContents()
         self.widget.tableWidget_PkParams.clearContents()
         self.model.initialize_current_section()
 
@@ -1342,8 +2017,10 @@ class PeakFitController(object):
         # self._list_sections()
         self.model.initialize_current_section()
         self.widget.tableWidget_PkParams.clearContents()
-        self.widget.tableWidget_PeakConstraints.clearContents()
-        self.widget.tableWidget_BackgroundConstraints.clearContents()
+        if hasattr(self.widget, "tableWidget_PeakConstraints"):
+            self.widget.tableWidget_PeakConstraints.clearContents()
+        if hasattr(self.widget, "tableWidget_BGCoefficients"):
+            self.widget.tableWidget_BGCoefficients.clearContents()
         self.peakfit_table_ctrl.update_sections()
         self.plot_ctrl.update()
 
@@ -1423,10 +2100,9 @@ class PeakFitController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning", "No pick exists in the section.")
             return
-        width = self.widget.doubleSpinBox_InitialFWHM.value()
+        self._sync_constraints_tab_row_to_model()
+        self._sync_background_tab_to_model()
         order = self.widget.spinBox_BGPolyOrder.value()
-        maxwidth = self.widget.doubleSpinBox_MaxFWHM.value()
-        centerrange = self.widget.doubleSpinBox_PeakCenterRange.value()
         progress = QtWidgets.QProgressDialog(self.widget)
         progress.setLabelText("Fitting peak profiles...")
         progress.setRange(0, 0)
@@ -1437,8 +2113,7 @@ class PeakFitController(object):
         progress.show()
         QtWidgets.QApplication.processEvents()
         try:
-            self.model.current_section.prepare_for_fitting(
-                order, maxwidth, centerrange)
+            self.model.current_section.prepare_for_fitting(order, 0.0, 0.0)
             progress.setLabelText("Optimizing peak parameters...")
             QtWidgets.QApplication.processEvents()
             success, converged = self.model.current_section.conduct_fitting()

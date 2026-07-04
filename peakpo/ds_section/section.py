@@ -154,15 +154,22 @@ class Section(object):
             "center_half_range", DEFAULT_CENTER_HALF_RANGE))
         peak['center_min'] = x_center - center_half_range
         peak['center_max'] = x_center + center_half_range
+        peak['center_min_enabled'] = True
+        peak['center_max_enabled'] = True
         peak['sigma_min'] = float(defaults.get(
             "fwhm_min", DEFAULT_FWHM_MIN))
         peak['sigma_max'] = float(defaults.get(
             "fwhm_max", DEFAULT_FWHM_MAX))
+        peak['sigma_min_enabled'] = True
+        peak['sigma_max_enabled'] = True
         peak['amplitude_min'] = 0.0
         peak['amplitude_max'] = None
         peak['amplitude_max_enabled'] = False
+        peak['amplitude_min_enabled'] = True
         peak['fraction_min'] = DEFAULT_NL_MIN
         peak['fraction_max'] = DEFAULT_NL_MAX
+        peak['fraction_min_enabled'] = True
+        peak['fraction_max_enabled'] = True
         peak['phasename'] = normalize_peak_phase_name(phase_name)
         peak['h'] = hkl[0]
         peak['k'] = hkl[1]
@@ -231,10 +238,15 @@ class Section(object):
                 peak, 'center_max', peak['center'] + DEFAULT_CENTER_HALF_RANGE)
             sigma_min = self._peak_bound(peak, 'sigma_min', DEFAULT_FWHM_MIN)
             sigma_max = self._peak_bound(peak, 'sigma_max', DEFAULT_FWHM_MAX)
-            amp_min = self._peak_bound(peak, 'amplitude_min', 0.0)
+            amp_min = 0.0
             amp_max = self._amplitude_max_bound(peak)
             frac_min = self._peak_bound(peak, 'fraction_min', DEFAULT_NL_MIN)
             frac_max = self._peak_bound(peak, 'fraction_max', DEFAULT_NL_MAX)
+            center_min, center_max = self._normalize_bounds(center_min, center_max)
+            sigma_min, sigma_max = self._normalize_bounds(sigma_min, sigma_max)
+            if np.isfinite(amp_max):
+                amp_min, amp_max = self._normalize_bounds(amp_min, amp_max)
+            frac_min, frac_max = self._normalize_bounds(frac_min, frac_max)
             pars[prefix + 'center'].set(
                 value=peak['center'], min=center_min, max=center_max,
                 vary=peak['center_vary'])
@@ -264,23 +276,18 @@ class Section(object):
         return float(value)
 
     def _amplitude_max_bound(self, peak):
-        value = peak.get('amplitude_max', None)
-        if value is None:
-            return np.inf
-        enabled = peak.get('amplitude_max_enabled', None)
-        if enabled is not None and not bool(enabled):
-            return np.inf
-        try:
-            amp = float(peak.get('amplitude', 0.0))
-            max_value = float(value)
-        except Exception:
-            return np.inf
-        if enabled is None:
-            # Older PeakPo builds could accidentally store the initial
-            # amplitude as the max bound.  Treat that exact case as unbounded.
-            if abs(max_value - amp) <= max(1e-12, abs(amp) * 1e-10):
-                return np.inf
-        return max_value
+        del peak
+        return np.inf
+
+    def _normalize_bounds(self, min_val, max_val):
+        if min_val is None or max_val is None:
+            return min_val, max_val
+        min_val = float(min_val)
+        max_val = float(max_val)
+        if min_val < max_val:
+            return min_val, max_val
+        eps = max(1e-12, abs(min_val) * 1e-12)
+        return min_val, min_val + eps
 
     def _background_anchor_samples(self):
         ranges = getattr(self, "background_anchor_ranges", [])

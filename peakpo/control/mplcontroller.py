@@ -1131,7 +1131,7 @@ class MplController(object):
         ]
         if hasattr(self.widget, "tabWidget_PeakFit"):
             current_tab = self.widget.tabWidget_PeakFit.currentWidget()
-            if current_tab == getattr(self.widget, "tab_PeakFitConfig", None):
+            if current_tab == getattr(self.widget, "tab_PeakFitConstraints", None):
                 tables.reverse()
         row = self._get_selected_row_from_table(tables[0])
         if row is not None:

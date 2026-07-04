@@ -433,6 +433,7 @@ class SessionController(object):
                 "t_step": self.widget.spinBox_TStep.value(),
                 "jcpds_step": self.widget.doubleSpinBox_JCPDSStep.value(),
             },
+            "peakfit_default_bounds": self.peakfit_ctrl.default_peak_bounds(),
             "background": {
                 "roi_min": float(self.widget.doubleSpinBox_Background_ROI_min.value()),
                 "roi_max": float(self.widget.doubleSpinBox_Background_ROI_max.value()),
@@ -482,6 +483,14 @@ class SessionController(object):
                 self.widget.spinBox_TStep.setValue(int(pt["t_step"]))
             if "jcpds_step" in pt:
                 self.widget.doubleSpinBox_JCPDSStep.setValue(float(pt["jcpds_step"]))
+        peakfit_bounds = (ui_state or {}).get("peakfit_default_bounds", {})
+        if peakfit_bounds != {}:
+            if hasattr(self, "peakfit_ctrl") and self.peakfit_ctrl is not None:
+                self.peakfit_ctrl.set_default_peak_bounds_values(
+                    peakfit_bounds.get("center_half_range", self.widget.spinBox_CenterHalfRange.value()),
+                    peakfit_bounds.get("fwhm_min", self.widget.spinBox_DefaultFwhmMin.value()),
+                    peakfit_bounds.get("fwhm_max", self.widget.spinBox_DefaultFwhmMax.value()),
+                )
         bg = (ui_state or {}).get("background", {})
         if bg != {}:
             if "roi_min" in bg:

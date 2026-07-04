@@ -25,11 +25,12 @@ class PeakfitTableController(object):
     def _style_peak_parameter_item(self, item, peak, vary_key):
         if bool(peak.get(vary_key, True)):
             return item
-        item.setBackground(QtGui.QBrush(QtGui.QColor("#5c4300")))
-        item.setForeground(QtGui.QBrush(QtGui.QColor("#ffd166")))
+        item.setBackground(QtGui.QBrush(QtGui.QColor("#8b0000")))
+        item.setForeground(QtGui.QBrush(QtGui.QColor("#ffd54f")))
         item.setToolTip("Fixed during fitting; this parameter is not varied.")
         font = item.font()
         font.setBold(True)
+        font.setItalic(True)
         item.setFont(font)
         return item
 
@@ -173,13 +174,12 @@ class PeakfitTableController(object):
         self.widget.tableWidget_PkFtSections.resizeRowsToContents()
 
     def update_baseline_constraints(self):
-        '''show a list of local bg in a tab'''
         if not self.model.current_section_exist():
-            self.widget.tableWidget_BackgroundConstraints.clearContents()
-            self.widget.tableWidget_BackgroundConstraints.setRowCount(0)
-            self.widget.tableWidget_BackgroundConstraints.setColumnCount(0)
+            if hasattr(self.widget, "tableWidget_BGCoefficients"):
+                self.widget.tableWidget_BGCoefficients.clearContents()
+                self.widget.tableWidget_BGCoefficients.setRowCount(0)
+                self.widget.tableWidget_BGCoefficients.setColumnCount(0)
             return
-        self.widget.tableWidget_BackgroundConstraints.clearContents()
         n_columns = 2
         poly_order = self.model.current_section.\
             get_order_of_baseline_in_queue()
@@ -188,42 +188,42 @@ class PeakfitTableController(object):
             self.widget.spinBox_BGPolyOrder.setValue(poly_order)
             self.widget.spinBox_BGPolyOrder.blockSignals(old_state)
         n_rows = poly_order + 1
-        self.widget.tableWidget_BackgroundConstraints.setColumnCount(n_columns)
-        self.widget.tableWidget_BackgroundConstraints.setRowCount(n_rows)
-        self.widget.tableWidget_BackgroundConstraints.horizontalHeader().\
-            setVisible(True)
-        self.widget.tableWidget_BackgroundConstraints.\
-            setHorizontalHeaderLabels(['Factor', 'Vary'])
-        for row in range(n_rows):
-            # column 0 - factor
-            self.Background_doubleSpinBox = QtWidgets.QDoubleSpinBox()
-            self.Background_doubleSpinBox.setAlignment(
-                QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
-                QtCore.Qt.AlignVCenter)
-            self.Background_doubleSpinBox.setMaximum(100000.)
-            self.Background_doubleSpinBox.setMinimum(-100000.)
-            self.Background_doubleSpinBox.setSingleStep(0.001)
-            self.Background_doubleSpinBox.setDecimals(3)
-            self.Background_doubleSpinBox.setValue(
-                self.model.current_section.baseline_in_queue[row]['value'])
-            self.Background_doubleSpinBox.setKeyboardTracking(False)
-            self.Background_doubleSpinBox.valueChanged.connect(
-                self._bglist_handle_doubleSpinBoxChanged)
-            self.widget.tableWidget_BackgroundConstraints.setCellWidget(
-                row, 0, self.Background_doubleSpinBox)
-            # column 1 - fix checkbox
-            item = QtWidgets.QTableWidgetItem()
-            item.setFlags(QtCore.Qt.ItemIsUserCheckable |
-                          QtCore.Qt.ItemIsEnabled)
-            if self.model.current_section.baseline_in_queue[row]['vary']:
-                item.setCheckState(QtCore.Qt.Checked)
-            else:
-                item.setCheckState(QtCore.Qt.Unchecked)
-            self.widget.tableWidget_BackgroundConstraints.setItem(row, 1, item)
-            self.widget.tableWidget_BackgroundConstraints.itemClicked.connect(
-                self._bglist_handle_ItemClicked)
-        self.widget.tableWidget_BackgroundConstraints.resizeColumnsToContents()
-        self.widget.tableWidget_BackgroundConstraints.resizeRowsToContents()
+        if hasattr(self.widget, "tableWidget_BGCoefficients"):
+            self.widget.tableWidget_BGCoefficients.clearContents()
+            self.widget.tableWidget_BGCoefficients.setColumnCount(n_columns)
+            self.widget.tableWidget_BGCoefficients.setRowCount(n_rows)
+            self.widget.tableWidget_BGCoefficients.horizontalHeader().setVisible(True)
+            self.widget.tableWidget_BGCoefficients.setHorizontalHeaderLabels(['Factor', 'Vary'])
+            for row in range(n_rows):
+                # column 0 - factor
+                self.Background_doubleSpinBox = QtWidgets.QDoubleSpinBox()
+                self.Background_doubleSpinBox.setAlignment(
+                    QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing |
+                    QtCore.Qt.AlignVCenter)
+                self.Background_doubleSpinBox.setMaximum(100000.)
+                self.Background_doubleSpinBox.setMinimum(-100000.)
+                self.Background_doubleSpinBox.setSingleStep(0.001)
+                self.Background_doubleSpinBox.setDecimals(3)
+                self.Background_doubleSpinBox.setValue(
+                    self.model.current_section.baseline_in_queue[row]['value'])
+                self.Background_doubleSpinBox.setKeyboardTracking(False)
+                self.Background_doubleSpinBox.valueChanged.connect(
+                    self._bglist_handle_doubleSpinBoxChanged)
+                self.widget.tableWidget_BGCoefficients.setCellWidget(
+                    row, 0, self.Background_doubleSpinBox)
+                # column 1 - fix checkbox
+                item = QtWidgets.QTableWidgetItem()
+                item.setFlags(QtCore.Qt.ItemIsUserCheckable |
+                              QtCore.Qt.ItemIsEnabled)
+                if self.model.current_section.baseline_in_queue[row]['vary']:
+                    item.setCheckState(QtCore.Qt.Checked)
+                else:
+                    item.setCheckState(QtCore.Qt.Unchecked)
+                self.widget.tableWidget_BGCoefficients.setItem(row, 1, item)
+                self.widget.tableWidget_BGCoefficients.itemClicked.connect(
+                    self._bglist_handle_ItemClicked)
+            self.widget.tableWidget_BGCoefficients.resizeColumnsToContents()
+            self.widget.tableWidget_BGCoefficients.resizeRowsToContents()
 
     def _bglist_handle_ItemClicked(self, item):
         if (item.column() != 1):
@@ -236,8 +236,9 @@ class PeakfitTableController(object):
 
     def _bglist_handle_doubleSpinBoxChanged(self, value):
         box = self.widget.sender()
-        index = self.widget.tableWidget_BackgroundConstraints.\
-            indexAt(box.pos())
+        if not hasattr(self.widget, "tableWidget_BGCoefficients"):
+            return
+        index = self.widget.tableWidget_BGCoefficients.indexAt(box.pos())
         if not index.isValid():
             return
         self.model.current_section.invalidate_fit_result()
@@ -248,11 +249,13 @@ class PeakfitTableController(object):
                 value
 
     def update_peak_constraints(self):
-        '''show a list of peaks in the list window of tab 3 for config'''
         if not self.model.current_section_exist():
-            self.widget.tableWidget_PeakConstraints.clearContents()
-            self.widget.tableWidget_PeakConstraints.setRowCount(0)
-            self.widget.tableWidget_PeakConstraints.setColumnCount(0)
+            if hasattr(self.widget, "tableWidget_PeakConstraints"):
+                self.widget.tableWidget_PeakConstraints.clearContents()
+                self.widget.tableWidget_PeakConstraints.setRowCount(0)
+                self.widget.tableWidget_PeakConstraints.setColumnCount(0)
+            return
+        if not hasattr(self.widget, "tableWidget_PeakConstraints"):
             return
         self.widget.tableWidget_PeakConstraints.clearContents()
         self._apply_peak_constraints_selection_behavior()
@@ -377,6 +380,8 @@ class PeakfitTableController(object):
         self._sync_peak_constraints_selection_style()
 
     def _apply_peak_constraints_selection_behavior(self):
+        if not hasattr(self.widget, "tableWidget_PeakConstraints"):
+            return
         table = self.widget.tableWidget_PeakConstraints
         table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         table.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
@@ -398,6 +403,8 @@ class PeakfitTableController(object):
             self._sync_peak_constraints_selection_style)
 
     def _sync_peak_constraints_selection_style(self):
+        if not hasattr(self.widget, "tableWidget_PeakConstraints"):
+            return
         table = self.widget.tableWidget_PeakConstraints
         selected_rows = set()
         selection_model = table.selectionModel()
@@ -422,6 +429,8 @@ class PeakfitTableController(object):
 
     def _peaklist_handle_doubleSpinBoxChanged(self, value):
         box = self.widget.sender()
+        if not hasattr(self.widget, "tableWidget_PeakConstraints"):
+            return
         index = self.widget.tableWidget_PeakConstraints.indexAt(box.pos())
         if not index.isValid():
             return

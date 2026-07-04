@@ -280,8 +280,10 @@ class BasePatternController(object):
         for table_name in (
                 "tableWidget_PkFtSections",
                 "tableWidget_PkParams",
-                "tableWidget_BackgroundConstraints",
-                "tableWidget_PeakConstraints"):
+                "tableWidget_BGCoefficients",
+                "tableWidget_BGAnchorRanges",
+                "tableWidget_PeakConstraints",
+                "tableWidget_PeakConstraintDetail"):
             table = getattr(self.widget, table_name, None)
             if table is None:
                 continue

@@ -1625,9 +1625,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "pushButton_ClearSection",
             "pushButton_AddRemoveFromMouse",
             "pushButton_AddRemoveFromJlist",
-            "pushButton_PkConstraintsPopup",
-            "pushButton_PkDefaultBounds",
-            "pushButton_PkBackgroundPopup",
             "pushButton_PkRemoveSelectedPeaks",
             "pushButton_CollectPeakFitResults",
             "pushButton_PerformUCFit",
@@ -1650,11 +1647,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             text_color="#1f1f1f")
         self._set_accent_button_style(
             self.pushButton_PkFtSectionSetToCurrent,
-            "#1f7a3d", "#278f49", "#16592d", "#11411f")
+            "#1f7a3d", "#278f49", "#16592d", "#11441f")
         if hasattr(self, "pushButton_CollectPeakFitResults"):
             self._set_accent_button_style(
                 self.pushButton_CollectPeakFitResults,
-                "#1f7a3d", "#278f49", "#16592d", "#11411f")
+                "#1f7a3d", "#278f49", "#16592d", "#11441f")
         if hasattr(self, "pushButton_PerformUCFit"):
             self._set_accent_button_style(
                 self.pushButton_PerformUCFit,
@@ -1663,50 +1660,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _setup_peakfit_popup_buttons(self):
         if not hasattr(self, "verticalLayout_40"):
             return
-        if hasattr(self, "pushButton_PkConstraintsPopup"):
+        if hasattr(self, "pushButton_PkRemoveSelectedPeaks"):
             return
-        if hasattr(self, "tabWidget_PeakFit") and \
-                hasattr(self, "tab_PeakFitConfig"):
-            idx = self.tabWidget_PeakFit.indexOf(self.tab_PeakFitConfig)
-            if idx >= 0:
-                self.tabWidget_PeakFit.removeTab(idx)
         self.frame_PeakTableActions = QtWidgets.QFrame(
             self.scrollAreaWidgetContents_11)
         self.frame_PeakTableActions.setObjectName("frame_PeakTableActions")
         layout = QtWidgets.QHBoxLayout(self.frame_PeakTableActions)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
-        self.pushButton_PkConstraintsPopup = QtWidgets.QPushButton(
-            "Constraints", self.frame_PeakTableActions)
-        self.pushButton_PkConstraintsPopup.setObjectName(
-            "pushButton_PkConstraintsPopup")
-        self.pushButton_PkConstraintsPopup.setToolTip(
-            "Open constraints for the highlighted peak.")
-        self.pushButton_PkDefaultBounds = QtWidgets.QPushButton(
-            "Default bounds", self.frame_PeakTableActions)
-        self.pushButton_PkDefaultBounds.setObjectName(
-            "pushButton_PkDefaultBounds")
-        self.pushButton_PkDefaultBounds.setToolTip(
-            "Open default min/max settings for peak position and FWHM.")
-        self.pushButton_PkBackgroundPopup = QtWidgets.QPushButton(
-            "Background Setup", self.frame_PeakTableActions)
-        self.pushButton_PkBackgroundPopup.setObjectName(
-            "pushButton_PkBackgroundPopup")
-        self.pushButton_PkBackgroundPopup.setToolTip(
-            "Open background fitting setup and anchor ranges.")
         self.pushButton_PkRemoveSelectedPeaks = QtWidgets.QPushButton(
             "Remove peaks", self.frame_PeakTableActions)
         self.pushButton_PkRemoveSelectedPeaks.setObjectName(
             "pushButton_PkRemoveSelectedPeaks")
         self.pushButton_PkRemoveSelectedPeaks.setToolTip(
             "Remove highlighted peaks after confirmation.")
-        for button in (
-                self.pushButton_PkConstraintsPopup,
-                self.pushButton_PkDefaultBounds,
-                self.pushButton_PkBackgroundPopup,
-                self.pushButton_PkRemoveSelectedPeaks):
-            self._set_button_height(button)
-            layout.addWidget(button)
+        self._set_button_height(self.pushButton_PkRemoveSelectedPeaks)
+        layout.addWidget(self.pushButton_PkRemoveSelectedPeaks)
         self.verticalLayout_40.addWidget(self.frame_PeakTableActions)
 
     def _compact_peakfit_spinboxes(self):

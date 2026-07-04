@@ -697,7 +697,7 @@ class MainController(object):
         ]
         if hasattr(self.widget, "tabWidget_PeakFit"):
             current_tab = self.widget.tabWidget_PeakFit.currentWidget()
-            if current_tab == getattr(self.widget, "tab_PeakFitConfig", None):
+            if current_tab == getattr(self.widget, "tab_PeakFitConstraints", None):
                 tables.reverse()
         row = self._get_selected_row_from_table(tables[0])
         if row is not None:
@@ -1175,6 +1175,9 @@ class MainController(object):
         for key, attr in self._plot_config_setting_bindings():
             if hasattr(self.widget, attr):
                 self._save_widget_to_settings(key, getattr(self.widget, attr))
+        for key, attr in self._peakfit_default_bounds_setting_bindings():
+            if hasattr(self.widget, attr):
+                self._save_widget_to_settings(key, getattr(self.widget, attr))
         
 
     def read_setting(self):
@@ -1251,6 +1254,12 @@ class MainController(object):
             if hasattr(self.widget, attr):
                 self._load_widget_from_settings(
                     key, getattr(self.widget, attr))
+        for key, attr in self._peakfit_default_bounds_setting_bindings():
+            if hasattr(self.widget, attr):
+                self._load_widget_from_settings(
+                    key, getattr(self.widget, attr),
+                    self._peakfit_default_bounds_setting_defaults().get(attr))
+        self._normalize_peakfit_default_bounds_settings()
         self._sync_toolbar_plot_checkboxes()
 
     def _plot_config_setting_bindings(self):
@@ -1307,6 +1316,20 @@ class MainController(object):
             "checkBox_CarryNavPopupOverwrite": True,
         }
 
+    def _peakfit_default_bounds_setting_bindings(self):
+        return [
+            ("peakfit/default_center_half_range", "spinBox_CenterHalfRange"),
+            ("peakfit/default_fwhm_min", "spinBox_DefaultFwhmMin"),
+            ("peakfit/default_fwhm_max", "spinBox_DefaultFwhmMax"),
+        ]
+
+    def _peakfit_default_bounds_setting_defaults(self):
+        return {
+            "spinBox_CenterHalfRange": 0.1,
+            "spinBox_DefaultFwhmMin": 0.0,
+            "spinBox_DefaultFwhmMax": 0.05,
+        }
+
     def _save_widget_to_settings(self, key, widget):
         if isinstance(widget, QtWidgets.QCheckBox):
             self.settings.setValue(key, bool(widget.isChecked()))
@@ -1350,6 +1373,28 @@ class MainController(object):
             except Exception:
                 pass
             return
+
+    def _normalize_peakfit_default_bounds_settings(self):
+        defaults = self._peakfit_default_bounds_setting_defaults()
+        center = float(self.widget.spinBox_CenterHalfRange.value())
+        fwhm_min = float(self.widget.spinBox_DefaultFwhmMin.value())
+        fwhm_max = float(self.widget.spinBox_DefaultFwhmMax.value())
+        if center == 0.0 and fwhm_min == 0.0 and fwhm_max == 0.0:
+            self.widget.spinBox_CenterHalfRange.setValue(
+                defaults["spinBox_CenterHalfRange"])
+            self.widget.spinBox_DefaultFwhmMin.setValue(
+                defaults["spinBox_DefaultFwhmMin"])
+            self.widget.spinBox_DefaultFwhmMax.setValue(
+                defaults["spinBox_DefaultFwhmMax"])
+        self.settings.setValue(
+            "peakfit/default_center_half_range",
+            float(self.widget.spinBox_CenterHalfRange.value()))
+        self.settings.setValue(
+            "peakfit/default_fwhm_min",
+            float(self.widget.spinBox_DefaultFwhmMin.value()))
+        self.settings.setValue(
+            "peakfit/default_fwhm_max",
+            float(self.widget.spinBox_DefaultFwhmMax.value()))
 
     def _capture_nav_carry_state(self):
         try:
