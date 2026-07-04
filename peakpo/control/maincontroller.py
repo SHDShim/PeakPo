@@ -384,6 +384,11 @@ class MainController(object):
             if selection_model is not None:
                 selection_model.selectionChanged.connect(
                     self._handle_peak_parameter_selection_changed)
+        if hasattr(self.widget, "tableWidget_JCPDS"):
+            selection_model = self.widget.tableWidget_JCPDS.selectionModel()
+            if selection_model is not None:
+                selection_model.selectionChanged.connect(
+                    self._handle_jcpds_selection_changed)
         self._peakfit_drag_row = None
         self._peakfit_drag_marked_unsaved = False
         self._peakfit_drag_latest_center = None
@@ -689,6 +694,10 @@ class MainController(object):
         if hasattr(self, "plot_ctrl") and (self.plot_ctrl is not None):
             if not self.plot_ctrl.refresh_selected_peak_marker():
                 self.plot_ctrl.update()
+
+    def _handle_jcpds_selection_changed(self, _selected, _deselected):
+        if hasattr(self, "plot_ctrl") and (self.plot_ctrl is not None):
+            self.plot_ctrl.refresh_jcpds_overlay()
 
     def _get_selected_peak_parameter_row(self):
         tables = [

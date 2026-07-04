@@ -39,6 +39,11 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
         super(_PeakConstraintsDialog, self).__init__(controller.widget)
         self.controller = controller
         self.peak_row = peak_row
+        self._active_editor = None
+        self._position_toggle_off_text = "Set position range from plot"
+        self._position_toggle_on_text = "Set position range from plot (ON)"
+        self._fwhm_toggle_off_text = "Set FWHM max from plot range"
+        self._fwhm_toggle_on_text = "Set FWHM max from plot range (ON)"
         self.setWindowTitle("Peak constraints")
         self.setModal(False)
         self.resize(760, 260)
@@ -51,9 +56,13 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
         layout.addWidget(self.table)
         button_row = QtWidgets.QHBoxLayout()
         self.button_visual_position = QtWidgets.QPushButton(
-            "Set position range from plot", self)
+            self._position_toggle_off_text, self)
         self.button_visual_fwhm = QtWidgets.QPushButton(
-            "Set FWHM max from plot range", self)
+            self._fwhm_toggle_off_text, self)
+        self.button_visual_position.setCheckable(True)
+        self.button_visual_fwhm.setCheckable(True)
+        self._update_visual_toggle_style(self.button_visual_position, False)
+        self._update_visual_toggle_style(self.button_visual_fwhm, False)
         self.button_apply = QtWidgets.QPushButton("Apply", self)
         self.button_close = QtWidgets.QPushButton("Close", self)
         for button in (
@@ -64,8 +73,8 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
         self._populate()
         self.button_apply.clicked.connect(self.apply)
         self.button_close.clicked.connect(self.close)
-        self.button_visual_position.clicked.connect(self._arm_position_range)
-        self.button_visual_fwhm.clicked.connect(self._arm_fwhm_range)
+        self.button_visual_position.toggled.connect(self._arm_position_range)
+        self.button_visual_fwhm.toggled.connect(self._arm_fwhm_range)
 
     def _peak(self):
         return self.controller.model.current_section.peaks_in_queue[self.peak_row]
@@ -155,6 +164,8 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
     def apply(self):
         if not self.controller.model.current_section_exist():
             return
+        if self.controller.plot_interaction_ctrl is not None:
+            self.controller.plot_interaction_ctrl.cancel_editable_xrange()
         self.controller.model.current_section.invalidate_fit_result()
         peak = self._peak()
         for row, (__label, value_key, vary_key, min_key, max_key, __decimals) in \
@@ -180,44 +191,123 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
         self.controller.peakfit_table_ctrl.update_peak_constraints()
         self.controller.plot_ctrl.update()
 
-    def _arm_position_range(self):
+    def _set_toggle_button(self, button, checked, on_text, off_text):
+        old_state = button.blockSignals(True)
+        button.setChecked(bool(checked))
+        button.setDown(bool(checked))
+        button.setText(on_text if checked else off_text)
+        self._update_visual_toggle_style(button, checked)
+        button.blockSignals(old_state)
+
+    def _update_visual_toggle_style(self, button, checked):
+        if checked:
+            button.setStyleSheet(
+                "QPushButton {background-color: #e0b000; color: black;}"
+                "QPushButton:checked {background-color: #f1c232; color: black;}"
+            )
+        else:
+            button.setStyleSheet("")
+
+    def _cancel_other_visual_toggle(self, active_button):
+        if active_button is self.button_visual_position:
+            other_button = self.button_visual_fwhm
+            other_on_text = self._fwhm_toggle_on_text
+            other_off_text = self._fwhm_toggle_off_text
+        else:
+            other_button = self.button_visual_position
+            other_on_text = self._position_toggle_on_text
+            other_off_text = self._position_toggle_off_text
+        if other_button.isChecked():
+            self._set_toggle_button(
+                other_button, False, other_on_text, other_off_text)
+        if self.controller.plot_interaction_ctrl is not None:
+            self.controller.plot_interaction_ctrl.cancel_editable_xrange()
+
+    def _arm_position_range(self, checked):
         if self.controller.plot_interaction_ctrl is None:
             return
+        if not checked:
+            self._active_editor = None
+            self._set_toggle_button(
+                self.button_visual_position, False,
+                self._position_toggle_on_text, self._position_toggle_off_text)
+            self.controller.plot_interaction_ctrl.cancel_editable_xrange()
+            return
+        self._cancel_other_visual_toggle(self.button_visual_position)
+        self._active_editor = "center"
+        xmin = float(self.table.cellWidget(1, 4).value())
+        xmax = float(self.table.cellWidget(1, 6).value())
 
-        def apply_range(xmin, xmax):
-            peak = self._peak()
-            peak["center_min"] = float(xmin)
-            peak["center_max"] = float(xmax)
-            peak["center_min_enabled"] = True
-            peak["center_max_enabled"] = True
+        def preview_range(xmin, xmax):
             self.table.cellWidget(1, 3).setChecked(True)
             self.table.cellWidget(1, 4).setValue(float(xmin))
             self.table.cellWidget(1, 5).setChecked(True)
             self.table.cellWidget(1, 6).setValue(float(xmax))
-            self.apply()
 
-        self.controller.plot_interaction_ctrl.start_range_tool(
-            "Set peak position range", apply_range)
+        def deactivate_button():
+            self._active_editor = None
+            self._set_toggle_button(
+                self.button_visual_position, False,
+                self._position_toggle_on_text, self._position_toggle_off_text)
 
-    def _arm_fwhm_range(self):
+        self._set_toggle_button(
+            self.button_visual_position, True,
+            self._position_toggle_on_text, self._position_toggle_off_text)
+        self.controller.plot_interaction_ctrl.start_editable_xrange_tool(
+            "Adjust peak position range", xmin, xmax, preview_range,
+            cancel_callback=deactivate_button)
+
+    def _arm_fwhm_range(self, checked):
         if self.controller.plot_interaction_ctrl is None:
             return
+        if not checked:
+            self._active_editor = None
+            self._set_toggle_button(
+                self.button_visual_fwhm, False,
+                self._fwhm_toggle_on_text, self._fwhm_toggle_off_text)
+            self.controller.plot_interaction_ctrl.cancel_editable_xrange()
+            return
+        self._cancel_other_visual_toggle(self.button_visual_fwhm)
+        self._active_editor = "sigma"
+        peak = self._peak()
+        center = float(self.table.cellWidget(1, 1).value())
+        current_max = float(self.table.cellWidget(2, 6).value())
+        if current_max <= 0.0:
+            current_max = float(peak.get("sigma", 0.05)) if peak else 0.05
+        half = 0.5 * float(current_max)
+        xmin = center - half
+        xmax = center + half
 
-        def apply_range(xmin, xmax):
+        def preview_range(xmin, xmax):
             width = abs(float(xmax) - float(xmin))
-            peak = self._peak()
-            peak["sigma_min"] = 0.0
-            peak["sigma_max"] = width
-            peak["sigma_min_enabled"] = True
-            peak["sigma_max_enabled"] = True
             self.table.cellWidget(2, 3).setChecked(True)
             self.table.cellWidget(2, 4).setValue(0.0)
             self.table.cellWidget(2, 5).setChecked(True)
             self.table.cellWidget(2, 6).setValue(width)
-            self.apply()
 
-        self.controller.plot_interaction_ctrl.start_range_tool(
-            "Set peak FWHM maximum", apply_range)
+        def deactivate_button():
+            self._active_editor = None
+            self._set_toggle_button(
+                self.button_visual_fwhm, False,
+                self._fwhm_toggle_on_text, self._fwhm_toggle_off_text)
+
+        self._set_toggle_button(
+            self.button_visual_fwhm, True,
+            self._fwhm_toggle_on_text, self._fwhm_toggle_off_text)
+        self.controller.plot_interaction_ctrl.start_editable_xrange_tool(
+            "Adjust peak FWHM maximum", xmin, xmax, preview_range,
+            cancel_callback=deactivate_button)
+
+    def closeEvent(self, event):
+        if self.controller.plot_interaction_ctrl is not None:
+            self.controller.plot_interaction_ctrl.cancel_editable_xrange()
+            self._set_toggle_button(
+                self.button_visual_position, False,
+                self._position_toggle_on_text, self._position_toggle_off_text)
+            self._set_toggle_button(
+                self.button_visual_fwhm, False,
+                self._fwhm_toggle_on_text, self._fwhm_toggle_off_text)
+        super(_PeakConstraintsDialog, self).closeEvent(event)
 
 
 class _DefaultPeakBoundsDialog(QtWidgets.QDialog):
@@ -314,12 +404,14 @@ class _BackgroundSetupDialog(QtWidgets.QDialog):
         self.table_coeff = QtWidgets.QTableWidget(self)
         self.table_coeff.setColumnCount(2)
         self.table_coeff.setHorizontalHeaderLabels(["Value", "Vary"])
+        self._widen_row_header(self.table_coeff)
         layout.addWidget(self.table_coeff)
 
         layout.addWidget(QtWidgets.QLabel("Background anchor ranges", self))
         self.table_anchor = QtWidgets.QTableWidget(self)
         self.table_anchor.setColumnCount(3)
         self.table_anchor.setHorizontalHeaderLabels(["xmin", "xmax", "Weight"])
+        self._widen_row_header(self.table_anchor)
         layout.addWidget(self.table_anchor)
 
         anchor_buttons = QtWidgets.QHBoxLayout()
@@ -357,6 +449,7 @@ class _BackgroundSetupDialog(QtWidgets.QDialog):
 
     def closeEvent(self, event):
         if self.controller.plot_interaction_ctrl is not None:
+            self.controller.plot_interaction_ctrl.cancel_editable_xrange()
             self.controller.plot_interaction_ctrl.cancel_range_tool()
         super(_BackgroundSetupDialog, self).closeEvent(event)
 
@@ -381,6 +474,13 @@ class _BackgroundSetupDialog(QtWidgets.QDialog):
         box.setChecked(bool(checked))
         box.setStyleSheet("margin-left:12px; margin-right:12px;")
         return box
+
+    def _widen_row_header(self, table):
+        header = table.verticalHeader()
+        header.setVisible(True)
+        header.setDefaultAlignment(QtCore.Qt.AlignCenter)
+        header.setMinimumWidth(68)
+        header.setFixedWidth(68)
 
     def _populate(self):
         self._rebuild_coeff_table()
@@ -604,6 +704,7 @@ class PeakFitController(object):
             self.widget.pushButton_PkRemoveSelectedPeaks.clicked.connect(
                 self.remove_selected_peak_from_table)
         self._install_table_backspace_key_filters()
+        self._connect_sections_tab_widgets()
         self._connect_constraints_tab_widgets()
         self._connect_background_tab_widgets()
         if hasattr(self.widget, "tabWidget_PeakFit"):
@@ -626,12 +727,26 @@ class PeakFitController(object):
             table.installEventFilter(key_filter)
             self._table_backspace_key_filters.append(key_filter)
 
+    def _connect_sections_tab_widgets(self):
+        if not hasattr(self.widget, "tableWidget_PkFtSections"):
+            return
+        if not hasattr(self, "_sections_table_selection_connected"):
+            sel_model = self.widget.tableWidget_PkFtSections.selectionModel()
+            if sel_model:
+                sel_model.selectionChanged.connect(
+                    self._on_section_table_selection_changed)
+                self._sections_table_selection_connected = True
+
     def _connect_constraints_tab_widgets(self):
         if not hasattr(self.widget, "pushButton_SetPosRange"):
             return
-        self.widget.pushButton_SetPosRange.clicked.connect(
+        self.widget.pushButton_SetPosRange.setCheckable(True)
+        self.widget.pushButton_SetFwhmMax.setCheckable(True)
+        self.widget.pushButton_SetPosRange.setAutoDefault(False)
+        self.widget.pushButton_SetFwhmMax.setAutoDefault(False)
+        self.widget.pushButton_SetPosRange.toggled.connect(
             self._arm_constraints_position_range)
-        self.widget.pushButton_SetFwhmMax.clicked.connect(
+        self.widget.pushButton_SetFwhmMax.toggled.connect(
             self._arm_constraints_fwhm_range)
         self.widget.spinBox_CenterHalfRange.valueChanged.connect(
             self._on_default_bounds_changed)
@@ -647,6 +762,35 @@ class PeakFitController(object):
                         self._on_peak_table_selection_changed)
                     self._peak_table_selection_connected = True
 
+    def _set_constraints_toggle_button(self, button, checked, on_text, off_text):
+        old_state = button.blockSignals(True)
+        button.setChecked(bool(checked))
+        button.setDown(bool(checked))
+        button.setText(on_text if checked else off_text)
+        if checked:
+            button.setStyleSheet(
+                "QPushButton {background-color: #f1c232; color: black;}"
+                "QPushButton:checked {background-color: #f1c232; color: black;}"
+            )
+        else:
+            button.setStyleSheet("")
+        button.blockSignals(old_state)
+
+    def _clear_constraints_toggle_buttons(self, except_button=None):
+        pairs = [
+            (self.widget.pushButton_SetPosRange,
+             "Set position range from plot (ON)",
+             "Set position range from plot"),
+            (self.widget.pushButton_SetFwhmMax,
+             "Set FWHM max from plot range (ON)",
+             "Set FWHM max from plot range"),
+        ]
+        for button, on_text, off_text in pairs:
+            if button is except_button:
+                continue
+            if button.isChecked():
+                self._set_constraints_toggle_button(button, False, on_text, off_text)
+
     def _connect_background_tab_widgets(self):
         if not hasattr(self.widget, "pushButton_AddCurrentView"):
             return
@@ -658,9 +802,23 @@ class PeakFitController(object):
             self._remove_bg_anchor_rows)
         self.widget.spinBox_BGPolyOrder.valueChanged.connect(
             self._on_bg_poly_order_changed)
+        if hasattr(self.widget, "tableWidget_BGAnchorRanges"):
+            sel_model = self.widget.tableWidget_BGAnchorRanges.selectionModel()
+            if sel_model and not hasattr(self, "_bg_anchor_selection_connected"):
+                sel_model.selectionChanged.connect(
+                    self._on_bg_anchor_table_selection_changed)
+                self._bg_anchor_selection_connected = True
 
     def _on_peak_table_selection_changed(self):
         self._update_constraints_tab_state()
+
+    def _on_section_table_selection_changed(self, _selected, _deselected):
+        if hasattr(self, "plot_ctrl") and (self.plot_ctrl is not None):
+            self.plot_ctrl.refresh_section_selection_overlay()
+
+    def _on_bg_anchor_table_selection_changed(self, _selected, _deselected):
+        if hasattr(self, "plot_ctrl") and (self.plot_ctrl is not None):
+            self.plot_ctrl.refresh_background_selection_overlay()
 
     def _update_constraints_tab_state(self):
         if not hasattr(self.widget, "label_PeakStatus"):
@@ -1053,32 +1211,74 @@ class PeakFitController(object):
     def _arm_constraints_position_range(self):
         if self.plot_interaction_ctrl is None:
             return
+        button = self.widget.pushButton_SetPosRange
+        if not button.isChecked():
+            self.plot_interaction_ctrl.cancel_editable_xrange()
+            self._set_constraints_toggle_button(
+                button, False,
+                "Set position range from plot (ON)",
+                "Set position range from plot")
+            return
         table = self.widget.tableWidget_PkParams
         selected_rows = {r.row() for r in table.selectionModel().selectedRows()} if table.selectionModel() else set()
         if not selected_rows:
             selected_rows = {idx.row() for idx in table.selectionModel().selectedIndexes()} if table.selectionModel() else set()
         if len(selected_rows) != 1:
+            self._set_constraints_toggle_button(
+                button, False,
+                "Set position range from plot (ON)",
+                "Set position range from plot")
             return
         row = selected_rows.pop()
+        self._clear_constraints_toggle_buttons(except_button=button)
         def apply_range(xmin, xmax):
             peak = self.model.current_section.peaks_in_queue[row]
             peak["center_min"] = float(xmin)
             peak["center_max"] = float(xmax)
             self._update_peak_constraint_min_max_widgets(row, "center")
             self.set_tableWidget_PkParams_unsaved()
-        self.plot_interaction_ctrl.start_range_tool(
-            "Set peak position range", apply_range)
+        def cancel_button():
+            self._set_constraints_toggle_button(
+                button, False,
+                "Set position range from plot (ON)",
+                "Set position range from plot")
+        peak = self.model.current_section.peaks_in_queue[row]
+        xmin, xmax = self.default_bound_values(peak, "center")
+        xmin = float(peak.get("center_min", xmin))
+        xmax = float(peak.get("center_max", xmax))
+        if xmax <= xmin:
+            xmin, xmax = self.default_bound_values(peak, "center")
+        self._set_constraints_toggle_button(
+            button, True,
+            "Set position range from plot (ON)",
+            "Set position range from plot")
+        self.plot_interaction_ctrl.start_editable_xrange_tool(
+            "Set peak position range", xmin, xmax, apply_range,
+            cancel_callback=cancel_button)
 
     def _arm_constraints_fwhm_range(self):
         if self.plot_interaction_ctrl is None:
+            return
+        button = self.widget.pushButton_SetFwhmMax
+        if not button.isChecked():
+            self.plot_interaction_ctrl.cancel_editable_xrange()
+            self._set_constraints_toggle_button(
+                button, False,
+                "Set FWHM max from plot range (ON)",
+                "Set FWHM max from plot range")
             return
         table = self.widget.tableWidget_PkParams
         selected_rows = {r.row() for r in table.selectionModel().selectedRows()} if table.selectionModel() else set()
         if not selected_rows:
             selected_rows = {idx.row() for idx in table.selectionModel().selectedIndexes()} if table.selectionModel() else set()
         if len(selected_rows) != 1:
+            self._set_constraints_toggle_button(
+                button, False,
+                "Set FWHM max from plot range (ON)",
+                "Set FWHM max from plot range")
             return
         row = selected_rows.pop()
+        self._clear_constraints_toggle_buttons(except_button=button)
         def apply_range(xmin, xmax):
             peak = self.model.current_section.peaks_in_queue[row]
             width = abs(float(xmax) - float(xmin))
@@ -1086,8 +1286,34 @@ class PeakFitController(object):
             peak["sigma_max"] = width
             self._update_peak_constraint_min_max_widgets(row, "sigma")
             self.set_tableWidget_PkParams_unsaved()
-        self.plot_interaction_ctrl.start_range_tool(
-            "Set peak FWHM maximum", apply_range)
+        def cancel_button():
+            self._set_constraints_toggle_button(
+                button, False,
+                "Set FWHM max from plot range (ON)",
+                "Set FWHM max from plot range")
+        peak = self.model.current_section.peaks_in_queue[row]
+        detail_table = getattr(self.widget, "tableWidget_PeakConstraintDetail", None)
+        if detail_table is not None and detail_table.rowCount() > 2:
+            max_widget = detail_table.cellWidget(2, 6)
+            if max_widget is not None:
+                current_max = float(max_widget.value())
+            else:
+                current_max = float(peak.get("sigma_max", peak.get("sigma", 0.05)))
+        else:
+            current_max = float(peak.get("sigma_max", peak.get("sigma", 0.05)))
+        center = float(peak.get("center", 0.0))
+        if current_max <= 0.0:
+            current_max = float(peak.get("sigma", 0.05)) if peak else 0.05
+        half = 0.5 * float(current_max)
+        xmin = center - half
+        xmax = center + half
+        self._set_constraints_toggle_button(
+            button, True,
+            "Set FWHM max from plot range (ON)",
+            "Set FWHM max from plot range")
+        self.plot_interaction_ctrl.start_editable_xrange_tool(
+            "Set peak FWHM maximum", xmin, xmax, apply_range,
+            cancel_callback=cancel_button)
 
     def _on_default_bounds_changed(self):
         self._default_peak_bounds = {

@@ -12,6 +12,7 @@ import numpy.ma as ma
 from qtpy import QtWidgets
 from qtpy import QtCore
 from ..ds_jcpds import convert_tth
+from ..ds_section.section import normalize_peak_phase_name
 from ..model.azimuthal_integration import (
     normalize_range,
     normalize_ranges,
@@ -53,6 +54,8 @@ class MplController(object):
         self._selected_peak_marker_artists = []
         self._jcpds_overlay_artists = []
         self._jcpds_hkl_artists = []
+        self._section_selection_artists = []
+        self._background_selection_artists = []
         
         # ✅ Wrap toolbar methods to track state
         toolbar = self.widget.mpl.canvas.toolbar
@@ -731,6 +734,58 @@ class MplController(object):
                 self._jcpds_hkl_artists.append(artist)
         return artist
 
+    def _get_selected_jcpds_rows(self):
+        table = getattr(self.widget, "tableWidget_JCPDS", None)
+        if table is None:
+            return set()
+        selection_model = table.selectionModel()
+        if selection_model is None:
+            return set()
+        rows = {index.row() for index in selection_model.selectedRows()}
+        if not rows:
+            for index in selection_model.selectedIndexes():
+                rows.add(index.row())
+        return rows
+
+    def _get_active_cellfit_jcpds_rows(self):
+        combo = getattr(self.widget, "comboBox_PeakFitLabels", None)
+        if combo is None:
+            return set()
+        if not hasattr(self.widget, "tabWidget_4") or \
+                not hasattr(self.widget, "tabWidget_4Page2"):
+            return set()
+        try:
+            if self.widget.tabWidget_4.currentWidget() != self.widget.tabWidget_4Page2:
+                return set()
+        except Exception:
+            return set()
+        phase_name = normalize_peak_phase_name(combo.currentText())
+        if not phase_name:
+            return set()
+        rows = set()
+        for idx, phase in enumerate(getattr(self.model, "jcpds_lst", [])):
+            if normalize_peak_phase_name(getattr(phase, "name", "")) == phase_name:
+                rows.add(idx)
+        return rows
+
+    def _get_jcpds_emphasis_rows(self):
+        selected_rows = self._get_selected_jcpds_rows()
+        if selected_rows:
+            return selected_rows
+        return self._get_active_cellfit_jcpds_rows()
+
+    def _get_jcpds_plot_alpha(self, phase_index, base_alpha, emphasis_rows):
+        if not emphasis_rows:
+            return base_alpha
+        phase = None
+        if 0 <= phase_index < len(self.model.jcpds_lst):
+            phase = self.model.jcpds_lst[phase_index]
+        if phase is None or not getattr(phase, "display", False):
+            return base_alpha
+        if phase_index in emphasis_rows:
+            return base_alpha
+        return max(0.16, float(base_alpha) * 0.45)
+
     def _artist_is_jcpds_overlay(self, artist, hkl_only=False):
         if getattr(artist, "_peakpo_jcpds_overlay", False):
             return (not hkl_only) or getattr(artist, "_peakpo_jcpds_hkl", False)
@@ -802,6 +857,146 @@ class MplController(object):
         self._clear_jcpds_hkl_artists()
         self.widget.mpl.canvas.draw_idle()
 
+    def _clear_section_selection_artists(self):
+        for artist in list(self._section_selection_artists):
+            try:
+                artist.remove()
+            except Exception:
+                pass
+        self._section_selection_artists = []
+
+    def _clear_background_selection_artists(self):
+        for artist in list(self._background_selection_artists):
+            try:
+                artist.remove()
+            except Exception:
+                pass
+        self._background_selection_artists = []
+
+    def _get_selected_section_rows(self):
+        table = getattr(self.widget, "tableWidget_PkFtSections", None)
+        if table is None:
+            return []
+        selection_model = table.selectionModel()
+        if selection_model is None:
+            return []
+        rows = [index.row() for index in selection_model.selectedRows()]
+        if not rows:
+            rows = [index.row() for index in selection_model.selectedIndexes()]
+        return sorted(set(r for r in rows if r is not None and r >= 0))
+
+    def _plot_selected_section_overlays(self):
+        self._clear_section_selection_artists()
+        if self.model.current_section_exist() and \
+                self.model.current_section.get_number_of_peaks_in_queue() > 0:
+            return
+        selected_rows = self._get_selected_section_rows()
+        if not selected_rows:
+            return
+        if not hasattr(self.widget.mpl.canvas, "ax_pattern"):
+            return
+        import matplotlib.patches as patches
+        pattern_ax = self.widget.mpl.canvas.ax_pattern
+        pattern_ylim = pattern_ax.get_ylim()
+        pattern_face = "#ff9800"
+        pattern_edge = "#ff6f00"
+        for row in selected_rows:
+            if row >= len(self.model.section_lst):
+                continue
+            section = self.model.section_lst[row]
+            x = getattr(section, "x", None)
+            if x is None or len(x) == 0:
+                continue
+            xmin = float(np.min(x))
+            xmax = float(np.max(x))
+            rect = patches.Rectangle(
+                (xmin, pattern_ylim[0]), xmax - xmin,
+                pattern_ylim[1] - pattern_ylim[0],
+                linewidth=1.2, edgecolor=pattern_edge,
+                facecolor=pattern_face, alpha=0.25, zorder=6)
+            pattern_ax.add_patch(rect)
+            self._section_selection_artists.append(rect)
+        if hasattr(self.widget.mpl.canvas, "ax_cake"):
+            cake_ax = self.widget.mpl.canvas.ax_cake
+            cake_ylim = cake_ax.get_ylim()
+            cake_face = "#ff9800"
+            cake_edge = "#ff6f00"
+            for row in selected_rows:
+                if row >= len(self.model.section_lst):
+                    continue
+                section = self.model.section_lst[row]
+                x = getattr(section, "x", None)
+                if x is None or len(x) == 0:
+                    continue
+                xmin = float(np.min(x))
+                xmax = float(np.max(x))
+                rect = patches.Rectangle(
+                    (xmin, cake_ylim[0]), xmax - xmin,
+                    cake_ylim[1] - cake_ylim[0],
+                    linewidth=1.2, edgecolor=cake_edge,
+                    facecolor=cake_face, alpha=0.25, zorder=6)
+                cake_ax.add_patch(rect)
+                self._section_selection_artists.append(rect)
+
+    def refresh_section_selection_overlay(self):
+        if self._is_drawing or self._toolbar_active:
+            self.update()
+            return
+        self._clear_section_selection_artists()
+        self._plot_selected_section_overlays()
+        self.widget.mpl.canvas.draw_idle()
+
+    def _get_selected_background_rows(self):
+        table = getattr(self.widget, "tableWidget_BGAnchorRanges", None)
+        if table is None:
+            return []
+        selection_model = table.selectionModel()
+        if selection_model is None:
+            return []
+        rows = [index.row() for index in selection_model.selectedRows()]
+        if not rows:
+            rows = [index.row() for index in selection_model.selectedIndexes()]
+        return sorted(set(r for r in rows if r is not None and r >= 0))
+
+    def _plot_selected_background_overlays(self):
+        self._clear_background_selection_artists()
+        if not self.model.current_section_exist():
+            return
+        anchors = getattr(self.model.current_section, "background_anchor_ranges", [])
+        if not anchors:
+            return
+        selected_rows = self._get_selected_background_rows()
+        if not selected_rows:
+            return
+        if not hasattr(self.widget.mpl.canvas, "ax_pattern"):
+            return
+        import matplotlib.patches as patches
+        pattern_ax = self.widget.mpl.canvas.ax_pattern
+        pattern_ylim = pattern_ax.get_ylim()
+        for row in selected_rows:
+            if row >= len(anchors):
+                continue
+            anchor = anchors[row]
+            xmin = float(anchor.get("xmin", 0.0))
+            xmax = float(anchor.get("xmax", xmin))
+            if xmax < xmin:
+                xmin, xmax = xmax, xmin
+            rect = patches.Rectangle(
+                (xmin, pattern_ylim[0]), xmax - xmin,
+                pattern_ylim[1] - pattern_ylim[0],
+                linewidth=1.0, edgecolor="#d32f2f",
+                facecolor="#f44336", alpha=0.22, zorder=6)
+            pattern_ax.add_patch(rect)
+            self._background_selection_artists.append(rect)
+
+    def refresh_background_selection_overlay(self):
+        if self._is_drawing or self._toolbar_active:
+            self.update()
+            return
+        self._clear_background_selection_artists()
+        self._plot_selected_background_overlays()
+        self.widget.mpl.canvas.draw_idle()
+
     def refresh_jcpds_overlay(self):
         if self._is_drawing or self._toolbar_active:
             self.update()
@@ -869,7 +1064,17 @@ class MplController(object):
         wavelength = self.widget.doubleSpinBox_SetWavelength.value()
         use_table_0gpa = self.widget.checkBox_UseJCPDSTable1bar.isChecked()
         legend_entries = []
-        for i, phase in enumerate(selected_phases):
+        emphasis_rows = self._get_jcpds_emphasis_rows()
+        emphasis_rows = {
+            idx for idx in emphasis_rows
+            if 0 <= idx < len(self.model.jcpds_lst) and
+            getattr(self.model.jcpds_lst[idx], "display", False)
+        }
+        display_index = -1
+        for row_idx, phase in enumerate(self.model.jcpds_lst):
+            if not phase.display:
+                continue
+            display_index += 1
 #            try:
             phase.cal_dsp(pressure,
                             temperature,
@@ -890,22 +1095,25 @@ class MplController(object):
                 else:
                     starting_intensity = np.ones_like(tth) * start_intensity
                     bar_max = starting_intensity - \
-                        i * 100. * bar_scale / n_displayed_jcpds
+                        display_index * 100. * bar_scale / n_displayed_jcpds
                     bar_min = starting_intensity - \
-                        (i+0.7) * 100. * bar_scale / n_displayed_jcpds
+                        (display_index + 0.7) * 100. * bar_scale / n_displayed_jcpds
                 if (pressure == 0.) or (phase.symmetry == 'nosymmetry'):
                     volume = phase.v
                 else:
                     volume = phase.v.item()
                 legend_label = "{0:}, {1:.3f} A^3".format(
                     phase.name, volume)
+                phase_alpha = self._get_jcpds_plot_alpha(
+                    row_idx, self.widget.doubleSpinBox_JCPDS_ptn_Alpha.value(),
+                    emphasis_rows)
                 jcpds_bars = self.widget.mpl.canvas.ax_pattern.vlines(
                     tth, bar_min, bar_max, colors=phase.color,
                     label=legend_label,
                     lw=float(
                         self.widget.comboBox_PtnJCPDSBarThickness.
                         currentText()),
-                    alpha=self.widget.doubleSpinBox_JCPDS_ptn_Alpha.value(),
+                    alpha=phase_alpha,
                     zorder=18)
                 self._track_jcpds_artist(jcpds_bars)
                 legend_entries.append((jcpds_bars, legend_label, phase.color))
@@ -920,18 +1128,21 @@ class MplController(object):
                             horizontalalignment='center',
                             fontsize=int(
                                 self.widget.comboBox_HKLFontSize.currentText()),
-                            alpha=self.widget.doubleSpinBox_JCPDS_ptn_Alpha.value(),
+                            alpha=phase_alpha,
                             zorder=19), hkl=True)
                 # phase.name, phase.v.item()))
             if self.widget.checkBox_ShowCake.isChecked() and \
                     self.widget.checkBox_JCPDSinCake.isChecked():
+                phase_alpha = self._get_jcpds_plot_alpha(
+                    row_idx, self.widget.doubleSpinBox_JCPDS_cake_Alpha.value(),
+                    emphasis_rows)
                 self._track_jcpds_artist(
                     self.widget.mpl.canvas.ax_cake.vlines(
                     tth, np.ones_like(tth) * cakerange[2],
                     np.ones_like(tth) * cakerange[3], colors=phase.color,
                     lw=float(
                         self.widget.comboBox_CakeJCPDSBarThickness.currentText()),
-                    alpha=self.widget.doubleSpinBox_JCPDS_cake_Alpha.value(),
+                    alpha=phase_alpha,
                     zorder=18))
                 if self.widget.checkBox_ShowMillerIndices_Cake.isChecked():
                     hkl_list = phase.get_hkl_in_text()
@@ -946,7 +1157,7 @@ class MplController(object):
                             transform=trans, horizontalalignment='right',
                             fontsize=int(
                                 self.widget.comboBox_HKLFontSize.currentText()),
-                            alpha=self.widget.doubleSpinBox_JCPDS_cake_Alpha.value(),
+                            alpha=phase_alpha,
                             zorder=19), hkl=True)
         if self.widget.checkBox_JCPDSinPattern.isChecked():
             legend_fontsize = 14
@@ -1516,6 +1727,10 @@ class MplController(object):
                         self.widget.horizontalSlider_JCPDSBarScale.value() / 100.
                     self.widget.mpl.canvas.ax_pattern.set_ylim(
                         new_low_limit, limits[3])
+
+            if self._fits_tab_active():
+                self._plot_selected_section_overlays()
+                self._plot_selected_background_overlays()
             
             if self.widget.checkBox_ShowLargePnT.isChecked():
                 label_p_t = "{0: 5.1f} GPa\n{1: 4.0f} K".\

@@ -28,6 +28,8 @@ class PlotInteractionController(object):
         self._range_patch = None
         self._range_last_draw_px = None
         self._plot_help_active = False
+        self._editable_xrange = None
+        self._editable_xrange_drag = None
 
     def connect(self):
         canvas = self.widget.mpl.canvas
@@ -40,6 +42,9 @@ class PlotInteractionController(object):
     def on_press(self, event):
         self.main._deactivate_toolbar_modes()
         if event is None:
+            return
+        if self._editable_xrange is not None:
+            self._handle_editable_xrange_press(event)
             return
         if self._range_tool is not None:
             self._handle_range_tool_press(event)
@@ -67,6 +72,9 @@ class PlotInteractionController(object):
             self._start_zoom_drag(event)
 
     def on_motion(self, event):
+        if self._editable_xrange_drag is not None:
+            self._update_editable_xrange_drag(event)
+            return
         if self._range_drag is not None:
             self._update_range_drag(event)
             return
@@ -80,6 +88,9 @@ class PlotInteractionController(object):
         self.main._update_cursor_position_readout(event)
 
     def on_release(self, event):
+        if self._editable_xrange_drag is not None:
+            self._finish_editable_xrange_drag(event)
+            return
         if self._range_drag is not None:
             self._finish_range_drag(event)
             return
@@ -136,6 +147,9 @@ class PlotInteractionController(object):
                 "to the full current view."
             )
         return ""
+
+    def _xrange_handle_tolerance_px(self):
+        return 10.0
 
     def _update_plot_mouse_help(self, event):
         if self._range_tool is not None:
@@ -438,6 +452,183 @@ class PlotInteractionController(object):
         if label is not None:
             label.setText(str(text))
 
+    def start_editable_xrange_tool(self, label, xmin, xmax, callback,
+                                   cancel_callback=None,
+                                   facecolor="#ffbf47",
+                                   edgecolor="#ff8f00",
+                                   axes=None):
+        self.cancel_range_tool()
+        self._clear_editable_xrange()
+        if axes is None:
+            axes = self.widget.mpl.canvas.ax_pattern
+        if axes is None:
+            return False
+        x0, x1 = sorted([float(xmin), float(xmax)])
+        y0, y1 = axes.get_ylim()
+        patch = patches.Rectangle(
+            (x0, y0), x1 - x0, y1 - y0,
+            facecolor=facecolor,
+            edgecolor=edgecolor,
+            alpha=0.25,
+            linewidth=1.4,
+            zorder=101,
+        )
+        axes.add_patch(patch)
+        self._editable_xrange = {
+            "label": str(label),
+            "callback": callback,
+            "cancel_callback": cancel_callback,
+            "axes": axes,
+            "xmin": x0,
+            "xmax": x1,
+            "ymin": y0,
+            "ymax": y1,
+            "patch": patch,
+            "facecolor": facecolor,
+            "edgecolor": edgecolor,
+        }
+        self._set_status(
+            str(label) + ": drag left/right edge to resize, drag inside to move, right-click to cancel.")
+        self.widget.mpl.canvas.draw_idle()
+        return True
+
+    def get_editable_xrange(self):
+        tool = self._editable_xrange
+        if tool is None:
+            return None
+        return float(tool["xmin"]), float(tool["xmax"])
+
+    def cancel_editable_xrange(self):
+        tool = self._editable_xrange
+        self._editable_xrange_drag = None
+        self._clear_editable_xrange()
+        if tool is not None:
+            cancel_callback = tool.get("cancel_callback")
+            if callable(cancel_callback):
+                cancel_callback()
+
+    def _clear_editable_xrange(self):
+        tool = self._editable_xrange
+        self._editable_xrange = None
+        self._editable_xrange_drag = None
+        if tool is None:
+            return
+        patch = tool.get("patch")
+        if patch is not None:
+            try:
+                patch.remove()
+            except Exception:
+                pass
+        self.widget.mpl.canvas.draw_idle()
+
+    def _hit_test_editable_xrange(self, event):
+        tool = self._editable_xrange
+        if tool is None or event is None or event.inaxes != tool["axes"]:
+            return None
+        x0 = tool["xmin"]
+        x1 = tool["xmax"]
+        y0 = tool["ymin"]
+        y1 = tool["ymax"]
+        if event.xdata is None or event.ydata is None:
+            return None
+        if not (min(y0, y1) <= event.ydata <= max(y0, y1)):
+            return None
+        ax = tool["axes"]
+        left_px = ax.transData.transform((x0, event.ydata))[0]
+        right_px = ax.transData.transform((x1, event.ydata))[0]
+        click_px = float(event.x)
+        tol = self._xrange_handle_tolerance_px()
+        if abs(click_px - left_px) <= tol:
+            return "left"
+        if abs(click_px - right_px) <= tol:
+            return "right"
+        if min(left_px, right_px) < click_px < max(left_px, right_px):
+            return "move"
+        return None
+
+    def _handle_editable_xrange_press(self, event):
+        if self._editable_xrange is None:
+            return
+        if self._is_right(event):
+            self.cancel_editable_xrange()
+            self._set_status("Range edit canceled.")
+            return
+        if not self._is_left(event):
+            return
+        mode = self._hit_test_editable_xrange(event)
+        if mode is None:
+            return
+        tool = self._editable_xrange
+        tool["press_x"] = float(event.xdata)
+        tool["orig_xmin"] = float(tool["xmin"])
+        tool["orig_xmax"] = float(tool["xmax"])
+        tool["mode"] = mode
+        self._editable_xrange_drag = tool
+
+    def _update_editable_xrange_drag(self, event):
+        tool = self._editable_xrange_drag
+        if tool is None or event is None or event.xdata is None:
+            return
+        ax = tool["axes"]
+        xdata = float(event.xdata)
+        x_limits = ax.get_xlim()
+        x_lo = float(min(x_limits))
+        x_hi = float(max(x_limits))
+        orig_xmin = float(tool["orig_xmin"])
+        orig_xmax = float(tool["orig_xmax"])
+        width = max(0.0, orig_xmax - orig_xmin)
+        mode = tool.get("mode")
+        if mode == "left":
+            xmin = min(max(xdata, x_lo), orig_xmax)
+            xmax = orig_xmax
+        elif mode == "right":
+            xmin = orig_xmin
+            xmax = max(min(xdata, x_hi), orig_xmin)
+        else:
+            delta = xdata - float(tool.get("press_x", xdata))
+            xmin = orig_xmin + delta
+            xmax = orig_xmax + delta
+            if xmin < x_lo:
+                xmax += (x_lo - xmin)
+                xmin = x_lo
+            if xmax > x_hi:
+                xmin -= (xmax - x_hi)
+                xmax = x_hi
+            if xmin < x_lo:
+                xmin = x_lo
+                xmax = min(x_lo + width, x_hi)
+        xmin = min(max(xmin, x_lo), x_hi)
+        xmax = min(max(xmax, x_lo), x_hi)
+        if xmax < xmin:
+            xmax = xmin
+        self._set_editable_xrange(tool, xmin, xmax)
+        self.widget.mpl.canvas.draw_idle()
+
+    def _set_editable_xrange(self, tool, xmin, xmax):
+        axes = tool["axes"]
+        y0, y1 = axes.get_ylim()
+        tool["xmin"] = float(min(xmin, xmax))
+        tool["xmax"] = float(max(xmin, xmax))
+        tool["ymin"] = float(y0)
+        tool["ymax"] = float(y1)
+        patch = tool.get("patch")
+        if patch is not None:
+            patch.set_xy((tool["xmin"], y0))
+            patch.set_width(tool["xmax"] - tool["xmin"])
+            patch.set_height(y1 - y0)
+
+    def _finish_editable_xrange_drag(self, event):
+        tool = self._editable_xrange_drag
+        self._editable_xrange_drag = None
+        if tool is None:
+            return
+        callback = tool.get("callback")
+        try:
+            if callable(callback):
+                callback(float(tool["xmin"]), float(tool["xmax"]))
+        finally:
+            self.widget.mpl.canvas.draw_idle()
+
     def start_range_tool(self, label, callback, repeat=False,
                          cancel_callback=None):
         self.cancel_range_tool()
@@ -464,6 +655,8 @@ class PlotInteractionController(object):
             cancel_callback = tool.get("cancel_callback")
             if callable(cancel_callback):
                 cancel_callback()
+        if self._editable_xrange is not None:
+            self.cancel_editable_xrange()
 
     def _handle_range_tool_press(self, event):
         if self._is_right(event):
