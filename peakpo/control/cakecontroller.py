@@ -30,8 +30,6 @@ class CakeController(object):
             self.addremove_cake)
         self.widget.pushButton_GetPONI.clicked.connect(self.get_poni)
         self.widget.pushButton_ApplyCakeView.clicked.connect(self.update_cake)
-        self.widget.pushButton_ApplyMask.clicked.connect(self.apply_mask)
-        self.widget.pushButton_MaskReset.clicked.connect(self.reset_maskrange)
         self.widget.lineEdit_PONI.editingFinished.connect(
             self.load_new_poni_from_name)
         self.widget.pushButton_ResetCakeScale.clicked.connect(
@@ -464,34 +462,6 @@ class CakeController(object):
         self.model.load_associated_img()
         self._set_image_file_box()
         return True
-
-    def apply_mask(self):
-        # self.produce_cake()
-        min_mask = float(self.widget.spinBox_MaskMin.value())
-        max_mask = float(self.widget.spinBox_MaskMax.value())
-        zrange = self.model.diff_img.get_img_zrange()
-        print('img z range', zrange)
-        print('mask range', min_mask, max_mask)
-        if (zrange[0] < min_mask) or (zrange[1] > max_mask):
-            # case for meaningful mask
-            if self.widget.pushButton_ApplyMask.isChecked():
-                self.cakemake_ctrl.cook()
-        else:
-            self.model.diff_img.set_mask(None)
-        self._apply_changes_to_graph()
-
-    def reset_maskrange(self):
-        # get min and max of the cake image
-        #intensity_cake, _, _ = self.model.diff_img.get_cake()
-        zrange = self.model.diff_img.get_img_zrange()
-        if zrange != None:
-            # push those values to spinboxes
-            self.widget.spinBox_MaskMin.setValue(int(zrange[0]))
-            self.widget.spinBox_MaskMax.setValue(int(zrange[1]))
-            self.model.diff_img.set_mask(None)
-            self._apply_changes_to_graph()
-        # reprocess the image
-        # self.apply_mask()
 
     def produce_cake(self):
         """

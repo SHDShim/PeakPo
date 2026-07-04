@@ -446,8 +446,6 @@ class SessionController(object):
                 "min_bar": self.widget.horizontalSlider_VMin.value(),
                 "max_bar": self.widget.horizontalSlider_VMax.value(),
                 "scale_bar": scale_bar_value,
-                "mask_min": self.widget.spinBox_MaskMin.value(),
-                "mask_max": self.widget.spinBox_MaskMax.value(),
                 "hist": cake_hist,
             },
             "map": self._collect_map_ui_state(),
@@ -511,10 +509,6 @@ class SessionController(object):
                     idx = combo.findData(0)
                     if idx >= 0:
                         combo.setCurrentIndex(idx)
-            if "mask_min" in cake:
-                self.widget.spinBox_MaskMin.setValue(int(cake["mask_min"]))
-            if "mask_max" in cake:
-                self.widget.spinBox_MaskMax.setValue(int(cake["mask_max"]))
             hist = cake.get("hist", {})
             if hasattr(self.widget, "cake_hist_widget") and hist != {}:
                 if "log_y" in hist:
@@ -623,8 +617,6 @@ class SessionController(object):
             "horizontalSlider_VMin",
             "horizontalSlider_VMax",
             "horizontalSlider_MaxScaleBars",
-            "spinBox_MaskMin",
-            "spinBox_MaskMax",
             "checkBox_Diff",
             "checkBox_UseDiffMode",
             "comboBox_DiffCmap",

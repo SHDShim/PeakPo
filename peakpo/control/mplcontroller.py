@@ -569,21 +569,6 @@ class MplController(object):
             100. * prefactor
         hist_widget = getattr(self.widget, "cake_hist_widget", None)
 
-        # Check if ApplyMask is on
-        # If so, get mask range from UI and set mask, then process cake for new mask.  Note that if mask from UI is for entire range of data, do not re-integrate.
-
-        """        mask_range = self.model.diff_img.get_mask_range()
-        if (self.widget.pushButton_ApplyMask.isChecked() and mask_range != None):
-            vmin_mask, vmax_mask = mask_range
-            mask = (int_plot < vmin_mask) | (int_plot > vmax_mask) | ~np.isfinite(int_plot)
-            int_new = ma.masked_where(mask, int_plot, copy=False)
-        else:
-            if np.ma.isMaskedArray(int_plot):
-                int_new = int_plot
-            else:
-                int_new = ma.MaskedArray(int_plot)  # no mask
-        """
-
         # Colormap + mask handling.
         if diff_mode and (self.diff_ctrl is not None):
             cfg = self.diff_ctrl.get_cake_render_config(int_plot) or {}
@@ -611,23 +596,9 @@ class MplController(object):
             cmap.set_bad(color=(1.0, 0.97, 0.55, 1.0))
         zero_mask = np.asarray(ma.filled(zero_mask, False), dtype=bool)
 
-        mask = self.model.diff_img.get_mask()
-        mask_arr = None
-        if mask is not None:
-            try:
-                candidate = np.asarray(mask, dtype=bool)
-                if candidate.shape == np.shape(int_plot):
-                    mask_arr = candidate
-            except (TypeError, ValueError):
-                mask_arr = None
-        use_user_mask = (self.widget.pushButton_ApplyMask.isChecked() and
-                         (mask_arr is not None) and np.any(mask_arr))
         base_mask = ma.getmaskarray(int_plot)
         invalid_mask = ~np.isfinite(ma.filled(int_plot, np.nan))
-        if use_user_mask:
-            combined_mask = zero_mask | mask_arr | base_mask | invalid_mask
-        else:
-            combined_mask = zero_mask | base_mask | invalid_mask
+        combined_mask = zero_mask | base_mask | invalid_mask
         int_new = ma.masked_where(
             combined_mask, ma.filled(int_plot, np.nan), copy=False)
 

@@ -108,6 +108,7 @@ class MainController(object):
         
         self.peakfit_ctrl = PeakFitController(self.model, self.widget)
         self.peakfit_ctrl.set_ucfit_controller(self.ucfit_ctrl)
+        self.peakfit_ctrl.set_base_pattern_controller(self.base_ptn_ctrl)
         print("  ✓ PeakFitController created")
         
         self.peakfit_table_ctrl = PeakfitTableController(self.model, self.widget)

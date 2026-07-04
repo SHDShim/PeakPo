@@ -557,10 +557,14 @@ class PeakFitController(object):
         }
         self.plot_interaction_ctrl = None
         self.ucfit_ctrl = None
+        self.base_ptn_ctrl = None
         self.connect_channel()
 
     def set_ucfit_controller(self, ucfit_ctrl):
         self.ucfit_ctrl = ucfit_ctrl
+
+    def set_base_pattern_controller(self, base_ptn_ctrl):
+        self.base_ptn_ctrl = base_ptn_ctrl
 
     def _clear_collected_ucfit_results(self):
         clear_results = getattr(
@@ -1148,6 +1152,18 @@ class PeakFitController(object):
             pass
         idx = self.widget.tableWidget_PkFtSections.selectionModel().\
             selectedRows()[0].row()
+        if idx < 0 or idx >= len(self.model.section_lst):
+            return
+        selected_timestamp = self.model.section_lst[idx].get_timestamp()
+        if not self._activate_pattern_for_section(self.model.section_lst[idx]):
+            return
+        idx = self._section_index_for_timestamp(selected_timestamp, idx)
+        if idx is None:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "The selected fitting section could not be found after "
+                "switching the 1D pattern.")
+            return
         # Reload selected section from PARAM CSV on demand so graph updates
         # reflect persisted section data (not stale in-memory copies).
         if self.model.base_ptn_exist():
@@ -1178,6 +1194,75 @@ class PeakFitController(object):
         self._update_config
         """
         self.zoom_to_section()
+
+    def _same_path(self, path_a, path_b):
+        if not path_a or not path_b:
+            return False
+        return os.path.normcase(os.path.abspath(path_a)) == \
+            os.path.normcase(os.path.abspath(path_b))
+
+    def _section_index_for_timestamp(self, timestamp, fallback_idx):
+        if timestamp not in (None, ""):
+            for row, section in enumerate(self.model.section_lst):
+                if section.get_timestamp() == timestamp:
+                    return row
+        if 0 <= fallback_idx < len(self.model.section_lst):
+            return fallback_idx
+        return None
+
+    def _activate_pattern_for_section(self, section):
+        provenance = getattr(section, "source_provenance", {}) or {}
+        source_kind = provenance.get("source_kind", "full_chi")
+        if source_kind == "azimuthal_integration":
+            target_chi = provenance.get("derived_chi", "")
+            display_derived = True
+            missing_text = "azimuth-derived CHI"
+        else:
+            target_chi = provenance.get("source_chi", "")
+            display_derived = False
+            missing_text = "full-azimuth CHI"
+
+        if not target_chi:
+            # Older sections did not store provenance; they belong to the
+            # current source CHI.
+            if not display_derived:
+                return True
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "This section was fitted from a derived CHI, but the saved "
+                "derived CHI path is missing.")
+            return False
+
+        target_chi = os.path.abspath(target_chi)
+        if not os.path.exists(target_chi):
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Cannot switch the 1D pattern for this section because the "
+                f"{missing_text} was not found:\n{target_chi}")
+            return False
+
+        current_display = None
+        getter = getattr(self.model, "get_display_ptn_filename", None)
+        if callable(getter):
+            current_display = getter()
+        if self._same_path(current_display, target_chi):
+            return True
+
+        if self.base_ptn_ctrl is None:
+            if display_derived:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning",
+                    "Cannot switch to the derived CHI because the pattern "
+                    "loader is unavailable.")
+                return False
+            clear_display = getattr(self.model, "clear_display_ptn", None)
+            if callable(clear_display):
+                clear_display()
+            return True
+
+        self.base_ptn_ctrl._setshow_new_base_ptn(
+            target_chi, display_derived=display_derived)
+        return True
 
     def clear_section_list(self):
         reply = QtWidgets.QMessageBox.question(
@@ -1373,9 +1458,50 @@ class PeakFitController(object):
             self.peakfit_table_ctrl.update_baseline_constraints()
             self.peakfit_table_ctrl.update_peak_constraints()
             self.set_tableWidget_PkParams_unsaved()
+            self._warn_zero_intensity_peaks()
         else:
             QtWidgets.QMessageBox.warning(self.widget, "Fitting Result",
                                           'Fitting failed.')
+
+    def _warn_zero_intensity_peaks(self):
+        section = self.model.current_section
+        if section is None or not section.peaks_exist():
+            return
+        amplitudes = []
+        for peak in section.peaks_in_queue:
+            try:
+                amplitudes.append(float(peak.get('amplitude', 0.0)))
+            except Exception:
+                amplitudes.append(0.0)
+        if amplitudes == []:
+            return
+        max_abs = max(abs(value) for value in amplitudes)
+        zero_tol = max(1e-12, max_abs * 1e-8)
+        zero_rows = []
+        for row, (peak, amplitude) in enumerate(
+                zip(section.peaks_in_queue, amplitudes), start=1):
+            if amplitude <= zero_tol:
+                hkl = (
+                    int(peak.get('h', 0)),
+                    int(peak.get('k', 0)),
+                    int(peak.get('l', 0)),
+                )
+                try:
+                    pos = float(peak.get('center', 0.0))
+                    pos_text = f"{pos:.5g}"
+                except Exception:
+                    pos_text = "unknown"
+                zero_rows.append(
+                    f"Row {row}: {peak.get('phasename', '')} "
+                    f"({hkl[0]} {hkl[1]} {hkl[2]}), Pos {pos_text}")
+        if zero_rows == []:
+            return
+        QtWidgets.QMessageBox.warning(
+            self.widget,
+            "Zero Intensity Peaks",
+            "The fitting result contains peak(s) with zero fitted intensity.\n\n"
+            + "\n".join(zero_rows) +
+            "\n\nYou may remove these peaks if they are not meaningful.")
 
     def save_to_xls(self):
         temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
