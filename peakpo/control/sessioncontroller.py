@@ -1407,6 +1407,7 @@ class SessionController(object):
         self.widget.textEdit_SessionFileName.setText(str(result.manifest_path))
         self.widget.tableWidget_PkFtSections.setStyleSheet("")
         if hasattr(self.widget, "lineEdit_PkFtSectionsStatus"):
+            self.widget.lineEdit_PkFtSectionsStatus.setStyleSheet("")
             self.widget.lineEdit_PkFtSectionsStatus.setText(
                 "Sections table status: no unsaved section-list changes.")
 

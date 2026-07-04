@@ -302,7 +302,8 @@ class _BackgroundSetupDialog(QtWidgets.QDialog):
         self.spin_order = QtWidgets.QSpinBox(self)
         self.spin_order.setMinimum(0)
         self.spin_order.setMaximum(20)
-        self.spin_order.setValue(max(0, self._section().get_order_of_baseline_in_queue()))
+        order = self._section().get_order_of_baseline_in_queue()
+        self.spin_order.setValue(order if order >= 0 else 1)
         top.addWidget(self.spin_order)
         top.addStretch(1)
         layout.addLayout(top)
@@ -1096,24 +1097,28 @@ class PeakFitController(object):
 
     def set_tableWidget_PkParams_saved(self):
         self.widget.tableWidget_PkParams.setStyleSheet("")
+        self.lineEdit_PkParamsStatus.setStyleSheet("")
         self._set_status_text(
             self.lineEdit_PkParamsStatus,
             "Peaks table status: current peak settings were saved to Sections.")
 
     def set_tableWidget_PkParams_unsaved(self):
         self.widget.tableWidget_PkParams.setStyleSheet("")
+        self.lineEdit_PkParamsStatus.setStyleSheet("background-color: red;")
         self._set_status_text(
             self.lineEdit_PkParamsStatus,
             "Peaks table status: unsaved peak settings. Click Save to store them in Sections.")
 
     def set_tableWidget_PkFtSections_saved(self):
         self.widget.tableWidget_PkFtSections.setStyleSheet("")
+        self.lineEdit_PkFtSectionsStatus.setStyleSheet("")
         self._set_status_text(
             self.lineEdit_PkFtSectionsStatus,
             "Sections table status: no unsaved section-list changes.")
 
     def set_tableWidget_PkFtSections_unsaved(self):
         self.widget.tableWidget_PkFtSections.setStyleSheet("")
+        self.lineEdit_PkFtSectionsStatus.setStyleSheet("background-color: red;")
         self._set_status_text(
             self.lineEdit_PkFtSectionsStatus,
             "Sections table status: section list changed. Save the session to keep these changes.")
@@ -1351,19 +1356,25 @@ class PeakFitController(object):
                 order, maxwidth, centerrange)
             progress.setLabelText("Optimizing peak parameters...")
             QtWidgets.QApplication.processEvents()
-            success = self.model.current_section.conduct_fitting()
+            success, converged = self.model.current_section.conduct_fitting()
         finally:
             progress.close()
         if success:
-            QtWidgets.QMessageBox.warning(self.widget, "Information",
-                                          'Fitting finished.')
+            if converged:
+                QtWidgets.QMessageBox.information(
+                    self.widget, "Fitting Result",
+                    "Fitting converged successfully.")
+            else:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Fitting Result",
+                    "Fitting finished but did not converge.")
             self.zoom_to_section()
             self.peakfit_table_ctrl.update_peak_parameters()
             self.peakfit_table_ctrl.update_baseline_constraints()
             self.peakfit_table_ctrl.update_peak_constraints()
             self.set_tableWidget_PkParams_unsaved()
         else:
-            QtWidgets.QMessageBox.warning(self.widget, "Information",
+            QtWidgets.QMessageBox.warning(self.widget, "Fitting Result",
                                           'Fitting failed.')
 
     def save_to_xls(self):

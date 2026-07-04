@@ -331,15 +331,21 @@ class Section(object):
         self.timestamp = str(datetime.datetime.now())[:-7]
         self.copy_fit_result_to_queue()
         if self.fit_result is None:
-            return False
+            return False, False
         else:
-            return True
+            converged = getattr(self.fit_result, 'success', False)
+            return True, converged
 
     def get_fit_result(self):
         return self.fit_result.params
 
     def get_timestamp(self):
         return self.timestamp
+
+    def get_fit_converged(self):
+        if self.fit_result is None:
+            return False
+        return getattr(self.fit_result, 'success', False)
 
     def sync_peak_vary_flags_from_fit_result(self):
         params = getattr(getattr(self, "fit_result", None), "params", {}) or {}
