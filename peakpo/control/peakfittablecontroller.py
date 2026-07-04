@@ -58,6 +58,8 @@ class PeakfitTableController(object):
         self.widget.tableWidget_PkParams.setHorizontalHeaderLabels(
             ['Phase', 'h', 'k', 'l', 'Area', 'Pos', 'FWHM', 'nL'])
         row = 0
+        self.model.current_section.peaks_in_queue.sort(
+            key=lambda p: float(p.get('center', 0.0)))
         for peak in self.model.current_section.peaks_in_queue:
             # symmetric peaks
             peak['phasename'] = normalize_peak_phase_name(peak['phasename'])
