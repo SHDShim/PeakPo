@@ -222,6 +222,11 @@ class PeakfitTableController(object):
                 else:
                     item.setCheckState(QtCore.Qt.Unchecked)
                 self.widget.tableWidget_BGCoefficients.setItem(row, 1, item)
+                try:
+                    self.widget.tableWidget_BGCoefficients.itemClicked.disconnect(
+                        self._bglist_handle_ItemClicked)
+                except Exception:
+                    pass
                 self.widget.tableWidget_BGCoefficients.itemClicked.connect(
                     self._bglist_handle_ItemClicked)
             self.widget.tableWidget_BGCoefficients.resizeColumnsToContents()
@@ -375,8 +380,13 @@ class PeakfitTableController(object):
             else:
                 item_nL.setCheckState(QtCore.Qt.Checked)
             self.widget.tableWidget_PeakConstraints.setItem(row, 7, item_nL)
-        self.widget.tableWidget_PeakConstraints.itemClicked.connect(
-            self._peaklist_handle_ItemClicked)
+            try:
+                self.widget.tableWidget_PeakConstraints.itemClicked.disconnect(
+                    self._peaklist_handle_ItemClicked)
+            except Exception:
+                pass
+            self.widget.tableWidget_PeakConstraints.itemClicked.connect(
+                self._peaklist_handle_ItemClicked)
         self.widget.tableWidget_PeakConstraints.resizeColumnsToContents()
         self.widget.tableWidget_PeakConstraints.resizeRowsToContents()
         self._sync_peak_constraints_selection_style()

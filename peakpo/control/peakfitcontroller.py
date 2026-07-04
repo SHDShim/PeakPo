@@ -693,6 +693,9 @@ class PeakFitController(object):
             "QLineEdit { background-color: #ccffcc; color: #006600; font-weight: bold; }")
         self.widget.label_PeakStatus.setText(
             f"Phase: {phase} ({h} {k} {l}) | Intensity: {amplitude:.3f}")
+        if (self._constraints_tab_current_row is not None and
+                self._constraints_tab_current_row != row):
+            self._sync_constraints_tab_row_to_model()
         if row == self._constraints_tab_current_row:
             return
         self._constraints_tab_current_row = row
