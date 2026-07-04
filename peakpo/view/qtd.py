@@ -3341,7 +3341,7 @@ class Ui_MainWindow(object):
         self.pushButton_ZoomToSection.setToolTip(_translate("MainWindow", "Zoom back to the current fit section"))
         self.pushButton_ZoomToSection.setText(_translate("MainWindow", "Fit Range"))
         self.pushButton_PkSave.setToolTip(_translate("MainWindow", "Save current fitting results to the sections tab"))
-        self.pushButton_PkSave.setText(_translate("MainWindow", "Save"))
+        self.pushButton_PkSave.setText(_translate("MainWindow", "Save fit result to sections"))
         self.pushButton_ClearSection.setToolTip(_translate("MainWindow", "Clear current fitting result"))
         self.pushButton_ClearSection.setText(_translate("MainWindow", "Clear"))
         self.groupBox_32.setTitle(_translate("MainWindow", "Add (Shift+left click) / Remove (Shift+right click) peaks"))
