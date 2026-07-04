@@ -39,6 +39,9 @@ class PeakPoModel(object):
         self.chi_path = ''
         self.current_section = None
         self.section_lst = []
+        self.display_ptn = None
+        self.base_pattern_provenance = None
+        self.display_pattern_provenance = None
         self.current_pattern_provenance = None
         self.saved_pressure = 10.
         self.saved_temperature = 300.
@@ -78,14 +81,27 @@ class PeakPoModel(object):
         return self.section_lst.__len__()
 
     def set_current_section(self, roi):
+        pattern = self.get_display_ptn()
+        if pattern is None:
+            return
+        x_bg = getattr(pattern, "x_bg", None)
+        y_bg = getattr(pattern, "y_bg", None)
+        x_bgsub = getattr(pattern, "x_bgsub", None)
+        y_bgsub = getattr(pattern, "y_bgsub", None)
+        if x_bg is None or y_bg is None or x_bgsub is None or y_bgsub is None:
+            x_raw = getattr(pattern, "x_raw", None)
+            y_raw = getattr(pattern, "y_raw", None)
+            if x_raw is None or y_raw is None:
+                return
+            x_bg = x_bgsub = x_raw
+            y_bg = numpy.zeros_like(y_raw)
+            y_bgsub = y_raw
         x_section_bg, y_section_bg = get_DataSection(
-            self.base_ptn.x_bg, self.base_ptn.y_bg, roi)
+            x_bg, y_bg, roi)
         __, y_section_bgsub = get_DataSection(
-            self.base_ptn.x_bgsub, self.base_ptn.y_bgsub, roi)
+            x_bgsub, y_bgsub, roi)
         self.current_section.set(x_section_bg, y_section_bgsub, y_section_bg)
-        provenance = getattr(self, "current_pattern_provenance", None)
-        if provenance is None and self.base_ptn is not None:
-            provenance = getattr(self.base_ptn, "_pkpo_source_provenance", None)
+        provenance = self.get_active_pattern_provenance()
         if isinstance(provenance, dict):
             self.current_section.source_provenance = copy.deepcopy(provenance)
 
@@ -153,6 +169,18 @@ class PeakPoModel(object):
                 model_r.poni = new_poni_fname
             model_r.chi_path = new_chi_path
         self.base_ptn = model_r.base_ptn
+        self.display_ptn = None
+        self.display_pattern_provenance = None
+        self.base_pattern_provenance = getattr(
+            model_r, "base_pattern_provenance", None)
+        if self.base_pattern_provenance is None:
+            self.base_pattern_provenance = getattr(
+                model_r, "current_pattern_provenance", None)
+        self.current_pattern_provenance = copy.deepcopy(
+            self.base_pattern_provenance)
+        if self.base_ptn is not None:
+            self.base_ptn._pkpo_source_provenance = copy.deepcopy(
+                self.base_pattern_provenance)
         self.waterfall_ptn = model_r.waterfall_ptn
         self.diff_img = model_r.diff_img
         self.section_lst = model_r.section_lst
@@ -270,6 +298,10 @@ class PeakPoModel(object):
         """
         :param new_base_ptn: PatternPeakPo object
         """
+        self.display_ptn = None
+        self.display_pattern_provenance = None
+        self.base_pattern_provenance = None
+        self.current_pattern_provenance = None
         self.reset_base_ptn()
         self.base_ptn.read_file(new_base_ptn_filen)
         self.set_chi_path(os.path.split(new_base_ptn_filen)[0])
@@ -278,6 +310,75 @@ class PeakPoModel(object):
 
     def get_base_ptn(self):
         return self.base_ptn
+
+    def set_base_pattern_provenance(self, provenance):
+        provenance = copy.deepcopy(provenance) if isinstance(provenance, dict) \
+            else None
+        self.base_pattern_provenance = provenance
+        if self.base_ptn is not None:
+            self.base_ptn._pkpo_source_provenance = provenance
+        if not self.display_ptn_exist():
+            self.current_pattern_provenance = copy.deepcopy(provenance)
+
+    def set_display_ptn(self, filename, wavelength, provenance=None):
+        self.display_ptn = PatternPeakPo()
+        self.display_ptn.read_file(filename)
+        self.display_ptn.wavelength = wavelength
+        self.display_ptn.display = True
+        if self.base_ptn is not None:
+            self.display_ptn.color = getattr(self.base_ptn, "color", "white")
+        provenance = copy.deepcopy(provenance) if isinstance(provenance, dict) \
+            else None
+        self.display_pattern_provenance = provenance
+        self.current_pattern_provenance = copy.deepcopy(provenance)
+        self.display_ptn._pkpo_source_provenance = provenance
+
+    def clear_display_ptn(self):
+        self.display_ptn = None
+        self.display_pattern_provenance = None
+        provenance = copy.deepcopy(getattr(self, "base_pattern_provenance", None))
+        if provenance is None and self.base_ptn is not None:
+            provenance = copy.deepcopy(
+                getattr(self.base_ptn, "_pkpo_source_provenance", None))
+        self.current_pattern_provenance = provenance
+
+    def display_ptn_exist(self):
+        display_ptn = getattr(self, "display_ptn", None)
+        if display_ptn is None:
+            return False
+        return getattr(display_ptn, "fname", None) is not None
+
+    def get_display_ptn(self):
+        if self.display_ptn_exist():
+            return self.display_ptn
+        return self.base_ptn
+
+    def get_display_ptn_filename(self):
+        pattern = self.get_display_ptn()
+        if pattern is None:
+            return None
+        return getattr(pattern, "fname", None)
+
+    def get_active_pattern_provenance(self):
+        if self.display_ptn_exist():
+            provenance = getattr(self, "display_pattern_provenance", None)
+            if isinstance(provenance, dict):
+                return provenance
+        provenance = getattr(self, "base_pattern_provenance", None)
+        if isinstance(provenance, dict):
+            return provenance
+        provenance = getattr(self, "current_pattern_provenance", None)
+        if isinstance(provenance, dict):
+            return provenance
+        if self.base_ptn is not None:
+            provenance = getattr(self.base_ptn, "_pkpo_source_provenance", None)
+            if isinstance(provenance, dict):
+                return provenance
+        return {}
+
+    def is_displaying_derived_chi(self):
+        provenance = self.get_active_pattern_provenance()
+        return provenance.get("source_kind") == "azimuthal_integration"
 
     def append_a_waterfall_ptn(self, filename, wavelength,
                                bg_roi, bg_params, temp_dir=None):
@@ -561,6 +662,10 @@ class PeakPoModel8(PeakPoModel):
         self.chi_path = ''
         self.current_section = None
         self.section_lst = []
+        self.display_ptn = None
+        self.base_pattern_provenance = None
+        self.display_pattern_provenance = None
+        self.current_pattern_provenance = None
         self.saved_pressure = 10.
         self.saved_temperature = 300.
         self.dum = None
@@ -578,6 +683,18 @@ class PeakPoModel8(PeakPoModel):
         self.chi_path = model7.chi_path
         self.current_section = model7.current_section
         self.section_lst = model7.section_lst
+        self.display_ptn = None
+        self.base_pattern_provenance = getattr(
+            model7, "base_pattern_provenance", None)
+        if self.base_pattern_provenance is None:
+            self.base_pattern_provenance = getattr(
+                model7, "current_pattern_provenance", None)
+        self.display_pattern_provenance = None
+        self.current_pattern_provenance = copy.deepcopy(
+            self.base_pattern_provenance)
+        if self.base_ptn is not None:
+            self.base_ptn._pkpo_source_provenance = copy.deepcopy(
+                self.base_pattern_provenance)
         self.saved_pressure = model7.saved_pressure
         self.saved_temperature = model7.saved_temperature
         self.diff_state = DiffState()
@@ -595,6 +712,12 @@ class PeakPoModel8(PeakPoModel):
         model7.chi_path = self.chi_path
         model7.current_section = self.current_section
         model7.section_lst = self.section_lst
+        model7.display_ptn = None
+        model7.display_pattern_provenance = None
+        model7.base_pattern_provenance = getattr(
+            self, "base_pattern_provenance", None)
+        model7.current_pattern_provenance = copy.deepcopy(
+            model7.base_pattern_provenance)
         model7.saved_pressure = self.saved_pressure
         model7.saved_temperature = self.saved_temperature
         return model7

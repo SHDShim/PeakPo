@@ -1100,9 +1100,12 @@ def load_model_from_param(model, base_chi_file, backup_event_id=None, backup_eve
 
     model.base_ptn = _load_pattern(session_data.get("base_pattern"), chi_root, param_dir)
     base_fname = getattr(model.base_ptn, "fname", None) or base_chi_file
-    model.current_pattern_provenance = provenance_for_chi(base_fname)
+    model.display_ptn = None
+    model.display_pattern_provenance = None
+    model.base_pattern_provenance = provenance_for_chi(base_fname)
+    model.current_pattern_provenance = model.base_pattern_provenance
     if model.base_ptn is not None:
-        model.base_ptn._pkpo_source_provenance = model.current_pattern_provenance
+        model.base_ptn._pkpo_source_provenance = model.base_pattern_provenance
     model.waterfall_ptn = [
         _load_pattern(p, chi_root, param_dir)
         for p in session_data.get("waterfall_patterns", [])

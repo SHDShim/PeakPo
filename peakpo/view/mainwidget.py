@@ -682,6 +682,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             QtWidgets.QAbstractItemView.NoEditTriggers)
         self.tableWidget_AziChiList.verticalHeader().setVisible(True)
         self.tableWidget_AziChiList.verticalHeader().setDefaultSectionSize(24)
+        self.tableWidget_AziChiList.verticalHeader().setMinimumWidth(44)
         self.tableWidget_AziChiList.setMinimumHeight(110)
         self.tableWidget_AziChiList.setMaximumHeight(170)
         self.tableWidget_AziChiList.horizontalHeader().setStretchLastSection(True)

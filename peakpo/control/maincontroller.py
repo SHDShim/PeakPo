@@ -895,7 +895,7 @@ class MainController(object):
 
         if filen is None:
             return
-        self.base_ptn_ctrl._setshow_new_base_ptn(filen)
+        self.base_ptn_ctrl._setshow_new_base_ptn(filen, display_derived=True)
         self.cakeazi_ctrl.refresh_derived_chi_ui(select_path=filen)
         QtWidgets.QMessageBox.information(
             self.widget, 'Integrated',
@@ -978,10 +978,14 @@ class MainController(object):
 
         try:
             xlim = self.widget.mpl.canvas.ax_pattern.get_xlim()
+            pattern = self.model.get_display_ptn() \
+                if hasattr(self.model, "get_display_ptn") else self.model.base_ptn
             if self.widget.checkBox_BgSub.isChecked():
-                x, y = self.model.base_ptn.get_bgsub()
+                x, y = pattern.get_bgsub()
+                if x is None or y is None:
+                    x, y = pattern.get_raw()
             else:
-                x, y = self.model.base_ptn.get_raw()
+                x, y = pattern.get_raw()
             if self.plot_ctrl.diff_ctrl is not None:
                 x, y = self.plot_ctrl.diff_ctrl.get_display_pattern(x, y)
 
@@ -1692,10 +1696,14 @@ class MainController(object):
             self.plot_new_graph()
         elif event.key == 'v':
             lims = self.widget.mpl.canvas.ax_pattern.axis()
+            pattern = self.model.get_display_ptn() \
+                if hasattr(self.model, "get_display_ptn") else self.model.base_ptn
             if self.widget.checkBox_BgSub.isChecked():
-                x, y = self.model.base_ptn.get_bgsub()
+                x, y = pattern.get_bgsub()
+                if x is None or y is None:
+                    x, y = pattern.get_raw()
             else:
-                x, y = self.model.base_ptn.get_raw()
+                x, y = pattern.get_raw()
             xroi, yroi = get_DataSection(x, y, [lims[0], lims[1]])
             self.plot_ctrl.update([lims[0], lims[1], yroi.min(), yroi.max()])
         else:
@@ -1852,6 +1860,9 @@ class MainController(object):
         # self.wavelength = value
         self.model.base_ptn.wavelength = \
             self.widget.doubleSpinBox_SetWavelength.value()
+        if getattr(self.model, "display_ptn_exist", lambda: False)():
+            self.model.get_display_ptn().wavelength = \
+                self.widget.doubleSpinBox_SetWavelength.value()
         xray_energy = convert_wl_to_energy(self.model.base_ptn.wavelength)
         self.widget.label_XRayEnergy.setText(
             "({:.3f} keV)".format(xray_energy))
@@ -1890,6 +1901,13 @@ class MainController(object):
         self.model.base_ptn.subtract_bg(bg_roi, bg_params, yshift=0)
         temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
         self.model.base_ptn.write_temporary_bgfiles(temp_dir=temp_dir)
+        if getattr(self.model, "display_ptn_exist", lambda: False)():
+            display_ptn = self.model.get_display_ptn()
+            x_raw = getattr(display_ptn, "x_raw", None)
+            y_raw = getattr(display_ptn, "y_raw", None)
+            if (x_raw is not None) and (y_raw is not None) and \
+                    len(x_raw) > 0 and len(y_raw) > 0:
+                display_ptn.subtract_bg(bg_roi, bg_params, yshift=0)
         if self.model.waterfall_exist():
             print(str(datetime.datetime.now())[:-7], 
                 ": BGfit and BGsub for waterfall patterns even if they are displayed.\n",

@@ -51,14 +51,34 @@ class BasePatternController(object):
             filen = self.widget.lineEdit_DiffractionPatternFileName.text()
             self._setshow_new_base_ptn(filen)
 
-    def _setshow_new_base_ptn(self, filen):
+    def _same_path(self, path_a, path_b):
+        if not path_a or not path_b:
+            return False
+        return os.path.normcase(os.path.abspath(path_a)) == \
+            os.path.normcase(os.path.abspath(path_b))
+
+    def _is_derived_provenance(self, provenance):
+        return (
+            isinstance(provenance, dict) and
+            provenance.get("source_kind") == "azimuthal_integration" and
+            bool(provenance.get("source_chi"))
+        )
+
+    def _setshow_new_base_ptn(self, filen, display_derived=False):
         """
         load and then send signal to update_graph
         """
         if os.path.exists(filen):
-            self.model.set_chi_path(os.path.split(filen)[0])
+            provenance = provenance_for_chi(filen)
+            migration_target = filen
+            if self._is_derived_provenance(provenance):
+                source_chi = provenance.get("source_chi")
+                if source_chi and os.path.exists(source_chi):
+                    migration_target = source_chi
+            self.model.set_chi_path(os.path.split(migration_target)[0])
             if self.session_ctrl is not None:
-                migrated = self.session_ctrl.migrate_dpp_for_chi_if_exists(filen)
+                migrated = self.session_ctrl.migrate_dpp_for_chi_if_exists(
+                    migration_target)
                 if migrated:
                     print(str(datetime.datetime.now())[:-7],
                           ': Loaded legacy DPP, converted to PARAM, and archived DPP.')
@@ -68,7 +88,8 @@ class BasePatternController(object):
             else:
                 old_filename = None
             new_filename = filen
-            self._load_a_new_pattern(new_filename)
+            self._load_a_new_pattern(
+                new_filename, display_derived=display_derived)
             if old_filename is None:
                 self.plot_new_graph()
             else:
@@ -79,20 +100,47 @@ class BasePatternController(object):
             # self.widget.lineEdit_DiffractionPatternFileName.setText(
             #    self.model.get_base_ptn_filename())
 
-    def _load_a_new_pattern(self, new_filename):
+    def _load_a_new_pattern(self, new_filename, display_derived=False):
         """
         load and process base pattern.  does not signal to update_graph
         """
+        provenance = provenance_for_chi(new_filename)
+        if self._is_derived_provenance(provenance):
+            source_chi = provenance.get("source_chi")
+            if display_derived:
+                self._load_derived_display_pattern(new_filename, provenance)
+                return
+            if source_chi and os.path.exists(source_chi):
+                new_filename = source_chi
+                provenance = provenance_for_chi(new_filename)
+            else:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning",
+                    "This azimuth-derived CHI does not have an available "
+                    "full-azimuth source CHI:\n" + str(source_chi))
+                return
+
+        if self.model.base_ptn_exist() and \
+                self._same_path(self.model.get_base_ptn_filename(), new_filename):
+            if getattr(self.model, "display_ptn_exist", lambda: False)():
+                self.model.clear_display_ptn()
+            self.widget.lineEdit_DiffractionPatternFileName.setText(
+                str(self.model.get_base_ptn_filename()))
+            self._update_metadata_tab_for_chi(new_filename)
+            self._notify_pattern_loaded(new_filename)
+            if self.session_ctrl is not None:
+                self.session_ctrl.refresh_backup_table()
+            return
+
         if self.session_ctrl is not None:
             # Reset carry-over provenance for generic/manual loads.
             self.session_ctrl.set_carryover_source_chi(None)
         if hasattr(self.widget, "set_nav_carry_status"):
             self.widget.set_nav_carry_status("")
+        self.model.set_chi_path(os.path.split(new_filename)[0])
         self.model.set_base_ptn(
             new_filename, self.widget.doubleSpinBox_SetWavelength.value())
-        provenance = provenance_for_chi(new_filename)
-        self.model.current_pattern_provenance = provenance
-        self.model.base_ptn._pkpo_source_provenance = provenance
+        self.model.set_base_pattern_provenance(provenance)
         self._clear_peakfit_for_new_pattern()
         # self.widget.textEdit_DiffractionPatternFileName.setText(
         #    '1D Pattern: ' + self.model.get_base_ptn_filename())
@@ -167,6 +215,64 @@ class BasePatternController(object):
         # Keep backup table in File > Data synchronized right after CHI load.
         if self.session_ctrl is not None:
             self.session_ctrl.refresh_backup_table()
+
+    def _load_derived_display_pattern(self, derived_filename, provenance):
+        source_chi = provenance.get("source_chi")
+        if not source_chi or not os.path.exists(source_chi):
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Cannot display this azimuth-derived CHI because the "
+                "full-azimuth source CHI is missing:\n" + str(source_chi))
+            return
+
+        source_loaded = self.model.base_ptn_exist() and \
+            self._same_path(self.model.get_base_ptn_filename(), source_chi)
+        if not source_loaded:
+            self._load_a_new_pattern(source_chi, display_derived=False)
+            if not self.model.base_ptn_exist() or \
+                    not self._same_path(
+                        self.model.get_base_ptn_filename(), source_chi):
+                return
+        else:
+            if self.session_ctrl is not None:
+                self.session_ctrl.set_carryover_source_chi(None)
+            if hasattr(self.widget, "set_nav_carry_status"):
+                self.widget.set_nav_carry_status("")
+
+        self.model.set_display_ptn(
+            derived_filename,
+            self.widget.doubleSpinBox_SetWavelength.value(),
+            provenance=provenance)
+        self._update_display_bgsub_from_current_values()
+        self.widget.lineEdit_DiffractionPatternFileName.setText(
+            str(self.model.get_base_ptn_filename()))
+        self._update_metadata_tab_for_chi(source_chi)
+        self._notify_pattern_loaded(derived_filename)
+        if self.session_ctrl is not None:
+            self.session_ctrl.refresh_backup_table()
+
+    def _update_display_bgsub_from_current_values(self):
+        if not getattr(self.model, "display_ptn_exist", lambda: False)():
+            return
+        pattern = self.model.get_display_ptn()
+        if pattern is None:
+            return
+        x_raw, y_raw = pattern.get_raw()
+        if x_raw is None or y_raw is None or len(x_raw) == 0:
+            return
+        roi_min = self.widget.doubleSpinBox_Background_ROI_min.value()
+        roi_max = self.widget.doubleSpinBox_Background_ROI_max.value()
+        roi_min = max(float(x_raw.min()), float(roi_min))
+        roi_max = min(float(x_raw.max()), float(roi_max))
+        if roi_max <= roi_min:
+            roi_min = float(x_raw.min())
+            roi_max = float(x_raw.max())
+        pattern.subtract_bg(
+            [roi_min, roi_max],
+            [self.widget.spinBox_BGParam0.value(),
+             self.widget.spinBox_BGParam1.value(),
+             self.widget.spinBox_BGParam2.value()],
+            yshift=0)
 
     def _clear_peakfit_for_new_pattern(self):
         self.model.current_section = None

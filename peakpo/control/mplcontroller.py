@@ -278,6 +278,11 @@ class MplController(object):
         }
 
     def _current_pattern_provenance(self):
+        getter = getattr(self.model, "get_active_pattern_provenance", None)
+        if callable(getter):
+            provenance = getter()
+            if isinstance(provenance, dict):
+                return provenance
         provenance = getattr(self.model, "current_pattern_provenance", None)
         if provenance is None:
             base_ptn = getattr(self.model, "base_ptn", None)
@@ -290,6 +295,47 @@ class MplController(object):
         except Exception:
             pass
         return {}
+
+    def _display_pattern(self):
+        getter = getattr(self.model, "get_display_ptn", None)
+        if callable(getter):
+            pattern = getter()
+            if pattern is not None:
+                return pattern
+        return getattr(self.model, "base_ptn", None)
+
+    def _display_pattern_filename(self):
+        getter = getattr(self.model, "get_display_ptn_filename", None)
+        if callable(getter):
+            filename = getter()
+            if filename is not None:
+                return filename
+        pattern = self._display_pattern()
+        return getattr(pattern, "fname", "")
+
+    def _pattern_xy(self, bgsub=None):
+        pattern = self._display_pattern()
+        if pattern is None:
+            return None, None
+        if bgsub is None:
+            bgsub = self.widget.checkBox_BgSub.isChecked()
+        if bgsub:
+            x, y = pattern.get_bgsub()
+            if x is not None and y is not None:
+                return x, y
+        return pattern.get_raw()
+
+    def _pattern_background_xy(self):
+        pattern = self._display_pattern()
+        if pattern is None:
+            return None, None
+        x_bg, y_bg = pattern.get_background()
+        if x_bg is not None and y_bg is not None:
+            return x_bg, y_bg
+        x_raw, y_raw = pattern.get_raw()
+        if x_raw is None or y_raw is None:
+            return None, None
+        return x_raw, np.zeros_like(y_raw)
 
     @staticmethod
     def _wrap_angle_to_axis(value, axis_min, span):
@@ -378,10 +424,7 @@ class MplController(object):
         self.update(limits=data_limits, gsas_style=True)
 
     def _get_data_limits(self, y_margin=0.):
-        if self.widget.checkBox_BgSub.isChecked():
-            x, y = self.model.base_ptn.get_bgsub()
-        else:
-            x, y = self.model.base_ptn.get_raw()
+        x, y = self._pattern_xy()
         if self.diff_ctrl is not None:
             try:
                 x, y = self.diff_ctrl.get_display_pattern(x, y)
@@ -1037,10 +1080,8 @@ class MplController(object):
         """
 
     def _plot_diffpattern(self, gsas_style=False):
-        if self.widget.checkBox_BgSub.isChecked():
-            x, y = self.model.base_ptn.get_bgsub()
-        else:
-            x, y = self.model.base_ptn.get_raw()
+        x, y = self._pattern_xy()
+        color = getattr(getattr(self.model, "base_ptn", None), "color", "white")
         if self.diff_ctrl is not None:
             try:
                 x, y = self.diff_ctrl.get_display_pattern(x, y)
@@ -1048,11 +1089,11 @@ class MplController(object):
                 pass
         if gsas_style:
             self.widget.mpl.canvas.ax_pattern.plot(
-                x, y, c=self.model.base_ptn.color, marker='o',
+                x, y, c=color, marker='o',
                 linestyle='None', ms=1.5)
         else:
             self.widget.mpl.canvas.ax_pattern.plot(
-                x, y, c=self.model.base_ptn.color,
+                x, y, c=color,
                 lw=float(
                     self.widget.comboBox_BasePtnLineThickness.
                     currentText()))
@@ -1061,9 +1102,9 @@ class MplController(object):
                 0.0, ls='--', c='tab:red', lw=0.8)
             return
         if not self.widget.checkBox_BgSub.isChecked():
-            x_bg, y_bg = self.model.base_ptn.get_background()
+            x_bg, y_bg = self._pattern_background_xy()
             self.widget.mpl.canvas.ax_pattern.plot(
-                x_bg, y_bg, c=self.model.base_ptn.color, ls='--',
+                x_bg, y_bg, c=color, ls='--',
                 lw=float(
                     self.widget.comboBox_BkgnLineThickness.
                     currentText()))
@@ -1405,9 +1446,9 @@ class MplController(object):
                         max_title_chars = 140
 
                 if self.widget.checkBox_ShortPlotTitle.isChecked():
-                    raw_title = os.path.basename(self.model.base_ptn.fname)
+                    raw_title = os.path.basename(self._display_pattern_filename())
                 else:
-                    raw_title = self.model.base_ptn.fname
+                    raw_title = self._display_pattern_filename()
 
                 truncate_middle = True
                 if hasattr(self.widget, "checkBox_TitleTruncateMiddle"):

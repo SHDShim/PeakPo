@@ -65,6 +65,7 @@ class CakeAziController(object):
         table.verticalHeader().setVisible(True)
         try:
             table.verticalHeader().setDefaultSectionSize(28)
+            table.verticalHeader().setMinimumWidth(44)
         except Exception:
             pass
         header = table.horizontalHeader()
@@ -107,6 +108,7 @@ class CakeAziController(object):
             table.verticalHeader().setVisible(True)
             try:
                 table.verticalHeader().setDefaultSectionSize(24)
+                table.verticalHeader().setMinimumWidth(44)
             except Exception:
                 pass
             table.horizontalHeader().setStretchLastSection(True)
@@ -351,6 +353,11 @@ class CakeAziController(object):
             os.path.normcase(os.path.abspath(path_b))
 
     def _current_provenance(self):
+        getter = getattr(self.model, "get_active_pattern_provenance", None)
+        if callable(getter):
+            provenance = getter()
+            if isinstance(provenance, dict):
+                return provenance
         current_chi = self._base_chi_filename()
         if current_chi is None:
             return {}
@@ -358,13 +365,21 @@ class CakeAziController(object):
 
     def _current_source_chi(self):
         current_chi = self._base_chi_filename()
-        if current_chi is None:
-            return None
+        if current_chi is not None:
+            return os.path.abspath(current_chi)
         provenance = self._current_provenance()
         source_chi = provenance.get("source_chi")
         if provenance.get("source_kind") == "azimuthal_integration" and source_chi:
             return os.path.abspath(source_chi)
-        return os.path.abspath(current_chi)
+        return None
+
+    def _display_chi_filename(self):
+        getter = getattr(self.model, "get_display_ptn_filename", None)
+        if callable(getter):
+            filename = getter()
+            if filename:
+                return filename
+        return self._base_chi_filename()
 
     def _readonly_item(self, text, tooltip=""):
         item = QtWidgets.QTableWidgetItem(str(text))
@@ -377,7 +392,7 @@ class CakeAziController(object):
         line = getattr(self.widget, "lineEdit_CurrentAziChiStatus", None)
         if line is None:
             return
-        current_chi = self._base_chi_filename()
+        current_chi = self._display_chi_filename()
         if current_chi is None:
             line.setText("Current: no CHI loaded")
             line.setToolTip("")
@@ -393,7 +408,7 @@ class CakeAziController(object):
                 text += f" | {ranges}"
             text += f" | {basename}"
             source_chi = provenance.get("source_chi", "")
-            tooltip = f"Derived CHI: {current_chi}\nFull-azimuth source: {source_chi}"
+            tooltip = f"Displayed derived CHI: {current_chi}\nFull-azimuth source: {source_chi}"
             line.setStyleSheet(
                 "QLineEdit { border: 1px solid #d6a800; color: #ffd76a; }")
         else:
@@ -460,7 +475,7 @@ class CakeAziController(object):
         table = getattr(self.widget, "tableWidget_AziChiList", None)
         if table is None:
             return
-        current_chi = self._base_chi_filename()
+        current_chi = self._display_chi_filename()
         entries = self._collect_derived_chi_entries()
         self._derived_chi_entries = entries
 
@@ -545,7 +560,7 @@ class CakeAziController(object):
         if reply == QtWidgets.QMessageBox.No:
             return
 
-        was_active = self._same_path(chi_path, self._base_chi_filename())
+        was_active = self._same_path(chi_path, self._display_chi_filename())
         errors = []
         for path in (chi_path, sidecar_path):
             if not path or not os.path.exists(path):
@@ -565,7 +580,7 @@ class CakeAziController(object):
         else:
             self.refresh_derived_chi_ui(select_path=source_chi)
 
-    def _open_chi_path(self, chi_path):
+    def _open_chi_path(self, chi_path, display_derived=False):
         if self.base_ptn_ctrl is None:
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning",
@@ -575,7 +590,8 @@ class CakeAziController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning", "Cannot find CHI file:\n" + str(chi_path))
             return
-        self.base_ptn_ctrl._setshow_new_base_ptn(chi_path)
+        self.base_ptn_ctrl._setshow_new_base_ptn(
+            chi_path, display_derived=display_derived)
         self.refresh_derived_chi_ui(select_path=chi_path)
 
     def _open_selected_azimuthal_chi(self):
@@ -585,7 +601,8 @@ class CakeAziController(object):
                 self.widget, "Warning",
                 "Highlight one row in the Azimuthal CHI list first.")
             return
-        self._open_chi_path(entry["chi_path"])
+        self._open_chi_path(
+            entry["chi_path"], display_derived=entry.get("kind") == "derived")
 
     def _open_full_azimuth_chi(self):
         source_chi = self._current_source_chi()
@@ -593,7 +610,7 @@ class CakeAziController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning", "No full-azimuth source CHI is available.")
             return
-        self._open_chi_path(source_chi)
+        self._open_chi_path(source_chi, display_derived=False)
 
     def _new_check_item(self, checked=True):
         item = QtWidgets.QTableWidgetItem()
