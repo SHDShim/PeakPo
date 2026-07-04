@@ -86,7 +86,12 @@ class PeakPoDirModel(object):
 
     def set_this_section_current(self, index):
         self.current_section = None
-        self.current_section = copy.deepcopy(self.section_lst[index])
+        section = self.section_lst[index]
+        clone = getattr(section, "clone_for_editing", None)
+        if callable(clone):
+            self.current_section = clone()
+        else:
+            self.current_section = copy.deepcopy(section)
         sync_vary = getattr(
             self.current_section, "sync_peak_vary_flags_from_fit_result", None)
         if callable(sync_vary):

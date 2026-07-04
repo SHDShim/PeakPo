@@ -1,6 +1,7 @@
 import os
 import traceback
 from qtpy import QtCore
+from qtpy import QtGui
 from qtpy import QtWidgets
 from .mplcontroller import MplController
 from .peakfittablecontroller import PeakfitTableController
@@ -419,6 +420,11 @@ class _BackgroundSetupDialog(QtWidgets.QDialog):
         self.button_visual_anchor = QtWidgets.QPushButton("Add range from plot", self)
         self.button_remove_anchor = QtWidgets.QPushButton("Remove range", self)
         self.button_visual_anchor.setCheckable(True)
+        for button in (self.button_add_anchor, self.button_visual_anchor,
+                       self.button_remove_anchor):
+            button.setMinimumHeight(25)
+            button.setSizePolicy(
+                QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         self.button_add_anchor.setToolTip(
             "Add the currently visible 2-theta range as a background anchor range.")
         self.button_visual_anchor.setToolTip(
@@ -650,6 +656,7 @@ class PeakFitController(object):
         self._setup_table_status_fields()
         self._table_backspace_key_filters = []
         self._constraints_tab_current_row = None
+        self._last_peakfit_tab = None
         self._constraints_dialog = None
         self._background_dialog = None
         self._default_bounds_dialog = None
@@ -763,18 +770,21 @@ class PeakFitController(object):
                     self._peak_table_selection_connected = True
 
     def _set_constraints_toggle_button(self, button, checked, on_text, off_text):
+        if not hasattr(button, "_peakpo_default_palette"):
+            button._peakpo_default_palette = QtGui.QPalette(button.palette())
         old_state = button.blockSignals(True)
         button.setChecked(bool(checked))
         button.setDown(bool(checked))
         button.setText(on_text if checked else off_text)
         if checked:
-            button.setStyleSheet(
-                "QPushButton {background-color: #f1c232; color: black;}"
-                "QPushButton:checked {background-color: #f1c232; color: black;}"
-            )
+            palette = QtGui.QPalette(button._peakpo_default_palette)
+            palette.setColor(QtGui.QPalette.Button, QtGui.QColor("#f1c232"))
+            palette.setColor(QtGui.QPalette.ButtonText, QtGui.QColor("black"))
+            button.setPalette(palette)
         else:
-            button.setStyleSheet("")
+            button.setPalette(button._peakpo_default_palette)
         button.blockSignals(old_state)
+        button.update()
 
     def _clear_constraints_toggle_buttons(self, except_button=None):
         pairs = [
@@ -1433,12 +1443,24 @@ class PeakFitController(object):
     def _on_peakfit_tab_changed(self, index):
         if not hasattr(self.widget, "tabWidget_PeakFit"):
             return
+        previous = self._last_peakfit_tab
         current = self.widget.tabWidget_PeakFit.widget(index)
+        if previous == getattr(self.widget, "tab_PeakFitConstraints", None):
+            self._sync_constraints_tab_row_to_model()
+        elif previous == getattr(self.widget, "tab_PeakFitBackground", None):
+            self._sync_background_tab_to_model()
+        if current == getattr(self.widget, "tab_PeakFitPeaks", None):
+            self.peakfit_table_ctrl.update_peak_parameters()
+        elif current == getattr(self.widget, "tab_PeakFitSection", None):
+            self.peakfit_table_ctrl.update_sections()
         if current == getattr(self.widget, "tab_PeakFitConstraints", None):
+            self.peakfit_table_ctrl.update_peak_constraints()
             self._populate_constraints_tab_from_model()
             self._update_constraints_tab_state()
         elif current == getattr(self.widget, "tab_PeakFitBackground", None):
+            self.peakfit_table_ctrl.update_baseline_constraints()
             self._populate_background_tab_from_model()
+        self._last_peakfit_tab = current
 
     def _populate_constraints_tab_from_model(self):
         if not hasattr(self.widget, "spinBox_CenterHalfRange"):
@@ -1761,16 +1783,21 @@ class PeakFitController(object):
         self.model.import_section_list(model_dpp)
         return True
 
-    def zoom_to_section(self):
+    def zoom_to_section(self, lightweight=False, gsas_style=False):
         if not self.model.current_section_exist():
             return
         x_range = self.model.current_section.get_xrange()
         y_range = self.model.current_section.get_yrange(
             bgsub=self.widget.checkBox_BgSub.isChecked())
         margin = 0.1 * (y_range[1] - y_range[0])
-        self.plot_ctrl.update(
-            limits=(x_range[0], x_range[1],
-                    y_range[0] - margin, y_range[1] + margin))
+        limits = (
+            x_range[0], x_range[1],
+            y_range[0] - margin, y_range[1] + margin)
+        if lightweight and hasattr(self.plot_ctrl, "refresh_current_section_view"):
+            self.plot_ctrl.refresh_current_section_view(
+                limits=limits, gsas_style=gsas_style)
+            return
+        self.plot_ctrl.update(limits=limits, gsas_style=gsas_style)
         flush = getattr(self.plot_ctrl, "_flush_update_request", None)
         if callable(flush):
             flush()
@@ -2057,9 +2084,13 @@ class PeakFitController(object):
             selectedRows()[0].row()
         if idx < 0 or idx >= len(self.model.section_lst):
             return
-        selected_timestamp = self.model.section_lst[idx].get_timestamp()
-        if not self._activate_pattern_for_section(self.model.section_lst[idx]):
+        selected_section = self.model.section_lst[idx]
+        selected_timestamp = selected_section.get_timestamp()
+        source_switched = False
+        if not self._activate_pattern_for_section(selected_section):
             return
+        source_switched = bool(
+            getattr(self, "_last_section_source_switched", False))
         idx = self._section_index_for_timestamp(selected_timestamp, idx)
         if idx is None:
             QtWidgets.QMessageBox.warning(
@@ -2070,9 +2101,18 @@ class PeakFitController(object):
         # Reload selected section from PARAM CSV on demand so graph updates
         # reflect persisted section data (not stale in-memory copies).
         if self.model.base_ptn_exist():
+            in_memory_section = self.model.section_lst[idx]
+            section_has_data = (
+                in_memory_section is not None and
+                getattr(in_memory_section, "x", None) is not None and
+                len(in_memory_section.x) > 0 and
+                getattr(in_memory_section, "y_bgsub", None) is not None
+            )
+            should_reload_from_param = source_switched or (not section_has_data)
             try:
                 section_disk = load_section_from_param(
-                    self.model.get_base_ptn_filename(), idx)
+                    self.model.get_base_ptn_filename(), idx) \
+                    if should_reload_from_param else None
             except Exception:
                 section_disk = None
             section_has_data = section_disk is not None and \
@@ -2081,22 +2121,34 @@ class PeakFitController(object):
                 getattr(section_disk, "y_bgsub", None) is not None
             if section_has_data:
                 self.model.section_lst[idx] = section_disk
-            elif not self.model.section_lst[idx].get_number_of_peaks_in_queue():
+            elif should_reload_from_param and \
+                    not self.model.section_lst[idx].get_number_of_peaks_in_queue():
                 QtWidgets.QMessageBox.warning(
                     self.widget, "Missing Section Data",
                     "Saved section data for the selected row was not found.\n"
                     "Using in-memory section data instead.")
         self.model.set_this_section_current(idx)
-        self.peakfit_table_ctrl.update_peak_parameters()
         self.peakfit_table_ctrl.update_sections()
-        self.peakfit_table_ctrl.update_baseline_constraints()
-        self.peakfit_table_ctrl.update_peak_constraints()
+        current_peakfit_tab = None
+        if hasattr(self.widget, "tabWidget_PeakFit"):
+            current_peakfit_tab = self.widget.tabWidget_PeakFit.currentWidget()
+        if current_peakfit_tab == getattr(self.widget, "tab_PeakFitPeaks", None):
+            self.peakfit_table_ctrl.update_peak_parameters()
+        elif current_peakfit_tab == getattr(self.widget, "tab_PeakFitConstraints", None):
+            self.peakfit_table_ctrl.update_peak_constraints()
+            self._update_constraints_tab_state()
+        elif current_peakfit_tab == getattr(self.widget, "tab_PeakFitBackground", None):
+            self.peakfit_table_ctrl.update_baseline_constraints()
         """
         self._list_peaks()
         self._list_localbg()
         self._update_config
         """
-        self.zoom_to_section()
+        gsas_style = bool(
+            hasattr(self.widget, "pushButton_PlotSelectedPkFtResults") and
+            self.widget.pushButton_PlotSelectedPkFtResults.isChecked())
+        self.zoom_to_section(
+            lightweight=(not source_switched), gsas_style=gsas_style)
 
     def _same_path(self, path_a, path_b):
         if not path_a or not path_b:
@@ -2114,6 +2166,7 @@ class PeakFitController(object):
         return None
 
     def _activate_pattern_for_section(self, section):
+        self._last_section_source_switched = False
         provenance = getattr(section, "source_provenance", {}) or {}
         source_kind = provenance.get("source_kind", "full_chi")
         if source_kind == "azimuthal_integration":
@@ -2165,6 +2218,7 @@ class PeakFitController(object):
 
         self.base_ptn_ctrl._setshow_new_base_ptn(
             target_chi, display_derived=display_derived)
+        self._last_section_source_switched = True
         return True
 
     def clear_section_list(self):

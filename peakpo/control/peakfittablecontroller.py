@@ -92,6 +92,11 @@ class PeakfitTableController(object):
             self._style_peak_parameter_item(Item, peak, 'fraction_vary')
             self.widget.tableWidget_PkParams.setItem(row, 7, Item)
             row += 1
+        try:
+            self.widget.tableWidget_PkParams.cellChanged.disconnect(
+                self._get_cellvalue)
+        except Exception:
+            pass
         self.widget.tableWidget_PkParams.cellChanged.connect(
             self._get_cellvalue)
         self.widget.tableWidget_PkParams.resizeColumnsToContents()

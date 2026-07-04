@@ -52,6 +52,7 @@ class MplController(object):
         self._vcursor_cake = None
         self._peak_center_marker_artists = []
         self._selected_peak_marker_artists = []
+        self._peakfit_overlay_artists = []
         self._jcpds_overlay_artists = []
         self._jcpds_hkl_artists = []
         self._section_selection_artists = []
@@ -721,7 +722,8 @@ class MplController(object):
             return 75.0
         return float(spin.value())
 
-    def _track_jcpds_artist(self, artist, hkl=False):
+    def _track_jcpds_artist(self, artist, hkl=False, phase_index=None,
+                            base_alpha=None):
         if artist is not None:
             try:
                 artist.set_gid("peakpo_jcpds_hkl" if hkl else "peakpo_jcpds")
@@ -729,6 +731,8 @@ class MplController(object):
                 pass
             artist._peakpo_jcpds_overlay = True
             artist._peakpo_jcpds_hkl = bool(hkl)
+            artist._peakpo_jcpds_phase_index = phase_index
+            artist._peakpo_jcpds_base_alpha = base_alpha
             self._jcpds_overlay_artists.append(artist)
             if hkl:
                 self._jcpds_hkl_artists.append(artist)
@@ -885,21 +889,62 @@ class MplController(object):
             rows = [index.row() for index in selection_model.selectedIndexes()]
         return sorted(set(r for r in rows if r is not None and r >= 0))
 
+    def _sync_overlay_rectangles(self, artists, specs):
+        import matplotlib.patches as patches
+        reusable = (
+            len(artists) == len(specs) and
+            all(
+                artist is not None and artist.axes == spec["axes"]
+                for artist, spec in zip(artists, specs)
+            )
+        )
+        if reusable:
+            for artist, spec in zip(artists, specs):
+                artist.set_xy((spec["xmin"], spec["ymin"]))
+                artist.set_width(spec["xmax"] - spec["xmin"])
+                artist.set_height(spec["ymax"] - spec["ymin"])
+                artist.set_linewidth(spec["linewidth"])
+                artist.set_edgecolor(spec["edgecolor"])
+                artist.set_facecolor(spec["facecolor"])
+                artist.set_alpha(spec["alpha"])
+                artist.set_zorder(spec["zorder"])
+            return artists
+        for artist in list(artists):
+            try:
+                artist.remove()
+            except Exception:
+                pass
+        new_artists = []
+        for spec in specs:
+            rect = patches.Rectangle(
+                (spec["xmin"], spec["ymin"]),
+                spec["xmax"] - spec["xmin"],
+                spec["ymax"] - spec["ymin"],
+                linewidth=spec["linewidth"],
+                edgecolor=spec["edgecolor"],
+                facecolor=spec["facecolor"],
+                alpha=spec["alpha"],
+                zorder=spec["zorder"],
+            )
+            spec["axes"].add_patch(rect)
+            new_artists.append(rect)
+        return new_artists
+
     def _plot_selected_section_overlays(self):
-        self._clear_section_selection_artists()
         if self.model.current_section_exist() and \
                 self.model.current_section.get_number_of_peaks_in_queue() > 0:
+            self._clear_section_selection_artists()
             return
         selected_rows = self._get_selected_section_rows()
         if not selected_rows:
+            self._clear_section_selection_artists()
             return
         if not hasattr(self.widget.mpl.canvas, "ax_pattern"):
+            self._clear_section_selection_artists()
             return
-        import matplotlib.patches as patches
         pattern_ax = self.widget.mpl.canvas.ax_pattern
         pattern_ylim = pattern_ax.get_ylim()
-        pattern_face = "#ff9800"
-        pattern_edge = "#ff6f00"
+        specs = []
         for row in selected_rows:
             if row >= len(self.model.section_lst):
                 continue
@@ -909,18 +954,21 @@ class MplController(object):
                 continue
             xmin = float(np.min(x))
             xmax = float(np.max(x))
-            rect = patches.Rectangle(
-                (xmin, pattern_ylim[0]), xmax - xmin,
-                pattern_ylim[1] - pattern_ylim[0],
-                linewidth=1.2, edgecolor=pattern_edge,
-                facecolor=pattern_face, alpha=0.25, zorder=6)
-            pattern_ax.add_patch(rect)
-            self._section_selection_artists.append(rect)
+            specs.append({
+                "axes": pattern_ax,
+                "xmin": xmin,
+                "xmax": xmax,
+                "ymin": pattern_ylim[0],
+                "ymax": pattern_ylim[1],
+                "linewidth": 1.2,
+                "edgecolor": "#ff6f00",
+                "facecolor": "#ff9800",
+                "alpha": 0.25,
+                "zorder": 6,
+            })
         if hasattr(self.widget.mpl.canvas, "ax_cake"):
             cake_ax = self.widget.mpl.canvas.ax_cake
             cake_ylim = cake_ax.get_ylim()
-            cake_face = "#ff9800"
-            cake_edge = "#ff6f00"
             for row in selected_rows:
                 if row >= len(self.model.section_lst):
                     continue
@@ -930,13 +978,20 @@ class MplController(object):
                     continue
                 xmin = float(np.min(x))
                 xmax = float(np.max(x))
-                rect = patches.Rectangle(
-                    (xmin, cake_ylim[0]), xmax - xmin,
-                    cake_ylim[1] - cake_ylim[0],
-                    linewidth=1.2, edgecolor=cake_edge,
-                    facecolor=cake_face, alpha=0.25, zorder=6)
-                cake_ax.add_patch(rect)
-                self._section_selection_artists.append(rect)
+                specs.append({
+                    "axes": cake_ax,
+                    "xmin": xmin,
+                    "xmax": xmax,
+                    "ymin": cake_ylim[0],
+                    "ymax": cake_ylim[1],
+                    "linewidth": 1.2,
+                    "edgecolor": "#ff6f00",
+                    "facecolor": "#ff9800",
+                    "alpha": 0.25,
+                    "zorder": 6,
+                })
+        self._section_selection_artists = self._sync_overlay_rectangles(
+            self._section_selection_artists, specs)
 
     def refresh_section_selection_overlay(self):
         if self._is_drawing or self._toolbar_active:
@@ -959,20 +1014,23 @@ class MplController(object):
         return sorted(set(r for r in rows if r is not None and r >= 0))
 
     def _plot_selected_background_overlays(self):
-        self._clear_background_selection_artists()
         if not self.model.current_section_exist():
+            self._clear_background_selection_artists()
             return
         anchors = getattr(self.model.current_section, "background_anchor_ranges", [])
         if not anchors:
+            self._clear_background_selection_artists()
             return
         selected_rows = self._get_selected_background_rows()
         if not selected_rows:
+            self._clear_background_selection_artists()
             return
         if not hasattr(self.widget.mpl.canvas, "ax_pattern"):
+            self._clear_background_selection_artists()
             return
-        import matplotlib.patches as patches
         pattern_ax = self.widget.mpl.canvas.ax_pattern
         pattern_ylim = pattern_ax.get_ylim()
+        specs = []
         for row in selected_rows:
             if row >= len(anchors):
                 continue
@@ -981,13 +1039,20 @@ class MplController(object):
             xmax = float(anchor.get("xmax", xmin))
             if xmax < xmin:
                 xmin, xmax = xmax, xmin
-            rect = patches.Rectangle(
-                (xmin, pattern_ylim[0]), xmax - xmin,
-                pattern_ylim[1] - pattern_ylim[0],
-                linewidth=1.0, edgecolor="#d32f2f",
-                facecolor="#f44336", alpha=0.22, zorder=6)
-            pattern_ax.add_patch(rect)
-            self._background_selection_artists.append(rect)
+            specs.append({
+                "axes": pattern_ax,
+                "xmin": xmin,
+                "xmax": xmax,
+                "ymin": pattern_ylim[0],
+                "ymax": pattern_ylim[1],
+                "linewidth": 1.0,
+                "edgecolor": "#d32f2f",
+                "facecolor": "#f44336",
+                "alpha": 0.22,
+                "zorder": 6,
+            })
+        self._background_selection_artists = self._sync_overlay_rectangles(
+            self._background_selection_artists, specs)
 
     def refresh_background_selection_overlay(self):
         if self._is_drawing or self._toolbar_active:
@@ -1000,6 +1065,24 @@ class MplController(object):
     def refresh_jcpds_overlay(self):
         if self._is_drawing or self._toolbar_active:
             self.update()
+            return
+        emphasis_rows = self._get_jcpds_emphasis_rows()
+        artists = [
+            artist for artist in self._jcpds_overlay_artists
+            if artist is not None
+        ]
+        if artists:
+            for artist in artists:
+                phase_index = getattr(artist, "_peakpo_jcpds_phase_index", None)
+                base_alpha = getattr(artist, "_peakpo_jcpds_base_alpha", None)
+                if phase_index is None or base_alpha is None:
+                    continue
+                try:
+                    artist.set_alpha(self._get_jcpds_plot_alpha(
+                        phase_index, base_alpha, emphasis_rows))
+                except Exception:
+                    pass
+            self.widget.mpl.canvas.draw_idle()
             return
         canvas = self.widget.mpl.canvas
         if not hasattr(canvas, "ax_pattern"):
@@ -1115,7 +1198,8 @@ class MplController(object):
                         currentText()),
                     alpha=phase_alpha,
                     zorder=18)
-                self._track_jcpds_artist(jcpds_bars)
+                self._track_jcpds_artist(
+                    jcpds_bars, phase_index=row_idx, base_alpha=phase_alpha)
                 legend_entries.append((jcpds_bars, legend_label, phase.color))
                 # hkl
                 if self.widget.checkBox_ShowMillerIndices.isChecked():
@@ -1129,7 +1213,8 @@ class MplController(object):
                             fontsize=int(
                                 self.widget.comboBox_HKLFontSize.currentText()),
                             alpha=phase_alpha,
-                            zorder=19), hkl=True)
+                            zorder=19), hkl=True,
+                            phase_index=row_idx, base_alpha=phase_alpha)
                 # phase.name, phase.v.item()))
             if self.widget.checkBox_ShowCake.isChecked() and \
                     self.widget.checkBox_JCPDSinCake.isChecked():
@@ -1143,7 +1228,8 @@ class MplController(object):
                     lw=float(
                         self.widget.comboBox_CakeJCPDSBarThickness.currentText()),
                     alpha=phase_alpha,
-                    zorder=18))
+                    zorder=18),
+                    phase_index=row_idx, base_alpha=phase_alpha)
                 if self.widget.checkBox_ShowMillerIndices_Cake.isChecked():
                     hkl_list = phase.get_hkl_in_text()
                     trans = transforms.blended_transform_factory(
@@ -1158,7 +1244,8 @@ class MplController(object):
                             fontsize=int(
                                 self.widget.comboBox_HKLFontSize.currentText()),
                             alpha=phase_alpha,
-                            zorder=19), hkl=True)
+                            zorder=19), hkl=True,
+                            phase_index=row_idx, base_alpha=phase_alpha)
         if self.widget.checkBox_JCPDSinPattern.isChecked():
             legend_fontsize = 14
             if hasattr(self.widget, "comboBox_LegendFontSize"):
@@ -1291,7 +1378,23 @@ class MplController(object):
                     self.widget.comboBox_BkgnLineThickness.
                     currentText()))
 
+    def _track_peakfit_artist(self, artist):
+        if artist is not None:
+            self._peakfit_overlay_artists.append(artist)
+        return artist
+
+    def _clear_peakfit_overlay_artists(self):
+        for artist in list(getattr(self, "_peakfit_overlay_artists", [])):
+            try:
+                artist.remove()
+            except Exception:
+                pass
+        self._peakfit_overlay_artists = []
+
     def _plot_peakfit(self):
+        self._clear_peakfit_overlay_artists()
+        self._clear_selected_peak_marker()
+        self._clear_peak_center_markers()
         self._peak_center_marker_artists = []
         self._selected_peak_marker_artists = []
         if not self.model.current_section_exist():
@@ -1310,23 +1413,26 @@ class MplController(object):
             profiles = self.model.current_section.get_individual_profiles(
                 bgsub=bgsub)
             for key, value in profiles.items():
-                self.widget.mpl.canvas.ax_pattern.plot(
+                line = self.widget.mpl.canvas.ax_pattern.plot(
                     x_plot, value, ls='-', c=self.obj_color, lw=float(
                         self.widget.comboBox_BasePtnLineThickness.
-                        currentText()))
+                        currentText()))[0]
+                self._track_peakfit_artist(line)
             total_profile = self.model.current_section.get_fit_profile(
                 bgsub=bgsub)
             residue = self.model.current_section.get_fit_residue(bgsub=bgsub)
-            self.widget.mpl.canvas.ax_pattern.plot(
+            total_line = self.widget.mpl.canvas.ax_pattern.plot(
                 x_plot, total_profile, 'r-', lw=float(
                     self.widget.comboBox_BasePtnLineThickness.
-                    currentText()))
+                    currentText()))[0]
+            self._track_peakfit_artist(total_line)
             y_range = self.model.current_section.get_yrange(bgsub=bgsub)
             y_shift = y_range[0] - (y_range[1] - y_range[0]) * 0.05
             #(y_range[1] - y_range[0]) * 1.05
-            self.widget.mpl.canvas.ax_pattern.fill_between(
+            fill = self.widget.mpl.canvas.ax_pattern.fill_between(
                 x_plot, self.model.current_section.get_fit_residue_baseline(
                     bgsub=bgsub) + y_shift, residue + y_shift, facecolor='r')
+            self._track_peakfit_artist(fill)
             """
             self.widget.mpl.canvas.ax_pattern.plot(
                 x_plot, residue + y_shift, 'r-')
@@ -1565,6 +1671,9 @@ class MplController(object):
             return self.obj_color
 
     def _plot_peakfit_in_gsas_style(self):
+        self._clear_peakfit_overlay_artists()
+        self._clear_selected_peak_marker()
+        self._clear_peak_center_markers()
         # get all the highlights
         # iteratively run plot
         rows = self.widget.tableWidget_PkFtSections.selectionModel().\
@@ -1582,14 +1691,57 @@ class MplController(object):
                 x_plot = section.x
                 total_profile = section.get_fit_profile(bgsub=bgsub)
                 residue = section.get_fit_residue(bgsub=bgsub)
-                self.widget.mpl.canvas.ax_pattern.plot(
+                total_line = self.widget.mpl.canvas.ax_pattern.plot(
                     x_plot, total_profile, 'r-', lw=float(
                         self.widget.comboBox_BasePtnLineThickness.
-                        currentText()))
-                self.widget.mpl.canvas.ax_pattern.fill_between(
+                        currentText()))[0]
+                self._track_peakfit_artist(total_line)
+                fill = self.widget.mpl.canvas.ax_pattern.fill_between(
                     x_plot, section.get_fit_residue_baseline(bgsub=bgsub) +
                     y_shift, residue + y_shift, facecolor='r')
+                self._track_peakfit_artist(fill)
             i += 1
+
+    def refresh_current_section_view(self, limits=None, cake_ylimits=None,
+                                     gsas_style=False):
+        if self._is_drawing or self._toolbar_active:
+            self.update(
+                limits=limits, gsas_style=gsas_style,
+                cake_ylimits=cake_ylimits)
+            return
+        canvas = self.widget.mpl.canvas
+        ax_pattern = getattr(canvas, "ax_pattern", None)
+        if ax_pattern is None:
+            self.update(
+                limits=limits, gsas_style=gsas_style,
+                cake_ylimits=cake_ylimits)
+            return
+        if limits is None:
+            limits = ax_pattern.axis()
+        if cake_ylimits is None and hasattr(canvas, "ax_cake"):
+            cake_ylimits = canvas.ax_cake.get_ylim()
+        if self.model.jcpds_exist():
+            self._plot_jcpds(limits)
+        if self._fits_tab_active():
+            if gsas_style:
+                self._plot_peakfit_in_gsas_style()
+            else:
+                self._plot_peakfit()
+            self._plot_selected_section_overlays()
+            self._plot_selected_background_overlays()
+        ax_pattern.set_xlim(limits[0], limits[1])
+        if not self.widget.checkBox_AutoY.isChecked():
+            ax_pattern.set_ylim(limits[2], limits[3])
+        if hasattr(canvas, "ax_cake"):
+            canvas.ax_cake.set_xlim(limits[0], limits[1])
+            if cake_ylimits is not None:
+                canvas.ax_cake.set_ylim(cake_ylimits)
+        if self.model.jcpds_exist() and \
+                (not self.widget.checkBox_Intensity.isChecked()):
+            new_low_limit = -1.1 * limits[3] * \
+                self.widget.horizontalSlider_JCPDSBarScale.value() / 100.
+            ax_pattern.set_ylim(new_low_limit, limits[3])
+        canvas.draw_idle()
 
     def _fits_tab_active(self):
         """

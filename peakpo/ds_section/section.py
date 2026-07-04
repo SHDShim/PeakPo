@@ -95,6 +95,31 @@ class Section(object):
         self.y_bg = y_bg
         self._invalidate_component_cache()
 
+    def clone_for_editing(self):
+        """
+        Clone a saved section for editing without deep-copying large immutable
+        arrays or lmfit results.
+        """
+        new_section = Section()
+        new_section.x = self.x
+        new_section.y_bgsub = self.y_bgsub
+        new_section.y_bg = self.y_bg
+        new_section.timestamp = self.timestamp
+        new_section.baseline_in_queue = copy.deepcopy(self.baseline_in_queue)
+        new_section.parameters = self.parameters
+        new_section.fit_result = self.fit_result
+        new_section.fit_model = self.fit_model
+        new_section.peaks_in_queue = copy.deepcopy(self.peaks_in_queue)
+        new_section.background_anchor_ranges = copy.deepcopy(
+            getattr(self, "background_anchor_ranges", []))
+        new_section.source_provenance = copy.deepcopy(
+            getattr(self, "source_provenance", {}))
+        new_section.peakinfo = copy.deepcopy(getattr(self, "peakinfo", {}))
+        new_section._component_cache_token = self._component_cache_token
+        new_section._component_cache_bgsub = self._component_cache_bgsub
+        new_section._component_cache_with_bg = self._component_cache_with_bg
+        return new_section
+
     def _invalidate_component_cache(self):
         self._component_cache_token = None
         self._component_cache_bgsub = None
