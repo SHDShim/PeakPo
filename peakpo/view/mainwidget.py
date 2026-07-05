@@ -2655,9 +2655,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.pushButton_MapSetRoi,
             "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
             text_color="#1f1f1f")
-        self._set_accent_button_style(
-            self.pushButton_MapCompute,
-            "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
         self.gridLayout_MapScale.addWidget(self.map_hist_widget, 0, 0, 1, 5)
         self.gridLayout_MapScale.addWidget(self.comboBox_MapCmap, 1, 0, 1, 2)
         self.gridLayout_MapScale.addWidget(self.checkBox_MapLog, 2, 0, 1, 2)
@@ -2772,9 +2769,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.pushButton_SeqSetRoi,
             "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
             text_color="#1f1f1f")
-        self._set_accent_button_style(
-            self.pushButton_SeqCompute,
-            "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
         self.lineEdit_SeqRoiSummary = QtWidgets.QLineEdit(self.groupBox_SeqRoi)
         self.lineEdit_SeqRoiSummary.setObjectName("lineEdit_SeqRoiSummary")
         self.lineEdit_SeqRoiSummary.setReadOnly(True)
@@ -3182,6 +3176,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_BackupRestore.setMaximumWidth(16777215)
         self.pushButton_BackupRestore.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self._set_accent_button_style(
+            self.pushButton_BackupRestore,
+            "#1f7a3d", "#278f49", "#16592d", "#11441f")
 
         # Rebuild row to remove spacer and keep only Restore.
         while self.horizontalLayout_BackupTools.count():
