@@ -492,9 +492,35 @@ class MplController(object):
                 x, y = self.diff_ctrl.get_display_pattern(x, y)
             except Exception:
                 pass
+        y_min = y.min()
+        y_max = y.max()
+
+        if (hasattr(self.model, "waterfall_exist")
+                and self.model.waterfall_exist()
+                and hasattr(self.widget, "checkBox_ShowWaterfall")
+                and self.widget.checkBox_ShowWaterfall.isChecked()):
+            j = 0
+            for pattern in self.model.waterfall_ptn[::-1]:
+                if pattern.display:
+                    j += 1
+                    if self.widget.checkBox_BgSub.isChecked():
+                        y_base_ref = self.model.base_ptn.y_bgsub
+                        y_pattern = pattern.y_bgsub
+                    else:
+                        y_base_ref = self.model.base_ptn.y_raw
+                        y_pattern = pattern.y_raw
+                    ygap = self.widget.horizontalSlider_WaterfallGaps.value() * \
+                        y_base_ref.max() * float(j) / 100.
+                    if self.widget.checkBox_IntNorm.isChecked():
+                        y_scaled = y_pattern / y_pattern.max() * y_base_ref.max()
+                    else:
+                        y_scaled = y_pattern
+                    y_min = min(y_min, (y_scaled + ygap).min())
+                    y_max = max(y_max, (y_scaled + ygap).max())
+
         return (x.min(), x.max(),
-                y.min() - (y.max() - y.min()) * y_margin,
-                y.max() + (y.max() - y.min()) * y_margin)
+                y_min - (y_max - y_min) * y_margin,
+                y_max + (y_max - y_min) * y_margin)
 
 
     
