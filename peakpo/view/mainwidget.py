@@ -814,9 +814,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.groupBox_29.setParent(self.plotControlContents)
         self.groupBox_5.setParent(self.plotControlContents)
         self.groupBox_23.setParent(self.plotControlContents)
-        self.verticalLayout_PlotControl.addWidget(self.groupBox_34)
-        self.verticalLayout_PlotControl.addWidget(self.groupBox_20)
         self.verticalLayout_PlotControl.addWidget(self.groupBox_29)
+        self.verticalLayout_PlotControl.addWidget(self.groupBox_20)
+        self.verticalLayout_PlotControl.addWidget(self.groupBox_34)
         self.verticalLayout_PlotControl.addWidget(self.groupBox_5)
         self.verticalLayout_PlotControl.addWidget(self.groupBox_23)
         self.verticalLayout_PlotControl.addStretch(1)
@@ -1110,7 +1110,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.doubleSpinBox_CakeHistEdgePct.setRange(0.0, 100.0)
         self.doubleSpinBox_CakeHistEdgePct.setDecimals(2)
         self.doubleSpinBox_CakeHistEdgePct.setSingleStep(0.25)
-        self.doubleSpinBox_CakeHistEdgePct.setValue(30.0)
+        self.doubleSpinBox_CakeHistEdgePct.setValue(37.0)
         self.doubleSpinBox_CakeHistEdgePct.setToolTip(
             "Percent offset used by the 2D histogram Edge button and "
             "new-file auto edge scaling.")
@@ -1127,7 +1127,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.doubleSpinBox_CakeHistEdgePositionPct.setRange(0.01, 99.99)
         self.doubleSpinBox_CakeHistEdgePositionPct.setDecimals(2)
         self.doubleSpinBox_CakeHistEdgePositionPct.setSingleStep(1.0)
-        self.doubleSpinBox_CakeHistEdgePositionPct.setValue(75.0)
+        self.doubleSpinBox_CakeHistEdgePositionPct.setValue(78.0)
         self.doubleSpinBox_CakeHistEdgePositionPct.setToolTip(
             "Position of the detected edge between the blue and orange bars. "
             "75 means the edge is 75% of the way from blue to orange.")
@@ -2926,8 +2926,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_ExportPythonView.setToolTip(
             "Export current on-screen view as a Python reproducible package with PDF and PNG previews")
         self.horizontalLayout_PythonExport.addWidget(self.pushButton_ExportPythonView, 1)
-        # Place at the top in Plot > Control.
-        self.verticalLayout_PlotControl.insertWidget(0, self.groupBox_PythonExport)
+        # Place at the bottom in Plot > Control.
+        self.verticalLayout_PlotControl.insertWidget(
+            self.verticalLayout_PlotControl.count() - 1, self.groupBox_PythonExport)
 
     def _setup_backup_comment_button(self):
         return
