@@ -1644,7 +1644,7 @@ class Ui_MainWindow(object):
         self.doubleSpinBox_JCPDS_ptn_Alpha.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.doubleSpinBox_JCPDS_ptn_Alpha.setMaximum(1.0)
         self.doubleSpinBox_JCPDS_ptn_Alpha.setSingleStep(0.01)
-        self.doubleSpinBox_JCPDS_ptn_Alpha.setProperty("value", 1.0)
+        self.doubleSpinBox_JCPDS_ptn_Alpha.setProperty("value", 0.25)
         self.doubleSpinBox_JCPDS_ptn_Alpha.setObjectName("doubleSpinBox_JCPDS_ptn_Alpha")
         self.gridLayout_3.addWidget(self.doubleSpinBox_JCPDS_ptn_Alpha, 0, 1, 1, 1)
         self.comboBox_CakeJCPDSBarThickness = QtWidgets.QComboBox(self.groupBox_27)
