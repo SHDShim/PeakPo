@@ -6216,20 +6216,20 @@
                            </sizepolicy>
                           </property>
                           <layout class="QGridLayout" name="gridLayout_20">
-                           <item row="0" column="0">
-                            <widget class="QPushButton" name="pushButton_PkFtSectionRemove">
-                             <property name="minimumSize">
-                              <size>
-                               <width>0</width>
-                               <height>25</height>
-                              </size>
-                             </property>
-                             <property name="toolTip">
-                              <string>Remove highlighted section</string>
-                             </property>
-                             <property name="text">
-                              <string>Remove</string>
-                             </property>
+                            <item row="0" column="0">
+                             <widget class="QPushButton" name="pushButton_PkFtSectionRemove">
+                              <property name="minimumSize">
+                               <size>
+                                <width>0</width>
+                                <height>25</height>
+                               </size>
+                              </property>
+                              <property name="toolTip">
+                               <string>Remove highlighted section</string>
+                              </property>
+                              <property name="text">
+                               <string>Remove sections</string>
+                              </property>
                             </widget>
                            </item>
                            <item row="0" column="1">
@@ -6276,7 +6276,7 @@
                               </size>
                              </property>
                              <property name="text">
-                              <string>Clear</string>
+                              <string>Clear table</string>
                              </property>
                             </widget>
                            </item>
@@ -6398,36 +6398,36 @@
                              </property>
                             </widget>
                            </item>
-                           <item row="0" column="1">
-                            <widget class="QPushButton" name="pushButton_ZoomToSection">
-                             <property name="toolTip">
-                              <string>Zoom back to the current fit section</string>
-                             </property>
-                             <property name="text">
-                              <string>Fit Range</string>
-                             </property>
-                            </widget>
+                            <item row="0" column="1">
+                             <widget class="QPushButton" name="pushButton_ZoomToSection">
+                              <property name="toolTip">
+                               <string>Zoom back to the current fit section</string>
+                              </property>
+                              <property name="text">
+                               <string>Zoom to fit range</string>
+                              </property>
+                             </widget>
+                            </item>
+                            <item row="1" column="0">
+                             <widget class="QPushButton" name="pushButton_PkSave">
+                              <property name="toolTip">
+                               <string>Save current fitting results to the sections tab</string>
+                              </property>
+                              <property name="text">
+                               <string>Save fit result</string>
+                              </property>
+                             </widget>
                            </item>
-                           <item row="1" column="0">
-                            <widget class="QPushButton" name="pushButton_PkSave">
-                             <property name="toolTip">
-                              <string>Save current fitting results to the sections tab</string>
-                             </property>
-                             <property name="text">
-                              <string>Save</string>
-                             </property>
-                            </widget>
-                           </item>
-                           <item row="1" column="1">
-                            <widget class="QPushButton" name="pushButton_ClearSection">
-                             <property name="toolTip">
-                              <string>Clear current fitting result</string>
-                             </property>
-                             <property name="text">
-                              <string>Clear</string>
-                             </property>
-                            </widget>
-                           </item>
+                            <item row="1" column="1">
+                             <widget class="QPushButton" name="pushButton_ClearSection">
+                              <property name="toolTip">
+                               <string>Clear current fitting result</string>
+                              </property>
+                              <property name="text">
+                               <string>Clear table</string>
+                              </property>
+                             </widget>
+                            </item>
                           </layout>
                          </widget>
                         </item>
@@ -6493,30 +6493,42 @@
                                <height>25</height>
                               </size>
                              </property>
+                             <property name="maximumSize">
+                              <size>
+                               <width>16777215</width>
+                               <height>25</height>
+                              </size>
+                             </property>
                              <property name="toolTip">
                               <string>Recieve starting peak position values from JCPDS</string>
                              </property>
                              <property name="text">
                               <string>Import from JCPDS</string>
                              </property>
-                           </widget>
-                          </item>
-                          <item row="2" column="1">
-                           <widget class="QPushButton" name="pushButton_RestoreMissingJcpdsPeaks">
-                            <property name="minimumSize">
-                             <size>
-                              <width>0</width>
-                              <height>25</height>
-                             </size>
-                            </property>
-                            <property name="toolTip">
-                             <string>Restore JCPDS peaks missing by phase and Miller index without changing existing peaks</string>
-                            </property>
-                            <property name="text">
-                             <string>Restore missing</string>
-                            </property>
-                           </widget>
-                          </item>
+                            </widget>
+                           </item>
+                           <item row="2" column="1">
+                            <widget class="QPushButton" name="pushButton_RestoreMissingJcpdsPeaks">
+                             <property name="minimumSize">
+                              <size>
+                               <width>0</width>
+                               <height>25</height>
+                              </size>
+                             </property>
+                             <property name="maximumSize">
+                              <size>
+                               <width>16777215</width>
+                               <height>25</height>
+                              </size>
+                             </property>
+                             <property name="toolTip">
+                              <string>Restore JCPDS peaks missing by phase and Miller index without changing existing peaks</string>
+                             </property>
+                             <property name="text">
+                              <string>Restore missing</string>
+                             </property>
+                            </widget>
+                           </item>
                           <item row="3" column="0" colspan="4">
                            <widget class="QLabel" name="label_PeakDragInstruction">
                             <property name="text">

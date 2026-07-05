@@ -1625,6 +1625,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "pushButton_ClearSection",
             "pushButton_AddRemoveFromMouse",
             "pushButton_AddRemoveFromJlist",
+            "pushButton_RestoreMissingJcpdsPeaks",
             "pushButton_PkRemoveSelectedPeaks",
             "pushButton_CollectPeakFitResults",
             "pushButton_PerformUCFit",

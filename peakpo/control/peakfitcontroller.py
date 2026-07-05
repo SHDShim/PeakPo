@@ -13,6 +13,16 @@ from ..ds_section.section import DEFAULT_CENTER_HALF_RANGE, DEFAULT_FWHM_MIN, \
     MAX_BACKGROUND_ANCHOR_WEIGHT, normalize_peak_phase_name
 
 
+def _set_toggle_button_style(button, checked):
+    if checked:
+        button.setStyleSheet(
+            "QPushButton {background-color: #e0b000; color: black;}"
+            "QPushButton:checked {background-color: #f1c232; color: black;}"
+        )
+    else:
+        button.setStyleSheet("")
+
+
 class _TableBackspaceKeyFilter(QtCore.QObject):
     def __init__(self, parent, table, callback):
         super(_TableBackspaceKeyFilter, self).__init__(parent)
@@ -43,8 +53,8 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
         self._active_editor = None
         self._position_toggle_off_text = "Set position range from plot"
         self._position_toggle_on_text = "Set position range from plot (ON)"
-        self._fwhm_toggle_off_text = "Set FWHM max from plot range"
-        self._fwhm_toggle_on_text = "Set FWHM max from plot range (ON)"
+        self._fwhm_toggle_off_text = "Set FWHM max from plot"
+        self._fwhm_toggle_on_text = "Set FWHM max from plot (ON)"
         self.setWindowTitle("Peak constraints")
         self.setModal(False)
         self.resize(760, 260)
@@ -601,6 +611,7 @@ class _BackgroundSetupDialog(QtWidgets.QDialog):
             return
         if not checked:
             self.controller.plot_interaction_ctrl.cancel_range_tool()
+            _set_toggle_button_style(self.button_visual_anchor, False)
             return
 
         def add_range(xmin, xmax):
@@ -619,6 +630,7 @@ class _BackgroundSetupDialog(QtWidgets.QDialog):
             self.button_visual_anchor.setText("Add range from plot")
             self.button_visual_anchor.setToolTip(
                 "Click once, then drag one or more ranges on the plot. Right-click to finish.")
+            _set_toggle_button_style(self.button_visual_anchor, False)
 
         self.controller.plot_interaction_ctrl.start_range_tool(
             "Add background anchor range", add_range, repeat=True,
@@ -626,6 +638,7 @@ class _BackgroundSetupDialog(QtWidgets.QDialog):
         self.button_visual_anchor.setText("Stop picking ranges")
         self.button_visual_anchor.setToolTip(
             "Drag one or more ranges on the plot. Click again or right-click on the plot to finish.")
+        _set_toggle_button_style(self.button_visual_anchor, True)
 
     def apply(self):
         if self.controller.plot_interaction_ctrl is not None:
@@ -770,21 +783,27 @@ class PeakFitController(object):
                     self._peak_table_selection_connected = True
 
     def _set_constraints_toggle_button(self, button, checked, on_text, off_text):
-        if not hasattr(button, "_peakpo_default_palette"):
-            button._peakpo_default_palette = QtGui.QPalette(button.palette())
         old_state = button.blockSignals(True)
         button.setChecked(bool(checked))
         button.setDown(bool(checked))
         button.setText(on_text if checked else off_text)
         if checked:
-            palette = QtGui.QPalette(button._peakpo_default_palette)
-            palette.setColor(QtGui.QPalette.Button, QtGui.QColor("#f1c232"))
-            palette.setColor(QtGui.QPalette.ButtonText, QtGui.QColor("black"))
-            button.setPalette(palette)
+            button.setStyleSheet(
+                "QPushButton {background-color: #e0b000; color: black;}"
+                "QPushButton:checked {background-color: #f1c232; color: black;}"
+            )
         else:
-            button.setPalette(button._peakpo_default_palette)
+            button.setStyleSheet("")
         button.blockSignals(old_state)
-        button.update()
+
+    def _update_visual_toggle_style(self, button, checked):
+        if checked:
+            button.setStyleSheet(
+                "QPushButton {background-color: #e0b000; color: black;}"
+                "QPushButton:checked {background-color: #f1c232; color: black;}"
+            )
+        else:
+            button.setStyleSheet("")
 
     def _clear_constraints_toggle_buttons(self, except_button=None):
         pairs = [
@@ -792,8 +811,8 @@ class PeakFitController(object):
              "Set position range from plot (ON)",
              "Set position range from plot"),
             (self.widget.pushButton_SetFwhmMax,
-             "Set FWHM max from plot range (ON)",
-             "Set FWHM max from plot range"),
+             "Set FWHM max from plot (ON)",
+             "Set FWHM max from plot"),
         ]
         for button, on_text, off_text in pairs:
             if button is except_button:
@@ -806,7 +825,7 @@ class PeakFitController(object):
             return
         self.widget.pushButton_AddCurrentView.clicked.connect(
             self._add_bg_anchor_from_view)
-        self.widget.pushButton_AddRangeFromPlot.clicked.connect(
+        self.widget.pushButton_AddRangeFromPlot.toggled.connect(
             self._arm_bg_anchor_range)
         self.widget.pushButton_RemoveBGAnchor.clicked.connect(
             self._remove_bg_anchor_rows)
@@ -1321,8 +1340,8 @@ class PeakFitController(object):
             self.plot_interaction_ctrl.cancel_editable_xrange()
             self._set_constraints_toggle_button(
                 button, False,
-                "Set FWHM max from plot range (ON)",
-                "Set FWHM max from plot range")
+                "Set FWHM max from plot (ON)",
+                "Set FWHM max from plot")
             return
         table = self.widget.tableWidget_PkParams
         selected_rows = {r.row() for r in table.selectionModel().selectedRows()} if table.selectionModel() else set()
@@ -1331,8 +1350,8 @@ class PeakFitController(object):
         if len(selected_rows) != 1:
             self._set_constraints_toggle_button(
                 button, False,
-                "Set FWHM max from plot range (ON)",
-                "Set FWHM max from plot range")
+                "Set FWHM max from plot (ON)",
+                "Set FWHM max from plot")
             return
         row = selected_rows.pop()
         self._clear_constraints_toggle_buttons(except_button=button)
@@ -1346,8 +1365,8 @@ class PeakFitController(object):
         def cancel_button():
             self._set_constraints_toggle_button(
                 button, False,
-                "Set FWHM max from plot range (ON)",
-                "Set FWHM max from plot range")
+                "Set FWHM max from plot (ON)",
+                "Set FWHM max from plot")
         peak = self.model.current_section.peaks_in_queue[row]
         detail_table = getattr(self.widget, "tableWidget_PeakConstraintDetail", None)
         if detail_table is not None and detail_table.rowCount() > 2:
@@ -1366,8 +1385,8 @@ class PeakFitController(object):
         xmax = center + half
         self._set_constraints_toggle_button(
             button, True,
-            "Set FWHM max from plot range (ON)",
-            "Set FWHM max from plot range")
+            "Set FWHM max from plot (ON)",
+            "Set FWHM max from plot")
         self.plot_interaction_ctrl.start_editable_xrange_tool(
             "Set peak FWHM maximum", xmin, xmax, apply_range,
             cancel_callback=cancel_button)
@@ -1437,6 +1456,49 @@ class PeakFitController(object):
         self.model.current_section.background_anchor_ranges = anchors
         self.set_tableWidget_PkParams_unsaved()
 
+    def _remove_bg_anchor_range(self, checked=False):
+        if self.plot_interaction_ctrl is None:
+            return
+        if not checked:
+            self.plot_interaction_ctrl.cancel_range_tool()
+            if hasattr(self.widget, "pushButton_RemoveBGAnchor"):
+                self.widget.pushButton_RemoveBGAnchor.setText("Remove range")
+                self.widget.pushButton_RemoveBGAnchor.setStyleSheet("")
+            return
+
+        def remove_range(xmin, xmax):
+            table = self.widget.tableWidget_BGAnchorRanges
+            to_remove = []
+            for r in range(table.rowCount()):
+                xmin_w = table.cellWidget(r, 0)
+                xmax_w = table.cellWidget(r, 1)
+                if xmin_w and xmax_w:
+                    row_xmin = float(xmin_w.value())
+                    row_xmax = float(xmax_w.value())
+                    if abs(row_xmin - xmin) < 0.001 and abs(row_xmax - xmax) < 0.001:
+                        to_remove.append(r)
+            for row in sorted(to_remove, reverse=True):
+                table.removeRow(row)
+            self._sync_anchor_rows_to_section()
+            if hasattr(self.widget, "pushButton_RemoveBGAnchor"):
+                self.widget.pushButton_RemoveBGAnchor.setText("Stop picking ranges")
+                self.widget.pushButton_RemoveBGAnchor.setStyleSheet(
+                    "QPushButton {background-color: #e0b000; color: black;}"
+                    "QPushButton:checked {background-color: #f1c232; color: black;}"
+                )
+
+        def deactivate():
+            if hasattr(self.widget, "pushButton_RemoveBGAnchor"):
+                self.widget.pushButton_RemoveBGAnchor.setChecked(False)
+                self.widget.pushButton_RemoveBGAnchor.setText("Remove range")
+                self.widget.pushButton_RemoveBGAnchor.setStyleSheet("")
+
+        self.plot_interaction_ctrl.start_range_tool(
+            "Remove background anchor range", remove_range, repeat=True, cancel_callback=deactivate)
+        if hasattr(self.widget, "pushButton_RemoveBGAnchor"):
+            self.widget.pushButton_RemoveBGAnchor.setText("Stop picking ranges")
+            _set_toggle_button_style(self.widget.pushButton_RemoveBGAnchor, True)
+
     def _arm_bg_anchor_range(self, checked=False):
         if self.plot_interaction_ctrl is None:
             return
@@ -1444,19 +1506,29 @@ class PeakFitController(object):
             self.plot_interaction_ctrl.cancel_range_tool()
             if hasattr(self.widget, "pushButton_AddRangeFromPlot"):
                 self.widget.pushButton_AddRangeFromPlot.setText("Add range from plot")
+                self.widget.pushButton_AddRangeFromPlot.setStyleSheet("")
             return
         def add_range(xmin, xmax):
             self._add_bg_anchor_row({"xmin": float(xmin), "xmax": float(xmax), "weight": 10.0}, append_to_model=True)
             if hasattr(self.widget, "pushButton_AddRangeFromPlot"):
                 self.widget.pushButton_AddRangeFromPlot.setText("Stop picking ranges")
+                self.widget.pushButton_AddRangeFromPlot.setStyleSheet(
+                    "QPushButton {background-color: #e0b000; color: black;}"
+                    "QPushButton:checked {background-color: #f1c232; color: black;}"
+                )
         def deactivate():
             if hasattr(self.widget, "pushButton_AddRangeFromPlot"):
                 self.widget.pushButton_AddRangeFromPlot.setChecked(False)
                 self.widget.pushButton_AddRangeFromPlot.setText("Add range from plot")
+                self.widget.pushButton_AddRangeFromPlot.setStyleSheet("")
         self.plot_interaction_ctrl.start_range_tool(
             "Add background anchor range", add_range, repeat=True, cancel_callback=deactivate)
         if hasattr(self.widget, "pushButton_AddRangeFromPlot"):
             self.widget.pushButton_AddRangeFromPlot.setText("Stop picking ranges")
+            self.widget.pushButton_AddRangeFromPlot.setStyleSheet(
+                "QPushButton {background-color: #e0b000; color: black;}"
+                "QPushButton:checked {background-color: #f1c232; color: black;}"
+            )
 
     def _add_bg_anchor_row(self, anchor=None, append_to_model=False):
         if not hasattr(self.widget, "tableWidget_BGAnchorRanges"):
