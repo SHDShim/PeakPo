@@ -1634,11 +1634,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self._set_button_height(getattr(self, name))
         self._set_accent_button_style(
             self.pushButton_SetFitSection,
-            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
-            text_color="#1f1f1f")
+            "#1f7a3d", "#278f49", "#16592d", "#11441f")
         self._set_accent_button_style(
             self.pushButton_PkSave,
-            "#1f7a3d", "#278f49", "#16592d", "#11411f")
+            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+            text_color="#1f1f1f")
         self._set_accent_button_style(
             self.pushButton_ConductFitting,
             "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
@@ -1646,6 +1646,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.pushButton_AddRemoveFromMouse,
             "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
             text_color="#1f1f1f")
+        self._set_accent_button_style(
+            self.pushButton_AddRemoveFromJlist,
+            "#1f5e8c", "#2873a8", "#164870", "#123a55")
         self._set_accent_button_style(
             self.pushButton_PkFtSectionSetToCurrent,
             "#1f7a3d", "#278f49", "#16592d", "#11441f")
@@ -1662,22 +1665,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not hasattr(self, "verticalLayout_40"):
             return
         if hasattr(self, "pushButton_PkRemoveSelectedPeaks"):
-            return
-        self.frame_PeakTableActions = QtWidgets.QFrame(
-            self.scrollAreaWidgetContents_11)
-        self.frame_PeakTableActions.setObjectName("frame_PeakTableActions")
-        layout = QtWidgets.QHBoxLayout(self.frame_PeakTableActions)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
-        self.pushButton_PkRemoveSelectedPeaks = QtWidgets.QPushButton(
-            "Remove peaks", self.frame_PeakTableActions)
-        self.pushButton_PkRemoveSelectedPeaks.setObjectName(
-            "pushButton_PkRemoveSelectedPeaks")
-        self.pushButton_PkRemoveSelectedPeaks.setToolTip(
-            "Remove highlighted peaks after confirmation.")
-        self._set_button_height(self.pushButton_PkRemoveSelectedPeaks)
-        layout.addWidget(self.pushButton_PkRemoveSelectedPeaks)
-        self.verticalLayout_40.addWidget(self.frame_PeakTableActions)
+            self.pushButton_PkRemoveSelectedPeaks.setToolTip(
+                "Remove highlighted peaks after confirmation.")
+            self._set_button_height(self.pushButton_PkRemoveSelectedPeaks)
+        if hasattr(self, "pushButton_ClearSection"):
+            self._set_button_height(self.pushButton_ClearSection)
 
     def _compact_peakfit_spinboxes(self):
         for name in (
