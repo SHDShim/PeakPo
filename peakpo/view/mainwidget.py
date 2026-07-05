@@ -422,6 +422,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tableWidget_DiffImgAzi.\
             setHorizontalHeaderLabels(['Use', 'Label', 'Azi min', 'Azi max', 'Note'])
         self._setup_cake_integration_chi_list()
+        self._setup_cake_integration_buttons()
         self._setup_cake_scale_layout()
         self.doubleSpinBox_Pressure.valueChanged.connect(
             self._update_pt_spinbox_colors)
@@ -645,6 +646,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not hasattr(self, "verticalLayout_37") or \
                 hasattr(self, "groupBox_AziChiList"):
             return
+
+    def _setup_cake_integration_buttons(self):
+        if hasattr(self, "pushButton_IntegrateCake"):
+            self._set_accent_button_style(
+                self.pushButton_IntegrateCake,
+                "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
 
         self.groupBox_AziChiList = QtWidgets.QGroupBox(
             "Azimuthal CHI", self.scrollAreaWidgetContents_8)

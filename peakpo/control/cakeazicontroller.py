@@ -90,14 +90,6 @@ class CakeAziController(object):
         self.widget.pushButton_ClearAziList.setText("Clear ranges")
         self.widget.pushButton_ClearAziList.setToolTip(
             "Clear all azimuth ranges from the list.")
-        self.widget.pushButton_LoadCakeMarkerFile.setText("Load setup")
-        self.widget.pushButton_LoadCakeMarkerFile.setToolTip(
-            "Load an azimuth setup JSON file or an older .cake.marker file.")
-        self.widget.pushButton_LoadCakeMarkerFile.setEnabled(False)
-        self.widget.pushButton_SaveCakeMarkerFile.setText("Save setup")
-        self.widget.pushButton_SaveCakeMarkerFile.setToolTip(
-            "Save the current azimuth ranges beside the CHI PARAM folder.")
-        self.widget.pushButton_SaveCakeMarkerFile.setEnabled(False)
         self.widget.pushButton_HighlightSelectedMarker.setCheckable(True)
         self._update_roi_button_state(False)
         self.widget.pushButton_InvertCakeBoxes.setText("Integrate only")
@@ -141,10 +133,6 @@ class CakeAziController(object):
             self._clear_azilist)
         self.widget.pushButton_InvertCakeBoxes.clicked.connect(
             self._integrate_only_clicked)
-        self.widget.pushButton_SaveCakeMarkerFile.clicked.connect(
-            self._save_cake_marker_file)
-        self.widget.pushButton_LoadCakeMarkerFile.clicked.connect(
-            self._load_cake_marker_file)
         self.widget.pushButton_HighlightSelectedMarker.clicked.connect(
             self._arm_roi_selection)
         self.widget.tableWidget_DiffImgAzi.itemSelectionChanged.connect(
