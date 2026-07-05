@@ -57,6 +57,12 @@ qt.conf
 # =========================
 .opencode/
 
+# Codex memory / sessions
+.codex/
+
+# Graphify knowledge graph output
+graphify-out/
+
 # =========================
 # Skills (local customizations)
 # =========================
