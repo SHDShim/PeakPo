@@ -415,6 +415,63 @@ class MplController(object):
                     horizontalalignment="right",
                     verticalalignment="bottom")
 
+    def _plot_selected_derived_chi_preview_overlay(
+            self, tth_min, tth_max, chi_min, chi_max):
+        import matplotlib.patches as patches
+
+        ranges = getattr(self.widget, "_cake_azi_selected_rois", None)
+        chi_path = getattr(self.widget, "_cake_azi_selected_derived_chi_path", None)
+        saved_shift = getattr(self.widget, "_cake_azi_selected_derived_chi_shift", None)
+        if not ranges or not chi_path:
+            return
+        if hasattr(self.widget, "tab_Cake1") and \
+                self.widget.tabWidget.currentWidget() != self.widget.tab_Cake1:
+            return
+        try:
+            current_filename = self._display_pattern_filename()
+        except Exception:
+            current_filename = None
+        if current_filename and chi_path:
+            try:
+                same_path = os.path.normcase(os.path.abspath(current_filename)) == \
+                    os.path.normcase(os.path.abspath(chi_path))
+            except Exception:
+                same_path = False
+            if same_path:
+                return
+        if saved_shift is None:
+            try:
+                saved_shift = float(self.widget.spinBox_AziShift.value())
+            except Exception:
+                saved_shift = 0.0
+        color = "#ff9f1a"
+        for idx, range_info in enumerate(normalize_ranges(ranges)):
+            overlay_ranges = self._shift_azimuth_range_to_current_view(
+                range_info, saved_shift, chi_min, chi_max)
+            for jdx, (azi_min, azi_max) in enumerate(overlay_ranges):
+                if azi_max <= azi_min:
+                    continue
+                rect = patches.Rectangle(
+                    (tth_min, azi_min),
+                    tth_max - tth_min,
+                    azi_max - azi_min,
+                    linewidth=1.8,
+                    edgecolor=color,
+                    facecolor=color,
+                    alpha=0.30,
+                )
+                self.widget.mpl.canvas.ax_cake.add_patch(rect)
+                if idx == 0 and jdx == 0:
+                    show_labels = getattr(self.widget, "checkBox_ShowCakeLabels", None)
+                    if show_labels is not None and show_labels.isChecked():
+                        self.widget.mpl.canvas.ax_cake.text(
+                            tth_max,
+                            azi_max,
+                            "selected ROI preview",
+                            color=color,
+                            horizontalalignment="right",
+                            verticalalignment="bottom")
+
     def zoom_out_graph(self):
         if not self.model.base_ptn_exist():
             return
@@ -710,6 +767,8 @@ class MplController(object):
                     (azi_max - azi_min),
                     linewidth=0, facecolor='r', alpha=0.2)
                 self.widget.mpl.canvas.ax_cake.add_patch(rect)
+        self._plot_selected_derived_chi_preview_overlay(
+            tth_min, tth_max, chi_min, chi_max)
 
     def _cake_hist_edge_width_percent(self):
         spin = getattr(self.widget, "doubleSpinBox_CakeHistEdgePct", None)

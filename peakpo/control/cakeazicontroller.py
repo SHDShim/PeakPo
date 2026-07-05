@@ -47,8 +47,18 @@ class CakeAziController(object):
         self._pending_rois = []
         self._pending_roi_artists = []
         self._derived_chi_entries = []
+        self._selected_derived_chi_preview = []
+        self._selected_derived_chi_path = None
+        self._selected_derived_chi_shift = None
+        self._selected_derived_chi_table_snapshot = None
+        self._syncing_derived_chi_selection = False
         self.base_ptn_ctrl = None
         self.widget._cake_azi_pending_rois = self._pending_rois
+        self.widget._cake_azi_selected_rois = self._selected_derived_chi_preview
+        self.widget._cake_azi_selected_derived_chi_path = (
+            self._selected_derived_chi_path)
+        self.widget._cake_azi_selected_derived_chi_shift = (
+            self._selected_derived_chi_shift)
         self._configure_ui()
         self.connect_channel()
 
@@ -83,9 +93,11 @@ class CakeAziController(object):
         self.widget.pushButton_LoadCakeMarkerFile.setText("Load setup")
         self.widget.pushButton_LoadCakeMarkerFile.setToolTip(
             "Load an azimuth setup JSON file or an older .cake.marker file.")
+        self.widget.pushButton_LoadCakeMarkerFile.setEnabled(False)
         self.widget.pushButton_SaveCakeMarkerFile.setText("Save setup")
         self.widget.pushButton_SaveCakeMarkerFile.setToolTip(
             "Save the current azimuth ranges beside the CHI PARAM folder.")
+        self.widget.pushButton_SaveCakeMarkerFile.setEnabled(False)
         self.widget.pushButton_HighlightSelectedMarker.setCheckable(True)
         self._update_roi_button_state(False)
         self.widget.pushButton_InvertCakeBoxes.setText("Integrate only")
@@ -112,6 +124,10 @@ class CakeAziController(object):
             except Exception:
                 pass
             table.horizontalHeader().setStretchLastSection(True)
+            sel_model = table.selectionModel()
+            if sel_model is not None:
+                sel_model.selectionChanged.connect(
+                    self._on_derived_chi_selection_changed)
         self.refresh_derived_chi_ui()
 
     def connect_channel(self):
@@ -442,6 +458,8 @@ class CakeAziController(object):
             "chi_path": os.path.abspath(source_chi),
             "source_chi": os.path.abspath(source_chi),
             "created_at": "",
+            "azimuth_ranges": [],
+            "azimuth_shift": None,
         }]
         for sidecar_path in self._derived_chi_sidecar_paths(source_chi):
             chi_path = sidecar_path[:-len(".azint.json")] + ".chi"
@@ -463,12 +481,60 @@ class CakeAziController(object):
                 "label": label,
                 "ranges": format_ranges(
                     metadata.get("azimuth_ranges", []), precision=1),
+                "azimuth_ranges": normalize_ranges(
+                    metadata.get("azimuth_ranges", [])),
                 "chi_path": os.path.abspath(chi_path),
                 "source_chi": os.path.abspath(source_chi),
                 "created_at": str(metadata.get("created_at", "")),
+                "azimuth_shift": metadata.get("azimuth_shift"),
             })
         return [entries[0]] + sorted(
             entries[1:], key=lambda e: (e.get("created_at", ""), e["chi_path"]))
+
+    def _set_selected_derived_chi_preview(self, entry):
+        if entry is None or entry.get("kind") != "derived":
+            self.clear_selected_derived_chi_preview(restore_table=False)
+            return
+
+        azimuth_ranges = normalize_ranges(entry.get("azimuth_ranges", []))
+        if self._selected_derived_chi_table_snapshot is None:
+            snapshot = self._read_azilist(checked_only=False, warn=False)
+            if snapshot:
+                self._selected_derived_chi_table_snapshot = snapshot
+        self._selected_derived_chi_preview[:] = azimuth_ranges
+        self._selected_derived_chi_path = entry.get("chi_path")
+        self._selected_derived_chi_shift = entry.get("azimuth_shift")
+        self.widget._cake_azi_selected_rois = self._selected_derived_chi_preview
+        self.widget._cake_azi_selected_derived_chi_path = self._selected_derived_chi_path
+        self.widget._cake_azi_selected_derived_chi_shift = self._selected_derived_chi_shift
+        if azimuth_ranges:
+            self._post_to_table(azimuth_ranges, clear=True)
+        self._set_status(
+            f"Previewing ROI ranges from {entry.get('label', 'selected derived CHI')}. "
+            "Use Open selected to switch the active CHI.")
+        self._apply_changes_to_graph()
+
+    def clear_selected_derived_chi_preview(self, restore_table=False):
+        if self._selected_derived_chi_table_snapshot is not None:
+            snapshot = self._selected_derived_chi_table_snapshot
+            self._selected_derived_chi_table_snapshot = None
+            if restore_table:
+                self._post_to_table(snapshot, clear=True)
+        if hasattr(self.widget, "tableWidget_DiffImgAzi") and not restore_table:
+            self.widget.tableWidget_DiffImgAzi.setRowCount(0)
+        self._selected_derived_chi_preview[:] = []
+        self._selected_derived_chi_path = None
+        self._selected_derived_chi_shift = None
+        self.widget._cake_azi_selected_rois = self._selected_derived_chi_preview
+        self.widget._cake_azi_selected_derived_chi_path = None
+        self.widget._cake_azi_selected_derived_chi_shift = None
+        self._apply_changes_to_graph()
+
+    def _on_derived_chi_selection_changed(self, *_args):
+        if self._syncing_derived_chi_selection:
+            return
+        entry = self._selected_azimuthal_chi_entry()
+        self._set_selected_derived_chi_preview(entry)
 
     def refresh_derived_chi_ui(self, select_path=None):
         self._set_current_chi_status()
@@ -507,6 +573,13 @@ class CakeAziController(object):
             table.resizeColumnsToContents()
         finally:
             table.blockSignals(old_state)
+
+        if 0 <= selected_row < len(entries):
+            entry = entries[selected_row]
+            if select_path is not None:
+                self._set_selected_derived_chi_preview(entry)
+        elif select_path is not None:
+            self._set_selected_derived_chi_preview(None)
 
         has_source = self._current_source_chi() is not None
         if hasattr(self.widget, "pushButton_OpenSelectedAziChi"):
@@ -601,6 +674,8 @@ class CakeAziController(object):
                 self.widget, "Warning",
                 "Highlight one row in the Azimuthal CHI list first.")
             return
+        if entry.get("kind") != "derived":
+            self.clear_selected_derived_chi_preview()
         self._open_chi_path(
             entry["chi_path"], display_derived=entry.get("kind") == "derived")
 
@@ -610,6 +685,7 @@ class CakeAziController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning", "No full-azimuth source CHI is available.")
             return
+        self.clear_selected_derived_chi_preview()
         self._open_chi_path(source_chi, display_derived=False)
 
     def _new_check_item(self, checked=True):
