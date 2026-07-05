@@ -58,8 +58,9 @@ class PeakfitTableController(object):
         self.widget.tableWidget_PkParams.setHorizontalHeaderLabels(
             ['Phase', 'h', 'k', 'l', 'Area', 'Pos', 'FWHM', 'nL'])
         row = 0
-        self.model.current_section.peaks_in_queue.sort(
-            key=lambda p: float(p.get('center', 0.0)))
+        # Keep the queue order stable so the table row index always refers to
+        # the same peak after user-driven position edits. Reordering here can
+        # make a moved peak appear to "jump back" when the table is refreshed.
         for peak in self.model.current_section.peaks_in_queue:
             # symmetric peaks
             peak['phasename'] = normalize_peak_phase_name(peak['phasename'])
@@ -466,6 +467,19 @@ class PeakfitTableController(object):
         elif col == 6:
             self.model.current_section.peaks_in_queue[row]['fraction'] = \
                 value
+        if col == 2:
+            if hasattr(self.widget, "tableWidget_PkParams"):
+                table = self.widget.tableWidget_PkParams
+                item = table.item(row, 5)
+                if item is not None:
+                    old_state = table.blockSignals(True)
+                    item.setText("{:.5e}".format(float(value)))
+                    table.blockSignals(old_state)
+            plot_ctrl = getattr(
+                getattr(self.widget, "_peakpo_mpl_controller", None),
+                "refresh_selected_peak_marker", None)
+            if callable(plot_ctrl):
+                plot_ctrl()
         # self.update_graph()
 
     def _peaklist_handle_ItemClicked(self, item):

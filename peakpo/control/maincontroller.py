@@ -855,6 +855,13 @@ class MainController(object):
                 spinbox.setValue(center)
                 spinbox.blockSignals(old_state)
                 table.blockSignals(old_table_state)
+        if hasattr(self, "peakfit_ctrl") and (self.peakfit_ctrl is not None):
+            sync = getattr(
+                self.peakfit_ctrl,
+                "_update_peak_constraint_value_widgets",
+                None)
+            if callable(sync):
+                sync(row, "center", center)
 
     def _on_long_cursor_changed(self, state):
         """Keep vertical cursor and hidden zoom mode in sync."""
@@ -1866,9 +1873,16 @@ class MainController(object):
             x_arr = np.asarray(self.model.current_section.x, dtype=float)
             idx = int(np.abs(x_arr - float(xdata)).argmin())
             x_center = float(x_arr[idx])
+            initial_fwhm = 0.01
+            if hasattr(self.widget, "doubleSpinBox_InitialFWHM"):
+                try:
+                    initial_fwhm = float(
+                        self.widget.doubleSpinBox_InitialFWHM.value())
+                except Exception:
+                    initial_fwhm = 0.01
             success = self.model.current_section.set_single_peak(
                 x_center,
-                self.widget.doubleSpinBox_InitialFWHM.value(),
+                initial_fwhm,
                 constraint_defaults=self.peakfit_ctrl.default_peak_bounds())
             if not success:
                 QtWidgets.QMessageBox.warning(

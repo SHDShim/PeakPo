@@ -3,6 +3,7 @@ import time
 import datetime
 import numpy as np
 import numpy.ma as ma
+from matplotlib import colors as mcolors
 #from matplotlib.widgets import MultiCursor
 #import matplotlib.transforms as transforms
 #import matplotlib.colors as colors
@@ -778,17 +779,35 @@ class MplController(object):
             return selected_rows
         return self._get_active_cellfit_jcpds_rows()
 
-    def _get_jcpds_plot_alpha(self, phase_index, base_alpha, emphasis_rows):
+    def _jcpds_emphasis_alphas(self):
+        highlight = 1.0
+        dimmed = 0.5
+        if hasattr(self.widget, "doubleSpinBox_JCPDS_ptn_Alpha"):
+            try:
+                highlight = float(self.widget.doubleSpinBox_JCPDS_ptn_Alpha.value())
+            except Exception:
+                pass
+        if hasattr(self.widget, "doubleSpinBox_JCPDS_cake_Alpha"):
+            try:
+                dimmed = float(self.widget.doubleSpinBox_JCPDS_cake_Alpha.value())
+            except Exception:
+                pass
+        highlight = min(1.0, max(0.0, highlight))
+        dimmed = min(1.0, max(0.0, dimmed))
+        return highlight, dimmed
+
+    def _get_jcpds_plot_alpha(self, phase_index, emphasis_rows):
+        highlight_alpha, dimmed_alpha = self._jcpds_emphasis_alphas()
         if not emphasis_rows:
-            return base_alpha
+            return highlight_alpha
         phase = None
         if 0 <= phase_index < len(self.model.jcpds_lst):
             phase = self.model.jcpds_lst[phase_index]
         if phase is None or not getattr(phase, "display", False):
-            return base_alpha
+            return highlight_alpha
         if phase_index in emphasis_rows:
-            return base_alpha
-        return max(0.16, float(base_alpha) * 0.45)
+            return highlight_alpha
+        return dimmed_alpha
 
     def _artist_is_jcpds_overlay(self, artist, hkl_only=False):
         if getattr(artist, "_peakpo_jcpds_overlay", False):
@@ -889,6 +908,15 @@ class MplController(object):
             rows = [index.row() for index in selection_model.selectedIndexes()]
         return sorted(set(r for r in rows if r is not None and r >= 0))
 
+    def _peakfit_sections_tab_active(self):
+        if not hasattr(self.widget, "tabWidget_PeakFit"):
+            return False
+        try:
+            return self.widget.tabWidget_PeakFit.currentWidget() == \
+                getattr(self.widget, "tab_PeakFitSection", None)
+        except Exception:
+            return False
+
     def _sync_overlay_rectangles(self, artists, specs):
         import matplotlib.patches as patches
         reusable = (
@@ -931,6 +959,9 @@ class MplController(object):
         return new_artists
 
     def _plot_selected_section_overlays(self):
+        if not self._peakfit_sections_tab_active():
+            self._clear_section_selection_artists()
+            return
         if self.model.current_section_exist() and \
                 self.model.current_section.get_number_of_peaks_in_queue() > 0:
             self._clear_section_selection_artists()
@@ -994,6 +1025,10 @@ class MplController(object):
             self._section_selection_artists, specs)
 
     def refresh_section_selection_overlay(self):
+        if not self._peakfit_sections_tab_active():
+            self._clear_section_selection_artists()
+            self.widget.mpl.canvas.draw_idle()
+            return
         if self._is_drawing or self._toolbar_active:
             self.update()
             return
@@ -1074,12 +1109,11 @@ class MplController(object):
         if artists:
             for artist in artists:
                 phase_index = getattr(artist, "_peakpo_jcpds_phase_index", None)
-                base_alpha = getattr(artist, "_peakpo_jcpds_base_alpha", None)
-                if phase_index is None or base_alpha is None:
+                if phase_index is None:
                     continue
                 try:
-                    artist.set_alpha(self._get_jcpds_plot_alpha(
-                        phase_index, base_alpha, emphasis_rows))
+                    artist.set_alpha(
+                        self._get_jcpds_plot_alpha(phase_index, emphasis_rows))
                 except Exception:
                     pass
             self.widget.mpl.canvas.draw_idle()
@@ -1188,8 +1222,7 @@ class MplController(object):
                 legend_label = "{0:}, {1:.3f} A^3".format(
                     phase.name, volume)
                 phase_alpha = self._get_jcpds_plot_alpha(
-                    row_idx, self.widget.doubleSpinBox_JCPDS_ptn_Alpha.value(),
-                    emphasis_rows)
+                    row_idx, emphasis_rows)
                 jcpds_bars = self.widget.mpl.canvas.ax_pattern.vlines(
                     tth, bar_min, bar_max, colors=phase.color,
                     label=legend_label,
@@ -1200,7 +1233,8 @@ class MplController(object):
                     zorder=18)
                 self._track_jcpds_artist(
                     jcpds_bars, phase_index=row_idx, base_alpha=phase_alpha)
-                legend_entries.append((jcpds_bars, legend_label, phase.color))
+                legend_entries.append(
+                    (jcpds_bars, legend_label, phase.color, row_idx))
                 # hkl
                 if self.widget.checkBox_ShowMillerIndices.isChecked():
                     hkl_list = phase.get_hkl_in_text()
@@ -1219,8 +1253,7 @@ class MplController(object):
             if self.widget.checkBox_ShowCake.isChecked() and \
                     self.widget.checkBox_JCPDSinCake.isChecked():
                 phase_alpha = self._get_jcpds_plot_alpha(
-                    row_idx, self.widget.doubleSpinBox_JCPDS_cake_Alpha.value(),
-                    emphasis_rows)
+                    row_idx, emphasis_rows)
                 self._track_jcpds_artist(
                     self.widget.mpl.canvas.ax_cake.vlines(
                     tth, np.ones_like(tth) * cakerange[2],
@@ -1256,11 +1289,11 @@ class MplController(object):
                     pass
             unique_entries = []
             seen_labels = set()
-            for handle, label, color in legend_entries:
+            for handle, label, color, phase_index in legend_entries:
                 if label in seen_labels:
                     continue
                 seen_labels.add(label)
-                unique_entries.append((handle, label, color))
+                unique_entries.append((handle, label, color, phase_index))
             if unique_entries:
                 handles = [entry[0] for entry in unique_entries]
                 labels = [entry[1] for entry in unique_entries]
@@ -1269,9 +1302,10 @@ class MplController(object):
                     fontsize=legend_fontsize,
                     handlelength=1)
                 self._track_jcpds_artist(leg_jcpds)
-                for (__handle, __label, color), txt in zip(
+                for (__handle, __label, color, phase_index), txt in zip(
                         unique_entries, leg_jcpds.get_texts()):
-                    txt.set_color(color)
+                    alpha = self._get_jcpds_plot_alpha(phase_index, emphasis_rows)
+                    txt.set_color(mcolors.to_rgba(color, alpha))
         # print("JCPDS update takes {0:.2f}s at".format(time.time() - t_start),
         #      str(datetime.datetime.now())[:-7])
 

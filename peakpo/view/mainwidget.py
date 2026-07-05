@@ -1155,7 +1155,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(self, "groupBox_13"):
             self.groupBox_13.setTitle("Label text")
         if hasattr(self, "groupBox_27"):
-            self.groupBox_27.setTitle("Mouse tools")
+            self.groupBox_27.setTitle("JCPDS bar properties")
         if hasattr(self, "groupBox"):
             self.groupBox.setTitle("Pressure and temperature")
         if hasattr(self, "groupBox_8"):

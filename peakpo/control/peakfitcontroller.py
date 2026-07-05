@@ -1058,6 +1058,42 @@ class PeakFitController(object):
             max_box.blockSignals(False)
             max_box.setEnabled(False if value_key == "amplitude" else use_max_box.isChecked())
 
+    def _update_peak_constraint_value_widgets(self, row, value_key, value):
+        """
+        Keep the live constraints editors in sync with plot/table edits.
+        If these widgets stay stale, changing to another row can write old
+        values back into the model.
+        """
+        param_map = {
+            "amplitude": 0,
+            "center": 1,
+            "sigma": 2,
+            "fraction": 3,
+        }
+        if value_key not in param_map:
+            return
+        table_row = param_map[value_key]
+        # Sync the docked/tabbed constraints table.
+        table = getattr(self.widget, "tableWidget_PeakConstraintDetail", None)
+        if (table is not None and table.rowCount() > table_row and
+                getattr(self, "_constraints_tab_current_row", None) == row):
+            widget = table.cellWidget(table_row, 1)
+            if widget is not None:
+                old_state = widget.blockSignals(True)
+                widget.setValue(float(value))
+                widget.blockSignals(old_state)
+        # Sync the popup dialog if it is editing this row.
+        dialog = getattr(self, "_constraints_dialog", None)
+        if dialog is not None and getattr(dialog, "peak_row", None) == row:
+            try:
+                dlg_widget = dialog.table.cellWidget(table_row, 1)
+                if dlg_widget is not None:
+                    old_state = dlg_widget.blockSignals(True)
+                    dlg_widget.setValue(float(value))
+                    dlg_widget.blockSignals(old_state)
+            except Exception:
+                pass
+
     def _on_peak_param_changed(self, row, param_key, change_type, value):
         if not self.model.current_section_exist():
             return
@@ -1127,6 +1163,17 @@ class PeakFitController(object):
             else:
                 peak[f"{param_key}_max_enabled"] = True
                 peak[max_key] = float(value)
+        if param_key == "center" and change_type == "value":
+            if hasattr(self.widget, "tableWidget_PkParams"):
+                table = self.widget.tableWidget_PkParams
+                item = table.item(row, 5)
+                if item is not None:
+                    old_state = table.blockSignals(True)
+                    item.setText("{:.5e}".format(float(value)))
+                    table.blockSignals(old_state)
+            self._update_peak_constraint_value_widgets(row, "center", value)
+            if hasattr(self, "plot_ctrl") and self.plot_ctrl is not None:
+                self.plot_ctrl.refresh_selected_peak_marker()
         self.set_tableWidget_PkParams_unsaved()
 
     def _sync_constraints_tab_row_to_model(self):
@@ -1345,6 +1392,14 @@ class PeakFitController(object):
 
     def default_peak_bounds(self):
         return self._current_default_peak_bounds()
+
+    def initial_peak_fwhm(self):
+        if hasattr(self.widget, "doubleSpinBox_InitialFWHM"):
+            try:
+                return float(self.widget.doubleSpinBox_InitialFWHM.value())
+            except Exception:
+                pass
+        return 0.01
 
     def _add_bg_anchor_from_view(self):
         if not self.model.current_section_exist():
@@ -1919,7 +1974,7 @@ class PeakFitController(object):
         x_min, x_max = min(x_range), max(x_range)
         int_threshold = float(
             self.widget.spinBox_PeaksFromJlistIntensity.value())
-        width = self.widget.doubleSpinBox_InitialFWHM.value()
+        width = self.initial_peak_fwhm()
         candidates = []
         for j in selected_phases:
             tths, intensities = j.get_tthVSint(
@@ -2355,7 +2410,7 @@ class PeakFitController(object):
         if mouse_button == 'left':  # left click
             success = self.model.current_section.set_single_peak(
                 float(xdata),
-                self.widget.doubleSpinBox_InitialFWHM.value(),
+                self.initial_peak_fwhm(),
                 constraint_defaults=self.default_peak_bounds())
             if not success:
                 QtWidgets.QMessageBox.warning(
