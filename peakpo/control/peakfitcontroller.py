@@ -213,11 +213,16 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
     def _update_visual_toggle_style(self, button, checked):
         if checked:
             button.setStyleSheet(
-                "QPushButton {background-color: #e0b000; color: black;}"
-                "QPushButton:checked {background-color: #f1c232; color: black;}"
+                "QPushButton { background-color: #d6a800; color: #1f1f1f; border: 1px solid #b88a00; }"
+                "QPushButton:hover { background-color: #e0b000; }"
+                "QPushButton:pressed { background-color: #c09000; }"
             )
         else:
-            button.setStyleSheet("")
+            button.setStyleSheet(
+                "QPushButton { background-color: #444444; border: 1px solid #d6a800; color: #f0f0f0; }"
+                "QPushButton:hover { background-color: #505050; }"
+                "QPushButton:pressed { background-color: #383838; }"
+            )
 
     def _cancel_other_visual_toggle(self, active_button):
         if active_button is self.button_visual_position:
@@ -768,6 +773,8 @@ class PeakFitController(object):
             self._arm_constraints_position_range)
         self.widget.pushButton_SetFwhmMax.toggled.connect(
             self._arm_constraints_fwhm_range)
+        self._update_visual_toggle_style(self.widget.pushButton_SetPosRange, False)
+        self._update_visual_toggle_style(self.widget.pushButton_SetFwhmMax, False)
         self.widget.spinBox_CenterHalfRange.valueChanged.connect(
             self._on_default_bounds_changed)
         self.widget.spinBox_DefaultFwhmMin.valueChanged.connect(
@@ -789,21 +796,31 @@ class PeakFitController(object):
         button.setText(on_text if checked else off_text)
         if checked:
             button.setStyleSheet(
-                "QPushButton {background-color: #e0b000; color: black;}"
-                "QPushButton:checked {background-color: #f1c232; color: black;}"
+                "QPushButton { background-color: #d6a800; color: #1f1f1f; border: 1px solid #b88a00; }"
+                "QPushButton:hover { background-color: #e0b000; }"
+                "QPushButton:pressed { background-color: #c09000; }"
             )
         else:
-            button.setStyleSheet("")
+            button.setStyleSheet(
+                "QPushButton { background-color: #444444; border: 1px solid #d6a800; color: #f0f0f0; }"
+                "QPushButton:hover { background-color: #505050; }"
+                "QPushButton:pressed { background-color: #383838; }"
+            )
         button.blockSignals(old_state)
 
     def _update_visual_toggle_style(self, button, checked):
         if checked:
             button.setStyleSheet(
-                "QPushButton {background-color: #e0b000; color: black;}"
-                "QPushButton:checked {background-color: #f1c232; color: black;}"
+                "QPushButton { background-color: #d6a800; color: #1f1f1f; border: 1px solid #b88a00; }"
+                "QPushButton:hover { background-color: #e0b000; }"
+                "QPushButton:pressed { background-color: #c09000; }"
             )
         else:
-            button.setStyleSheet("")
+            button.setStyleSheet(
+                "QPushButton { background-color: #444444; border: 1px solid #d6a800; color: #f0f0f0; }"
+                "QPushButton:hover { background-color: #505050; }"
+                "QPushButton:pressed { background-color: #383838; }"
+            )
 
     def _clear_constraints_toggle_buttons(self, except_button=None):
         pairs = [
@@ -827,6 +844,7 @@ class PeakFitController(object):
             self._add_bg_anchor_from_view)
         self.widget.pushButton_AddRangeFromPlot.toggled.connect(
             self._arm_bg_anchor_range)
+        self._set_bg_toggle_button_style(self.widget.pushButton_AddRangeFromPlot, False)
         self.widget.pushButton_RemoveBGAnchor.clicked.connect(
             self._remove_bg_anchor_rows)
         self.widget.spinBox_BGPolyOrder.valueChanged.connect(
@@ -1499,6 +1517,20 @@ class PeakFitController(object):
             self.widget.pushButton_RemoveBGAnchor.setText("Stop picking ranges")
             _set_toggle_button_style(self.widget.pushButton_RemoveBGAnchor, True)
 
+    def _set_bg_toggle_button_style(self, button, checked):
+        if checked:
+            button.setStyleSheet(
+                "QPushButton { background-color: #d6a800; color: #1f1f1f; border: 1px solid #b88a00; }"
+                "QPushButton:hover { background-color: #e0b000; }"
+                "QPushButton:pressed { background-color: #c09000; }"
+            )
+        else:
+            button.setStyleSheet(
+                "QPushButton { background-color: #444444; border: 1px solid #d6a800; color: #f0f0f0; }"
+                "QPushButton:hover { background-color: #505050; }"
+                "QPushButton:pressed { background-color: #383838; }"
+            )
+
     def _arm_bg_anchor_range(self, checked=False):
         if self.plot_interaction_ctrl is None:
             return
@@ -1506,29 +1538,23 @@ class PeakFitController(object):
             self.plot_interaction_ctrl.cancel_range_tool()
             if hasattr(self.widget, "pushButton_AddRangeFromPlot"):
                 self.widget.pushButton_AddRangeFromPlot.setText("Add range from plot")
-                self.widget.pushButton_AddRangeFromPlot.setStyleSheet("")
+                self._set_bg_toggle_button_style(self.widget.pushButton_AddRangeFromPlot, False)
             return
         def add_range(xmin, xmax):
             self._add_bg_anchor_row({"xmin": float(xmin), "xmax": float(xmax), "weight": 10.0}, append_to_model=True)
             if hasattr(self.widget, "pushButton_AddRangeFromPlot"):
                 self.widget.pushButton_AddRangeFromPlot.setText("Stop picking ranges")
-                self.widget.pushButton_AddRangeFromPlot.setStyleSheet(
-                    "QPushButton {background-color: #e0b000; color: black;}"
-                    "QPushButton:checked {background-color: #f1c232; color: black;}"
-                )
+                self._set_bg_toggle_button_style(self.widget.pushButton_AddRangeFromPlot, True)
         def deactivate():
             if hasattr(self.widget, "pushButton_AddRangeFromPlot"):
                 self.widget.pushButton_AddRangeFromPlot.setChecked(False)
                 self.widget.pushButton_AddRangeFromPlot.setText("Add range from plot")
-                self.widget.pushButton_AddRangeFromPlot.setStyleSheet("")
+                self._set_bg_toggle_button_style(self.widget.pushButton_AddRangeFromPlot, False)
         self.plot_interaction_ctrl.start_range_tool(
             "Add background anchor range", add_range, repeat=True, cancel_callback=deactivate)
         if hasattr(self.widget, "pushButton_AddRangeFromPlot"):
             self.widget.pushButton_AddRangeFromPlot.setText("Stop picking ranges")
-            self.widget.pushButton_AddRangeFromPlot.setStyleSheet(
-                "QPushButton {background-color: #e0b000; color: black;}"
-                "QPushButton:checked {background-color: #f1c232; color: black;}"
-            )
+            self._set_bg_toggle_button_style(self.widget.pushButton_AddRangeFromPlot, True)
 
     def _add_bg_anchor_row(self, anchor=None, append_to_model=False):
         if not hasattr(self.widget, "tableWidget_BGAnchorRanges"):
