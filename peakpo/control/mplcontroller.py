@@ -939,6 +939,14 @@ class MplController(object):
         self._clear_jcpds_hkl_artists()
         self.widget.mpl.canvas.draw_idle()
 
+    def clear_jcpds_overlay(self):
+        self._clear_jcpds_overlay_artists()
+        self.widget.mpl.canvas.draw_idle()
+
+    def rebuild_jcpds_overlay(self):
+        self._clear_jcpds_overlay_artists()
+        self.refresh_jcpds_overlay()
+
     def _clear_section_selection_artists(self):
         for artist in list(self._section_selection_artists):
             try:

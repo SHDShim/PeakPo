@@ -489,7 +489,7 @@ class MainController(object):
                 self.widget.tabWidget.currentWidget() != self.widget.tab_Cake1:
             if hasattr(self, "cakeazi_ctrl") and (self.cakeazi_ctrl is not None):
                 self.cakeazi_ctrl.clear_selected_derived_chi_preview(
-                    restore_table=False)
+                    restore_table=True)
         if hasattr(self.widget, "pushButton_MouseModeROI"):
             self.widget.pushButton_MouseModeROI.setEnabled(roi_available)
         if hasattr(self.widget, "pushButton_MouseModePeakPick"):
@@ -582,14 +582,20 @@ class MainController(object):
             checked = self.widget.checkBox_ToolbarJCPDS.isChecked()
         self._set_checked_no_signal("checkBox_JCPDSinPattern", checked)
         self._set_checked_no_signal("checkBox_JCPDSinCake", checked)
-        self.apply_changes_to_graph()
+        if checked:
+            self.plot_ctrl.refresh_jcpds_overlay()
+        else:
+            self.plot_ctrl.clear_jcpds_overlay()
 
     def _on_toolbar_hkl_toggled(self, checked=None):
         if checked is None:
             checked = self.widget.checkBox_ToolbarHKL.isChecked()
         self._set_checked_no_signal("checkBox_ShowMillerIndices", checked)
         self._set_checked_no_signal("checkBox_ShowMillerIndices_Cake", checked)
-        self.apply_changes_to_graph()
+        if checked:
+            self.plot_ctrl.rebuild_jcpds_overlay()
+        else:
+            self.plot_ctrl.clear_jcpds_hkl_overlay()
 
     def _on_detail_jcpds_toggled(self):
         self._sync_toolbar_jcpds_from_detail_controls()
