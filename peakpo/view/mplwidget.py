@@ -4,6 +4,11 @@ from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as Navigation
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 import matplotlib.style as mplstyle
+import os
+
+
+def _get_mplstyle_path(name):
+    return os.path.join(os.path.dirname(__file__), "..", "mplstyle", name)
 
 
 class MplCanvas(FigureCanvasQTAgg):
@@ -30,7 +35,7 @@ class MplCanvas(FigureCanvasQTAgg):
         self._define_axes(1)
 
         try:
-            mplstyle.use("dark_background")
+            mplstyle.use(_get_mplstyle_path("night.mplstyle"))
         except Exception:
             pass
         self.fig.set_facecolor(self.bgColor)
@@ -73,23 +78,35 @@ class MplCanvas(FigureCanvasQTAgg):
         self.fig.clf()
         self._define_axes(h_cake)
 
+    def _update_axis_colors(self, ax, color):
+        for spine in ax.spines.values():
+            spine.set_color(color)
+        ax.tick_params(which="both", colors=color, labelcolor=color)
+        ax.xaxis.label.set_color(color)
+        ax.yaxis.label.set_color(color)
+
     def set_toNight(self, NightView=True):
         if NightView:
             try:
-                mplstyle.use("dark_background")
+                mplstyle.use(_get_mplstyle_path("night.mplstyle"))
             except Exception:
                 pass
             self.bgColor = "black"
             self.objColor = "white"
         else:
             try:
-                mplstyle.use("classic")
+                mplstyle.use(_get_mplstyle_path("day.mplstyle"))
             except Exception:
                 pass
             self.bgColor = "white"
             self.objColor = "black"
 
         self.fig.set_facecolor(self.bgColor)
+        for ax in (self.ax_pattern, self.ax_cake):
+            self._update_axis_colors(ax, self.objColor)
+            ax.set_facecolor(self.bgColor)
+
+        self.ax_cake.tick_params(axis="x", which="both", length=0)
         self.ax_cake.tick_params(
             which="both",
             axis="x",
@@ -98,7 +115,9 @@ class MplCanvas(FigureCanvasQTAgg):
             labelbottom=False,
             labeltop=False,
         )
-        self.ax_cake.tick_params(axis="x", which="both", length=0)
+        if self._current_h_cake == 1:
+            self.ax_cake.tick_params(axis="y", colors=self.objColor, labelleft=False)
+
         self.ax_pattern.xaxis.set_label_position("bottom")
 
         try:
