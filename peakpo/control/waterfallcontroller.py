@@ -3,6 +3,7 @@ import copy
 from qtpy import QtWidgets
 from qtpy import QtCore
 from qtpy import QtGui
+from ..ds_powdiff import PatternPeakPo
 from .mplcontroller import MplController
 from .waterfalltablecontroller import WaterfallTableController
 from ..utils import convert_wl_to_energy, get_directory, get_temp_dir, \
@@ -79,7 +80,6 @@ class WaterfallController(object):
         self._table_backspace_key_filters.append(key_filter)
 
     def make_base_ptn(self):
-        # read selected from the table.  It should be single item
         idx_selected = self._find_a_waterfall_ptn()
         if idx_selected is None:
             QtWidgets.QMessageBox.warning(self.widget, "Warning",
@@ -97,10 +97,14 @@ class WaterfallController(object):
                 + str(original_fname)
             )
             return
+        old_base_pattern = None
+        if self.model.base_ptn_exist():
+            old_base_pattern = copy.deepcopy(self.model.base_ptn)
+        old_waterfall_patterns = copy.deepcopy(self.model.waterfall_ptn)
         nav_state = None
         if callable(self.capture_nav_state_cb):
             nav_state = self.capture_nav_state_cb()
-        # Preserve selected waterfall wavelength for no-PARAM fallback path.
+
         self.widget.doubleSpinBox_SetWavelength.setValue(target.wavelength)
 
         if (self.base_ptn_ctrl is not None) and hasattr(self.base_ptn_ctrl, "_load_a_new_pattern"):
@@ -114,11 +118,71 @@ class WaterfallController(object):
             xray_energy = convert_wl_to_energy(self.model.get_base_ptn_wavelength())
             self.widget.label_XRayEnergy.setText("({:.3f} keV)".format(xray_energy))
 
+        self.model.waterfall_ptn = [
+            p for p in old_waterfall_patterns
+            if not self._waterfall_pattern_matches_path(p, original_fname)
+        ]
+
+        if old_base_pattern is not None:
+            old_base_filename = getattr(old_base_pattern, "fname", None)
+            if old_base_filename:
+                old_base_pattern = self._build_waterfall_pattern_from_snapshot(
+                    old_base_pattern)
+                self.model.waterfall_ptn = [
+                    p for p in self.model.waterfall_ptn
+                    if not self._waterfall_pattern_matches_path(
+                        p, old_base_filename)
+                ]
+                self.model.waterfall_ptn.insert(0, old_base_pattern)
+
+        if isinstance(nav_state, dict):
+            nav_state["waterfall_list"] = copy.deepcopy(self.model.waterfall_ptn)
+
         if callable(self.apply_nav_state_cb) and (nav_state is not None):
             self.apply_nav_state_cb(nav_state)
 
         self.waterfall_table_ctrl.update()
         self._apply_changes_to_graph(reinforced=True)
+
+    def _build_waterfall_pattern_from_snapshot(self, snapshot):
+        filename = getattr(snapshot, "fname", None)
+        if filename is None:
+            return snapshot
+        pattern = PatternPeakPo()
+        pattern.read_file(filename)
+        pattern.wavelength = getattr(snapshot, "wavelength", pattern.wavelength)
+        pattern.display = True
+        pattern.color = getattr(snapshot, "color", getattr(pattern, "color", "white"))
+        roi = getattr(snapshot, "roi", None)
+        bg_params = getattr(snapshot, "params_chbg", None)
+        if roi is not None and bg_params is not None:
+            temp_dir = get_temp_dir(filename)
+            if self.widget.checkBox_UseTempBGSub.isChecked() and \
+                    pattern.read_bg_from_tempfile(temp_dir=temp_dir):
+                return pattern
+            try:
+                pattern.get_chbg(list(roi), params=list(bg_params), yshift=0)
+            except Exception:
+                pass
+        return pattern
+
+    def _waterfall_pattern_matches_path(self, pattern, path):
+        if pattern is None or not path:
+            return False
+        candidates = [
+            getattr(pattern, "fname", None),
+            getattr(pattern, "_pkpo_original_fname", None),
+        ]
+        target = os.path.normcase(os.path.abspath(str(path)))
+        for candidate in candidates:
+            if not candidate:
+                continue
+            try:
+                if os.path.normcase(os.path.abspath(str(candidate))) == target:
+                    return True
+            except Exception:
+                continue
+        return False
 
     def check_all_waterfall(self):
         if not self.model.waterfall_exist():
