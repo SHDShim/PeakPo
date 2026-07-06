@@ -864,6 +864,31 @@ class MplController(object):
             return selected_rows
         return self._get_active_cellfit_jcpds_rows()
 
+    def _get_selected_waterfall_rows(self):
+        table = getattr(self.widget, "tableWidget_wfPatterns", None)
+        if table is None:
+            return set()
+        selection_model = table.selectionModel()
+        if selection_model is None:
+            return set()
+        rows = {index.row() for index in selection_model.selectedRows()}
+        if not rows:
+            for index in selection_model.selectedIndexes():
+                rows.add(index.row())
+        return rows
+
+    def _get_waterfall_emphasis_rows(self):
+        selected_rows = self._get_selected_waterfall_rows()
+        if not selected_rows:
+            return set()
+        emphasis_rows = set()
+        for row in selected_rows:
+            if 0 <= row < len(self.model.waterfall_ptn):
+                pattern = self.model.waterfall_ptn[row]
+                if getattr(pattern, "display", False):
+                    emphasis_rows.add(row)
+        return emphasis_rows
+
     def _jcpds_emphasis_alphas(self):
         highlight = 1.0
         dimmed = 0.5
@@ -1414,9 +1439,12 @@ class MplController(object):
         if i == 0:
             return
         n_display = i
+        emphasis_rows = self._get_waterfall_emphasis_rows()
+        dim_alpha = 0.25
+        highlight_alpha = 1.0
         j = 0  # this is needed for waterfall gaps
         # get y_max
-        for pattern in self.model.waterfall_ptn[::-1]:
+        for reverse_idx, pattern in enumerate(self.model.waterfall_ptn[::-1]):
             if pattern.display:
                 j += 1
                 """
@@ -1450,10 +1478,15 @@ class MplController(object):
                                     self.model.base_ptn.wavelength)
                 else:
                     x = x_t
+                alpha = highlight_alpha
+                if emphasis_rows:
+                    row_idx = len(self.model.waterfall_ptn) - 1 - reverse_idx
+                    if row_idx not in emphasis_rows:
+                        alpha = dim_alpha
                 self.widget.mpl.canvas.ax_pattern.plot(
                     x, y + ygap, c=pattern.color, lw=float(
                         self.widget.comboBox_WaterfallLineThickness.
-                        currentText()))
+                        currentText()), alpha=alpha)
                 if self.widget.checkBox_ShowWaterfallLabels.isChecked():
                     wf_fontsize = 12
                     if hasattr(self.widget, "comboBox_WaterfallFontSize"):
@@ -1466,7 +1499,8 @@ class MplController(object):
                         (x[-1] - x[0]) * 0.01 + x[0], y[0] + ygap,
                         os.path.basename(pattern.fname),
                         verticalalignment='bottom', horizontalalignment='left',
-                        color=pattern.color, fontsize=wf_fontsize)
+                        color=mcolors.to_rgba(pattern.color, alpha),
+                        fontsize=wf_fontsize)
         """
         self.widget.mpl.canvas.ax_pattern.text(
             0.01, 0.97 - n_display * 0.05,

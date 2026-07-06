@@ -97,6 +97,15 @@ class WaterfallTableController(object):
             pass
         self.widget.tableWidget_wfPatterns.itemClicked.connect(
             self._handle_ItemClicked)
+        selection_model = self.widget.tableWidget_wfPatterns.selectionModel()
+        if selection_model is not None:
+            try:
+                selection_model.selectionChanged.disconnect(
+                    self._handle_selection_changed)
+            except Exception:
+                pass
+            selection_model.selectionChanged.connect(
+                self._handle_selection_changed)
         # self._apply_changes_to_graph(reinforced=True)
 
     def _handle_doubleSpinBoxChanged(self, value):
@@ -123,3 +132,6 @@ class WaterfallTableController(object):
                 self.widget.tableWidget_wfPatterns.item(idx, 1).setBackground(color)
                 self.model.waterfall_ptn[idx].color = str(color.name())
                 self._apply_changes_to_graph()
+
+    def _handle_selection_changed(self, *_args):
+        self._apply_changes_to_graph(reinforced=True)
