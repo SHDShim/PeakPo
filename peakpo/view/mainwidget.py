@@ -1838,6 +1838,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.checkBox_ToolbarHKL.setSizePolicy(
                     QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
                 self.mpl.add_control_widget(self.checkBox_ToolbarHKL)
+                self.checkBox_ToolbarWaterfall = QtWidgets.QCheckBox(
+                    "Waterfall", self.mpl.control_bar)
+                self.checkBox_ToolbarWaterfall.setObjectName(
+                    "checkBox_ToolbarWaterfall")
+                self.checkBox_ToolbarWaterfall.setChecked(True)
+                self.checkBox_ToolbarWaterfall.setToolTip(
+                    "Show or hide waterfall patterns in 1D plot")
+                self.checkBox_ToolbarWaterfall.setSizePolicy(
+                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+                self.mpl.add_control_widget(self.checkBox_ToolbarWaterfall)
                 self.pushButton_ToolbarCakeZAdj = QtWidgets.QPushButton(
                     "Cake Z Adj", self.mpl.control_bar)
                 self.pushButton_ToolbarCakeZAdj.setObjectName(

@@ -311,11 +311,16 @@ class MainController(object):
         if hasattr(self.widget, "checkBox_ToolbarHKL"):
             self.widget.checkBox_ToolbarHKL.toggled.connect(
                 self._on_toolbar_hkl_toggled)
+        if hasattr(self.widget, "checkBox_ToolbarWaterfall"):
+            self.widget.checkBox_ToolbarWaterfall.toggled.connect(
+                self._on_toolbar_waterfall_toggled)
         if hasattr(self.widget, "checkBox_LightBackground"):
             self.widget.checkBox_LightBackground.clicked.connect(
                 self.apply_changes_to_graph)
         self.widget.checkBox_ShowWaterfallLabels.clicked.connect(
             self.apply_changes_to_graph)
+        self.widget.checkBox_ShowWaterfall.toggled.connect(
+            self._sync_toolbar_waterfall_from_detail_controls)
         self.widget.checkBox_ShowMillerIndices_Cake.clicked.connect(
             self._on_detail_hkl_toggled)
         # self.widget.actionClose.triggered.connect(self.closeEvent)
@@ -597,6 +602,18 @@ class MainController(object):
         else:
             self.plot_ctrl.clear_jcpds_hkl_overlay()
 
+    def _on_toolbar_waterfall_toggled(self, checked=None):
+        if checked is None:
+            checked = self.widget.checkBox_ToolbarWaterfall.isChecked()
+        self._set_checked_no_signal("checkBox_ShowWaterfall", checked)
+        self.plot_ctrl.update()
+
+    def _sync_toolbar_waterfall_from_detail_controls(self):
+        if not hasattr(self.widget, "checkBox_ToolbarWaterfall"):
+            return
+        checked = self.widget.checkBox_ShowWaterfall.isChecked()
+        self._set_checked_no_signal("checkBox_ToolbarWaterfall", checked)
+
     def _on_detail_jcpds_toggled(self):
         self._sync_toolbar_jcpds_from_detail_controls()
         self.plot_ctrl.refresh_jcpds_overlay()
@@ -628,6 +645,7 @@ class MainController(object):
     def _sync_toolbar_plot_checkboxes(self):
         self._sync_toolbar_jcpds_from_detail_controls()
         self._sync_toolbar_hkl_from_detail_controls()
+        self._sync_toolbar_waterfall_from_detail_controls()
 
     def show_mouse_help(self):
         dialog = QtWidgets.QDialog(self.widget)
