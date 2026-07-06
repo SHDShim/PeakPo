@@ -101,6 +101,8 @@ class WaterfallController(object):
         if self.model.base_ptn_exist():
             old_base_pattern = copy.deepcopy(self.model.base_ptn)
         old_waterfall_patterns = copy.deepcopy(self.model.waterfall_ptn)
+        new_waterfall_patterns = self._build_swapped_waterfall_list(
+            old_waterfall_patterns, i, old_base_pattern)
         nav_state = None
         if callable(self.capture_nav_state_cb):
             nav_state = self.capture_nav_state_cb()
@@ -118,31 +120,32 @@ class WaterfallController(object):
             xray_energy = convert_wl_to_energy(self.model.get_base_ptn_wavelength())
             self.widget.label_XRayEnergy.setText("({:.3f} keV)".format(xray_energy))
 
-        self.model.waterfall_ptn = [
-            p for p in old_waterfall_patterns
-            if not self._waterfall_pattern_matches_path(p, original_fname)
-        ]
-
-        if old_base_pattern is not None:
-            old_base_filename = getattr(old_base_pattern, "fname", None)
-            if old_base_filename:
-                old_base_pattern = self._build_waterfall_pattern_from_snapshot(
-                    old_base_pattern)
-                self.model.waterfall_ptn = [
-                    p for p in self.model.waterfall_ptn
-                    if not self._waterfall_pattern_matches_path(
-                        p, old_base_filename)
-                ]
-                self.model.waterfall_ptn.insert(0, old_base_pattern)
-
         if isinstance(nav_state, dict):
-            nav_state["waterfall_list"] = copy.deepcopy(self.model.waterfall_ptn)
+            nav_state["_skip_restore_keys"] = ["waterfall_list"]
 
         if callable(self.apply_nav_state_cb) and (nav_state is not None):
             self.apply_nav_state_cb(nav_state)
 
+        self.model.waterfall_ptn = new_waterfall_patterns
+
         self.waterfall_table_ctrl.update()
         self._apply_changes_to_graph(reinforced=True)
+
+    def _build_swapped_waterfall_list(self, old_waterfall_patterns, selected_index, old_base_pattern):
+        new_waterfall_patterns = copy.deepcopy(old_waterfall_patterns)
+        if 0 <= selected_index < len(new_waterfall_patterns):
+            new_waterfall_patterns.pop(selected_index)
+        if old_base_pattern is None:
+            return new_waterfall_patterns
+        old_base_filename = getattr(old_base_pattern, "fname", None)
+        if old_base_filename:
+            new_waterfall_patterns = [
+                p for p in new_waterfall_patterns
+                if not self._waterfall_pattern_matches_path(p, old_base_filename)
+            ]
+        old_base_pattern.display = True
+        new_waterfall_patterns.insert(0, old_base_pattern)
+        return new_waterfall_patterns
 
     def _build_waterfall_pattern_from_snapshot(self, snapshot):
         filename = getattr(snapshot, "fname", None)

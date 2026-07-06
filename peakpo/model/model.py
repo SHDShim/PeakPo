@@ -46,11 +46,29 @@ class PeakPoModel(object):
         self.saved_pressure = 10.
         self.saved_temperature = 300.
 
+    def _waterfall_pattern_matches_path(self, pattern, path):
+        if pattern is None or not path:
+            return False
+        target = os.path.normcase(os.path.abspath(str(path)))
+        candidates = [
+            getattr(pattern, "fname", None),
+            getattr(pattern, "_pkpo_original_fname", None),
+        ]
+        for candidate in candidates:
+            if not candidate:
+                continue
+            try:
+                if os.path.normcase(os.path.abspath(str(candidate))) == target:
+                    return True
+            except Exception:
+                continue
+        return False
+
     def exist_in_waterfall(self, filename):
         if not self.waterfall_exist():
             return False
         for f in self.waterfall_ptn:
-            if filename == f.fname:
+            if self._waterfall_pattern_matches_path(f, filename):
                 return True
         return False
 

@@ -1632,6 +1632,7 @@ class MainController(object):
         carried_any = False
         results = []
         presence = self.session_ctrl.get_last_param_category_presence()
+        skip_restore_keys = set(snap.get("_skip_restore_keys", []) or [])
 
         jcpds_action = self._get_nav_carry_action(
             "jcpds", "checkBox_CarryNavJCPDS", presence)
@@ -1698,7 +1699,8 @@ class MainController(object):
             "waterfall_list", "checkBox_CarryNavWaterfall", presence)
         waterfall_action = self._prompt_for_nav_carry_action(
             "Waterfall list", waterfall_action)
-        if waterfall_action in ("carry_blank", "overwrite_existing"):
+        if (waterfall_action in ("carry_blank", "overwrite_existing")) and \
+                ("waterfall_list" not in skip_restore_keys):
             self.model.waterfall_ptn = copy.deepcopy(snap["waterfall_list"])
             self.waterfalltable_ctrl.update()
             carried_any = True
