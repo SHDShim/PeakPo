@@ -194,6 +194,13 @@ def _safe_shutdown():
         controller.shutdown()
     except Exception:
         pass
+    if sys.platform.startswith('win'):
+        try:
+            sys.stdout.flush()
+            sys.stderr.flush()
+        except Exception:
+            pass
+        os._exit(0)
 
 app.aboutToQuit.connect(_safe_shutdown)
 
