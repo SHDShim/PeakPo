@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 from PIL import Image
 import fabio
@@ -12,6 +13,32 @@ import collections
 import re
 
 from ..utils import make_filename, extract_extension
+
+
+def _disable_dioptas_file_watcher_on_windows():
+    if not sys.platform.startswith("win"):
+        return
+    try:
+        from dioptas.model.util.NewFileWatcher import NewFileInDirectoryWatcher
+    except Exception:
+        return
+    if getattr(NewFileInDirectoryWatcher, "_peakpo_windows_disabled", False):
+        return
+
+    def _no_op(self, *args, **kwargs):
+        try:
+            self.active = False
+        except Exception:
+            pass
+
+    NewFileInDirectoryWatcher.activate = _no_op
+    NewFileInDirectoryWatcher.deactivate = _no_op
+    NewFileInDirectoryWatcher._start_observing = _no_op
+    NewFileInDirectoryWatcher._stop_observing = _no_op
+    NewFileInDirectoryWatcher._peakpo_windows_disabled = True
+
+
+_disable_dioptas_file_watcher_on_windows()
 
 
 class DiffImg(object):
