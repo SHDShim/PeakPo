@@ -103,6 +103,34 @@ def _sanitize_token(text):
     return text or "azimuth"
 
 
+def _relpath_or_abs(path, root):
+    if not path:
+        return ""
+    path = os.path.abspath(path)
+    root = os.path.abspath(root) if root else ""
+    if not root:
+        return path
+    try:
+        rel = os.path.relpath(path, root)
+    except Exception:
+        return path
+    if rel.startswith(".."):
+        return path
+    return rel
+
+
+def _resolve_path(stored_path, root):
+    if not stored_path:
+        return ""
+    stored_path = str(stored_path)
+    if os.path.isabs(stored_path):
+        return os.path.abspath(stored_path)
+    root = os.path.abspath(root) if root else ""
+    if not root:
+        return os.path.abspath(stored_path)
+    return os.path.abspath(os.path.join(root, stored_path))
+
+
 def range_slug(ranges, label=""):
     normalized = normalize_ranges(ranges)
     if len(normalized) == 1:
@@ -155,14 +183,15 @@ def sidecar_path_for_chi(chi_path):
 def make_metadata(source_chi, derived_chi, ranges, azimuth_shift,
                   tth_range=None, source_image=None, poni=None, label=""):
     normalized = normalize_ranges(ranges)
+    derived_root = os.path.dirname(os.path.abspath(derived_chi)) if derived_chi else ""
     return {
         "format": AZINT_FORMAT,
         "version": AZINT_VERSION,
         "created_at": datetime.datetime.now().isoformat(timespec="seconds"),
-        "source_chi": os.path.abspath(source_chi) if source_chi else "",
-        "derived_chi": os.path.abspath(derived_chi) if derived_chi else "",
-        "source_image": os.path.abspath(source_image) if source_image else "",
-        "poni": os.path.abspath(poni) if poni else "",
+        "source_chi": _relpath_or_abs(source_chi, derived_root),
+        "derived_chi": _relpath_or_abs(derived_chi, derived_root),
+        "source_image": _relpath_or_abs(source_image, derived_root),
+        "poni": _relpath_or_abs(poni, derived_root),
         "label": _clean_label(label),
         "azimuth_shift": float(azimuth_shift),
         "two_theta_range": list(tth_range) if tth_range is not None else [],
@@ -204,14 +233,15 @@ def raw_provenance(chi_path=None):
     }
 
 
-def provenance_from_metadata(metadata):
+def provenance_from_metadata(metadata, chi_path=None):
     if not isinstance(metadata, dict):
         return raw_provenance()
     ranges = normalize_ranges(metadata.get("azimuth_ranges", []))
+    chi_root = os.path.dirname(os.path.abspath(chi_path)) if chi_path else ""
     return {
         "source_kind": "azimuthal_integration",
-        "source_chi": metadata.get("source_chi", ""),
-        "derived_chi": metadata.get("derived_chi", ""),
+        "source_chi": _resolve_path(metadata.get("source_chi", ""), chi_root),
+        "derived_chi": _resolve_path(metadata.get("derived_chi", ""), chi_root),
         "label": metadata.get("label", ""),
         "azimuth_ranges": ranges,
         "azimuth_shift": metadata.get("azimuth_shift"),
@@ -222,7 +252,7 @@ def provenance_for_chi(chi_path):
     metadata = read_sidecar(chi_path)
     if metadata is None:
         return raw_provenance(chi_path)
-    return provenance_from_metadata(metadata)
+    return provenance_from_metadata(metadata, chi_path=chi_path)
 
 
 def source_label(provenance):

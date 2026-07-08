@@ -219,17 +219,52 @@ class MainController(object):
     def _stop_dioptas_watchers(self):
         try:
             from dioptas.model.ImgModel import ImgModel
+            from dioptas.model.util.NewFileWatcher import NewFileInDirectoryWatcher
         except Exception:
             return
 
         stopped_any = False
         for obj in gc.get_objects():
             try:
+                watcher = None
                 if isinstance(obj, ImgModel):
                     watcher = getattr(obj, "_directory_watcher", None)
-                    if watcher is not None:
-                        watcher.deactivate()
-                        stopped_any = True
+                elif isinstance(obj, NewFileInDirectoryWatcher):
+                    watcher = obj
+                if watcher is None:
+                    continue
+
+                try:
+                    watcher.active = False
+                except Exception:
+                    pass
+
+                observer = getattr(watcher, "observer", None)
+                if observer is not None:
+                    try:
+                        if observer.is_alive():
+                            observer.stop()
+                    except Exception:
+                        pass
+                    try:
+                        observer.join(timeout=1.0)
+                    except Exception:
+                        pass
+
+                queue_thread = getattr(watcher, "queue_thread", None)
+                if queue_thread is not None:
+                    try:
+                        queue_thread.join(timeout=1.0)
+                    except Exception:
+                        pass
+
+                stop_method = getattr(watcher, "_stop_observing", None)
+                if callable(stop_method):
+                    try:
+                        stop_method()
+                    except Exception:
+                        pass
+                stopped_any = True
             except Exception:
                 continue
 

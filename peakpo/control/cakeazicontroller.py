@@ -776,14 +776,19 @@ class CakeAziController(object):
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning", "No azimuthal ranges to save.")
             return None
+        filen = default_setup_path(source_chi)
+        setup_root = os.path.dirname(filen)
+        try:
+            stored_source_chi = os.path.relpath(os.path.abspath(source_chi), setup_root)
+        except Exception:
+            stored_source_chi = os.path.abspath(source_chi)
         setup = {
             "format": SETUP_FORMAT,
             "version": 1,
-            "source_chi": os.path.abspath(source_chi),
+            "source_chi": stored_source_chi,
             "azimuth_shift": float(self.widget.spinBox_AziShift.value()),
             "azimuth_ranges": ranges,
         }
-        filen = default_setup_path(source_chi)
         with open(filen, "w") as handle:
             json.dump(setup, handle, indent=2, sort_keys=True)
             handle.write("\n")

@@ -149,6 +149,26 @@ def _resolve_path(stored_path, root):
     return os.path.normpath(os.path.join(root, stored_path))
 
 
+def _serialize_provenance(provenance, chi_root):
+    if not isinstance(provenance, dict):
+        return provenance
+    out = dict(provenance)
+    for key in ("source_chi", "derived_chi", "source_image", "poni"):
+        if key in out:
+            out[key] = _relpath_or_abs(out.get(key), chi_root)
+    return out
+
+
+def _resolve_provenance(provenance, chi_root):
+    if not isinstance(provenance, dict):
+        return provenance
+    out = dict(provenance)
+    for key in ("source_chi", "derived_chi", "source_image", "poni"):
+        if key in out:
+            out[key] = _resolve_path(out.get(key), chi_root)
+    return out
+
+
 def _bg_temp_names(pattern):
     base = os.path.splitext(os.path.basename(pattern.fname))[0]
     return f"{base}.bgsub.chi", f"{base}.bg.chi"
@@ -431,7 +451,7 @@ def _fit_result_to_dict_with_csv(section):
     return out
 
 
-def _section_to_dict(section, section_tag, section_payloads):
+def _section_to_dict(section, section_tag, section_payloads, chi_root):
     columns = []
     if section.x is not None:
         columns.append(("x", section.x))
@@ -468,14 +488,15 @@ def _section_to_dict(section, section_tag, section_payloads):
         "timestamp": section.timestamp,
         "baseline_in_queue": section.baseline_in_queue,
         "background_anchor_ranges": getattr(section, "background_anchor_ranges", []),
-        "source_provenance": getattr(section, "source_provenance", {}) or {},
+        "source_provenance": _serialize_provenance(
+            getattr(section, "source_provenance", {}) or {}, chi_root),
         "peaks_in_queue": section.peaks_in_queue,
         "peakinfo": section.peakinfo,
         "fit_result": fit_payload,
     }
 
 
-def _dict_to_section(payload, param_dir, missing_files=None):
+def _dict_to_section(payload, param_dir, chi_root, missing_files=None):
     section = Section()
     section_cols = {}
     section_csv_file = payload.get("section_csv_file")
@@ -514,7 +535,8 @@ def _dict_to_section(payload, param_dir, missing_files=None):
     section.timestamp = payload.get("timestamp")
     section.baseline_in_queue = payload.get("baseline_in_queue", [])
     section.background_anchor_ranges = payload.get("background_anchor_ranges", [])
-    section.source_provenance = payload.get("source_provenance", {}) or {}
+    section.source_provenance = _resolve_provenance(
+        payload.get("source_provenance", {}) or {}, chi_root)
     section.peaks_in_queue = payload.get("peaks_in_queue", [])
     section.peakinfo = payload.get("peakinfo", {})
     fit_payload = payload.get("fit_result")
@@ -684,7 +706,12 @@ def _prepare_payloads(model, param_dir, ui_state=None):
     sections_data = {
         "schema": 1,
         "sections": [
-            _section_to_dict(s, section_tag=f"sec_{i:04d}", section_payloads=section_payloads)
+            _section_to_dict(
+                s,
+                section_tag=f"sec_{i:04d}",
+                section_payloads=section_payloads,
+                chi_root=chi_root,
+            )
             for i, s in enumerate(model.section_lst)
         ],
         # Preserve in-progress/unsaved fit-section edits as part of state.
@@ -693,6 +720,7 @@ def _prepare_payloads(model, param_dir, ui_state=None):
                 model.current_section,
                 section_tag="current_section",
                 section_payloads=section_payloads,
+                chi_root=chi_root,
             )
             if model.current_section is not None else None
         ),
@@ -1124,7 +1152,8 @@ def load_model_from_param(model, base_chi_file, backup_event_id=None, backup_eve
     loaded_sections = []
     old_to_new_idx = {}
     for old_idx, sec_payload in enumerate(sections_data.get("sections", [])):
-        sec_obj = _dict_to_section(sec_payload, param_dir, missing_files=missing_section_csv_files)
+        sec_obj = _dict_to_section(
+            sec_payload, param_dir, chi_root, missing_files=missing_section_csv_files)
         x_arr = getattr(sec_obj, "x", None)
         if (x_arr is None) or (len(x_arr) == 0):
             continue
@@ -1137,7 +1166,7 @@ def load_model_from_param(model, base_chi_file, backup_event_id=None, backup_eve
     model.current_section = None
     if current_payload is not None:
         current_section = _dict_to_section(
-            current_payload, param_dir, missing_files=missing_section_csv_files)
+            current_payload, param_dir, chi_root, missing_files=missing_section_csv_files)
         if (getattr(current_section, "x", None) is None) or (len(current_section.x) == 0):
             current_section = None
         mapped_idx = old_to_new_idx.get(current_idx) if isinstance(current_idx, int) else None
