@@ -202,8 +202,6 @@ app.aboutToQuit.connect(_safe_shutdown)
 # ========================================
 ret = app.exec()
 if sys.platform == 'darwin' or sys.platform.startswith('win'):
-    if sys.platform.startswith('win'):
-        sys.exit(ret)
     # Avoid interpreter/module finalization crashes caused by native
     # extension teardown order.
     os._exit(ret)
