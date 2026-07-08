@@ -206,11 +206,35 @@ class MainController(object):
                     diff_img.shutdown()
             except Exception:
                 pass
+            try:
+                self._stop_dioptas_watchers()
+            except Exception:
+                pass
         try:
             if hasattr(self.widget, 'mpl') and hasattr(self.widget.mpl, 'shutdown'):
                 self.widget.mpl.shutdown()
         except Exception:
             pass
+
+    def _stop_dioptas_watchers(self):
+        try:
+            from dioptas.model.ImgModel import ImgModel
+        except Exception:
+            return
+
+        stopped_any = False
+        for obj in gc.get_objects():
+            try:
+                if isinstance(obj, ImgModel):
+                    watcher = getattr(obj, "_directory_watcher", None)
+                    if watcher is not None:
+                        watcher.deactivate()
+                        stopped_any = True
+            except Exception:
+                continue
+
+        if stopped_any:
+            gc.collect()
         
     def connect_channel(self):
         # connecting events
