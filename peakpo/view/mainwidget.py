@@ -1,4 +1,5 @@
 import os
+import sys
 from qtpy import QtCore, QtGui, QtWidgets
 from .qtd import Ui_MainWindow
 from .cakehistwidget import CakeHistogramWidget
@@ -3265,6 +3266,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.mpl.shutdown()
         except Exception:
             pass
+        if sys.platform.startswith("win"):
+            try:
+                event.accept()
+            except Exception:
+                pass
+            try:
+                sys.stdout.flush()
+                sys.stderr.flush()
+            except Exception:
+                pass
+            os._exit(0)
         super().closeEvent(event)
 
     def connect_channel(self):
