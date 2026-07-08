@@ -8,7 +8,10 @@ import datetime
 from .mplcontroller import MplController
 from .cakecontroller import CakeController
 from .xrdiohelpers import DioptasMetadataCollection
-from ..model.azimuthal_integration import provenance_for_chi
+from ..model.azimuthal_integration import (
+    provenance_for_chi,
+    resolve_path_with_fallback,
+)
 
 
 class BasePatternController(object):
@@ -64,6 +67,18 @@ class BasePatternController(object):
             bool(provenance.get("source_chi"))
         )
 
+    def _recover_source_chi(self, source_chi, derived_filename):
+        search_roots = []
+        if derived_filename:
+            derived_dir = os.path.dirname(os.path.abspath(derived_filename))
+            search_roots.append(derived_dir)
+            search_roots.append(
+                os.path.dirname(get_temp_dir(derived_filename, branch="-param")))
+        if self.model is not None and getattr(self.model, "chi_path", ""):
+            search_roots.append(self.model.chi_path)
+            search_roots.append(get_temp_dir(self.model.chi_path, branch="-param"))
+        return resolve_path_with_fallback(source_chi, "", search_roots=tuple(search_roots))
+
     def _setshow_new_base_ptn(self, filen, display_derived=False):
         """
         load and then send signal to update_graph
@@ -73,6 +88,7 @@ class BasePatternController(object):
             migration_target = filen
             if self._is_derived_provenance(provenance):
                 source_chi = provenance.get("source_chi")
+                source_chi = self._recover_source_chi(source_chi, filen)
                 if source_chi and os.path.exists(source_chi):
                     migration_target = source_chi
             self.model.set_chi_path(os.path.split(migration_target)[0])
@@ -106,7 +122,8 @@ class BasePatternController(object):
         """
         provenance = provenance_for_chi(new_filename)
         if self._is_derived_provenance(provenance):
-            source_chi = provenance.get("source_chi")
+            source_chi = self._recover_source_chi(
+                provenance.get("source_chi"), new_filename)
             if display_derived:
                 self._load_derived_display_pattern(new_filename, provenance)
                 return
@@ -114,11 +131,7 @@ class BasePatternController(object):
                 new_filename = source_chi
                 provenance = provenance_for_chi(new_filename)
             else:
-                QtWidgets.QMessageBox.warning(
-                    self.widget, "Warning",
-                    "This azimuth-derived CHI does not have an available "
-                    "full-azimuth source CHI:\n" + str(source_chi))
-                return
+                provenance = provenance_for_chi(new_filename)
 
         if self.model.base_ptn_exist() and \
                 self._same_path(self.model.get_base_ptn_filename(), new_filename):
@@ -218,16 +231,12 @@ class BasePatternController(object):
 
     def _load_derived_display_pattern(self, derived_filename, provenance):
         source_chi = provenance.get("source_chi")
-        if not source_chi or not os.path.exists(source_chi):
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning",
-                "Cannot display this azimuth-derived CHI because the "
-                "full-azimuth source CHI is missing:\n" + str(source_chi))
-            return
+        source_chi = self._recover_source_chi(source_chi, derived_filename)
+        source_exists = bool(source_chi) and os.path.exists(source_chi)
 
-        source_loaded = self.model.base_ptn_exist() and \
+        source_loaded = source_exists and self.model.base_ptn_exist() and \
             self._same_path(self.model.get_base_ptn_filename(), source_chi)
-        if not source_loaded:
+        if source_exists and not source_loaded:
             self._load_a_new_pattern(source_chi, display_derived=False)
             if not self.model.base_ptn_exist() or \
                     not self._same_path(
@@ -246,7 +255,7 @@ class BasePatternController(object):
         self._update_display_bgsub_from_current_values()
         self.widget.lineEdit_DiffractionPatternFileName.setText(
             str(self.model.get_base_ptn_filename()))
-        self._update_metadata_tab_for_chi(source_chi)
+        self._update_metadata_tab_for_chi(source_chi if source_exists else derived_filename)
         self._notify_pattern_loaded(derived_filename)
         if self.session_ctrl is not None:
             self.session_ctrl.refresh_backup_table()
