@@ -1,5 +1,6 @@
 import os
 import glob
+import sys
 import numpy as np
 import copy
 #from matplotlib.backend_bases import key_press_handler
@@ -198,6 +199,13 @@ class MainController(object):
                 self.plot_ctrl.shutdown()
         except Exception:
             pass
+        if sys.platform.startswith("win"):
+            try:
+                diff_img = getattr(self.model, "diff_img", None)
+                if diff_img is not None and hasattr(diff_img, "shutdown"):
+                    diff_img.shutdown()
+            except Exception:
+                pass
         if sys.platform.startswith("win"):
             try:
                 self._stop_watchdog_observers()

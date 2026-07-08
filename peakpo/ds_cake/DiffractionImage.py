@@ -42,6 +42,20 @@ class DiffImg(object):
         print(str(datetime.datetime.now())[:-7], 
                 ": Load ", self.img_filename)
 
+    def shutdown(self):
+        config = self._dioptas_config
+        if config is None:
+            return
+        self._dioptas_config = None
+
+        img_model = getattr(config, "img_model", None)
+        watcher = getattr(img_model, "_directory_watcher", None)
+        if watcher is not None:
+            try:
+                watcher.deactivate()
+            except Exception:
+                pass
+
     def histogram(self):
         import matplotlib.pyplot as plt
 
