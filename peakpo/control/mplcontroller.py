@@ -108,6 +108,30 @@ class MplController(object):
             toolbar.back = back_wrapper
             toolbar.forward = forward_wrapper
 
+    def shutdown(self):
+        if getattr(self, "_shutdown_done", False):
+            return
+        self._shutdown_done = True
+
+        try:
+            if self._update_timer is not None:
+                self._update_timer.stop()
+        except Exception:
+            pass
+
+        self._pending_update_args = None
+        self._cached_title = None
+        self._cached_filename = None
+        self._vcursor_pattern = None
+        self._vcursor_cake = None
+        self._peak_center_marker_artists = []
+        self._selected_peak_marker_artists = []
+        self._peakfit_overlay_artists = []
+        self._jcpds_overlay_artists = []
+        self._jcpds_hkl_artists = []
+        self._section_selection_artists = []
+        self._background_selection_artists = []
+
     def set_diff_controller(self, diff_ctrl):
         self.diff_ctrl = diff_ctrl
 

@@ -130,6 +130,7 @@ class MainController(object):
         self._propagate_diff_controller()
         self.plot_interaction_ctrl = PlotInteractionController(self)
         self.peakfit_ctrl.plot_interaction_ctrl = self.plot_interaction_ctrl
+        self.widget._peakpo_controller = self
         
         self.read_setting()
         print("  ✓ read_setting() done")
@@ -193,13 +194,13 @@ class MainController(object):
         except Exception:
             pass
         try:
-            if hasattr(self.widget, 'mpl') and hasattr(self.widget.mpl, 'shutdown'):
-                self.widget.mpl.shutdown()
+            if hasattr(self, "plot_ctrl") and hasattr(self.plot_ctrl, "shutdown"):
+                self.plot_ctrl.shutdown()
         except Exception:
             pass
         try:
-            if self.widget is not None:
-                self.widget.close()
+            if hasattr(self.widget, 'mpl') and hasattr(self.widget.mpl, 'shutdown'):
+                self.widget.mpl.shutdown()
         except Exception:
             pass
         

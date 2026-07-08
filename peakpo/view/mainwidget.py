@@ -3254,6 +3254,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     self.verticalLayout_2.setStretch(i, 1)
 
     def closeEvent(self, event):
+        controller = getattr(self, "_peakpo_controller", None)
+        if controller is not None:
+            try:
+                controller.shutdown()
+            except Exception:
+                pass
         try:
             if hasattr(self, 'mpl') and hasattr(self.mpl, 'shutdown'):
                 self.mpl.shutdown()

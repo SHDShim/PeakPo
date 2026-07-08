@@ -191,9 +191,7 @@ def _safe_shutdown():
         return
     _shutdown_done["value"] = True
     try:
-        # Keep shutdown minimal: avoid touching Qt/Matplotlib objects here,
-        # which can crash during native teardown on some macOS stacks.
-        controller.write_setting()
+        controller.shutdown()
     except Exception:
         pass
 
@@ -203,9 +201,9 @@ app.aboutToQuit.connect(_safe_shutdown)
 # Run Event Loop
 # ========================================
 ret = app.exec()
-if sys.platform == 'darwin':
-    # Avoid interpreter/module finalization crashes (segfault/bus error)
-    # caused by native extension teardown order.
+if sys.platform == 'darwin' or sys.platform.startswith('win'):
+    # Avoid interpreter/module finalization crashes caused by native
+    # extension teardown order and lingering background threads.
     os._exit(ret)
 else:
     sys.exit(ret)
