@@ -8,6 +8,7 @@ from qtpy import QtWidgets
 from qtpy import QtCore
 import gc
 import datetime
+import threading
 from contextlib import contextmanager
 from ..view import MainWindow
 from ..model import PeakPoModel, PeakPoModel8
@@ -235,35 +236,34 @@ class MainController(object):
                     continue
 
                 try:
-                    watcher.active = False
+                    deactivate = getattr(watcher, "deactivate", None)
+                    if callable(deactivate):
+                        deactivate()
+                    else:
+                        observer = getattr(watcher, "observer", None)
+                        if observer is not None and hasattr(observer, "stop"):
+                            observer.stop()
+                            observer.join()
+                except Exception:
+                    continue
+                stopped_any = True
+            except Exception:
+                continue
+
+        for thread in threading.enumerate():
+            try:
+                name = thread.__class__.__module__.lower() + "." + thread.__class__.__name__.lower()
+                if "watchdog" not in name:
+                    continue
+                if hasattr(thread, "stop"):
+                    try:
+                        thread.stop()
+                    except Exception:
+                        pass
+                try:
+                    thread.join(timeout=2.0)
                 except Exception:
                     pass
-
-                observer = getattr(watcher, "observer", None)
-                if observer is not None:
-                    try:
-                        if observer.is_alive():
-                            observer.stop()
-                    except Exception:
-                        pass
-                    try:
-                        observer.join(timeout=1.0)
-                    except Exception:
-                        pass
-
-                queue_thread = getattr(watcher, "queue_thread", None)
-                if queue_thread is not None:
-                    try:
-                        queue_thread.join(timeout=1.0)
-                    except Exception:
-                        pass
-
-                stop_method = getattr(watcher, "_stop_observing", None)
-                if callable(stop_method):
-                    try:
-                        stop_method()
-                    except Exception:
-                        pass
                 stopped_any = True
             except Exception:
                 continue
