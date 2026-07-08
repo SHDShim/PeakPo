@@ -206,35 +206,11 @@ class MainController(object):
                     diff_img.shutdown()
             except Exception:
                 pass
-        if sys.platform.startswith("win"):
-            try:
-                self._stop_watchdog_observers()
-            except Exception:
-                pass
         try:
             if hasattr(self.widget, 'mpl') and hasattr(self.widget.mpl, 'shutdown'):
                 self.widget.mpl.shutdown()
         except Exception:
             pass
-
-    def _stop_watchdog_observers(self):
-        try:
-            from watchdog.observers.api import BaseObserver
-        except Exception:
-            return
-
-        stopped_any = False
-        for obj in gc.get_objects():
-            try:
-                if isinstance(obj, BaseObserver) and obj.is_alive():
-                    obj.stop()
-                    obj.join(timeout=2.0)
-                    stopped_any = True
-            except Exception:
-                continue
-
-        if stopped_any:
-            gc.collect()
         
     def connect_channel(self):
         # connecting events
