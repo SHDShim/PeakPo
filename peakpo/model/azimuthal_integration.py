@@ -131,6 +131,39 @@ def _resolve_path(stored_path, root):
     return os.path.abspath(os.path.join(root, stored_path))
 
 
+def recover_existing_path(stored_path, search_roots=()):
+    if not stored_path:
+        return ""
+    candidate = os.path.abspath(str(stored_path))
+    if os.path.exists(candidate):
+        return candidate
+
+    basename = os.path.basename(candidate)
+    roots = []
+    for root in search_roots:
+        if root:
+            roots.append(os.path.abspath(str(root)))
+
+    for root in roots:
+        if not os.path.isdir(root):
+            continue
+        direct = os.path.join(root, basename)
+        if os.path.exists(direct):
+            return direct
+        for dirpath, _, filenames in os.walk(root):
+            if basename in filenames:
+                return os.path.join(dirpath, basename)
+    return candidate
+
+
+def resolve_path_with_fallback(stored_path, root, search_roots=()):
+    resolved = _resolve_path(stored_path, root)
+    if resolved and os.path.exists(resolved):
+        return resolved
+    roots = (root,) + tuple(search_roots)
+    return recover_existing_path(resolved, roots)
+
+
 def range_slug(ranges, label=""):
     normalized = normalize_ranges(ranges)
     if len(normalized) == 1:
@@ -238,10 +271,13 @@ def provenance_from_metadata(metadata, chi_path=None):
         return raw_provenance()
     ranges = normalize_ranges(metadata.get("azimuth_ranges", []))
     chi_root = os.path.dirname(os.path.abspath(chi_path)) if chi_path else ""
+    param_root = get_temp_dir(chi_path, branch="-param") if chi_path else ""
     return {
         "source_kind": "azimuthal_integration",
-        "source_chi": _resolve_path(metadata.get("source_chi", ""), chi_root),
-        "derived_chi": _resolve_path(metadata.get("derived_chi", ""), chi_root),
+        "source_chi": resolve_path_with_fallback(
+            metadata.get("source_chi", ""), chi_root, search_roots=(param_root,)),
+        "derived_chi": resolve_path_with_fallback(
+            metadata.get("derived_chi", ""), chi_root, search_roots=(param_root,)),
         "label": metadata.get("label", ""),
         "azimuth_ranges": ranges,
         "azimuth_shift": metadata.get("azimuth_shift"),

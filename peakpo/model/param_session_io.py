@@ -16,7 +16,10 @@ from ..ds_powdiff import PatternPeakPo
 from ..ds_jcpds import JCPDSplt, DiffractionLine
 from ..ds_section import Section
 from ..ds_cake import DiffImg
-from .azimuthal_integration import provenance_for_chi
+from .azimuthal_integration import (
+    provenance_for_chi,
+    resolve_path_with_fallback,
+)
 
 
 MANIFEST_FILE = "peakpo_manifest.json"
@@ -163,9 +166,25 @@ def _resolve_provenance(provenance, chi_root):
     if not isinstance(provenance, dict):
         return provenance
     out = dict(provenance)
+    param_dir = os.path.join(os.path.abspath(chi_root), os.path.basename(os.path.abspath(chi_root)) + "-param")
+    if out.get("source_kind") == "azimuthal_integration":
+        root_order = {
+            "derived_chi": (param_dir, chi_root),
+            "source_chi": (chi_root, param_dir),
+            "source_image": (chi_root, param_dir),
+            "poni": (chi_root, param_dir),
+        }
+    else:
+        root_order = {
+            "source_chi": (chi_root, param_dir),
+            "derived_chi": (chi_root, param_dir),
+            "source_image": (chi_root, param_dir),
+            "poni": (chi_root, param_dir),
+        }
     for key in ("source_chi", "derived_chi", "source_image", "poni"):
         if key in out:
-            out[key] = _resolve_path(out.get(key), chi_root)
+            out[key] = resolve_path_with_fallback(
+                out.get(key), chi_root, search_roots=root_order.get(key, (chi_root, param_dir)))
     return out
 
 
@@ -1265,6 +1284,7 @@ def load_section_from_param(base_chi_file, section_index):
         idx = int(section_index)
         if (idx < 0) or (idx >= len(sections)):
             return None
-        return _dict_to_section(sections[idx], param_dir)
+        chi_root = os.path.dirname(base_chi_file)
+        return _dict_to_section(sections[idx], param_dir, chi_root)
     except Exception:
         return None
