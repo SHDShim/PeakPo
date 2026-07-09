@@ -729,6 +729,7 @@ class MainController(object):
         rows = [
             ("Left drag", "Any plot", "Zoom to the drawn rectangle."),
             ("Hold Y + left drag", "Any plot", "Zoom Y only; the box spans the full visible X range."),
+            ("Hold P + left drag", "Any plot", "Pan the plot while keeping the current zoom."),
             ("Very small left drag", "Any plot", "Ignored to avoid accidental zoom."),
             ("Right click", "Any plot", "Zoom out by 20% in X and Y."),
             ("Double right click", "Any plot", "Return to the full current view."),
@@ -1854,6 +1855,10 @@ class MainController(object):
             if hasattr(self.plot_interaction_ctrl, "set_zoom_y_modifier"):
                 self.plot_interaction_ctrl.set_zoom_y_modifier(True)
             return
+        if key == 'p':
+            if hasattr(self.plot_interaction_ctrl, "set_pan_modifier"):
+                self.plot_interaction_ctrl.set_pan_modifier(True)
+            return
         if key == 'i':
             if self.widget.mpl.ntb._active == 'PAN':
                 self.widget.mpl.ntb.pan()
@@ -1882,7 +1887,9 @@ class MainController(object):
         key = str(getattr(event, "key", "") or "").lower()
         if key == 'y' and hasattr(self.plot_interaction_ctrl, "set_zoom_y_modifier"):
             self.plot_interaction_ctrl.set_zoom_y_modifier(False)
-    """
+        if key == 'p' and hasattr(self.plot_interaction_ctrl, "set_pan_modifier"):
+            self.plot_interaction_ctrl.set_pan_modifier(False)
+
     def to_PkFt(self):
         # listen
         if not self.model.base_ptn_exist():
@@ -1902,7 +1909,6 @@ class MainController(object):
         new_lims = [float(i) for i in a[2:6]]
         self.base_ptn_ctrl._load_a_new_pattern(new_filen)
         self.plot_ctrl.update(new_lims)
-    """
 
     def set_nightday_view(self):
         self.plot_ctrl._set_nightday_view()

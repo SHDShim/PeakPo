@@ -16,6 +16,12 @@ class PlotInteractionController(object):
         self.widget = main_ctrl.widget
         self._zoom_drag = None
         self._zoom_y_modifier = False
+        self._pan_modifier = False
+        self._pan_drag = None
+        self._pan_patch = None
+        self._pan_last_draw_px = None
+        self._pan_last_draw_time = 0.0
+        self._pan_blit_background = None
         self._zoom_patch = None
         self._zoom_last_draw_px = None
         self._zoom_last_draw_time = 0.0
@@ -42,6 +48,9 @@ class PlotInteractionController(object):
 
     def set_zoom_y_modifier(self, active):
         self._zoom_y_modifier = bool(active)
+
+    def set_pan_modifier(self, active):
+        self._pan_modifier = bool(active)
 
     def on_press(self, event):
         self.main._deactivate_toolbar_modes()
@@ -75,6 +84,9 @@ class PlotInteractionController(object):
             if self._peak_action_allowed(event):
                 self.main.pick_peak('left', event.xdata, event.ydata)
             return
+        if self._pan_modifier and self._plot_axis(event.inaxes):
+            self._start_pan_drag(event)
+            return
         if self._plot_axis(event.inaxes):
             self._start_zoom_drag(event)
 
@@ -87,6 +99,9 @@ class PlotInteractionController(object):
             return
         if self._peak_drag_row is not None:
             self._drag_selected_peak(event)
+            return
+        if self._pan_drag is not None:
+            self._update_pan_drag(event)
             return
         if self._zoom_drag is not None:
             self._update_zoom_drag(event)
@@ -103,6 +118,9 @@ class PlotInteractionController(object):
             return
         if self._peak_drag_row is not None:
             self._finish_peak_drag()
+            return
+        if self._pan_drag is not None:
+            self._finish_pan_drag(event)
             return
         if self._zoom_drag is not None:
             self._finish_zoom_drag(event)
@@ -145,15 +163,15 @@ class PlotInteractionController(object):
         if axes == self.widget.mpl.canvas.ax_pattern:
             return (
                 "1D plot: left-drag to zoom in; hold Y and left-drag to "
-                "zoom Y only; right-click zooms out 20%; double right-click "
-                "returns to full range."
+                "zoom Y only; hold P and left-drag to pan; right-click "
+                "zooms out 20%; double right-click returns to full range."
             )
         if hasattr(self.widget.mpl.canvas, 'ax_cake') and \
                 axes == self.widget.mpl.canvas.ax_cake:
             return (
                 "Cake plot: left-drag to zoom in; hold Y and left-drag to "
-                "zoom Y only; right-click zooms out 20%; double right-click "
-                "returns to full range."
+                "zoom Y only; hold P and left-drag to pan; right-click "
+                "zooms out 20%; double right-click returns to full range."
             )
         return ""
 
@@ -319,6 +337,26 @@ class PlotInteractionController(object):
         self._zoom_last_draw_px = None
         self._zoom_last_draw_time = 0.0
 
+    def _start_pan_drag(self, event):
+        if event.xdata is None or event.ydata is None:
+            return
+        self._clear_pan_patch()
+        ax = event.inaxes
+        self._pan_blit_background = self._copy_axes_background(ax)
+        self._pan_drag = {
+            "axes": ax,
+            "x0": float(event.xdata),
+            "y0": float(event.ydata),
+            "x_px0": float(event.x),
+            "y_px0": float(event.y),
+            "xlim0": tuple(float(v) for v in ax.get_xlim()),
+            "ylim0": tuple(float(v) for v in ax.get_ylim()),
+            "bbox_w": float(ax.bbox.width or 1.0),
+            "bbox_h": float(ax.bbox.height or 1.0),
+        }
+        self._pan_last_draw_px = None
+        self._pan_last_draw_time = 0.0
+
     def _update_zoom_drag(self, event):
         if event is None:
             return
@@ -368,6 +406,43 @@ class PlotInteractionController(object):
             self._zoom_patch.set_width(abs(x1 - x0))
             self._zoom_patch.set_height(abs(y1 - y0))
         self._draw_zoom_patch()
+
+    def _update_pan_drag(self, event):
+        if event is None:
+            return
+        drag = self._pan_drag
+        if drag is None:
+            return
+        ax = drag["axes"]
+        x1, y1 = self._event_data_in_axes(event, ax, clamp=False)
+        if x1 is None or y1 is None:
+            return
+        dx = abs(float(event.x) - drag["x_px0"])
+        dy = abs(float(event.y) - drag["y_px0"])
+        if max(dx, dy) < self.MIN_ZOOM_DRAG_PX:
+            return
+        now = time.monotonic()
+        if self._pan_last_draw_px is not None:
+            last_x, last_y = self._pan_last_draw_px
+            moved_px = max(abs(float(event.x) - last_x),
+                           abs(float(event.y) - last_y))
+            if moved_px < 8.0 and (now - self._pan_last_draw_time) < 0.025:
+                return
+        self._pan_last_draw_px = (float(event.x), float(event.y))
+        self._pan_last_draw_time = now
+        xlim0 = drag["xlim0"]
+        ylim0 = drag["ylim0"]
+        bbox_w = max(float(drag.get("bbox_w", 1.0)), 1.0)
+        bbox_h = max(float(drag.get("bbox_h", 1.0)), 1.0)
+        dx_px = float(event.x) - float(drag["x_px0"])
+        dy_px = float(event.y) - float(drag["y_px0"])
+        x_span = xlim0[1] - xlim0[0]
+        y_span = ylim0[1] - ylim0[0]
+        x_shift = dx_px * x_span / bbox_w
+        y_shift = dy_px * y_span / bbox_h
+        ax.set_xlim(xlim0[0] - x_shift, xlim0[1] - x_shift)
+        ax.set_ylim(ylim0[0] - y_shift, ylim0[1] - y_shift)
+        self.widget.mpl.canvas.draw_idle()
 
     def _event_data_in_axes(self, event, ax, clamp=False):
         if event is None or ax is None:
@@ -419,6 +494,12 @@ class PlotInteractionController(object):
         luminance = 0.2126 * face[0] + 0.7152 * face[1] + 0.0722 * face[2]
         return "black" if luminance > 0.5 else "white"
 
+    def _clear_pan_patch(self):
+        self._pan_drag = None
+        self._pan_last_draw_px = None
+        self._pan_last_draw_time = 0.0
+        self._pan_blit_background = None
+
     def _finish_zoom_drag(self, event):
         drag = self._zoom_drag
         self._zoom_drag = None
@@ -446,6 +527,19 @@ class PlotInteractionController(object):
         else:
             ax.set_xlim(x0, x1)
             ax.set_ylim(y0, y1)
+        self.widget.mpl.canvas.draw_idle()
+
+    def _finish_pan_drag(self, event):
+        drag = self._pan_drag
+        self._clear_pan_patch()
+        if drag is None or event is None:
+            return
+        ax = drag["axes"]
+        dx = abs(float(event.x) - drag["x_px0"])
+        dy = abs(float(event.y) - drag["y_px0"])
+        if max(dx, dy) < self.MIN_ZOOM_DRAG_PX:
+            self._set_status("Pan ignored: drag farther to move the view.")
+            return
         self.widget.mpl.canvas.draw_idle()
 
     def _zoom_out_current_view(self, axes):

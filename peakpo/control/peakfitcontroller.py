@@ -88,7 +88,12 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
         self.button_visual_fwhm.toggled.connect(self._arm_fwhm_range)
 
     def _peak(self):
-        return self.controller.model.current_section.peaks_in_queue[self.peak_row]
+        section = self.controller.model.current_section
+        if section is None:
+            return None
+        if self.peak_row < 0 or self.peak_row >= section.get_number_of_peaks_in_queue():
+            return None
+        return section.peaks_in_queue[self.peak_row]
 
     def _spinbox(self, value, decimals):
         box = QtWidgets.QDoubleSpinBox(self.table)
@@ -134,6 +139,9 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
 
     def _populate(self):
         peak = self._peak()
+        if peak is None:
+            self.close()
+            return
         for row, (label, value_key, vary_key, min_key, max_key, decimals) in \
                 enumerate(self.PARAMS):
             item = QtWidgets.QTableWidgetItem(label)
@@ -179,6 +187,9 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
             self.controller.plot_interaction_ctrl.cancel_editable_xrange()
         self.controller.model.current_section.invalidate_fit_result()
         peak = self._peak()
+        if peak is None:
+            self.close()
+            return
         for row, (__label, value_key, vary_key, min_key, max_key, __decimals) in \
                 enumerate(self.PARAMS):
             peak[value_key] = float(self.table.cellWidget(row, 1).value())
@@ -1324,6 +1335,19 @@ class PeakFitController(object):
                 "Set position range from plot")
             return
         row = selected_rows.pop()
+        if not self.model.current_section_exist():
+            self._set_constraints_toggle_button(
+                button, False,
+                "Set position range from plot (ON)",
+                "Set position range from plot")
+            return
+        n_peaks = self.model.current_section.get_number_of_peaks_in_queue()
+        if row < 0 or row >= n_peaks:
+            self._set_constraints_toggle_button(
+                button, False,
+                "Set position range from plot (ON)",
+                "Set position range from plot")
+            return
         self._clear_constraints_toggle_buttons(except_button=button)
         def apply_range(xmin, xmax):
             peak = self.model.current_section.peaks_in_queue[row]
@@ -1372,6 +1396,19 @@ class PeakFitController(object):
                 "Set FWHM max from plot")
             return
         row = selected_rows.pop()
+        if not self.model.current_section_exist():
+            self._set_constraints_toggle_button(
+                button, False,
+                "Set FWHM max from plot (ON)",
+                "Set FWHM max from plot")
+            return
+        n_peaks = self.model.current_section.get_number_of_peaks_in_queue()
+        if row < 0 or row >= n_peaks:
+            self._set_constraints_toggle_button(
+                button, False,
+                "Set FWHM max from plot (ON)",
+                "Set FWHM max from plot")
+            return
         self._clear_constraints_toggle_buttons(except_button=button)
         def apply_range(xmin, xmax):
             peak = self.model.current_section.peaks_in_queue[row]
