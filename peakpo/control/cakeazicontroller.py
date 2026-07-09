@@ -103,9 +103,9 @@ class CakeAziController(object):
     def _configure_derived_chi_ui(self):
         table = getattr(self.widget, "tableWidget_AziChiList", None)
         if table is not None:
-            table.setColumnCount(5)
+            table.setColumnCount(4)
             table.setHorizontalHeaderLabels(
-                ["Active", "Type", "Label", "Azimuth ranges", "CHI file"])
+                ["Type", "Label", "Azimuth ranges", "CHI file"])
             table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
             table.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
             table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
@@ -137,12 +137,6 @@ class CakeAziController(object):
             self._arm_roi_selection)
         self.widget.tableWidget_DiffImgAzi.itemSelectionChanged.connect(
             self._apply_changes_to_graph)
-        if hasattr(self.widget, "pushButton_OpenSelectedAziChi"):
-            self.widget.pushButton_OpenSelectedAziChi.clicked.connect(
-                self._open_selected_azimuthal_chi)
-        if hasattr(self.widget, "pushButton_OpenFullAziChi"):
-            self.widget.pushButton_OpenFullAziChi.clicked.connect(
-                self._open_full_azimuth_chi)
         if hasattr(self.widget, "pushButton_RemoveSelectedAziChi"):
             self.widget.pushButton_RemoveSelectedAziChi.clicked.connect(
                 self._remove_selected_azimuthal_chi)
@@ -481,28 +475,68 @@ class CakeAziController(object):
         return [entries[0]] + sorted(
             entries[1:], key=lambda e: (e.get("created_at", ""), e["chi_path"]))
 
-    def _set_selected_derived_chi_preview(self, entry):
+    def _clear_selected_derived_chi_preview_state(self):
+        self._selected_derived_chi_preview[:] = []
+        self._selected_derived_chi_path = None
+        self._selected_derived_chi_shift = None
+        self.widget._cake_azi_selected_rois = self._selected_derived_chi_preview
+        self.widget._cake_azi_selected_derived_chi_path = None
+        self.widget._cake_azi_selected_derived_chi_shift = None
+
+    def _sync_selected_derived_chi_table(self, entry, set_status=False):
+        table = getattr(self.widget, "tableWidget_DiffImgAzi", None)
         if entry is None or entry.get("kind") != "derived":
-            self.clear_selected_derived_chi_preview(restore_table=False)
+            if table is not None:
+                table.setRowCount(0)
+            self._clear_selected_derived_chi_preview_state()
+            return
+        azimuth_ranges = normalize_ranges(entry.get("azimuth_ranges", []))
+        chi_path = entry.get("chi_path", "")
+        if not chi_path:
+            if table is not None:
+                table.setRowCount(0)
+            self._clear_selected_derived_chi_preview_state()
             return
 
-        azimuth_ranges = normalize_ranges(entry.get("azimuth_ranges", []))
         if self._selected_derived_chi_table_snapshot is None:
             snapshot = self._read_azilist(checked_only=False, warn=False)
             if snapshot:
                 self._selected_derived_chi_table_snapshot = snapshot
         self._selected_derived_chi_preview[:] = azimuth_ranges
-        self._selected_derived_chi_path = entry.get("chi_path")
+        self._selected_derived_chi_path = chi_path
         self._selected_derived_chi_shift = entry.get("azimuth_shift")
         self.widget._cake_azi_selected_rois = self._selected_derived_chi_preview
         self.widget._cake_azi_selected_derived_chi_path = self._selected_derived_chi_path
         self.widget._cake_azi_selected_derived_chi_shift = self._selected_derived_chi_shift
-        if azimuth_ranges:
+        if table is not None:
             self._post_to_table(azimuth_ranges, clear=True)
-        self._set_status(
-            f"Previewing ROI ranges from {entry.get('label', 'selected derived CHI')}. "
-            "Use Open selected to switch the active CHI.")
-        self._apply_changes_to_graph()
+        if set_status:
+            self._set_status(
+                f"Showing ROI sections from {entry.get('label', 'selected CHI')}.")
+
+    def _activate_selected_derived_chi_entry(self, entry):
+        if entry is None:
+            self._sync_selected_derived_chi_table(None)
+            return
+
+        self._sync_selected_derived_chi_table(entry, set_status=True)
+        chi_path = entry.get("chi_path", "")
+        if not chi_path:
+            return
+
+        current_chi = self._display_chi_filename()
+        if current_chi and self._same_path(chi_path, current_chi):
+            self._apply_changes_to_graph()
+            return
+
+        self._syncing_derived_chi_selection = True
+        try:
+            self._set_status(
+                f"Opening {entry.get('label', 'selected CHI')}...")
+            self._open_chi_path(
+                chi_path, display_derived=entry.get("kind") == "derived")
+        finally:
+            self._syncing_derived_chi_selection = False
 
     def clear_selected_derived_chi_preview(self, restore_table=False):
         if self._selected_derived_chi_table_snapshot is not None:
@@ -510,21 +544,18 @@ class CakeAziController(object):
             self._selected_derived_chi_table_snapshot = None
             if restore_table:
                 self._post_to_table(snapshot, clear=True)
-        if hasattr(self.widget, "tableWidget_DiffImgAzi") and not restore_table:
+            elif hasattr(self.widget, "tableWidget_DiffImgAzi"):
+                self.widget.tableWidget_DiffImgAzi.setRowCount(0)
+        elif hasattr(self.widget, "tableWidget_DiffImgAzi"):
             self.widget.tableWidget_DiffImgAzi.setRowCount(0)
-        self._selected_derived_chi_preview[:] = []
-        self._selected_derived_chi_path = None
-        self._selected_derived_chi_shift = None
-        self.widget._cake_azi_selected_rois = self._selected_derived_chi_preview
-        self.widget._cake_azi_selected_derived_chi_path = None
-        self.widget._cake_azi_selected_derived_chi_shift = None
+        self._clear_selected_derived_chi_preview_state()
         self._apply_changes_to_graph()
 
     def _on_derived_chi_selection_changed(self, *_args):
         if self._syncing_derived_chi_selection:
             return
         entry = self._selected_azimuthal_chi_entry()
-        self._set_selected_derived_chi_preview(entry)
+        self._activate_selected_derived_chi_entry(entry)
 
     def refresh_derived_chi_ui(self, select_path=None):
         self._set_current_chi_status()
@@ -548,7 +579,6 @@ class CakeAziController(object):
                 if select_path is not None and self._same_path(chi_path, select_path):
                     selected_row = row
                 values = [
-                    "Current" if active else "",
                     entry["type"],
                     entry["label"],
                     entry["ranges"],
@@ -559,23 +589,20 @@ class CakeAziController(object):
                     item.setData(QtCore.Qt.UserRole, row)
                     table.setItem(row, col, item)
             if selected_row >= 0:
-                table.selectRow(selected_row)
+                self._syncing_derived_chi_selection = True
+                try:
+                    table.selectRow(selected_row)
+                finally:
+                    self._syncing_derived_chi_selection = False
             table.resizeColumnsToContents()
         finally:
             table.blockSignals(old_state)
 
         if 0 <= selected_row < len(entries):
-            entry = entries[selected_row]
-            if select_path is not None:
-                self._set_selected_derived_chi_preview(entry)
+            self._sync_selected_derived_chi_table(entries[selected_row])
         elif select_path is not None:
-            self._set_selected_derived_chi_preview(None)
+            self._sync_selected_derived_chi_table(None)
 
-        has_source = self._current_source_chi() is not None
-        if hasattr(self.widget, "pushButton_OpenSelectedAziChi"):
-            self.widget.pushButton_OpenSelectedAziChi.setEnabled(len(entries) > 0)
-        if hasattr(self.widget, "pushButton_OpenFullAziChi"):
-            self.widget.pushButton_OpenFullAziChi.setEnabled(has_source)
         self._update_remove_azimuthal_chi_button()
 
     def _selected_azimuthal_chi_entry(self):

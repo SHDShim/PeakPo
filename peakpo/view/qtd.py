@@ -2842,15 +2842,6 @@ class Ui_MainWindow(object):
         self.gridLayout_DefaultBounds.addWidget(QtWidgets.QLabel("FWHM max"), 3, 0, 1, 1)
         self.gridLayout_DefaultBounds.addWidget(self.spinBox_DefaultFwhmMax, 3, 1, 1, 1)
 
-        self.verticalLayout_ConstraintsContent.addWidget(self.groupBox_DefaultBounds)
-
-        # --- Active Peak Status Section ---
-        self.label_PeakStatus = QtWidgets.QLineEdit(self.scrollAreaWidgetContents_Constraints)
-        self.label_PeakStatus.setReadOnly(True)
-        self.label_PeakStatus.setObjectName("label_PeakStatus")
-        self.label_PeakStatus.setStyleSheet("QLineEdit { background-color: #ffcccc; color: #cc0000; font-weight: bold; }")
-        self.verticalLayout_ConstraintsContent.addWidget(self.label_PeakStatus)
-
         # --- Detailed Peak Constraints Table (from _PeakConstraintsDialog) ---
         self.groupBox_PeakConstraintEditor = QtWidgets.QGroupBox(self.scrollAreaWidgetContents_Constraints)
         self.groupBox_PeakConstraintEditor.setObjectName("groupBox_PeakConstraintEditor")
@@ -2880,6 +2871,15 @@ class Ui_MainWindow(object):
         self.verticalLayout_PeakConstraintEditor.addLayout(self.horizontalLayout_ConstraintButtons)
 
         self.verticalLayout_ConstraintsContent.addWidget(self.groupBox_PeakConstraintEditor)
+
+        # --- Active Peak Status Section ---
+        self.label_PeakStatus = QtWidgets.QLineEdit(self.scrollAreaWidgetContents_Constraints)
+        self.label_PeakStatus.setReadOnly(True)
+        self.label_PeakStatus.setObjectName("label_PeakStatus")
+        self.label_PeakStatus.setStyleSheet("QLineEdit { background-color: #ffcccc; color: #cc0000; font-weight: bold; }")
+        self.verticalLayout_ConstraintsContent.addWidget(self.label_PeakStatus)
+
+        self.verticalLayout_ConstraintsContent.addWidget(self.groupBox_DefaultBounds)
         self.scrollArea_Constraints.setWidget(self.scrollAreaWidgetContents_Constraints)
         self.verticalLayout_ConstraintsTab.addWidget(self.scrollArea_Constraints)
         self.tabWidget_PeakFit.addTab(self.tab_PeakFitConstraints, "")

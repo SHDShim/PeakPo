@@ -325,6 +325,10 @@ class MplController(object):
             pass
         return {}
 
+    def _display_pattern_is_azimuth_derived(self):
+        provenance = self._current_pattern_provenance()
+        return provenance.get("source_kind") == "azimuthal_integration"
+
     def _display_pattern(self):
         getter = getattr(self.model, "get_display_ptn", None)
         if callable(getter):
@@ -438,6 +442,27 @@ class MplController(object):
                     color=color,
                     horizontalalignment="right",
                     verticalalignment="bottom")
+
+    def _plot_derived_pattern_label(self):
+        if not self._display_pattern_is_azimuth_derived():
+            return False
+        ax_pattern = self.widget.mpl.canvas.ax_pattern
+        ax_pattern.text(
+            0.015, 0.985, "Azi-derived",
+            transform=ax_pattern.transAxes,
+            ha='left', va='top',
+            fontsize=11,
+            color='white',
+            bbox=dict(
+                boxstyle='round,pad=0.25',
+                facecolor='#b22222',
+                edgecolor='#8f1b1b',
+                linewidth=1.0,
+                alpha=0.95,
+            ),
+            zorder=20,
+        )
+        return True
 
     def _plot_selected_derived_chi_preview_overlay(
             self, tth_min, tth_max, chi_min, chi_max):
@@ -2036,6 +2061,7 @@ class MplController(object):
                     title, color=self.obj_color, fontsize=title_font_size)
                 
                 self._plot_diffpattern(gsas_style)
+                derived_label_visible = self._plot_derived_pattern_label()
                 
                 if self.model.waterfall_exist():
                     self._plot_waterfallpatterns()
@@ -2070,11 +2096,12 @@ class MplController(object):
                 self._plot_selected_background_overlays()
             
             if self.widget.checkBox_ShowLargePnT.isChecked():
+                pnt_y = 0.985 if not derived_label_visible else 0.90
                 label_p_t = "{0: 5.1f} GPa\n{1: 4.0f} K".\
                     format(self.widget.doubleSpinBox_Pressure.value(),
                         self.widget.doubleSpinBox_Temperature.value())
                 self.widget.mpl.canvas.ax_pattern.text(
-                    0.01, 0.98, label_p_t, horizontalalignment='left',
+                    0.01, pnt_y, label_p_t, horizontalalignment='left',
                     verticalalignment='top',
                     transform=self.widget.mpl.canvas.ax_pattern.transAxes,
                     fontsize=int(

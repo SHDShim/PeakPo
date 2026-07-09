@@ -4,9 +4,9 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.12.1o"
+__version__ = "7.12.1p"
 """
-7.12.1o: Fifth attempt to fix windows exit problem
+7.12.1p: Improve azi integration UI.
 7.12.0: update peak fitting and unit cell refining instructions.
 7.11.13: overhaul Peak and Cell Fit workflows with improved provenance, 
           interactive peak adjustment (drag-and-drop), and automated result 

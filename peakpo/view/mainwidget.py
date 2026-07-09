@@ -679,9 +679,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tableWidget_AziChiList = QtWidgets.QTableWidget(
             self.groupBox_AziChiList)
         self.tableWidget_AziChiList.setObjectName("tableWidget_AziChiList")
-        self.tableWidget_AziChiList.setColumnCount(5)
+        self.tableWidget_AziChiList.setColumnCount(4)
         self.tableWidget_AziChiList.setHorizontalHeaderLabels(
-            ["Active", "Type", "Label", "Azimuth ranges", "CHI file"])
+            ["Type", "Label", "Azimuth ranges", "CHI file"])
         self.tableWidget_AziChiList.setSelectionBehavior(
             QtWidgets.QAbstractItemView.SelectRows)
         self.tableWidget_AziChiList.setSelectionMode(
@@ -699,18 +699,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         button_layout = QtWidgets.QHBoxLayout()
         button_layout.setContentsMargins(0, 0, 0, 0)
         button_layout.setSpacing(10)
-        self.pushButton_OpenSelectedAziChi = QtWidgets.QPushButton(
-            "Open selected", self.groupBox_AziChiList)
-        self.pushButton_OpenSelectedAziChi.setObjectName(
-            "pushButton_OpenSelectedAziChi")
-        self.pushButton_OpenSelectedAziChi.setToolTip(
-            "Open the highlighted full-azimuth or azimuth-derived CHI.")
-        self.pushButton_OpenFullAziChi = QtWidgets.QPushButton(
-            "Open full azi", self.groupBox_AziChiList)
-        self.pushButton_OpenFullAziChi.setObjectName(
-            "pushButton_OpenFullAziChi")
-        self.pushButton_OpenFullAziChi.setToolTip(
-            "Return to the original full-azimuth CHI for this derived CHI set.")
         self.pushButton_RemoveSelectedAziChi = QtWidgets.QPushButton(
             "Remove derived", self.groupBox_AziChiList)
         self.pushButton_RemoveSelectedAziChi.setObjectName(
@@ -725,8 +713,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_RefreshAziChiList.setToolTip(
             "Rescan saved azimuth-derived CHI files for the current source CHI.")
         for button in (
-                self.pushButton_OpenSelectedAziChi,
-                self.pushButton_OpenFullAziChi,
                 self.pushButton_RemoveSelectedAziChi,
                 self.pushButton_RefreshAziChiList):
             button.setMinimumHeight(25)
