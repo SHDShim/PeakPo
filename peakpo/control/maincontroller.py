@@ -276,6 +276,8 @@ class MainController(object):
         self.plot_interaction_ctrl.connect()
         self.widget.mpl.canvas.mpl_connect(
             'key_press_event', self.on_key_press)
+        self.widget.mpl.canvas.mpl_connect(
+            'key_release_event', self.on_key_release)
         self.widget.spinBox_AziShift.valueChanged.connect(
             self.apply_changes_to_graph)
         self.widget.doubleSpinBox_Pressure.valueChanged.connect(
@@ -726,8 +728,10 @@ class MainController(object):
         table.setHorizontalHeaderLabels(["Mouse action", "Context", "Result"])
         rows = [
             ("Left drag", "Any plot", "Zoom to the drawn rectangle."),
+            ("Hold Y + left drag", "Any plot", "Zoom Y only; the box spans the full visible X range."),
             ("Very small left drag", "Any plot", "Ignored to avoid accidental zoom."),
-            ("Right click", "Any plot", "Return to the full current view."),
+            ("Right click", "Any plot", "Zoom out by 20% in X and Y."),
+            ("Double right click", "Any plot", "Return to the full current view."),
             ("Left double click", "Any plot", "Inspect d-spacing and nearest JCPDS/hkl information."),
             ("Set ROI, then left drag", "Map or Sequence ROI", "Draw ROI on the 1D or Cake plot."),
             ("Set ROI again", "Map or Sequence ROI", "Cancel ROI selection mode."),
@@ -1845,16 +1849,21 @@ class MainController(object):
     """
 
     def on_key_press(self, event):
-        if event.key == 'i':
+        key = str(getattr(event, "key", "") or "").lower()
+        if key == 'y':
+            if hasattr(self.plot_interaction_ctrl, "set_zoom_y_modifier"):
+                self.plot_interaction_ctrl.set_zoom_y_modifier(True)
+            return
+        if key == 'i':
             if self.widget.mpl.ntb._active == 'PAN':
                 self.widget.mpl.ntb.pan()
             if self.widget.mpl.ntb._active == 'ZOOM':
                 self.widget.mpl.ntb.zoom()
-        elif event.key == 's':
+        elif key == 's':
             self.session_ctrl.save_dpp_ppss()
-        elif event.key == 'w':
+        elif key == 'w':
             self.plot_new_graph()
-        elif event.key == 'v':
+        elif key == 'v':
             lims = self.widget.mpl.canvas.ax_pattern.axis()
             pattern = self.model.get_display_ptn() \
                 if hasattr(self.model, "get_display_ptn") else self.model.base_ptn
@@ -1868,6 +1877,11 @@ class MainController(object):
             self.plot_ctrl.update([lims[0], lims[1], yroi.min(), yroi.max()])
         else:
             self._deactivate_toolbar_modes()
+
+    def on_key_release(self, event):
+        key = str(getattr(event, "key", "") or "").lower()
+        if key == 'y' and hasattr(self.plot_interaction_ctrl, "set_zoom_y_modifier"):
+            self.plot_interaction_ctrl.set_zoom_y_modifier(False)
     """
     def to_PkFt(self):
         # listen

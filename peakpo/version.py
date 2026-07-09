@@ -6,6 +6,7 @@ Todo:
 """
 __version__ = "7.12.1p"
 """
+7.12.1q: Improve mouse actions
 7.12.1p: Improve azi integration UI.
 7.12.0: update peak fitting and unit cell refining instructions.
 7.11.13: overhaul Peak and Cell Fit workflows with improved provenance, 

@@ -15,6 +15,7 @@ class PlotInteractionController(object):
         self.model = main_ctrl.model
         self.widget = main_ctrl.widget
         self._zoom_drag = None
+        self._zoom_y_modifier = False
         self._zoom_patch = None
         self._zoom_last_draw_px = None
         self._zoom_last_draw_time = 0.0
@@ -39,6 +40,9 @@ class PlotInteractionController(object):
         canvas.mpl_connect('figure_leave_event', self.on_leave)
         self.main._deactivate_toolbar_modes()
 
+    def set_zoom_y_modifier(self, active):
+        self._zoom_y_modifier = bool(active)
+
     def on_press(self, event):
         self.main._deactivate_toolbar_modes()
         if event is None:
@@ -53,10 +57,13 @@ class PlotInteractionController(object):
             self._inspect(event)
             return
         if self._is_right(event):
+            if bool(getattr(event, "dblclick", False)):
+                self.main.plot_new_graph()
+                return
             if self._shift_down(event) and self._peak_action_allowed(event):
                 self.main.pick_peak('right', event.xdata, event.ydata)
                 return
-            self.main.plot_new_graph()
+            self._zoom_out_current_view(event.inaxes)
             return
         if not self._is_left(event):
             return
@@ -137,14 +144,16 @@ class PlotInteractionController(object):
     def _plot_mouse_help_text(self, axes):
         if axes == self.widget.mpl.canvas.ax_pattern:
             return (
-                "1D plot: left-drag to zoom in; right-click to return "
-                "to the full current view."
+                "1D plot: left-drag to zoom in; hold Y and left-drag to "
+                "zoom Y only; right-click zooms out 20%; double right-click "
+                "returns to full range."
             )
         if hasattr(self.widget.mpl.canvas, 'ax_cake') and \
                 axes == self.widget.mpl.canvas.ax_cake:
             return (
-                "Cake plot: left-drag to zoom in; right-click to return "
-                "to the full current view."
+                "Cake plot: left-drag to zoom in; hold Y and left-drag to "
+                "zoom Y only; right-click zooms out 20%; double right-click "
+                "returns to full range."
             )
         return ""
 
@@ -305,6 +314,7 @@ class PlotInteractionController(object):
             "y0": float(event.ydata),
             "x_px0": float(event.x),
             "y_px0": float(event.y),
+            "mode": "y" if self._zoom_y_modifier else "xy",
         }
         self._zoom_last_draw_px = None
         self._zoom_last_draw_time = 0.0
@@ -333,6 +343,13 @@ class PlotInteractionController(object):
         self._zoom_last_draw_px = (float(event.x), float(event.y))
         self._zoom_last_draw_time = now
         x0, y0 = drag["x0"], drag["y0"]
+        x_limits = ax.get_xlim()
+        x_left = float(min(x_limits))
+        x_right = float(max(x_limits))
+        mode = drag.get("mode", "xy")
+        if mode == "y":
+            x0 = x_left
+            x1 = x_right
         if self._zoom_patch is None:
             edge_color = self._zoom_edge_color(ax)
             self._zoom_patch = patches.Rectangle(
@@ -424,9 +441,41 @@ class PlotInteractionController(object):
         y0, y1 = sorted([drag["y0"], y_end])
         if x1 <= x0 or y1 <= y0:
             return
-        ax.set_xlim(x0, x1)
-        ax.set_ylim(y0, y1)
+        if drag.get("mode") == "y":
+            ax.set_ylim(y0, y1)
+        else:
+            ax.set_xlim(x0, x1)
+            ax.set_ylim(y0, y1)
         self.widget.mpl.canvas.draw_idle()
+
+    def _zoom_out_current_view(self, axes):
+        ax = axes if self._plot_axis(axes) else None
+        if ax is None:
+            return
+        if ax == getattr(self.widget.mpl.canvas, "ax_cake", None):
+            other_ax = getattr(self.widget.mpl.canvas, "ax_pattern", None)
+        else:
+            other_ax = getattr(self.widget.mpl.canvas, "ax_cake", None)
+        self._zoom_axes_out(ax, 1.2)
+        if other_ax is not None and self._plot_axis(other_ax):
+            try:
+                if ax.get_xlim() != other_ax.get_xlim():
+                    other_ax.set_xlim(ax.get_xlim())
+            except Exception:
+                pass
+        self.widget.mpl.canvas.draw_idle()
+
+    def _zoom_axes_out(self, ax, factor):
+        if ax is None or factor <= 1.0:
+            return
+        x0, x1 = ax.get_xlim()
+        y0, y1 = ax.get_ylim()
+        x_center = 0.5 * (x0 + x1)
+        y_center = 0.5 * (y0 + y1)
+        x_half = 0.5 * (x1 - x0) * factor
+        y_half = 0.5 * (y1 - y0) * factor
+        ax.set_xlim(x_center - x_half, x_center + x_half)
+        ax.set_ylim(y_center - y_half, y_center + y_half)
 
     def _clear_zoom_patch(self):
         if self._zoom_patch is not None:
