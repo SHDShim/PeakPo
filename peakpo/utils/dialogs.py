@@ -188,6 +188,39 @@ def _exec_dialog(dialog):
     return bool(exec_fn())
 
 
+def _dispose_file_dialog(dialog):
+    """Destroy a file dialog and its QFileSystemModel worker immediately."""
+    if dialog is None:
+        return
+    try:
+        dialog.close()
+    except Exception:
+        pass
+    try:
+        dialog.setParent(None)
+    except Exception:
+        pass
+    try:
+        dialog.deleteLater()
+    except Exception:
+        return
+
+    app = QtCore.QCoreApplication.instance()
+    if app is None:
+        return
+    deferred_delete = getattr(QtCore.QEvent, "DeferredDelete", None)
+    if deferred_delete is None:
+        event_type = getattr(QtCore.QEvent, "Type", None)
+        if event_type is not None:
+            deferred_delete = getattr(event_type, "DeferredDelete", None)
+    try:
+        if deferred_delete is not None:
+            QtCore.QCoreApplication.sendPostedEvents(None, deferred_delete)
+        app.processEvents()
+    except Exception:
+        pass
+
+
 def _extract_name_filter_patterns(name_filter):
     # Example: "CHI files (*.chi *.dat)"
     m = re.search(r"\(([^)]*)\)", str(name_filter or ""))
@@ -323,10 +356,13 @@ def dialog_openfile_hide_param_dirs(
         default_hide_param_dirs=default_hide_param_dirs,
         default_jcpds_only=default_jcpds_only,
         default_jcpds_filter_mode=default_jcpds_filter_mode)
-    if _exec_dialog(dialog):
-        files = dialog.selectedFiles()
-        return (files[0] if files else ""), dialog.selectedNameFilter()
-    return "", ""
+    try:
+        if _exec_dialog(dialog):
+            files = dialog.selectedFiles()
+            return (files[0] if files else ""), dialog.selectedNameFilter()
+        return "", ""
+    finally:
+        _dispose_file_dialog(dialog)
 
 
 def dialog_openfiles_hide_param_dirs(
@@ -339,12 +375,15 @@ def dialog_openfiles_hide_param_dirs(
         default_hide_param_dirs=default_hide_param_dirs,
         default_jcpds_only=default_jcpds_only,
         default_jcpds_filter_mode=default_jcpds_filter_mode)
-    if _exec_dialog(dialog):
-        files = getattr(dialog, "_expanded_selected_files", None)
-        if files is None:
-            files = _expand_selected_files(dialog, dialog.selectedFiles())
-        return files, dialog.selectedNameFilter()
-    return [], ""
+    try:
+        if _exec_dialog(dialog):
+            files = getattr(dialog, "_expanded_selected_files", None)
+            if files is None:
+                files = _expand_selected_files(dialog, dialog.selectedFiles())
+            return files, dialog.selectedNameFilter()
+        return [], ""
+    finally:
+        _dispose_file_dialog(dialog)
 
 
 def dialog_existing_directory_hide_param_dirs(
@@ -354,10 +393,13 @@ def dialog_existing_directory_hide_param_dirs(
         QtWidgets.QFileDialog.Directory,
         default_hide_param_dirs=default_hide_param_dirs)
     dialog.setOption(QtWidgets.QFileDialog.ShowDirsOnly, True)
-    if _exec_dialog(dialog):
-        files = dialog.selectedFiles()
-        return files[0] if files else ""
-    return ""
+    try:
+        if _exec_dialog(dialog):
+            files = dialog.selectedFiles()
+            return files[0] if files else ""
+        return ""
+    finally:
+        _dispose_file_dialog(dialog)
 
 
 def dialog_savefile(obj, default_filename):
