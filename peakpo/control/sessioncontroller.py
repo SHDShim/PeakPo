@@ -62,6 +62,9 @@ class SessionController(object):
         self.widget.pushButton_SaveDPP.clicked.connect(self.save_dpp)
         self.widget.pushButton_SavePPSS.clicked.connect(self.save_ppss)
         self.widget.pushButton_LoadPPSS.clicked.connect(self.load_ppss)
+        if hasattr(self.widget, "pushButton_LoadLegacyDPP"):
+            self.widget.pushButton_LoadLegacyDPP.clicked.connect(
+                self.load_legacy_dpp)
         self.widget.pushButton_LoadDPP.clicked.connect(self.save_dpp)
         if hasattr(self.widget, "pushButton_OpenBackupInfo"):
             self.widget.pushButton_OpenBackupInfo.clicked.connect(
@@ -403,6 +406,19 @@ class SessionController(object):
             success = self._load_dpp(fn, jlistonly=False)
         else:
             success = self._load_new_param_session(fn)
+        self._finish_session_load(success)
+
+    def load_legacy_dpp(self):
+        """Load a selected DPP directly, without migrating or archiving it."""
+        fn = dialog_openfile_hide_param_dirs(
+            self.widget, "Choose A Legacy DPP File",
+            self.model.chi_path, "DPP session files (*.dpp)")[0]
+        if fn == '':
+            return
+        self._finish_session_load(self._load_dpp(fn, jlistonly=False))
+
+    def _finish_session_load(self, success):
+        """Refresh the UI after a DPP or PARAM session was loaded."""
         if success:
             if self.model.exist_in_waterfall(self.model.base_ptn.fname):
                 self.widget.pushButton_AddBasePtn.setChecked(True)
@@ -1164,6 +1180,8 @@ class SessionController(object):
             for ptn in self.model.session.waterfallpatterns:
                 if os.path.exists(ptn.fname):
                     new_wf_ptn_names.append(ptn.fname)
+                    new_wf_wavelength.append(ptn.wavelength)
+                    new_wf_display.append(ptn.display)
                 elif os.path.exists(os.path.join(
                         self.model.chi_path, os.path.basename(ptn.fname))):
                     new_wf_ptn_names.append(

@@ -256,6 +256,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._setup_cake_colormap_control()
         self._setup_plot_control_export()
         self._move_backup_into_file_data_tab()
+        self._setup_file_dpp_ppss_tab()
         self._setup_file_metadata_tab()
         self._setup_backup_comment_button()
         self._layout_backup_buttons()
@@ -1690,6 +1691,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "pushButton_ApplyWaterfallChange",
             "pushButton_LoadPPSS",
             "pushButton_SavePPSS",
+            "pushButton_LoadLegacyDPP",
             "pushButton_ZipSession",
             "pushButton_SaveDPPandPPSS",
             "pushButton_DelTempCHI",
@@ -3051,6 +3053,44 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 insert_idx, self.tabWidget_3PageMetadata, "Metadata")
         else:
             self.tabWidget_3.addTab(self.tabWidget_3PageMetadata, "Metadata")
+
+    def _setup_file_dpp_ppss_tab(self):
+        """Move legacy DPP/PPSS tools into their own File sub-tab."""
+        if not all(hasattr(self, name) for name in (
+                "tabWidget_3", "tabWidget_3Page2", "groupBox_12",
+                "verticalLayout_31", "gridLayout")):
+            return
+        if hasattr(self, "tabWidget_3PageDppPpss"):
+            return
+
+        self.tabWidget_3PageDppPpss = QtWidgets.QWidget()
+        self.tabWidget_3PageDppPpss.setObjectName("tabWidget_3PageDppPpss")
+        self.verticalLayout_FileDppPpss = QtWidgets.QVBoxLayout(
+            self.tabWidget_3PageDppPpss)
+        self.verticalLayout_FileDppPpss.setContentsMargins(8, 8, 8, 8)
+        self.verticalLayout_FileDppPpss.setSpacing(6)
+
+        self.verticalLayout_31.removeWidget(self.groupBox_12)
+        self.groupBox_12.setParent(self.tabWidget_3PageDppPpss)
+        self.verticalLayout_FileDppPpss.addWidget(self.groupBox_12)
+        self.verticalLayout_FileDppPpss.addStretch(1)
+
+        buttons = (
+            (self.pushButton_LoadLegacyDPP, 0, 0),
+            (self.pushButton_LoadPPSS, 0, 1),
+            (self.pushButton_SaveDPPandPPSS, 1, 0),
+            (self.pushButton_SavePPSS, 1, 1),
+            (self.pushButton_ZipSession, 2, 0),
+        )
+        for button, row, column in buttons:
+            self.gridLayout.removeWidget(button)
+            self.gridLayout.addWidget(button, row, column, 1, 1)
+        self.gridLayout.setColumnStretch(0, 1)
+        self.gridLayout.setColumnStretch(1, 1)
+
+        config_index = self.tabWidget_3.indexOf(self.tabWidget_3Page2)
+        self.tabWidget_3.insertTab(
+            config_index, self.tabWidget_3PageDppPpss, "dpp, ppss")
 
     def _copy_metadata_table_selection(self):
         if not hasattr(self, "tableWidget_MetadataStructured"):

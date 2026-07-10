@@ -13,6 +13,7 @@ from ..utils import samefilename, make_filename, change_file_path, \
     extract_extension
 from ..utils.excelutils import require_xlwt
 from ..compat_pickle import PeakPoCompatPickleUnpickler
+from .model import _normalize_legacy_ppss_session
 
 
 class PeakPoDirModel(object):
@@ -393,10 +394,9 @@ class PeakPoDirModel(object):
         f.close()
 
     def read_ppss(self, fname):
-        f = open(fname, 'rb')
-        session = PeakPoCompatPickleUnpickler(f).load()
-        f.close()
-        self.session = session
+        with open(fname, 'rb') as f:
+            session = PeakPoCompatPickleUnpickler(f).load()
+        self.session = _normalize_legacy_ppss_session(session)
 
     def set_jcpds_from_ppss(self):
         if self.session is not None:

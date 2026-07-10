@@ -20,6 +20,27 @@ from ..utils.excelutils import require_xlwt
 from ..compat_pickle import PeakPoCompatPickleUnpickler
 
 
+_PPSS_SESSION_DEFAULTS = {
+    "waterfallpatterns": [],
+    "wavelength": 0.0,
+    "pressure": 0.0,
+    "temperature": 300.0,
+    "jlist": [],
+    "bg_roi": [4.0, 16.0],
+    "bg_params": [20, 10, 20],
+    "jcpds_path": "",
+    "chi_path": "",
+}
+
+
+def _normalize_legacy_ppss_session(session):
+    """Supply fields absent from older PPSS ``Session`` pickles."""
+    for name, default in _PPSS_SESSION_DEFAULTS.items():
+        if not hasattr(session, name):
+            setattr(session, name, copy.deepcopy(default))
+    return session
+
+
 class PeakPoModel(object):
     """
     session is only for reading/writing/referencing.
@@ -480,10 +501,9 @@ class PeakPoModel(object):
         f.close()
 
     def read_ppss(self, fname):
-        f = open(fname, 'rb')
-        session = PeakPoCompatPickleUnpickler(f).load()
-        f.close()
-        self.session = session
+        with open(fname, 'rb') as f:
+            session = PeakPoCompatPickleUnpickler(f).load()
+        self.session = _normalize_legacy_ppss_session(session)
 
     def set_jcpds_from_ppss(self):
         if self.session is not None:

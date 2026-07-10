@@ -29,6 +29,10 @@ This repository contains `PeakPo`, a Python desktop application for X-ray diffra
 - Preserve the existing package structure and entry point.
 - If dependency changes are needed for installation from PyPI, update `setup.py`.
 - If shipped files change, verify `MANIFEST.in` and `package_data` in `setup.py`.
+- Preserve backward compatibility for legacy `.dpp` and `.ppss` files: PeakPo must
+  at least be able to read them, even when it no longer writes those formats in
+  normal workflows. Keep compatibility shims, legacy class locations, and
+  representative read tests when changing serialization or session code.
 
 ## Verification
 

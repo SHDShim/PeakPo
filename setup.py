@@ -34,6 +34,7 @@ setup(
         "pyqt6",
         "pyfai",
         "dioptas",
+        "dill",
         "pytheos",
         "lmfit",
         "periodictable",
