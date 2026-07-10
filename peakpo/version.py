@@ -4,9 +4,9 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.12.1za"
+__version__ = "7.12.1zb"
 """
-7.12.1za: windows error fix.
+7.12.1zb: windows error fix.
 7.12.0: update peak fitting and unit cell refining instructions.
 7.11.13: overhaul Peak and Cell Fit workflows with improved provenance, 
           interactive peak adjustment (drag-and-drop), and automated result 

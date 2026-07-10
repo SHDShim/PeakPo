@@ -53,6 +53,30 @@ import traceback
 import time
 from sys import platform as _platform
 
+
+# PySide/PyQt can emit this harmless thread-local-storage diagnostic while
+# Windows unloads Qt after PeakPo has already completed its explicit shutdown.
+# Filter only that known message; preserve every other Qt warning/error.
+_previous_qt_message_handler = None
+
+
+def _peakpo_qt_message_handler(msg_type, context, message):
+    if sys.platform.startswith("win") and str(message).startswith(
+            "QThreadStorage: entry"):
+        return
+    if callable(_previous_qt_message_handler):
+        _previous_qt_message_handler(msg_type, context, message)
+        return
+    try:
+        sys.stderr.write(f"{message}\n")
+        sys.stderr.flush()
+    except Exception:
+        pass
+
+
+_previous_qt_message_handler = QtCore.qInstallMessageHandler(
+    _peakpo_qt_message_handler)
+
 # ========================================
 # STEP 5: CREATE QApplication FIRST!
 # ========================================
