@@ -90,3 +90,34 @@ Checkable (`setCheckable(true)`) push buttons should follow a consistent visual 
   - Yellow: important actions
   - Red: fitting/destructive actions
 - Avoid introducing additional accent colors for checkable buttons to maintain a consistent and uncluttered interface.
+
+## Standard Button Dimensions and Shared Styles
+
+Use the shared definitions in `peakpo/view/ui_policy.py` for ordinary
+push-button dimensions and reusable button styles. Do not duplicate common QSS
+rules in individual views.
+
+- Standard action buttons use a fixed height of 28 px.
+- Compact controls embedded in dense tables, histograms, or icon rows may use
+  25 px height when the reduced height is necessary for that local layout.
+- Textual compact top-toolbar controls use a fixed width of 84 px. Keep
+  related controls aligned; do not combine a fixed minimum width with an
+  unlimited maximum width.
+- Use the shared flat-toolbar, colored-toolbar, and accent-button helpers for
+  ordinary actions. Keep specialized stateful-mode styling in the owning
+  controller only when it conveys active application state.
+- Top-toolbar `QPushButton` controls use a flat, non-beveled appearance.
+  Preserve this treatment for new toolbar controls; panel buttons retain the
+  application's default native shape unless they have an explicit local style.
+- Colored panel actions retain their semantic fill but use the shared accent
+  style's raised, native-button-like edge treatment rather than a flat tile.
+- Add new common colors, spacing, or dimensions to `ui_policy.py` rather than
+  introducing one-off literal values in `mainwidget.py` or generated UI code.
+
+### Maintenance Rules
+
+- Treat `ui/peakpo.ui` as the Qt Designer source and `peakpo/view/qtd.py` as
+  generated code. Prefer runtime policy helpers for application-wide visual
+  adjustments, and avoid manual edits to generated code.
+- When changing a button's label, verify that its tooltip, object name, and
+  connected action describe the same operation.

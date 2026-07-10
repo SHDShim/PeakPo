@@ -4,6 +4,14 @@ from qtpy import QtCore, QtGui, QtWidgets
 from .qtd import Ui_MainWindow
 from .cakehistwidget import CakeHistogramWidget
 from .maphistwidget import MapHistogramWidget
+from .ui_policy import (
+    STANDARD_HEIGHT,
+    apply_accent_button_style,
+    apply_colored_toolbar_style,
+    apply_flat_toolbar_style,
+    set_button_height,
+    set_toolbar_compact_width,
+)
 from ..utils import SpinBoxFixStyle, align_all_spinboxes_right, align_spinbox_right
 from ..version import __version__
 from ..citation import __citation__
@@ -326,8 +334,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         ):
             if hasattr(self, name):
                 button = getattr(self, name)
-                button.setMinimumHeight(20)
-                button.setMaximumHeight(25)
+                self._set_button_height(button)
         if hasattr(self, "gridLayout_2"):
             if hasattr(self, "pushButton_savePeakPos"):
                 self.gridLayout_2.removeWidget(self.pushButton_savePeakPos)
@@ -716,7 +723,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         for button in (
                 self.pushButton_RemoveSelectedAziChi,
                 self.pushButton_RefreshAziChiList):
-            button.setMinimumHeight(25)
+            self._set_button_height(button)
             button.setSizePolicy(
                 QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
             button_layout.addWidget(button)
@@ -1228,7 +1235,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         register(getattr(self, "pushButton_NewBasePtn", None),
                  "Open a CHI diffraction file.")
         register(getattr(self, "pushButton_LoadDPP", None),
-                 "Open a saved PeakPo session from DPP/PARAM data.")
+                 "Save the current PeakPo status to PARAM files.")
         register(getattr(self, "checkBox_Diff", None),
                  "Turn on Diff mode for pattern comparison tools.")
         register(getattr(self, "checkBox_ShowCake", None),
@@ -1454,103 +1461,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.gridLayout_11.addWidget(self.checkBox_LightBackground, 2, 2, 1, 1)
 
     def _set_flat_toolbar_button_style(self, button, compact=False):
-        button.setFlat(True)
-        button.setAutoDefault(False)
-        button.setDefault(False)
-        if compact:
-            button.setMinimumWidth(44)
-            button.setMaximumWidth(88)
-            padding = "2px 8px"
-            font_weight = "600"
-        else:
-            padding = "3px 14px"
-            font_weight = "500"
-        button.setStyleSheet(
-            "QPushButton {"
-            "background-color: rgba(255, 255, 255, 0.045);"
-            "color: #f2f2f2;"
-            "border: 1px solid rgba(255, 255, 255, 0.08);"
-            "border-radius: 6px;"
-            f"padding: {padding};"
-            f"font-weight: {font_weight};"
-            "}"
-            "QPushButton:hover {"
-            "background-color: rgba(255, 255, 255, 0.085);"
-            "border: 1px solid rgba(255, 255, 255, 0.16);"
-            "}"
-            "QPushButton:pressed {"
-            "background-color: rgba(255, 255, 255, 0.13);"
-            "border: 1px solid rgba(255, 255, 255, 0.2);"
-            "}"
-            "QPushButton:focus {"
-            "outline: none;"
-            "border: 1px solid rgba(255, 255, 255, 0.18);"
-            "}"
-        )
+        apply_flat_toolbar_style(button, compact=compact)
 
     def _set_colored_flat_toolbar_button_style(
             self, button, base_color, hover_color, pressed_color,
             border_color, text_color="#1f1f1f", compact=False):
-        button.setFlat(True)
-        button.setAutoDefault(False)
-        button.setDefault(False)
-        if compact:
-            button.setMinimumWidth(44)
-            button.setMaximumWidth(88)
-            padding = "2px 8px"
-            font_weight = "600"
-        else:
-            padding = "3px 14px"
-            font_weight = "500"
-        button.setStyleSheet(
-            "QPushButton {"
-            f"background-color: {base_color};"
-            f"color: {text_color};"
-            f"border: 1px solid {border_color};"
-            "border-radius: 6px;"
-            f"padding: {padding};"
-            f"font-weight: {font_weight};"
-            "}"
-            "QPushButton:hover {"
-            f"background-color: {hover_color};"
-            f"border: 1px solid {border_color};"
-            "}"
-            "QPushButton:pressed {"
-            f"background-color: {pressed_color};"
-            f"border: 1px solid {border_color};"
-            "}"
-            "QPushButton:focus {"
-            "outline: none;"
-            f"border: 1px solid {border_color};"
-            "}"
-        )
+        apply_colored_toolbar_style(
+            button, base_color, hover_color, pressed_color, border_color,
+            text_color=text_color, compact=compact)
 
     def _set_accent_button_style(self, button, base_color, hover_color,
                                  pressed_color, border_color,
                                  text_color="white"):
-        button.setStyleSheet(
-            "QPushButton {"
-            f"background-color: {base_color};"
-            f"color: {text_color};"
-            f"border: 1px solid {border_color};"
-            "border-radius: 4px;"
-            "padding: 2px 10px;"
-            "}"
-            "QPushButton:hover {"
-            f"background-color: {hover_color};"
-            "}"
-            "QPushButton:pressed {"
-            f"background-color: {pressed_color};"
-            "}"
-            "QPushButton:checked {"
-            f"background-color: {pressed_color};"
-            f"border: 1px solid {border_color};"
-            "}"
-        )
+        apply_accent_button_style(
+            button, base_color, hover_color, pressed_color, border_color,
+            text_color=text_color)
 
-    def _set_button_height(self, button, height=28):
-        button.setMinimumHeight(height)
-        button.setMaximumHeight(height)
+    def _set_button_height(self, button, height=STANDARD_HEIGHT):
+        set_button_height(button, height)
 
     def _set_mouse_mode_button_style(self, button, checked_color,
                                      hover_color, pressed_color,
@@ -1696,6 +1624,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "pushButton_SaveDPPandPPSS",
             "pushButton_DelTempCHI",
             "pushButton_DelTempCake",
+            "pushButton_BackupRestore",
+            "pushButton_ResetBGParams",
+            "pushButton_ExportPythonView",
+            "pushButton_SetPosRange",
+            "pushButton_SetFwhmMax",
+            "pushButton_AddCurrentView",
+            "pushButton_AddRangeFromPlot",
+            "pushButton_RemoveBGAnchor",
         ):
             if hasattr(self, name):
                 self._set_button_height(getattr(self, name))
@@ -1847,6 +1783,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.pushButton_ToolbarCakeZAdj.setSizePolicy(
                     QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
                 self._set_button_height(self.pushButton_ToolbarCakeZAdj)
+                self._set_flat_toolbar_button_style(
+                    self.pushButton_ToolbarCakeZAdj)
                 self.mpl.add_control_widget(self.pushButton_ToolbarCakeZAdj)
                 self.pushButton_MouseHelp = QtWidgets.QPushButton(
                     "Mouse Help", self.mpl.control_bar)
@@ -1856,6 +1794,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.pushButton_MouseHelp.setSizePolicy(
                     QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
                 self._set_button_height(self.pushButton_MouseHelp)
+                self._set_flat_toolbar_button_style(self.pushButton_MouseHelp)
                 self.mpl.add_control_widget(self.pushButton_MouseHelp)
 
         for button_name in (
@@ -1942,8 +1881,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 continue
             widget.setParent(self.frame_TopToolbarRow1)
             widget.show()
-            widget.setMinimumHeight(28)
-            widget.setMaximumHeight(28)
+            self._set_button_height(widget)
             if widget in (
                 getattr(self, "pushButton_S_PrevBasePtn", None),
                 getattr(self, "pushButton_AddBasePtn", None),
@@ -1956,11 +1894,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 elif widget == getattr(self, "pushButton_S_NextBasePtn", None):
                     widget.setText("Next")
                 self._set_flat_toolbar_button_style(widget, compact=True)
-                widget.setMinimumWidth(84)
-                widget.setMaximumWidth(16777215)
-                widget.setSizePolicy(
-                    QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-                self.layout_TopToolbarRow1.addWidget(widget, 1)
+                set_toolbar_compact_width(widget)
+                self.layout_TopToolbarRow1.addWidget(widget, 0)
             elif widget in (
                 getattr(self, "pushButton_NewBasePtn", None),
                 getattr(self, "pushButton_LoadDPP", None),
@@ -2007,7 +1942,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             widget.setText(text)
             widget.setMinimumHeight(row2_height)
             widget.setMaximumHeight(row2_height)
-            widget.setFlat(False)
+            widget.setFlat(True)
             widget.setAutoDefault(False)
             widget.setDefault(False)
             widget.setSizePolicy(
@@ -3214,9 +3149,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.horizontalLayout_BackupTools.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_BackupTools.setSpacing(0)
         self.pushButton_BackupRestore.setText("Restore")
-        common_h = 30
-        self.pushButton_BackupRestore.setMinimumHeight(common_h)
-        self.pushButton_BackupRestore.setMaximumHeight(common_h)
+        self._set_button_height(self.pushButton_BackupRestore)
         self.pushButton_BackupRestore.setMinimumWidth(0)
         self.pushButton_BackupRestore.setMaximumWidth(16777215)
         self.pushButton_BackupRestore.setSizePolicy(
