@@ -25,16 +25,17 @@ def _disable_dioptas_file_watcher_on_windows():
     if getattr(NewFileInDirectoryWatcher, "_peakpo_windows_disabled", False):
         return
 
-    def _no_op(self, *args, **kwargs):
+    def _disable_activation(self, *args, **kwargs):
         try:
             self.active = False
         except Exception:
             pass
 
-    NewFileInDirectoryWatcher.activate = _no_op
-    NewFileInDirectoryWatcher.deactivate = _no_op
-    NewFileInDirectoryWatcher._start_observing = _no_op
-    NewFileInDirectoryWatcher._stop_observing = _no_op
+    # PeakPo does not use Dioptas directory autoloading on Windows.  Disable
+    # only startup; preserve Dioptas' real deactivate/_stop_observing methods
+    # so an observer created before this patch can still stop and join cleanly.
+    NewFileInDirectoryWatcher.activate = _disable_activation
+    NewFileInDirectoryWatcher._start_observing = _disable_activation
     NewFileInDirectoryWatcher._peakpo_windows_disabled = True
 
 
@@ -73,7 +74,6 @@ class DiffImg(object):
         config = self._dioptas_config
         if config is None:
             return
-        self._dioptas_config = None
 
         img_model = getattr(config, "img_model", None)
         watcher = getattr(img_model, "_directory_watcher", None)
@@ -82,6 +82,25 @@ class DiffImg(object):
                 watcher.deactivate()
             except Exception:
                 pass
+            # Be defensive: a partially initialized watchdog observer can
+            # survive a failed deactivate call and keep a Qt-linked thread
+            # alive during application shutdown.
+            observer = getattr(watcher, "observer", None)
+            if observer is not None:
+                try:
+                    if observer.is_alive():
+                        observer.stop()
+                    observer.join(timeout=2.0)
+                except Exception:
+                    pass
+            queue_thread = getattr(watcher, "queue_thread", None)
+            if queue_thread is not None:
+                try:
+                    if queue_thread.is_alive():
+                        queue_thread.join(timeout=2.0)
+                except Exception:
+                    pass
+        self._dioptas_config = None
 
     def histogram(self):
         import matplotlib.pyplot as plt

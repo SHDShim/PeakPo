@@ -239,11 +239,16 @@ class MainController(object):
                     deactivate = getattr(watcher, "deactivate", None)
                     if callable(deactivate):
                         deactivate()
-                    else:
-                        observer = getattr(watcher, "observer", None)
-                        if observer is not None and hasattr(observer, "stop"):
+                    observer = getattr(watcher, "observer", None)
+                    if observer is not None:
+                        if hasattr(observer, "is_alive") and observer.is_alive() \
+                                and hasattr(observer, "stop"):
                             observer.stop()
+                        if hasattr(observer, "join"):
                             observer.join()
+                    queue_thread = getattr(watcher, "queue_thread", None)
+                    if queue_thread is not None and hasattr(queue_thread, "join"):
+                        queue_thread.join(timeout=2.0)
                 except Exception:
                     continue
                 stopped_any = True
