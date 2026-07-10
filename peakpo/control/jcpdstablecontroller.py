@@ -23,7 +23,8 @@ class JcpdsTableController(object):
         self.plot_ctrl = MplController(self.model, self.widget)
 
     def _apply_changes_to_graph(self, limits=None):
-        self.plot_ctrl.update(limits=limits)
+        del limits
+        self.plot_ctrl.update_jcpds_only()
 
     def sync_model_from_table(self):
         """

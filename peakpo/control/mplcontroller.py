@@ -45,6 +45,9 @@ class MplController(object):
         self._toolbar_active = False
         self._update_delay_ms = 25
         self._pending_update_args = None
+        self._canvas_draw_scheduled = False
+        self._pending_draw_profile = None
+        self._after_draw_callbacks = []
         self._last_auto_cake_filename = None
         self._update_timer = QtCore.QTimer(self.widget)
         self._update_timer.setSingleShot(True)
@@ -59,6 +62,8 @@ class MplController(object):
         self._section_selection_artists = []
         self._background_selection_artists = []
         self._cake_overlay_artists = []
+        self._pnt_artist = None
+        self._derived_label_visible = False
         
         # ✅ Wrap toolbar methods to track state
         toolbar = self.widget.mpl.canvas.toolbar
@@ -121,8 +126,12 @@ class MplController(object):
             pass
 
         self._pending_update_args = None
+        self._canvas_draw_scheduled = False
+        self._pending_draw_profile = None
+        self._after_draw_callbacks = []
         self._cached_title = None
         self._cached_filename = None
+        self._pnt_artist = None
         self._vcursor_pattern = None
         self._vcursor_cake = None
         self._peak_center_marker_artists = []
@@ -1341,6 +1350,126 @@ class MplController(object):
                 canvas.ax_cake.set_ylim(cake_ylim)
         canvas.draw_idle()
 
+    def _update_pnt_artist(self, derived_label_visible=None):
+        artist = getattr(self, "_pnt_artist", None)
+        if artist is not None:
+            try:
+                artist.remove()
+            except Exception:
+                pass
+        self._pnt_artist = None
+        if not self.widget.checkBox_ShowLargePnT.isChecked():
+            return
+        if derived_label_visible is None:
+            derived_label_visible = self._derived_label_visible
+        pnt_y = 0.90 if derived_label_visible else 0.985
+        label = "{0: 5.1f} GPa\n{1: 4.0f} K".format(
+            self.widget.doubleSpinBox_Pressure.value(),
+            self.widget.doubleSpinBox_Temperature.value())
+        self._pnt_artist = self.widget.mpl.canvas.ax_pattern.text(
+            0.01, pnt_y, label,
+            horizontalalignment="left", verticalalignment="top",
+            transform=self.widget.mpl.canvas.ax_pattern.transAxes,
+            fontsize=int(self.widget.comboBox_PnTFontSize.currentText()),
+            gid="peakpo_pnt")
+
+    def update_jcpds_only(self, update_xlabel=False):
+        """Rebuild JCPDS/P-T overlays without clearing and replotting axes."""
+        if self._is_drawing or self._toolbar_active or \
+                self._pending_update_args is not None:
+            self.update()
+            return
+        canvas = self.widget.mpl.canvas
+        if not hasattr(canvas, "ax_pattern"):
+            self.update()
+            return
+
+        started_at = time.perf_counter()
+        ax_pattern = canvas.ax_pattern
+        pattern_xlim = ax_pattern.get_xlim()
+        pattern_ylim = ax_pattern.get_ylim()
+        cake_xlim = canvas.ax_cake.get_xlim() if hasattr(canvas, "ax_cake") else None
+        cake_ylim = canvas.ax_cake.get_ylim() if hasattr(canvas, "ax_cake") else None
+
+        self.widget.setCursor(QtCore.Qt.WaitCursor)
+        self._is_drawing = True
+        try:
+            self._clear_jcpds_overlay_artists()
+            if self.model.jcpds_exist():
+                axisrange = ax_pattern.axis()
+                self._plot_jcpds(axisrange)
+                if self.widget.checkBox_JCPDSinPattern.isChecked() and \
+                        not self.widget.checkBox_Intensity.isChecked():
+                    new_low = -1.1 * pattern_ylim[1] * \
+                        self.widget.horizontalSlider_JCPDSBarScale.value() / 100.
+                    ax_pattern.set_ylim(new_low, pattern_ylim[1])
+                else:
+                    ax_pattern.set_ylim(pattern_ylim)
+            else:
+                ax_pattern.set_ylim(pattern_ylim)
+            ax_pattern.set_xlim(pattern_xlim)
+            if hasattr(canvas, "ax_cake"):
+                canvas.ax_cake.set_xlim(cake_xlim)
+                canvas.ax_cake.set_ylim(cake_ylim)
+            self._update_pnt_artist()
+            if update_xlabel:
+                ax_pattern.set_xlabel(
+                    "Two Theta (degrees), {:6.4f} \u212B".format(
+                        self.widget.doubleSpinBox_SetWavelength.value()))
+        finally:
+            self._is_drawing = False
+            self.widget.unsetCursor()
+
+        build_seconds = time.perf_counter() - started_at
+        self._schedule_canvas_draw(
+            started_at, build_seconds, {"JCPDS/P-T": build_seconds})
+
+    def refresh_cake_style(self):
+        """Update an existing Cake image's colormap and limits in place."""
+        if self._is_drawing or self._toolbar_active or \
+                self._pending_update_args is not None:
+            self.update()
+            return
+        if self.diff_ctrl is not None and self.diff_ctrl.is_diff_mode_active():
+            self.update()
+            return
+        canvas = self.widget.mpl.canvas
+        if not hasattr(canvas, "ax_cake") or not canvas.ax_cake.images:
+            self.update()
+            return
+
+        started_at = time.perf_counter()
+        image = canvas.ax_cake.images[0]
+        prefactor = float(self.widget.spinBox_MaxCakeScale.value())
+        climits = np.asarray([
+            self.widget.horizontalSlider_VMin.value(),
+            self.widget.horizontalSlider_VMax.value()], dtype=float) / 100. * prefactor
+        hist_widget = getattr(self.widget, "cake_hist_widget", None)
+        if hist_widget is not None:
+            signature = hist_widget.data_signature_for_values(image.get_array())
+            exact_bounds = hist_widget.current_bounds(data_signature=signature)
+            if exact_bounds is not None:
+                climits = np.asarray(exact_bounds, dtype=float)
+        if climits[1] <= climits[0]:
+            self.update()
+            return
+        cmap_name = "gray_r"
+        if hasattr(self.widget, "comboBox_CakeColormap"):
+            cmap_name = str(
+                self.widget.comboBox_CakeColormap.currentText() or "gray_r")
+        import matplotlib.pyplot as plt
+        cmap = plt.get_cmap(cmap_name).copy()
+        cmap.set_bad(color=(1.0, 0.97, 0.55, 1.0))
+        image.set_cmap(cmap)
+        image.set_clim(float(climits[0]), float(climits[1]))
+
+        if hist_widget is not None:
+            hist_widget.set_data(
+                image.get_array(), vmin=float(climits[0]), vmax=float(climits[1]))
+        build_seconds = time.perf_counter() - started_at
+        self._schedule_canvas_draw(
+            started_at, build_seconds, {"Cake style": build_seconds})
+
     def _plot_jcpds(self, axisrange):
         import matplotlib.transforms as transforms
 
@@ -1589,26 +1718,88 @@ class MplController(object):
             except Exception:
                 pass
         if gsas_style:
-            self.widget.mpl.canvas.ax_pattern.plot(
+            pattern_line = self.widget.mpl.canvas.ax_pattern.plot(
                 x, y, c=color, marker='o',
-                linestyle='None', ms=1.5)
+                linestyle='None', ms=1.5)[0]
         else:
-            self.widget.mpl.canvas.ax_pattern.plot(
+            pattern_line = self.widget.mpl.canvas.ax_pattern.plot(
                 x, y, c=color,
                 lw=float(
                     self.widget.comboBox_BasePtnLineThickness.
-                    currentText()))
+                    currentText()))[0]
+        pattern_line.set_gid("peakpo_base_pattern")
         if self.diff_ctrl is not None and self.diff_ctrl.is_diff_mode_active():
-            self.widget.mpl.canvas.ax_pattern.axhline(
+            zero_line = self.widget.mpl.canvas.ax_pattern.axhline(
                 0.0, ls='--', c='tab:red', lw=0.8)
+            zero_line.set_gid("peakpo_diff_zero")
             return
         if not self.widget.checkBox_BgSub.isChecked():
             x_bg, y_bg = self._pattern_background_xy()
-            self.widget.mpl.canvas.ax_pattern.plot(
+            background_line = self.widget.mpl.canvas.ax_pattern.plot(
                 x_bg, y_bg, c=color, ls='--',
                 lw=float(
                     self.widget.comboBox_BkgnLineThickness.
-                    currentText()))
+                    currentText()))[0]
+            background_line.set_gid("peakpo_pattern_background")
+
+    @staticmethod
+    def _artist_with_gid(artists, gid):
+        for artist in artists:
+            try:
+                if artist.get_gid() == gid:
+                    return artist
+            except Exception:
+                continue
+        return None
+
+    def refresh_pattern_data(self, limits=None):
+        """Update the base/background lines without rebuilding either axis."""
+        if self.model.waterfall_exist() or self._fits_tab_active() or \
+                self._is_drawing or self._toolbar_active or \
+                self._pending_update_args is not None:
+            self.update(limits=limits)
+            return
+        ax = self.widget.mpl.canvas.ax_pattern
+        pattern_line = self._artist_with_gid(ax.lines, "peakpo_base_pattern")
+        if pattern_line is None:
+            self.update(limits=limits)
+            return
+
+        started_at = time.perf_counter()
+        x, y = self._pattern_xy()
+        if self.diff_ctrl is not None:
+            try:
+                x, y = self.diff_ctrl.get_display_pattern(x, y)
+            except Exception:
+                pass
+        pattern_line.set_data(x, y)
+
+        background_line = self._artist_with_gid(
+            ax.lines, "peakpo_pattern_background")
+        show_background = not self.widget.checkBox_BgSub.isChecked() and not (
+            self.diff_ctrl is not None and self.diff_ctrl.is_diff_mode_active())
+        if show_background:
+            x_bg, y_bg = self._pattern_background_xy()
+            if background_line is None:
+                background_line = ax.plot(
+                    x_bg, y_bg,
+                    c=pattern_line.get_color(), ls="--",
+                    lw=float(self.widget.comboBox_BkgnLineThickness.currentText()))[0]
+                background_line.set_gid("peakpo_pattern_background")
+            else:
+                background_line.set_data(x_bg, y_bg)
+                background_line.set_visible(True)
+        elif background_line is not None:
+            background_line.set_visible(False)
+
+        if limits is not None:
+            ax.set_xlim(limits[0], limits[1])
+            ax.set_ylim(limits[2], limits[3])
+            if hasattr(self.widget.mpl.canvas, "ax_cake"):
+                self.widget.mpl.canvas.ax_cake.set_xlim(limits[0], limits[1])
+        build_seconds = time.perf_counter() - started_at
+        self._schedule_canvas_draw(
+            started_at, build_seconds, {"pattern data": build_seconds})
 
     def _track_peakfit_artist(self, artist):
         if artist is not None:
@@ -2008,6 +2199,69 @@ class MplController(object):
         if self._pending_update_args is not None:
             self._update_timer.start(self._update_delay_ms)
 
+    def _schedule_canvas_draw(self, update_started_at, build_seconds,
+                              stage_seconds):
+        """Coalesce full canvas renders and report build + render timing."""
+        self._pending_draw_profile = (
+            float(update_started_at), float(build_seconds), dict(stage_seconds))
+        if self._canvas_draw_scheduled:
+            return
+        self._canvas_draw_scheduled = True
+        QtCore.QTimer.singleShot(0, self._flush_canvas_draw)
+
+    def call_after_next_draw(self, callback):
+        if not callable(callback):
+            return
+        if callback not in self._after_draw_callbacks:
+            self._after_draw_callbacks.append(callback)
+
+    def _flush_canvas_draw(self):
+        profile = self._pending_draw_profile
+        self._pending_draw_profile = None
+        if profile is None:
+            self._canvas_draw_scheduled = False
+            return
+        if self._is_drawing or self._toolbar_active:
+            self._pending_draw_profile = profile
+            QtCore.QTimer.singleShot(self._update_delay_ms, self._flush_canvas_draw)
+            return
+
+        update_started_at, build_seconds, stage_seconds = profile
+        render_started_at = time.perf_counter()
+        self._is_drawing = True
+        try:
+            self.widget.mpl.canvas.draw()
+        finally:
+            self._is_drawing = False
+            self._canvas_draw_scheduled = False
+
+        render_seconds = time.perf_counter() - render_started_at
+        total_seconds = time.perf_counter() - update_started_at
+        stage_text = ", ".join(
+            f"{name} {seconds:.2f}s"
+            for name, seconds in stage_seconds.items()
+            if seconds >= 0.01)
+        details = (
+            f"build {build_seconds:.2f}s, render {render_seconds:.2f}s")
+        if stage_text:
+            details += f"; {stage_text}"
+        print(
+            str(datetime.datetime.now())[:-7],
+            f": Plot takes {total_seconds:.2f}s ({details})")
+
+        callbacks = self._after_draw_callbacks
+        self._after_draw_callbacks = []
+        for callback in callbacks:
+            try:
+                callback()
+            except Exception:
+                pass
+
+        if self._pending_draw_profile is not None:
+            self._schedule_canvas_draw(*self._pending_draw_profile)
+        if self._pending_update_args is not None:
+            self._update_timer.start(0)
+
     def _update_impl(self, limits=None, gsas_style=False, cake_ylimits=None):
         """Updates the graph"""
         # ✅ Block updates during drawing OR toolbar interaction
@@ -2020,7 +2274,9 @@ class MplController(object):
             self.widget.mpl.canvas.show_empty_state()
             return
         
-        t_start = time.time()
+        t_start = time.perf_counter()
+        stage_started_at = t_start
+        stage_seconds = {}
         self.widget.setCursor(QtCore.Qt.WaitCursor)
         
         # ✅ Set drawing flag AFTER pre-checks
@@ -2044,10 +2300,13 @@ class MplController(object):
                 self._plot_cake()
             else:
                 self.widget.mpl.canvas.resize_axes(1)
+            stage_seconds["axes/cake"] = time.perf_counter() - stage_started_at
+            stage_started_at = time.perf_counter()
             
             self._set_nightday_view()
             self._apply_pattern_background_style()
             
+            derived_label_visible = False
             if self.model.base_ptn_exist():
                 title_font_size = 12
                 if hasattr(self.widget, "spinBox_TitleFontSize"):
@@ -2087,12 +2346,17 @@ class MplController(object):
                 
                 if self.model.waterfall_exist():
                     self._plot_waterfallpatterns()
+            self._derived_label_visible = bool(derived_label_visible)
+            stage_seconds["pattern"] = time.perf_counter() - stage_started_at
+            stage_started_at = time.perf_counter()
             
             if self._fits_tab_active():
                 if gsas_style:
                     self._plot_peakfit_in_gsas_style()
                 else:
                     self._plot_peakfit()
+            stage_seconds["fits"] = time.perf_counter() - stage_started_at
+            stage_started_at = time.perf_counter()
             
             self.widget.mpl.canvas.ax_pattern.set_xlim(limits[0], limits[1])
             if hasattr(self.widget.mpl.canvas, 'ax_cake'):
@@ -2112,22 +2376,14 @@ class MplController(object):
                         self.widget.horizontalSlider_JCPDSBarScale.value() / 100.
                     self.widget.mpl.canvas.ax_pattern.set_ylim(
                         new_low_limit, limits[3])
+            stage_seconds["JCPDS"] = time.perf_counter() - stage_started_at
+            stage_started_at = time.perf_counter()
 
             if self._fits_tab_active():
                 self._plot_selected_section_overlays()
                 self._plot_selected_background_overlays()
             
-            if self.widget.checkBox_ShowLargePnT.isChecked():
-                pnt_y = 0.985 if not derived_label_visible else 0.90
-                label_p_t = "{0: 5.1f} GPa\n{1: 4.0f} K".\
-                    format(self.widget.doubleSpinBox_Pressure.value(),
-                        self.widget.doubleSpinBox_Temperature.value())
-                self.widget.mpl.canvas.ax_pattern.text(
-                    0.01, pnt_y, label_p_t, horizontalalignment='left',
-                    verticalalignment='top',
-                    transform=self.widget.mpl.canvas.ax_pattern.transAxes,
-                    fontsize=int(
-                        self.widget.comboBox_PnTFontSize.currentText()))
+            self._update_pnt_artist(derived_label_visible)
             
             xlabel = "Two Theta (degrees), {:6.4f} \u212B".\
                 format(self.widget.doubleSpinBox_SetWavelength.value())
@@ -2156,11 +2412,9 @@ class MplController(object):
             if not self.widget.checkBox_LongCursor.isChecked():
                 self.clear_vertical_cursor_position()
             
-            # ✅ Draw canvas (deferred to Qt event loop)
-            QtCore.QTimer.singleShot(0, self.widget.mpl.canvas.draw)
-            
-            print(str(datetime.datetime.now())[:-7], 
-                ": Plot takes {0:.2f}s".format(time.time() - t_start))
+            stage_seconds["decorations"] = time.perf_counter() - stage_started_at
+            build_seconds = time.perf_counter() - t_start
+            self._schedule_canvas_draw(t_start, build_seconds, stage_seconds)
         
         except Exception as e:
             print(f"Error during plot update: {e}")

@@ -368,9 +368,6 @@ class MainController(object):
         #self.widget.pushButton_toPkFt.clicked.connect(self.to_PkFt)
         #self.widget.pushButton_fromPkFt.clicked.connect(self.from_PkFt)
         self.widget.checkBox_NightView.clicked.connect(self.set_nightday_view)
-        if hasattr(self.widget, "comboBox_CakeColormap"):
-            self.widget.comboBox_CakeColormap.currentIndexChanged.connect(
-                self.apply_changes_to_graph)
         self.widget.pushButton_S_Zoom.clicked.connect(self.plot_new_graph)
         self.widget.checkBox_AutoY.clicked.connect(self.apply_changes_to_graph)
         self.widget.checkBox_BgSub.clicked.connect(self.apply_bgsub_toggle)
@@ -417,15 +414,15 @@ class MainController(object):
         self.widget.horizontalSlider_CakeAxisSize.valueChanged.connect(
             self.apply_changes_to_graph)
         self.widget.horizontalSlider_JCPDSBarScale.valueChanged.connect(
-            self.apply_changes_to_graph)
+            lambda _value: self.plot_ctrl.update_jcpds_only())
         self.widget.horizontalSlider_JCPDSBarPosition.valueChanged.connect(
-            self.apply_changes_to_graph)
+            lambda _value: self.plot_ctrl.update_jcpds_only())
         self.widget.horizontalSlider_WaterfallGaps.valueChanged.connect(
             self.apply_changes_to_graph)
         self.widget.doubleSpinBox_JCPDS_cake_Alpha.valueChanged.connect(
-            self.apply_changes_to_graph)
+            lambda _value: self.plot_ctrl.update_jcpds_only())
         self.widget.doubleSpinBox_JCPDS_ptn_Alpha.valueChanged.connect(
-            self.apply_changes_to_graph)
+            lambda _value: self.plot_ctrl.update_jcpds_only())
         self.widget.pushButton_UpdateJCPDSSteps.clicked.connect(
             self.update_jcpds_table)
         """
@@ -1132,9 +1129,9 @@ class MainController(object):
                         ymin -= pad
                         ymax += pad
                     new_limits = [xlim[0], xlim[1], ymin, ymax]
-            self.plot_ctrl.update(new_limits)
+            self.plot_ctrl.refresh_pattern_data(new_limits)
         except Exception:
-            self.plot_ctrl.update()
+            self.plot_ctrl.refresh_pattern_data()
 
         self._schedule_roi_overlays_after_plot_update()
 
@@ -1147,14 +1144,14 @@ class MainController(object):
             flush = getattr(self.plot_ctrl, "_flush_update_request", None)
             if callable(flush):
                 flush()
-        self._refresh_roi_overlays_after_plot()
-        QtCore.QTimer.singleShot(0, self._refresh_roi_overlays_after_plot)
-        QtCore.QTimer.singleShot(80, self._refresh_roi_overlays_after_plot)
+        after_draw = getattr(self.plot_ctrl, "call_after_next_draw", None)
+        if callable(after_draw):
+            after_draw(self._refresh_roi_overlays_after_plot)
+        else:
+            QtCore.QTimer.singleShot(0, self._refresh_roi_overlays_after_plot)
 
     def _schedule_map_sequence_current_markers(self, *_args):
-        self._refresh_map_sequence_current_markers()
         QtCore.QTimer.singleShot(0, self._refresh_map_sequence_current_markers)
-        QtCore.QTimer.singleShot(80, self._refresh_map_sequence_current_markers)
 
     def _refresh_map_sequence_current_markers(self):
         for ctrl_name in ("map_ctrl", "seq_ctrl"):
@@ -2060,7 +2057,7 @@ class MainController(object):
             "({:.3f} keV)".format(xray_energy))
         if self._plot_update_deferred():
             return
-        self.plot_ctrl.update()
+        self.plot_ctrl.update_jcpds_only(update_xlabel=True)
 
     def update_bgsub(self):
         '''
@@ -2127,14 +2124,9 @@ class MainController(object):
         self.widget.spinBox_BGParam2.setValue(20)
 
     def apply_pt_to_graph(self):
-        """
-        if self.model.jcpds_exist():
-            self.plot_ctrl.update_jcpds_only()
-        else:
-        """
         if self._plot_update_deferred():
             return
-        self.plot_ctrl.update()
+        self.plot_ctrl.update_jcpds_only()
 
     def _plot_update_deferred(self):
         return self._defer_plot_update_count > 0

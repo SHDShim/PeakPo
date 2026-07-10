@@ -74,7 +74,7 @@ class JcpdsController(object):
         self.widget.checkBox_JCPDSinCake.clicked.connect(
             lambda: self._apply_changes_to_graph(limits=None))
         self.widget.pushButton_ForceUpdatePlot.clicked.connect(
-            lambda: self._apply_changes_to_graph(limits=None))
+            lambda: self.plot_ctrl.update(limits=None))
         self.widget.pushButton_SaveTwkJCPDS.clicked.connect(
             self.write_twk_jcpds)
         if hasattr(self.widget, "pushButton_savePeakPos"):
@@ -90,7 +90,8 @@ class JcpdsController(object):
         self._table_backspace_key_filters.append(key_filter)
 
     def _apply_changes_to_graph(self, limits=None):
-        self.plot_ctrl.update(limits=limits)
+        del limits
+        self.plot_ctrl.update_jcpds_only()
 
     def _find_a_jcpds(self):
         idx_checked = \

@@ -78,7 +78,8 @@ class CakeController(object):
         temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
         self.model.diff_img.write_temp_cakefiles(temp_dir=temp_dir)
         self._set_image_file_box()
-        self._apply_changes_to_graph()
+        # The cake data itself changed, so this requires a full axes rebuild.
+        self.plot_ctrl.update()
 
     def _associated_image_file(self):
         if not hasattr(self.model, "get_associated_image_candidates"):
@@ -161,7 +162,7 @@ class CakeController(object):
         self._apply_changes_to_graph()
 
     def _apply_changes_to_graph(self):
-        self.plot_ctrl.update()
+        self.plot_ctrl.refresh_cake_style()
 
     def _get_cake_scale_bar_value(self):
         return 0

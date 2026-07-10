@@ -915,6 +915,7 @@ class JCPDSplt(JCPDS):
         self.twk_k0p = 1.0
         self.twk_thermal_expansion = 1.0
         self.twk_int = 1.0
+        self._sync_org_from_current()
 
     def _sync_org_from_current(self):
         """Cache untweaked baseline values after any load/set operation."""
@@ -922,6 +923,18 @@ class JCPDSplt(JCPDS):
         self.k0p_org = self.k0p
         self.v0_org = self.v0
         self.thermal_expansion_org = self.thermal_expansion
+
+    def _make_cal_dsp_key(self, pressure, temperature, b_a, c_a,
+                          use_table_for_0GPa):
+        base_key = super(JCPDSplt, self)._make_cal_dsp_key(
+            pressure, temperature, b_a, c_a, use_table_for_0GPa)
+        return base_key + (
+            float(self.twk_b_a), float(self.twk_c_a),
+            float(self.twk_v0), float(self.twk_k0), float(self.twk_k0p),
+            float(self.twk_thermal_expansion),
+            float(self.v0_org), float(self.k0_org), float(self.k0p_org),
+            float(self.thermal_expansion_org),
+        )
 
     def _ensure_runtime_defaults(self):
         super(JCPDSplt, self)._ensure_runtime_defaults()
