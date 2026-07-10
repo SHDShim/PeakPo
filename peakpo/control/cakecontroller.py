@@ -540,6 +540,8 @@ class CakeController(object):
         returns 0 if non
         returns number of poni files if multiples
         """
+        if not self.model.base_ptn_exist():
+            return []
         temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
         search_pattern = os.path.join(temp_dir, "*.poni")
         poni_all = glob.glob(search_pattern)
@@ -644,6 +646,11 @@ class CakeController(object):
         Opens a pyFAI calibration file
         signal to update_graph
         """
+        if not self.model.base_ptn_exist():
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Open a CHI or base pattern first before choosing a PONI file.")
+            return
         poni_all = self.get_all_temp_poni()
         num_poni = len(poni_all)
         temp_dir = get_temp_dir(

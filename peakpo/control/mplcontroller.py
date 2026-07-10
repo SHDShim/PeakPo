@@ -58,6 +58,7 @@ class MplController(object):
         self._jcpds_hkl_artists = []
         self._section_selection_artists = []
         self._background_selection_artists = []
+        self._cake_overlay_artists = []
         
         # ✅ Wrap toolbar methods to track state
         toolbar = self.widget.mpl.canvas.toolbar
@@ -131,6 +132,7 @@ class MplController(object):
         self._jcpds_hkl_artists = []
         self._section_selection_artists = []
         self._background_selection_artists = []
+        self._cake_overlay_artists = []
 
     def set_diff_controller(self, diff_ctrl):
         self.diff_ctrl = diff_ctrl
@@ -432,16 +434,18 @@ class MplController(object):
                 edgecolor=color,
                 facecolor=color,
                 alpha=0.22)
-            self.widget.mpl.canvas.ax_cake.add_patch(rect)
+            self._track_cake_overlay_artist(
+                self.widget.mpl.canvas.ax_cake.add_patch(rect))
             show_labels = getattr(self.widget, "checkBox_ShowCakeLabels", None)
             if idx == 0 and show_labels is not None and show_labels.isChecked():
-                self.widget.mpl.canvas.ax_cake.text(
+                self._track_cake_overlay_artist(
+                    self.widget.mpl.canvas.ax_cake.text(
                     tth_max,
                     azi_max,
                     "derived 1D",
                     color=color,
                     horizontalalignment="right",
-                    verticalalignment="bottom")
+                    verticalalignment="bottom"))
 
     def _plot_derived_pattern_label(self):
         if not self._display_pattern_is_azimuth_derived():
@@ -663,6 +667,7 @@ class MplController(object):
                     hist_widget._draw_empty_state()
             return
         int_plot, tth_cake, chi_cake = coerced
+        self._clear_cake_overlay_artists()
         int_plot = ma.array(int_plot, copy=True)
         finite_cake = np.asarray(ma.filled(int_plot, np.nan), dtype=float)
         finite_cake = finite_cake[np.isfinite(finite_cake)]
@@ -823,11 +828,14 @@ class MplController(object):
                 rect1 = patches.Rectangle(
                     (tth[0], azi[0]), (tth[1] - tth[0]), (azi[1] - azi[0]),
                     linewidth=1, edgecolor=self.obj_color, facecolor='None')
-                self.widget.mpl.canvas.ax_cake.add_patch(rect)
-                self.widget.mpl.canvas.ax_cake.add_patch(rect1)
+                self._track_cake_overlay_artist(
+                    self.widget.mpl.canvas.ax_cake.add_patch(rect))
+                self._track_cake_overlay_artist(
+                    self.widget.mpl.canvas.ax_cake.add_patch(rect1))
                 if self.widget.checkBox_ShowCakeLabels.isChecked():
-                    self.widget.mpl.canvas.ax_cake.text(
-                        tth[1], azi[1], note, color=self.obj_color)
+                    self._track_cake_overlay_artist(
+                        self.widget.mpl.canvas.ax_cake.text(
+                            tth[1], azi[1], note, color=self.obj_color))
         rows = self.widget.tableWidget_DiffImgAzi.selectionModel().\
             selectedRows()
         if rows != []:
@@ -841,7 +849,8 @@ class MplController(object):
                     (tth_min, azi_min), (tth_max - tth_min),
                     (azi_max - azi_min),
                     linewidth=0, facecolor='r', alpha=0.2)
-                self.widget.mpl.canvas.ax_cake.add_patch(rect)
+                self._track_cake_overlay_artist(
+                    self.widget.mpl.canvas.ax_cake.add_patch(rect))
         self._plot_selected_derived_chi_preview_overlay(
             tth_min, tth_max, chi_min, chi_max)
 
@@ -1062,6 +1071,19 @@ class MplController(object):
             except Exception:
                 pass
         self._background_selection_artists = []
+
+    def _track_cake_overlay_artist(self, artist):
+        if artist is not None:
+            self._cake_overlay_artists.append(artist)
+        return artist
+
+    def _clear_cake_overlay_artists(self):
+        for artist in list(self._cake_overlay_artists):
+            try:
+                artist.remove()
+            except Exception:
+                pass
+        self._cake_overlay_artists = []
 
     def _get_selected_section_rows(self):
         table = getattr(self.widget, "tableWidget_PkFtSections", None)
