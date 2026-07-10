@@ -194,6 +194,13 @@ def _safe_shutdown():
         controller.shutdown()
     except Exception:
         pass
+    if sys.platform.startswith('win'):
+        try:
+            sys.stdout.flush()
+            sys.stderr.flush()
+        except Exception:
+            pass
+        os._exit(0)
 
 app.aboutToQuit.connect(_safe_shutdown)
 
@@ -201,7 +208,7 @@ app.aboutToQuit.connect(_safe_shutdown)
 # Run Event Loop
 # ========================================
 ret = app.exec()
-if sys.platform == 'darwin':
+if sys.platform == 'darwin' or sys.platform.startswith('win'):
     # Avoid interpreter/module finalization crashes caused by native
     # extension teardown order.
     os._exit(ret)

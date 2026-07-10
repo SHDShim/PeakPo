@@ -3225,6 +3225,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.mpl.shutdown()
         except Exception:
             pass
+        if sys.platform.startswith("win"):
+            # Native Qt/Matplotlib teardown can access released state on
+            # Windows. Threads have already been stopped above; terminate
+            # before the interpreter starts its unsafe extension teardown.
+            try:
+                event.accept()
+                sys.stdout.flush()
+                sys.stderr.flush()
+            except Exception:
+                pass
+            os._exit(0)
         super().closeEvent(event)
 
     def connect_channel(self):
