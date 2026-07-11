@@ -1,4 +1,4 @@
-from qtpy import QtCore, QtWidgets
+from qtpy import QtCore, QtGui, QtWidgets
 
 
 def undo_button_press(buttonObj, released_text='Released',
@@ -72,6 +72,65 @@ class SpinBoxFixStyle(QtWidgets.QProxyStyle):
                 button_x, rect.top() + half_height,
                 button_width, rect.height() - half_height)
         return super().subControlRect(cc, option, sc, widget)
+
+
+class CheckboxIndicatorStyle(QtWidgets.QProxyStyle):
+    """Draw checkboxes as a bordered square with an inset checked core."""
+
+    ACCENT_FILL = "#bfbfbf"
+    ACCENT_FILL_HOVER = "#d0d0d0"
+    ACCENT_BORDER = "#5a5a5a"
+    ACCENT_BORDER_HOVER = "#707070"
+    ACCENT_OFF_FILL = "#2b2b2b"
+    ACCENT_OFF_FILL_HOVER = "#333333"
+    ACCENT_DISABLED_BORDER = "rgba(90, 90, 90, 0.45)"
+    ACCENT_DISABLED_FILL = "rgba(191, 191, 191, 0.35)"
+    ACCENT_DISABLED_OFF_FILL = "#262626"
+
+    def drawPrimitive(self, element, option, painter, widget=None):
+        if element != QtWidgets.QStyle.PE_IndicatorCheckBox:
+            return super().drawPrimitive(element, option, painter, widget)
+        if not isinstance(widget, QtWidgets.QCheckBox):
+            return super().drawPrimitive(element, option, painter, widget)
+
+        rect = QtCore.QRect(option.rect).adjusted(0, 0, -1, -1)
+        if rect.isEmpty():
+            return
+
+        enabled = bool(option.state & QtWidgets.QStyle.State_Enabled)
+        checked = bool(
+            option.state & (QtWidgets.QStyle.State_On | QtWidgets.QStyle.State_NoChange)
+        )
+        hovered = bool(option.state & QtWidgets.QStyle.State_MouseOver)
+        radius = 2.0
+
+        border_color = QtGui.QColor(
+            self.ACCENT_BORDER if enabled else self.ACCENT_DISABLED_BORDER
+        )
+        if hovered and enabled:
+            border_color = QtGui.QColor(self.ACCENT_BORDER_HOVER)
+        fill_color = QtGui.QColor(
+            self.ACCENT_FILL if enabled else self.ACCENT_DISABLED_FILL
+        )
+        if hovered and enabled:
+            fill_color = QtGui.QColor(self.ACCENT_FILL_HOVER)
+        off_fill_color = QtGui.QColor(
+            self.ACCENT_OFF_FILL if enabled else self.ACCENT_DISABLED_OFF_FILL
+        )
+        if hovered and enabled:
+            off_fill_color = QtGui.QColor(self.ACCENT_OFF_FILL_HOVER)
+        inset = 2 if checked else 1
+
+        painter.save()
+        painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+        outer = QtCore.QRectF(rect)
+        inner = outer.adjusted(inset, inset, -inset, -inset)
+        painter.setPen(QtCore.Qt.NoPen)
+        painter.setBrush(border_color)
+        painter.drawRoundedRect(outer, radius, radius)
+        painter.setBrush(fill_color if checked else off_fill_color)
+        painter.drawRoundedRect(inner, max(0.5, radius - inset), max(0.5, radius - inset))
+        painter.restore()
 
 
 def align_spinbox_right(spinbox):

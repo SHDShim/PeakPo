@@ -340,7 +340,7 @@ class CakeController(object):
         """
         update = self._addremove_cake()
         if update:
-            self._apply_changes_to_graph()
+            self.plot_ctrl.update()
     """
     def image_file_exists(self):
         # if no image file, no cake

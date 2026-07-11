@@ -34,6 +34,12 @@ class PeakfitTableController(object):
         item.setFont(font)
         return item
 
+    def _make_table_checkbox(self, checked=False):
+        box = QtWidgets.QCheckBox()
+        box.setChecked(bool(checked))
+        box.setStyleSheet("margin-left:12px; margin-right:12px;")
+        return box
+
     def update_peak_parameters(self):
         '''
         show a list of peaks in the list window of tab 2
@@ -219,33 +225,26 @@ class PeakfitTableController(object):
                     self._bglist_handle_doubleSpinBoxChanged)
                 self.widget.tableWidget_BGCoefficients.setCellWidget(
                     row, 0, self.Background_doubleSpinBox)
-                # column 1 - fix checkbox
-                item = QtWidgets.QTableWidgetItem()
-                item.setFlags(QtCore.Qt.ItemIsUserCheckable |
-                              QtCore.Qt.ItemIsEnabled)
-                if self.model.current_section.baseline_in_queue[row]['vary']:
-                    item.setCheckState(QtCore.Qt.Checked)
-                else:
-                    item.setCheckState(QtCore.Qt.Unchecked)
-                self.widget.tableWidget_BGCoefficients.setItem(row, 1, item)
-                try:
-                    self.widget.tableWidget_BGCoefficients.itemClicked.disconnect(
-                        self._bglist_handle_ItemClicked)
-                except Exception:
-                    pass
-                self.widget.tableWidget_BGCoefficients.itemClicked.connect(
-                    self._bglist_handle_ItemClicked)
+                # column 1 - vary checkbox
+                vary_box = self._make_table_checkbox(
+                    self.model.current_section.baseline_in_queue[row]['vary'])
+                vary_box.toggled.connect(
+                    self._bglist_handle_vary_checkbox_toggled)
+                self.widget.tableWidget_BGCoefficients.setCellWidget(
+                    row, 1, vary_box)
             self.widget.tableWidget_BGCoefficients.resizeColumnsToContents()
             self.widget.tableWidget_BGCoefficients.resizeRowsToContents()
 
-    def _bglist_handle_ItemClicked(self, item):
-        if (item.column() != 1):
+    def _bglist_handle_vary_checkbox_toggled(self, checked):
+        box = self.widget.sender()
+        if box is None or not hasattr(self.widget, "tableWidget_BGCoefficients"):
             return
-        row = item.row()
-        col = item.column()
+        index = self.widget.tableWidget_BGCoefficients.indexAt(box.pos())
+        if not index.isValid() or index.column() != 1:
+            return
+        row = index.row()
         self.model.current_section.invalidate_fit_result()
-        value = (item.checkState() == QtCore.Qt.Checked)
-        self.model.current_section.baseline_in_queue[row]['vary'] = value
+        self.model.current_section.baseline_in_queue[row]['vary'] = bool(checked)
 
     def _bglist_handle_doubleSpinBoxChanged(self, value):
         box = self.widget.sender()
