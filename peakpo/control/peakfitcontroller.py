@@ -1,5 +1,6 @@
 import os
 import traceback
+import numpy as np
 from qtpy import QtCore
 from qtpy import QtGui
 from qtpy import QtWidgets
@@ -30,13 +31,15 @@ class _TableBackspaceKeyFilter(QtCore.QObject):
         self.callback = callback
 
     def eventFilter(self, obj, event):
-        if obj != self.table:
+        table = getattr(self, "table", None)
+        callback = getattr(self, "callback", None)
+        if table is None or callback is None or obj != table:
             return False
         if event.type() != QtCore.QEvent.KeyPress:
             return False
         if event.key() != QtCore.Qt.Key_Backspace:
             return False
-        return bool(self.callback())
+        return bool(callback())
 
 
 class _PeakConstraintsDialog(QtWidgets.QDialog):
@@ -776,6 +779,7 @@ class PeakFitController(object):
     def _connect_constraints_tab_widgets(self):
         if not hasattr(self.widget, "pushButton_SetPosRange"):
             return
+        self._setup_constraints_peak_selector()
         self.widget.pushButton_SetPosRange.setCheckable(True)
         self.widget.pushButton_SetFwhmMax.setCheckable(True)
         self.widget.pushButton_SetPosRange.setAutoDefault(False)
@@ -799,6 +803,111 @@ class PeakFitController(object):
                     sel_model.selectionChanged.connect(
                         self._on_peak_table_selection_changed)
                     self._peak_table_selection_connected = True
+
+    def _setup_constraints_peak_selector(self):
+        """Add a Constraints-tab selector backed by the Peaks table rows."""
+        if hasattr(self.widget, "comboBox_ConstraintPeak"):
+            return
+        layout = getattr(
+            self.widget, "verticalLayout_ConstraintsContent", None)
+        constraint_box = getattr(
+            self.widget, "groupBox_PeakConstraintEditor", None)
+        if layout is None or constraint_box is None:
+            return
+
+        combo = QtWidgets.QComboBox(self.widget.scrollAreaWidgetContents_Constraints)
+        combo.setObjectName("comboBox_ConstraintPeak")
+        combo.setMinimumHeight(28)
+        combo.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        combo.setToolTip(
+            "Choose the peak whose constraints are being edited. "
+            "Selection also highlights that peak in the 1D pattern.")
+
+        index = layout.indexOf(constraint_box)
+        if index < 0:
+            layout.addWidget(combo)
+        else:
+            layout.insertWidget(index, combo)
+        self.widget.comboBox_ConstraintPeak = combo
+        combo.currentIndexChanged.connect(
+            self._on_constraints_peak_selector_changed)
+
+    @staticmethod
+    def _constraints_peak_label(peak):
+        phase = normalize_peak_phase_name(peak.get("phasename", "Unknown"))
+        h = int(peak.get("h", 0))
+        k = int(peak.get("k", 0))
+        l = int(peak.get("l", 0))
+        area = float(peak.get("amplitude", 0.0))
+        center = float(peak.get("center", 0.0))
+        return (
+            f"{phase} ({h} {k} {l}) | Area {area:.5g} | "
+            f"Position {center:.5f}\N{DEGREE SIGN}")
+
+    def _refresh_constraints_peak_selector(self, selected_row=None):
+        combo = getattr(self.widget, "comboBox_ConstraintPeak", None)
+        if combo is None:
+            return
+        if selected_row is None:
+            selected_row = self._constraints_tab_current_row
+        if selected_row is None:
+            selected_row = self._single_selected_peak_row()
+
+        blocker = QtCore.QSignalBlocker(combo)
+        combo.clear()
+        combo.addItem("Select a peak…", None)
+        has_peaks = False
+        if self.model.current_section_exist():
+            for row, peak in enumerate(self.model.current_section.peaks_in_queue):
+                combo.addItem(self._constraints_peak_label(peak), row)
+                has_peaks = True
+        if selected_row is None:
+            combo.setCurrentIndex(0)
+        elif has_peaks:
+            row = min(max(int(selected_row), 0), combo.count() - 2)
+            combo.setCurrentIndex(row + 1)
+        del blocker
+        combo.setEnabled(has_peaks)
+
+    def _sync_constraints_peak_selector_to_selected_row(self):
+        combo = getattr(self.widget, "comboBox_ConstraintPeak", None)
+        if combo is None:
+            return
+        row = self._single_selected_peak_row()
+        if row is None or combo.count() == 0:
+            return
+        for index in range(combo.count()):
+            if combo.itemData(index) == row:
+                blocker = QtCore.QSignalBlocker(combo)
+                combo.setCurrentIndex(index)
+                del blocker
+                return
+
+    def _on_constraints_peak_selector_changed(self, index):
+        combo = getattr(self.widget, "comboBox_ConstraintPeak", None)
+        table = getattr(self.widget, "tableWidget_PkParams", None)
+        if combo is None or table is None or index < 0:
+            return
+        row = combo.itemData(index)
+        if row is None:
+            return
+        row = int(row)
+        if row < 0 or row >= table.rowCount():
+            return
+        selection_model = table.selectionModel()
+        model_index = table.model().index(row, 0)
+        if selection_model is not None:
+            selection_model.setCurrentIndex(
+                model_index,
+                QtCore.QItemSelectionModel.ClearAndSelect |
+                QtCore.QItemSelectionModel.Rows)
+        else:
+            table.selectRow(row)
+        table.scrollTo(model_index)
+        self._update_constraints_tab_state()
+        if self.plot_ctrl is not None:
+            self.plot_ctrl.refresh_selected_peak_marker()
 
     def _set_constraints_toggle_button(self, button, checked, on_text, off_text):
         old_state = button.blockSignals(True)
@@ -868,6 +977,7 @@ class PeakFitController(object):
                 self._bg_anchor_selection_connected = True
 
     def _on_peak_table_selection_changed(self):
+        self._sync_constraints_peak_selector_to_selected_row()
         self._update_constraints_tab_state()
 
     def _on_section_table_selection_changed(self, _selected, _deselected):
@@ -891,7 +1001,7 @@ class PeakFitController(object):
             self.widget.label_PeakStatus.setStyleSheet(
                 "QLineEdit { background-color: #ffcccc; color: #cc0000; font-weight: bold; }")
             self.widget.label_PeakStatus.setText(
-                "Please select exactly one peak row in the Peaks table")
+                "Please select exactly one peak in the Peaks table or dropdown menu")
             self._clear_peak_constraints_table()
             self._constraints_tab_current_row = None
             return
@@ -915,6 +1025,7 @@ class PeakFitController(object):
         if row == self._constraints_tab_current_row:
             return
         self._constraints_tab_current_row = row
+        self._sync_constraints_peak_selector_to_selected_row()
         self._clear_peak_constraints_table()
         self._populate_peak_constraints_table(row)
 
@@ -1222,6 +1333,8 @@ class PeakFitController(object):
             self._update_peak_constraint_value_widgets(row, "center", value)
             if hasattr(self, "plot_ctrl") and self.plot_ctrl is not None:
                 self.plot_ctrl.refresh_selected_peak_marker()
+        if change_type == "value" and param_key in ("amplitude", "center"):
+            self._refresh_constraints_peak_selector(selected_row=row)
         self.set_tableWidget_PkParams_unsaved()
 
     def _sync_constraints_tab_row_to_model(self):
@@ -1646,6 +1759,7 @@ class PeakFitController(object):
         if current == getattr(self.widget, "tab_PeakFitConstraints", None):
             self.peakfit_table_ctrl.update_peak_constraints()
             self._populate_constraints_tab_from_model()
+            self._refresh_constraints_peak_selector()
             self._update_constraints_tab_state()
         elif current == getattr(self.widget, "tab_PeakFitBackground", None):
             self.peakfit_table_ctrl.update_baseline_constraints()
@@ -2593,23 +2707,62 @@ class PeakFitController(object):
         finally:
             progress.close()
         if success:
-            if converged:
-                QtWidgets.QMessageBox.information(
-                    self.widget, "Fitting Result",
-                    "Fitting converged successfully.")
-            else:
-                QtWidgets.QMessageBox.warning(
-                    self.widget, "Fitting Result",
-                    "Fitting finished but did not converge.")
             self.zoom_to_section()
             self.peakfit_table_ctrl.update_peak_parameters()
             self.peakfit_table_ctrl.update_baseline_constraints()
             self.peakfit_table_ctrl.update_peak_constraints()
             self.set_tableWidget_PkParams_unsaved()
+            QtWidgets.QApplication.processEvents()
+            self._show_fit_result_dialog(converged)
             self._warn_zero_intensity_peaks()
         else:
             QtWidgets.QMessageBox.warning(self.widget, "Fitting Result",
                                           'Fitting failed.')
+
+    @staticmethod
+    def _format_fit_statistic(value):
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            return "Not available"
+        if not np.isfinite(value):
+            return "Not available"
+        return f"{value:.6g}"
+
+    def _show_fit_result_dialog(self, converged):
+        """Show convergence state and fit-quality statistics after fitting."""
+        statistics = self.model.current_section.get_fit_quality_statistics()
+        iterations = statistics.get("iterations")
+        evaluations = statistics.get("function_evaluations")
+        if iterations is not None:
+            iteration_label = "Iterations"
+            iteration_value = self._format_fit_statistic(iterations)
+        else:
+            iteration_label = "Function evaluations"
+            iteration_value = self._format_fit_statistic(evaluations)
+
+        if converged:
+            status = "<b>Fitting converged successfully.</b>"
+            icon = QtWidgets.QMessageBox.Information
+        else:
+            status = (
+                '<span style="color: #cc0000; font-weight: bold;">'
+                "Fitting finished but did not converge."
+                "</span>")
+            icon = QtWidgets.QMessageBox.Warning
+        message = (
+            f"{status}<br><br>"
+            f"{iteration_label}: {iteration_value}<br>"
+            f"Chi-square: {self._format_fit_statistic(statistics.get('chi_square'))}<br>"
+            f"Rp: {self._format_fit_statistic(statistics.get('rp'))}<br>"
+            f"Rwp (unit weights): {self._format_fit_statistic(statistics.get('rwp'))}")
+        dialog = QtWidgets.QMessageBox(self.widget)
+        dialog.setWindowTitle("Fitting Result")
+        dialog.setIcon(icon)
+        dialog.setTextFormat(QtCore.Qt.RichText)
+        dialog.setText(message)
+        dialog.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        dialog.exec()
 
     def _warn_zero_intensity_peaks(self):
         section = self.model.current_section

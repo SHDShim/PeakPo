@@ -379,6 +379,46 @@ class Section(object):
             return False
         return getattr(self.fit_result, 'success', False)
 
+    def get_fit_quality_statistics(self):
+        """Return fit statistics evaluated on the original section samples.
+
+        Background-anchor samples may be appended during fitting to influence
+        the baseline.  They are intentionally excluded here so the reported
+        profile indices describe the measured 1D pattern only.
+        """
+        fit = self.fit_result
+        statistics = {
+            "iterations": getattr(fit, "nit", None) if fit is not None else None,
+            "function_evaluations": (
+                getattr(fit, "nfev", None) if fit is not None else None),
+            "chi_square": getattr(fit, "chisqr", None) if fit is not None else None,
+            "rp": None,
+            "rwp": None,
+        }
+        if fit is None or self.y_bgsub is None or self.x is None:
+            return statistics
+        try:
+            observed = np.asarray(self.y_bgsub, dtype=float).reshape(-1)
+            calculated = np.asarray(
+                self._fit_profile_on_section_x(), dtype=float).reshape(-1)
+            if observed.size != calculated.size:
+                return statistics
+            finite = np.isfinite(observed) & np.isfinite(calculated)
+            if not np.any(finite):
+                return statistics
+            observed = observed[finite]
+            residual = observed - calculated[finite]
+            rp_denominator = np.sum(np.abs(observed))
+            rwp_denominator = np.sum(observed ** 2)
+            if rp_denominator > 0.0:
+                statistics["rp"] = float(np.sum(np.abs(residual)) / rp_denominator)
+            if rwp_denominator > 0.0:
+                statistics["rwp"] = float(
+                    np.sqrt(np.sum(residual ** 2) / rwp_denominator))
+        except (TypeError, ValueError, AttributeError):
+            pass
+        return statistics
+
     def sync_peak_vary_flags_from_fit_result(self):
         params = getattr(getattr(self, "fit_result", None), "params", {}) or {}
         for i, peak in enumerate(self.peaks_in_queue):
