@@ -2474,17 +2474,18 @@ class MplController(object):
 
         render_seconds = time.perf_counter() - render_started_at
         total_seconds = time.perf_counter() - update_started_at
-        stage_text = ", ".join(
-            f"{name} {seconds:.2f}s"
-            for name, seconds in stage_seconds.items()
-            if seconds >= 0.01)
-        details = (
-            f"build {build_seconds:.2f}s, render {render_seconds:.2f}s")
-        if stage_text:
-            details += f"; {stage_text}"
-        print(
-            str(datetime.datetime.now())[:-7],
-            f": Plot takes {total_seconds:.2f}s ({details})")
+        if total_seconds > 1.0:
+            stage_text = ", ".join(
+                f"{name} {seconds:.2f}s"
+                for name, seconds in stage_seconds.items()
+                if seconds >= 0.01)
+            details = (
+                f"build {build_seconds:.2f}s, render {render_seconds:.2f}s")
+            if stage_text:
+                details += f"; {stage_text}"
+            print(
+                str(datetime.datetime.now())[:-7],
+                f": Plot takes {total_seconds:.2f}s ({details})")
 
         callbacks = self._after_draw_callbacks
         self._after_draw_callbacks = []

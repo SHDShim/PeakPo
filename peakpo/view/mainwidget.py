@@ -150,7 +150,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.connect_channel()
         # the two lines needs to be considred for move from this widget file
         self.actionCiting_PeakPo.triggered.connect(self.about)
-        self.actionShortcut_keys.triggered.connect(self.shortcutkeys)
 
     def build_ui(self):
         # self.pushButton_MakeBasePtn.setEnabled(False)
@@ -1104,7 +1103,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
 
         self.groupBox_HistogramConfig = QtWidgets.QGroupBox(
-            "Histogram", self.plotConfigContents)
+            "Cake intensity histogram", self.plotConfigContents)
         self.groupBox_HistogramConfig.setObjectName("groupBox_HistogramConfig")
         self.gridLayout_HistogramConfig = QtWidgets.QGridLayout(
             self.groupBox_HistogramConfig)
@@ -3023,6 +3022,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.tabWidget_3PageDppPpss = QtWidgets.QWidget()
         self.tabWidget_3PageDppPpss.setObjectName("tabWidget_3PageDppPpss")
+        if hasattr(self, "scrollArea_2"):
+            bg = self.scrollArea_2.viewport().palette().color(
+                self.scrollArea_2.viewport().backgroundRole()).name()
+            self.tabWidget_3PageDppPpss.setStyleSheet(
+                f"QWidget#tabWidget_3PageDppPpss {{ background-color: {bg}; }}"
+            )
         self.verticalLayout_FileDppPpss = QtWidgets.QVBoxLayout(
             self.tabWidget_3PageDppPpss)
         self.verticalLayout_FileDppPpss.setContentsMargins(8, 8, 8, 8)
@@ -3117,7 +3122,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._set_metadata_search_status("Found" if found else "No match")
 
     def _move_backup_into_file_data_tab(self):
-        # Move backup table/tools under File > Data, below Raw image handling.
+        # Move backup table/tools under File > Data.
         if not hasattr(self, "tabWidget_3"):
             return
         if not hasattr(self, "tabWidget_3Page1"):
@@ -3152,7 +3157,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.verticalLayout_FileDataBackup.addWidget(self.frame_BackupTools)
         self.verticalLayout_FileDataBackup.addWidget(self.tableWidget_BackupInfo, 1)
 
-        insert_idx = self.verticalLayout_2.indexOf(self.groupBox_36)
+        insert_idx = self.verticalLayout_2.indexOf(self.groupBox_2)
         if insert_idx < 0:
             self.verticalLayout_2.addWidget(self.groupBox_FileDataBackup)
         else:
@@ -3293,7 +3298,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_SetJCPDSStepTo01.clicked.connect(
             lambda: self.set_jstep(0.1))
         self.pushButton_AboutPeakpo.clicked.connect(self.about)
-        self.pushButton_Help.clicked.connect(self.shortcutkeys)
 
     """
     def set_ustep(self, value):
@@ -3393,49 +3397,4 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             'how to cite: ' + str(__citation__) + '<br><br>'
             'WARNING. Use at your own risk. ' +
             'This is a free software and no support is provided.<br>')
-        """
-
-    def shortcutkeys(self):
-        information = '** Shortcut Keys ** <br><br>' + \
-            'To activate shortcut keys: <br>' + \
-            ' - Mouse click the plotting area. <br>' + \
-            ' - Make sure no toolbar buttons are in blue. <br><br>' + \
-            'Save session: s<br>' + \
-            'Rescale vertical: v<br>' + \
-            'Whole spectrum: w<br>' + \
-            'Home or Reset: H or R<br>' + \
-            'Back: left arrow<br>' + \
-            'Forward: right arrow<br>' + \
-            'Pan: p<br>' + \
-            'Zoom: o<br>' + \
-            'Peak position read: i<br>' + \
-            'Constrain pan/zoom to x axis: hold x when panning/zooming<br>' + \
-            'Constrain pan/zoom to y axis: hold y when panning/zooming<br>' + \
-            'Preserve aspect ratio: hold CTRL when panning/zooming<br>' + \
-            'Toggle x scale (log/lin): L or k when mouse is over an axes<br>' + \
-            'Toggle y scale (log/lin): l when mouse is over an axes<br>'
-        infobox = InformationBox(title="Help")
-        infobox.setText(information)
-        infobox.exec()
-
-        """
-        self.textEdit_shortcuts.setText(
-            '** Shortcut Keys ** <br><br>' +
-            'To activate shortcut keys: <br>' +
-            ' - Mouse click the plotting area. <br>' +
-            ' - Make sure no toolbar buttons are in blue. <br><br>' +
-            'Save session: s<br>' +
-            'Rescale vertical: v<br>' +
-            'Whole spectrum: w<br>' +
-            'Home or Reset: H or R<br>' +
-            'Back: left arrow<br>' +
-            'Forward: right arrow<br>' +
-            'Pan: p<br>' +
-            'Zoom: o<br>' +
-            'Peak position read: i<br>' +
-            'Constrain pan/zoom to x axis: hold x when panning/zooming<br>' +
-            'Constrain pan/zoom to y axis: hold y when panning/zooming<br>' +
-            'Preserve aspect ratio: hold CTRL when panning/zooming<br>' +
-            'Toggle x scale (log/lin): L or k when mouse is over an axes<br>' +
-            'Toggle y scale (log/lin): l when mouse is over an axes<br>')
         """

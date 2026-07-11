@@ -768,12 +768,86 @@
                        <property name="rightMargin">
                         <number>12</number>
                        </property>
-                       <property name="bottomMargin">
-                        <number>12</number>
-                       </property>
-                       <item>
-                        <widget class="QFrame" name="frame_24">
-                         <property name="sizePolicy">
+                      <property name="bottomMargin">
+                       <number>12</number>
+                      </property>
+                      <item>
+                       <widget class="QFrame" name="frame_25">
+                        <property name="sizePolicy">
+                         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                          <horstretch>0</horstretch>
+                          <verstretch>0</verstretch>
+                         </sizepolicy>
+                        </property>
+                        <property name="frameShape">
+                         <enum>QFrame::NoFrame</enum>
+                        </property>
+                        <property name="lineWidth">
+                         <number>0</number>
+                        </property>
+                        <layout class="QHBoxLayout" name="horizontalLayout_22">
+                         <property name="leftMargin">
+                          <number>9</number>
+                         </property>
+                         <property name="topMargin">
+                          <number>9</number>
+                         </property>
+                         <property name="rightMargin">
+                          <number>9</number>
+                         </property>
+                         <property name="bottomMargin">
+                          <number>9</number>
+                         </property>
+                         <item>
+                          <widget class="QLineEdit" name="lineEdit_DiffractionPatternFileName">
+                           <property name="sizePolicy">
+                            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                             <horstretch>0</horstretch>
+                             <verstretch>0</verstretch>
+                            </sizepolicy>
+                           </property>
+                           <property name="minimumSize">
+                            <size>
+                             <width>0</width>
+                             <height>25</height>
+                            </size>
+                           </property>
+                           <property name="toolTip">
+                            <string>Name and path of base 1D diffraction pattern</string>
+                           </property>
+                           <property name="cursorPosition">
+                            <number>0</number>
+                           </property>
+                           <property name="clearButtonEnabled">
+                            <bool>false</bool>
+                           </property>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QPushButton" name="pushButton_Info">
+                           <property name="minimumSize">
+                            <size>
+                             <width>0</width>
+                             <height>25</height>
+                            </size>
+                           </property>
+                           <property name="maximumSize">
+                            <size>
+                             <width>50</width>
+                             <height>16777215</height>
+                            </size>
+                           </property>
+                           <property name="text">
+                            <string>Info</string>
+                           </property>
+                          </widget>
+                         </item>
+                        </layout>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QFrame" name="frame_24">
+                        <property name="sizePolicy">
                           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
@@ -913,8 +987,8 @@
                          </layout>
                         </widget>
                        </item>
-                       <item>
-                        <widget class="QFrame" name="frame_6">
+                        <item>
+                         <widget class="QFrame" name="frame_6">
                          <property name="sizePolicy">
                           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                            <horstretch>0</horstretch>
@@ -1109,6 +1183,16 @@
                          </layout>
                         </widget>
                        </item>
+                       <item>
+                        <widget class="QCheckBox" name="checkBox_IgnoreRawDataExistence">
+                         <property name="text">
+                          <string>Ignore raw data absence in the folder</string>
+                         </property>
+                         <property name="checked">
+                          <bool>true</bool>
+                         </property>
+                        </widget>
+                       </item>
                       </layout>
                      </widget>
                     </item>
@@ -1121,7 +1205,7 @@
                        </sizepolicy>
                       </property>
                       <property name="title">
-                       <string>1D diffraction pattern</string>
+                       <string>X-ray energy</string>
                       </property>
                       <property name="flat">
                        <bool>false</bool>
@@ -1142,77 +1226,6 @@
                        <property name="bottomMargin">
                         <number>12</number>
                        </property>
-                       <item>
-                        <widget class="QFrame" name="frame">
-                         <property name="frameShape">
-                          <enum>QFrame::NoFrame</enum>
-                         </property>
-                         <property name="frameShadow">
-                          <enum>QFrame::Plain</enum>
-                         </property>
-                         <property name="lineWidth">
-                          <number>0</number>
-                         </property>
-                         <layout class="QHBoxLayout" name="horizontalLayout_10">
-                          <property name="leftMargin">
-                           <number>9</number>
-                          </property>
-                          <property name="topMargin">
-                           <number>9</number>
-                          </property>
-                          <property name="rightMargin">
-                           <number>9</number>
-                          </property>
-                          <property name="bottomMargin">
-                           <number>9</number>
-                          </property>
-                          <item>
-                           <widget class="QLineEdit" name="lineEdit_DiffractionPatternFileName">
-                            <property name="sizePolicy">
-                             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                              <horstretch>0</horstretch>
-                              <verstretch>0</verstretch>
-                             </sizepolicy>
-                            </property>
-                            <property name="minimumSize">
-                             <size>
-                              <width>0</width>
-                              <height>25</height>
-                             </size>
-                            </property>
-                            <property name="toolTip">
-                             <string>Name and path of base 1D diffraction pattern</string>
-                            </property>
-                            <property name="cursorPosition">
-                             <number>0</number>
-                            </property>
-                            <property name="clearButtonEnabled">
-                             <bool>false</bool>
-                            </property>
-                           </widget>
-                          </item>
-                          <item>
-                           <widget class="QPushButton" name="pushButton_Info">
-                            <property name="minimumSize">
-                             <size>
-                              <width>0</width>
-                              <height>25</height>
-                             </size>
-                            </property>
-                            <property name="maximumSize">
-                             <size>
-                              <width>50</width>
-                              <height>16777215</height>
-                             </size>
-                            </property>
-                            <property name="text">
-                             <string>Info</string>
-                            </property>
-                           </widget>
-                          </item>
-                         </layout>
-                        </widget>
-                       </item>
                        <item>
                         <widget class="QFrame" name="frame_4">
                          <property name="sizePolicy">
@@ -1530,46 +1543,6 @@
                       </layout>
                     </widget>
                    </item>
-                   <item>
-                    <widget class="QGroupBox" name="groupBox_36">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="title">
-                      <string>Raw image handling</string>
-                     </property>
-                     <property name="flat">
-                      <bool>false</bool>
-                     </property>
-                     <layout class="QGridLayout" name="gridLayout_21">
-                      <property name="leftMargin">
-                       <number>12</number>
-                      </property>
-                      <property name="topMargin">
-                       <number>12</number>
-                      </property>
-                      <property name="rightMargin">
-                       <number>12</number>
-                      </property>
-                      <property name="bottomMargin">
-                       <number>12</number>
-                      </property>
-                      <item row="0" column="0">
-                       <widget class="QCheckBox" name="checkBox_IgnoreRawDataExistence">
-                        <property name="text">
-                         <string>Ignore raw data absence in the folder</string>
-                        </property>
-                        <property name="checked">
-                         <bool>true</bool>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </widget>
-                   </item>
                     <item>
                      <spacer name="verticalSpacer">
                       <property name="orientation">
@@ -1616,9 +1589,6 @@
                   </property>
                   <property name="widgetResizable">
                    <bool>true</bool>
-                  </property>
-                  <property name="alignment">
-                   <set>Qt::AlignCenter</set>
                   </property>
                   <widget class="QWidget" name="scrollAreaWidgetContents_2">
                    <property name="geometry">

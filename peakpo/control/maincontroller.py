@@ -63,6 +63,11 @@ class MainController(object):
         
         self.plot_ctrl = MplController(self.model, self.widget)
         print("  ✓ MplController created")
+        if hasattr(self.widget, "pushButton_Help"):
+            self.widget.pushButton_Help.clicked.connect(self.show_mouse_help)
+        if hasattr(self.widget, "actionShortcut_keys"):
+            self.widget.actionShortcut_keys.triggered.connect(
+                self.show_mouse_help)
 
         self.diff_ctrl = DiffController(self.model, self.widget, self.plot_ctrl)
         self.plot_ctrl.set_diff_controller(self.diff_ctrl)
