@@ -29,7 +29,7 @@ class WaterfallTableController(object):
                     count += 1
             if count == 0:
                 return
-        self.plot_ctrl.update()
+        self.plot_ctrl.refresh_waterfall_overlay()
 
     def update(self):
         """

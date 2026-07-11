@@ -31,6 +31,7 @@ class MplCanvas(FigureCanvasQTAgg):
 
         self.bgColor = "black"
         self.objColor = "white"
+        self._night_view = True
         self._current_h_cake = None
         self._define_axes(1)
 
@@ -59,6 +60,12 @@ class MplCanvas(FigureCanvasQTAgg):
         self.ax_pattern.set_ylabel("Intensity (arbitrary unit)")
         self.ax_pattern.ticklabel_format(axis="y", style="sci", scilimits=(-2, 2))
         self.ax_pattern.get_yaxis().get_offset_text().set_position((-0.04, -0.1))
+        # The pattern axis owns the shared two-theta labels.  Apply this every
+        # time the axes are created or cleared so theme caching cannot allow
+        # Cake x tick labels to reappear after a full plot rebuild.
+        self.ax_cake.tick_params(
+            axis="x", which="both", length=0,
+            labelbottom=False, labeltop=False)
         if h_cake == 1:
             self.ax_cake.tick_params(axis="y", colors=self.objColor, labelleft=False)
             self.ax_cake.spines["right"].set_visible(False)
@@ -86,6 +93,9 @@ class MplCanvas(FigureCanvasQTAgg):
         ax.yaxis.label.set_color(color)
 
     def set_toNight(self, NightView=True):
+        NightView = bool(NightView)
+        if self._night_view == NightView:
+            return False
         if NightView:
             try:
                 mplstyle.use(_get_mplstyle_path("night.mplstyle"))
@@ -100,6 +110,8 @@ class MplCanvas(FigureCanvasQTAgg):
                 pass
             self.bgColor = "white"
             self.objColor = "black"
+
+        self._night_view = NightView
 
         self.fig.set_facecolor(self.bgColor)
         for ax in (self.ax_pattern, self.ax_cake):
@@ -120,10 +132,7 @@ class MplCanvas(FigureCanvasQTAgg):
 
         self.ax_pattern.xaxis.set_label_position("bottom")
 
-        try:
-            self.draw_idle()
-        except Exception:
-            pass
+        return True
 
     def show_empty_state(self, draw=True):
         self.fig.clf()

@@ -4,9 +4,9 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.12.1zd"
+__version__ = "7.12.1ze"
 """
-7.12.1zd: speed improvement by GPT 5.6 Sol.
+7.12.1ze: matplotlib part hardening.
 7.12.0: update peak fitting and unit cell refining instructions.
 7.11.13: overhaul Peak and Cell Fit workflows with improved provenance, 
           interactive peak adjustment (drag-and-drop), and automated result 

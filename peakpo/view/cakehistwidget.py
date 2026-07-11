@@ -23,6 +23,7 @@ class CakeHistogramWidget(QtWidgets.QWidget):
         self._span_patch = None
         self._data_max = None
         self._data_signature = None
+        self._data_token = None
         self._drag_target = None
         self._drag_start_x = None
         self._drag_start_vmin = None
@@ -118,6 +119,7 @@ class CakeHistogramWidget(QtWidgets.QWidget):
         self._span_patch = None
         self._data_max = None
         self._data_signature = None
+        self._data_token = None
         self._drag_target = None
         self._drag_start_x = None
         self._drag_start_vmin = None
@@ -142,17 +144,30 @@ class CakeHistogramWidget(QtWidgets.QWidget):
             float(arr.mean()),
         )
 
-    def set_data(self, values, vmin=None, vmax=None):
-        arr = self._finite_array(values)
+    def set_data(self, values, vmin=None, vmax=None, *, data_token=None,
+                 finite_values=None, data_signature=None):
+        next_vmin = None if vmin is None else max(0.0, float(vmin))
+        next_vmax = None if vmax is None else float(vmax)
+        if data_token is not None and data_token == self._data_token and \
+                next_vmin == self._vmin and next_vmax == self._vmax:
+            return
+        arr = self._finite_array(values) if finite_values is None else \
+            np.asarray(finite_values, dtype=float).ravel()
+        arr = arr[np.isfinite(arr)]
         if arr.size == 0:
             self.clear()
             return
 
         self._data = arr
         self._data_max = float(arr.max())
-        self._data_signature = self.data_signature_for_values(arr)
-        self._vmin = None if vmin is None else max(0.0, float(vmin))
-        self._vmax = None if vmax is None else float(vmax)
+        self._data_signature = data_signature
+        if self._data_signature is None:
+            self._data_signature = (
+                int(arr.size), float(arr.min()), float(arr.max()),
+                float(arr.mean()))
+        self._data_token = data_token
+        self._vmin = next_vmin
+        self._vmax = next_vmax
 
         self._xlims = self._calc_view_xlim(
             float(arr.min()), float(arr.max()), self._vmin, self._vmax)

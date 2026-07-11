@@ -666,7 +666,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "Azimuthal CHI", self.scrollAreaWidgetContents_8)
         self.groupBox_AziChiList.setObjectName("groupBox_AziChiList")
         self.groupBox_AziChiList.setSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
 
         layout = QtWidgets.QVBoxLayout(self.groupBox_AziChiList)
         layout.setContentsMargins(12, 12, 12, 12)
@@ -699,10 +699,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tableWidget_AziChiList.verticalHeader().setVisible(True)
         self.tableWidget_AziChiList.verticalHeader().setDefaultSectionSize(24)
         self.tableWidget_AziChiList.verticalHeader().setMinimumWidth(44)
-        self.tableWidget_AziChiList.setMinimumHeight(110)
-        self.tableWidget_AziChiList.setMaximumHeight(170)
+        self.tableWidget_AziChiList.setMinimumHeight(180)
+        self.tableWidget_AziChiList.setMaximumHeight(
+            QtWidgets.QWIDGETSIZE_MAX)
+        self.tableWidget_AziChiList.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         self.tableWidget_AziChiList.horizontalHeader().setStretchLastSection(True)
-        layout.addWidget(self.tableWidget_AziChiList)
+        layout.addWidget(self.tableWidget_AziChiList, 1)
 
         button_layout = QtWidgets.QHBoxLayout()
         button_layout.setContentsMargins(0, 0, 0, 0)
@@ -729,7 +732,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             button_layout.addWidget(button)
         layout.addLayout(button_layout)
 
+        self.tableWidget_DiffImgAzi.setMinimumHeight(180)
+        self.tableWidget_DiffImgAzi.setMaximumHeight(
+            QtWidgets.QWIDGETSIZE_MAX)
+        self.tableWidget_DiffImgAzi.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_37.addWidget(self.groupBox_AziChiList)
+        top_table_index = self.verticalLayout_37.indexOf(
+            self.tableWidget_DiffImgAzi)
+        chi_group_index = self.verticalLayout_37.indexOf(
+            self.groupBox_AziChiList)
+        if top_table_index >= 0:
+            self.verticalLayout_37.setStretch(top_table_index, 3)
+        if chi_group_index >= 0:
+            # The lower section also contains a status line and buttons, so it
+            # needs slightly more space for the two table viewports to match.
+            self.verticalLayout_37.setStretch(chi_group_index, 4)
 
     def _fix_tab_clipping(self):
         # Keep native tab visuals while nudging tab size metrics to prevent
@@ -1722,6 +1740,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         self.label_PlotHelp.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+
+        # Keep the zoom-out control at the far left, with Cake Z adjustment
+        # immediately following it.  The mouse-mode frame is inserted at the
+        # beginning of the bar below, so controls added here appear after the
+        # zoom control and before the plot-option checkboxes.
+        self.pushButton_ToolbarCakeZAdj = QtWidgets.QPushButton(
+            "Cake Z Adj", self.mpl.control_bar)
+        self.pushButton_ToolbarCakeZAdj.setObjectName(
+            "pushButton_ToolbarCakeZAdj")
+        self.pushButton_ToolbarCakeZAdj.setToolTip(
+            "Adjust the Cake image color scale using the same edge "
+            "detection as Cake > Edge.")
+        self.pushButton_ToolbarCakeZAdj.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self._set_button_height(self.pushButton_ToolbarCakeZAdj)
+        self._set_flat_toolbar_button_style(self.pushButton_ToolbarCakeZAdj)
+        self.mpl.add_control_widget(self.pushButton_ToolbarCakeZAdj)
+
         widgets = [
             getattr(self, "checkBox_ShowCake", None),
             getattr(self, "checkBox_BgSub", None),
@@ -1773,19 +1809,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.checkBox_ToolbarWaterfall.setSizePolicy(
                     QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
                 self.mpl.add_control_widget(self.checkBox_ToolbarWaterfall)
-                self.pushButton_ToolbarCakeZAdj = QtWidgets.QPushButton(
-                    "Cake Z Adj", self.mpl.control_bar)
-                self.pushButton_ToolbarCakeZAdj.setObjectName(
-                    "pushButton_ToolbarCakeZAdj")
-                self.pushButton_ToolbarCakeZAdj.setToolTip(
-                    "Adjust the Cake image color scale using the same edge "
-                    "detection as Cake > Edge.")
-                self.pushButton_ToolbarCakeZAdj.setSizePolicy(
-                    QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-                self._set_button_height(self.pushButton_ToolbarCakeZAdj)
-                self._set_flat_toolbar_button_style(
-                    self.pushButton_ToolbarCakeZAdj)
-                self.mpl.add_control_widget(self.pushButton_ToolbarCakeZAdj)
                 self.pushButton_MouseHelp = QtWidgets.QPushButton(
                     "Mouse Help", self.mpl.control_bar)
                 self.pushButton_MouseHelp.setObjectName("pushButton_MouseHelp")

@@ -219,7 +219,7 @@ class WaterfallController(object):
                     count += 1
             if count == 0:
                 return
-        self.plot_ctrl.update()
+        self.plot_ctrl.refresh_waterfall_overlay()
 
     def _find_a_waterfall_ptn(self):
         idx_checked = [

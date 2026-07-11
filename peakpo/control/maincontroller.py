@@ -333,7 +333,7 @@ class MainController(object):
         self.widget.comboBox_BkgnLineThickness.currentIndexChanged.connect(
             self.apply_changes_to_graph)
         self.widget.comboBox_WaterfallLineThickness.currentIndexChanged.connect(
-            self.apply_changes_to_graph)
+            lambda _index: self.plot_ctrl.refresh_waterfall_overlay())
         self.widget.comboBox_HKLFontSize.currentIndexChanged.connect(
             self.apply_changes_to_graph)
         self.widget.comboBox_PnTFontSize.currentIndexChanged.connect(
@@ -343,7 +343,7 @@ class MainController(object):
                 self.apply_changes_to_graph)
         if hasattr(self.widget, "comboBox_WaterfallFontSize"):
             self.widget.comboBox_WaterfallFontSize.currentIndexChanged.connect(
-                self.apply_changes_to_graph)
+                lambda _index: self.plot_ctrl.refresh_waterfall_overlay())
         self.widget.checkBox_ShortPlotTitle.clicked.connect(
             self.apply_changes_to_graph)
         if hasattr(self.widget, "spinBox_TitleFontSize"):
@@ -390,7 +390,7 @@ class MainController(object):
             self.widget.checkBox_LightBackground.clicked.connect(
                 self.apply_changes_to_graph)
         self.widget.checkBox_ShowWaterfallLabels.clicked.connect(
-            self.apply_changes_to_graph)
+            self.plot_ctrl.refresh_waterfall_overlay)
         self.widget.checkBox_ShowWaterfall.toggled.connect(
             self._sync_toolbar_waterfall_from_detail_controls)
         self.widget.checkBox_ShowMillerIndices_Cake.clicked.connect(
@@ -408,9 +408,9 @@ class MainController(object):
         self.widget.horizontalSlider_MaxScaleBars.valueChanged.connect(
             self._sync_cake_scale_combo_from_slider)
         self.widget.horizontalSlider_VMin.valueChanged.connect(
-            self.apply_changes_to_graph)
+            lambda _value: self.plot_ctrl.refresh_cake_style())
         self.widget.horizontalSlider_VMax.valueChanged.connect(
-            self.apply_changes_to_graph)
+            lambda _value: self.plot_ctrl.refresh_cake_style())
         self.widget.horizontalSlider_CakeAxisSize.valueChanged.connect(
             self.apply_changes_to_graph)
         self.widget.horizontalSlider_JCPDSBarScale.valueChanged.connect(
@@ -418,7 +418,7 @@ class MainController(object):
         self.widget.horizontalSlider_JCPDSBarPosition.valueChanged.connect(
             lambda _value: self.plot_ctrl.update_jcpds_only())
         self.widget.horizontalSlider_WaterfallGaps.valueChanged.connect(
-            self.apply_changes_to_graph)
+            lambda _value: self.plot_ctrl.refresh_waterfall_overlay())
         self.widget.doubleSpinBox_JCPDS_cake_Alpha.valueChanged.connect(
             lambda _value: self.plot_ctrl.update_jcpds_only())
         self.widget.doubleSpinBox_JCPDS_ptn_Alpha.valueChanged.connect(
@@ -678,7 +678,7 @@ class MainController(object):
         if checked is None:
             checked = self.widget.checkBox_ToolbarWaterfall.isChecked()
         self._set_checked_no_signal("checkBox_ShowWaterfall", checked)
-        self.plot_ctrl.update()
+        self.plot_ctrl.refresh_waterfall_overlay()
 
     def _sync_toolbar_waterfall_from_detail_controls(self):
         if not hasattr(self.widget, "checkBox_ToolbarWaterfall"):

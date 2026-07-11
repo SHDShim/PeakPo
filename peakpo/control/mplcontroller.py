@@ -21,6 +21,79 @@ from ..model.azimuthal_integration import (
 )
 
 
+def _coordinate_edges(centers):
+    """Return pixel edges for a monotonic array of pixel-center coordinates."""
+    values = np.asarray(centers, dtype=float).ravel()
+    if values.size == 0 or not np.all(np.isfinite(values)):
+        raise ValueError("Coordinate centers must be finite and non-empty.")
+    if values.size == 1:
+        return np.asarray([values[0] - 0.5, values[0] + 0.5])
+    deltas = np.diff(values)
+    if np.any(deltas == 0) or not (np.all(deltas > 0) or np.all(deltas < 0)):
+        raise ValueError("Coordinate centers must be strictly monotonic.")
+    edges = np.empty(values.size + 1, dtype=float)
+    edges[1:-1] = values[:-1] + 0.5 * deltas
+    edges[0] = values[0] - 0.5 * deltas[0]
+    edges[-1] = values[-1] + 0.5 * deltas[-1]
+    return edges
+
+
+def _nearest_coordinate_index(centers, value):
+    """Find the nearest center index for ascending or descending coordinates."""
+    values = np.asarray(centers, dtype=float).ravel()
+    if values.size == 0 or not np.isfinite(value):
+        return None
+    ascending = values[-1] >= values[0]
+    search_values = values if ascending else values[::-1]
+    pos = int(np.searchsorted(search_values, value, side="left"))
+    if pos <= 0:
+        index = 0
+    elif pos >= search_values.size:
+        index = search_values.size - 1
+    elif abs(value - search_values[pos - 1]) <= abs(search_values[pos] - value):
+        index = pos - 1
+    else:
+        index = pos
+    return index if ascending else values.size - 1 - index
+
+
+def _coordinates_are_uniform(centers, *, rtol=1e-7, atol=1e-12):
+    values = np.asarray(centers, dtype=float).ravel()
+    if values.size < 3:
+        return True
+    deltas = np.diff(values)
+    return bool(np.allclose(deltas, deltas[0], rtol=rtol, atol=atol))
+
+
+def _azimuth_shift_rows(chi_centers, angle_degrees):
+    """Convert an angular Cake shift to rows using the actual azimuth spacing."""
+    values = np.asarray(chi_centers, dtype=float).ravel()
+    if values.size < 2 or not np.isfinite(angle_degrees):
+        return 0
+    spacing = np.diff(values)
+    spacing = np.abs(spacing[np.isfinite(spacing) & (spacing != 0)])
+    if spacing.size == 0:
+        return 0
+    return int(np.rint(float(angle_degrees) / float(np.median(spacing))))
+
+
+def _bragg_dspacing(two_theta_degrees, wavelength):
+    """Return d spacing for a physically valid two-theta coordinate."""
+    try:
+        two_theta = float(two_theta_degrees)
+        wavelength = float(wavelength)
+    except (TypeError, ValueError):
+        return None
+    if not np.isfinite(two_theta) or not np.isfinite(wavelength) or wavelength <= 0:
+        return None
+    if two_theta <= 0.0 or two_theta > 180.0:
+        return None
+    sine = float(np.sin(np.deg2rad(two_theta / 2.0)))
+    if not np.isfinite(sine) or sine <= np.finfo(float).eps:
+        return None
+    return wavelength / (2.0 * sine)
+
+
 class MplController(object):
 
     def __new__(cls, model, widget):
@@ -62,8 +135,18 @@ class MplController(object):
         self._section_selection_artists = []
         self._background_selection_artists = []
         self._cake_overlay_artists = []
+        self._waterfall_artists = []
         self._pnt_artist = None
         self._derived_label_visible = False
+        self._cake_tth_centers = None
+        self._cake_chi_centers = None
+        self._cake_artist = None
+        self._cake_display_data = None
+        self._cake_data_cache_key = None
+        self._cake_data_cache = None
+        self._cake_source_stats_key = None
+        self._cake_source_max = None
+        self._waterfall_transform_cache = {}
         
         # ✅ Wrap toolbar methods to track state
         toolbar = self.widget.mpl.canvas.toolbar
@@ -142,6 +225,11 @@ class MplController(object):
         self._section_selection_artists = []
         self._background_selection_artists = []
         self._cake_overlay_artists = []
+        self._waterfall_artists = []
+        self._cake_artist = None
+        self._cake_display_data = None
+        self._cake_data_cache = None
+        self._waterfall_transform_cache = {}
 
     def set_diff_controller(self, diff_ctrl):
         self.diff_ctrl = diff_ctrl
@@ -167,7 +255,8 @@ class MplController(object):
             lw_value = 1.0
         ax_pattern = self.widget.mpl.canvas.ax_pattern
         if self._vcursor_pattern is None or \
-                getattr(self._vcursor_pattern, "axes", None) is not ax_pattern:
+                getattr(self._vcursor_pattern, "axes", None) is not ax_pattern or \
+                self._vcursor_pattern not in ax_pattern.lines:
             self._vcursor_pattern = ax_pattern.axvline(
                 0.0, color='r', lw=lw_value, ls='--', visible=False)
         else:
@@ -177,7 +266,8 @@ class MplController(object):
         if use_cake:
             ax_cake = self.widget.mpl.canvas.ax_cake
             if self._vcursor_cake is None or \
-                    getattr(self._vcursor_cake, "axes", None) is not ax_cake:
+                    getattr(self._vcursor_cake, "axes", None) is not ax_cake or \
+                    self._vcursor_cake not in ax_cake.lines:
                 self._vcursor_cake = ax_cake.axvline(
                     0.0, color='r', lw=lw_value, ls='--', visible=False)
             else:
@@ -219,7 +309,7 @@ class MplController(object):
             if artist is not None and artist.get_visible():
                 artist.set_visible(False)
                 changed = True
-        if changed:
+        if changed and not self._is_drawing:
             self.widget.mpl.canvas.draw_idle()
 
     def _set_nightday_view(self):
@@ -655,6 +745,8 @@ class MplController(object):
                 return None
             if tth_arr.size == 0 or chi_arr.size == 0:
                 return None
+            if cake.shape != (chi_arr.size, tth_arr.size):
+                return None
             return cake, tth_arr, chi_arr
 
         #print(str(datetime.datetime.now())[:-7], ': Num of tth points = {0:.0f}, azi strips = {1:.0f}'.format(len(tth_cake), len(chi_cake)))
@@ -677,14 +769,20 @@ class MplController(object):
             return
         int_plot, tth_cake, chi_cake = coerced
         self._clear_cake_overlay_artists()
-        int_plot = ma.array(int_plot, copy=True)
-        finite_cake = np.asarray(ma.filled(int_plot, np.nan), dtype=float)
-        finite_cake = finite_cake[np.isfinite(finite_cake)]
-        cake_max = None
-        if finite_cake.size > 0:
-            cake_max = float(np.nanmax(finite_cake))
-            if np.isfinite(cake_max) and cake_max > 0:
-                self.widget.spinBox_MaxCakeScale.setValue(int(np.ceil(cake_max)))
+        int_plot = ma.array(int_plot, copy=False)
+        source_stats_key = (
+            id(intensity_cake), id(ma.getdata(int_plot)),
+            id(ma.getmask(int_plot)), tuple(int_plot.shape))
+        if source_stats_key != self._cake_source_stats_key:
+            finite_source = np.asarray(
+                ma.filled(int_plot, np.nan), dtype=float).ravel()
+            finite_source = finite_source[np.isfinite(finite_source)]
+            self._cake_source_max = (
+                float(finite_source.max()) if finite_source.size else None)
+            self._cake_source_stats_key = source_stats_key
+        cake_max = self._cake_source_max
+        if cake_max is not None and np.isfinite(cake_max) and cake_max > 0:
+            self.widget.spinBox_MaxCakeScale.setValue(int(np.ceil(cake_max)))
 
         diff_mode = False
         if self.diff_ctrl is not None:
@@ -698,11 +796,22 @@ class MplController(object):
             except Exception:
                 diff_mode = False
 
+        # Keep image rows/columns aligned with ascending physical coordinates.
+        reverse_tth = bool(tth_cake.size > 1 and tth_cake[-1] < tth_cake[0])
+        reverse_chi = bool(chi_cake.size > 1 and chi_cake[-1] < chi_cake[0])
+        if reverse_tth:
+            tth_cake = tth_cake[::-1]
+            int_plot = int_plot[:, ::-1]
+        if reverse_chi:
+            chi_cake = chi_cake[::-1]
+            int_plot = int_plot[::-1, :]
+
         # Apply azimuthal shift after diff subtraction so the same shift is
         # effectively applied to both current and reference cake images.
         mid_angle = self.widget.spinBox_AziShift.value()
+        row_shift = 0
         if mid_angle != 0 and int_plot.ndim == 2 and int_plot.shape[0] > 1:
-            row_shift = int(round(float(mid_angle) / 360.0 * int_plot.shape[0]))
+            row_shift = _azimuth_shift_rows(chi_cake, mid_angle)
             int_plot = ma.array(np.roll(int_plot, row_shift, axis=0), copy=False)
 
         # Get image contrast parameters from UI unless diff mode overrides.
@@ -745,16 +854,32 @@ class MplController(object):
             zero_mask = (int_plot == 0)
             # Opaque pale yellow for masked pixels.
             cmap.set_bad(color=(1.0, 0.97, 0.55, 1.0))
-        zero_mask = np.asarray(ma.filled(zero_mask, False), dtype=bool)
-
-        base_mask = ma.getmaskarray(int_plot)
-        invalid_mask = ~np.isfinite(ma.filled(int_plot, np.nan))
-        combined_mask = zero_mask | base_mask | invalid_mask
-        int_new = ma.masked_where(
-            combined_mask, ma.filled(int_plot, np.nan), copy=False)
+        cache_key = None
+        if not diff_mode:
+            cache_key = (
+                source_stats_key, reverse_tth, reverse_chi, row_shift)
+        if cache_key is not None and cache_key == self._cake_data_cache_key:
+            int_new, finite_values, data_signature = self._cake_data_cache
+        else:
+            zero_mask = np.asarray(ma.filled(zero_mask, False), dtype=bool)
+            filled_plot = np.asarray(ma.filled(int_plot, np.nan), dtype=float)
+            base_mask = ma.getmaskarray(int_plot)
+            invalid_mask = ~np.isfinite(filled_plot)
+            combined_mask = zero_mask | base_mask | invalid_mask
+            int_new = ma.masked_where(
+                combined_mask, filled_plot, copy=False)
+            finite_values = np.asarray(int_new.compressed(), dtype=float)
+            data_signature = None
+            if finite_values.size:
+                data_signature = (
+                    int(finite_values.size), float(finite_values.min()),
+                    float(finite_values.max()), float(finite_values.mean()))
+            if cache_key is not None:
+                self._cake_data_cache_key = cache_key
+                self._cake_data_cache = (
+                    int_new, finite_values, data_signature)
 
         if hist_widget is not None:
-            data_signature = hist_widget.data_signature_for_values(int_new)
             try:
                 cake_filename = self.model.get_base_ptn_filename()
             except Exception:
@@ -783,21 +908,46 @@ class MplController(object):
                     climits = np.asarray(exact_bounds, dtype=float)
 
 
+        tth_edges = _coordinate_edges(tth_cake)
+        chi_edges = _coordinate_edges(chi_cake)
+        self._cake_tth_centers = np.asarray(tth_cake, dtype=float)
+        self._cake_chi_centers = np.asarray(chi_cake, dtype=float)
         imshow_kwargs = {
             "origin": "lower",
-            "extent": [tth_cake.min(), tth_cake.max(), chi_cake.min(), chi_cake.max()],
+            "extent": [tth_edges[0], tth_edges[-1],
+                       chi_edges[0], chi_edges[-1]],
             "aspect": "auto",
             "cmap": cmap,
+            "interpolation": "nearest",
         }
         if norm is None:
             imshow_kwargs["vmin"] = climits[0]
             imshow_kwargs["vmax"] = climits[1]
         else:
             imshow_kwargs["norm"] = norm
-        self.widget.mpl.canvas.ax_cake.imshow(int_new, **imshow_kwargs)
+        ax_cake = self.widget.mpl.canvas.ax_cake
+        if _coordinates_are_uniform(tth_cake) and \
+                _coordinates_are_uniform(chi_cake):
+            self._cake_artist = ax_cake.imshow(int_new, **imshow_kwargs)
+        else:
+            mesh_kwargs = {
+                "cmap": cmap,
+                "shading": "flat",
+                "rasterized": True,
+            }
+            if norm is None:
+                mesh_kwargs["vmin"] = climits[0]
+                mesh_kwargs["vmax"] = climits[1]
+            else:
+                mesh_kwargs["norm"] = norm
+            self._cake_artist = ax_cake.pcolormesh(
+                tth_edges, chi_edges, int_new, **mesh_kwargs)
+        self._cake_display_data = int_new
         if hist_widget is not None:
             hist_widget.set_data(
-                int_new, vmin=float(climits[0]), vmax=float(climits[1]))
+                int_new, vmin=float(climits[0]), vmax=float(climits[1]),
+                data_token=cache_key, finite_values=finite_values,
+                data_signature=data_signature)
 
         # get gray scale color map and make sure masked data points are colored red
         """
@@ -1434,19 +1584,25 @@ class MplController(object):
             self.update()
             return
         canvas = self.widget.mpl.canvas
-        if not hasattr(canvas, "ax_cake") or not canvas.ax_cake.images:
+        cake_artist = self._cake_artist
+        if not hasattr(canvas, "ax_cake") or cake_artist is None or \
+                getattr(cake_artist, "axes", None) is not canvas.ax_cake:
             self.update()
             return
 
         started_at = time.perf_counter()
-        image = canvas.ax_cake.images[0]
         prefactor = float(self.widget.spinBox_MaxCakeScale.value())
         climits = np.asarray([
             self.widget.horizontalSlider_VMin.value(),
             self.widget.horizontalSlider_VMax.value()], dtype=float) / 100. * prefactor
         hist_widget = getattr(self.widget, "cake_hist_widget", None)
         if hist_widget is not None:
-            signature = hist_widget.data_signature_for_values(image.get_array())
+            signature = None
+            if self._cake_data_cache is not None:
+                signature = self._cake_data_cache[2]
+            if signature is None and self._cake_display_data is not None:
+                signature = hist_widget.data_signature_for_values(
+                    self._cake_display_data)
             exact_bounds = hist_widget.current_bounds(data_signature=signature)
             if exact_bounds is not None:
                 climits = np.asarray(exact_bounds, dtype=float)
@@ -1460,12 +1616,21 @@ class MplController(object):
         import matplotlib.pyplot as plt
         cmap = plt.get_cmap(cmap_name).copy()
         cmap.set_bad(color=(1.0, 0.97, 0.55, 1.0))
-        image.set_cmap(cmap)
-        image.set_clim(float(climits[0]), float(climits[1]))
+        cake_artist.set_cmap(cmap)
+        cake_artist.set_clim(float(climits[0]), float(climits[1]))
 
         if hist_widget is not None:
+            finite_values = None
+            data_signature = None
+            if self._cake_data_cache is not None:
+                _cached_image, finite_values, data_signature = \
+                    self._cake_data_cache
             hist_widget.set_data(
-                image.get_array(), vmin=float(climits[0]), vmax=float(climits[1]))
+                self._cake_display_data, vmin=float(climits[0]),
+                vmax=float(climits[1]),
+                data_token=self._cake_data_cache_key,
+                finite_values=finite_values,
+                data_signature=data_signature)
         build_seconds = time.perf_counter() - started_at
         self._schedule_canvas_draw(
             started_at, build_seconds, {"Cake style": build_seconds})
@@ -1499,6 +1664,12 @@ class MplController(object):
         wavelength = self.widget.doubleSpinBox_SetWavelength.value()
         use_table_0gpa = self.widget.checkBox_UseJCPDSTable1bar.isChecked()
         legend_entries = []
+        cake_hkl_transform = None
+        if self.widget.checkBox_ShowCake.isChecked() and \
+                self.widget.checkBox_ShowMillerIndices_Cake.isChecked():
+            cake_hkl_transform = transforms.blended_transform_factory(
+                self.widget.mpl.canvas.ax_cake.transData,
+                self.widget.mpl.canvas.ax_cake.transAxes)
         emphasis_rows = self._get_jcpds_emphasis_rows()
         emphasis_rows = {
             idx for idx in emphasis_rows
@@ -1521,6 +1692,15 @@ class MplController(object):
 #                break
             tth, inten = phase.get_tthVSint(
                 wavelength)
+            tth = np.asarray(tth, dtype=float)
+            inten = np.asarray(inten, dtype=float)
+            valid_reflections = np.isfinite(tth) & np.isfinite(inten) & \
+                (tth > 0.0) & (tth <= 180.0)
+            valid_indices = np.flatnonzero(valid_reflections)
+            tth = tth[valid_reflections]
+            inten = inten[valid_reflections]
+            if tth.size == 0:
+                continue
             if self.widget.checkBox_JCPDSinPattern.isChecked():
                 intensity = inten * phase.twk_int
                 if show_intensity:
@@ -1555,7 +1735,8 @@ class MplController(object):
                     (jcpds_bars, legend_label, phase.color, row_idx))
                 # hkl
                 if self.widget.checkBox_ShowMillerIndices.isChecked():
-                    hkl_list = phase.get_hkl_in_text()
+                    all_hkl = phase.get_hkl_in_text()
+                    hkl_list = [all_hkl[index] for index in valid_indices]
                     for j, hkl in enumerate(hkl_list):
                         self._track_jcpds_artist(
                             self.widget.mpl.canvas.ax_pattern.text(
@@ -1582,16 +1763,15 @@ class MplController(object):
                     zorder=18),
                     phase_index=row_idx, base_alpha=phase_alpha)
                 if self.widget.checkBox_ShowMillerIndices_Cake.isChecked():
-                    hkl_list = phase.get_hkl_in_text()
-                    trans = transforms.blended_transform_factory(
-                        self.widget.mpl.canvas.ax_cake.transData,
-                        self.widget.mpl.canvas.ax_cake.transAxes)
+                    all_hkl = phase.get_hkl_in_text()
+                    hkl_list = [all_hkl[index] for index in valid_indices]
                     for j, hkl in enumerate(hkl_list):
                         self._track_jcpds_artist(
                             self.widget.mpl.canvas.ax_cake.text(
                             tth[j], 0.99, hkl, color=phase.color,
                             rotation=90, verticalalignment='top',
-                            transform=trans, horizontalalignment='right',
+                            transform=cake_hkl_transform,
+                            horizontalalignment='right',
                             fontsize=int(
                                 self.widget.comboBox_HKLFontSize.currentText()),
                             alpha=phase_alpha,
@@ -1627,7 +1807,73 @@ class MplController(object):
         # print("JCPDS update takes {0:.2f}s at".format(time.time() - t_start),
         #      str(datetime.datetime.now())[:-7])
 
+    def _waterfall_plot_data(self, pattern, *, bgsub, normalize,
+                             convert_wavelength, base_max, base_wavelength):
+        x_source = pattern.x_bgsub if bgsub else pattern.x_raw
+        y_source = pattern.y_bgsub if bgsub else pattern.y_raw
+        x_source = np.asarray(x_source)
+        y_source = np.asarray(y_source)
+        source_max = float(np.nanmax(y_source)) if y_source.size else 0.0
+        key = (
+            id(pattern), id(x_source), id(y_source), tuple(x_source.shape),
+            tuple(y_source.shape), source_max, bool(bgsub), bool(normalize),
+            bool(convert_wavelength), float(pattern.wavelength),
+            float(base_wavelength), float(base_max))
+        cached = self._waterfall_transform_cache.get(key)
+        if cached is not None:
+            return cached
+        if normalize and np.isfinite(source_max) and source_max != 0.0:
+            y = y_source / source_max * base_max
+        else:
+            y = y_source
+        if convert_wavelength:
+            # Preserve PeakPo's established conversion behavior.  Its numerical
+            # definition is intentionally outside this optimization change.
+            x = convert_tth(
+                x_source, pattern.wavelength, base_wavelength)
+        else:
+            x = x_source
+        cached = (x, y)
+        if len(self._waterfall_transform_cache) >= 256:
+            self._waterfall_transform_cache.clear()
+        self._waterfall_transform_cache[key] = cached
+        return cached
+
+    def _track_waterfall_artist(self, artist):
+        if artist is not None:
+            self._waterfall_artists.append(artist)
+        return artist
+
+    def _clear_waterfall_artists(self):
+        for artist in list(self._waterfall_artists):
+            try:
+                artist.remove()
+            except Exception:
+                pass
+        self._waterfall_artists = []
+
+    def refresh_waterfall_overlay(self):
+        """Rebuild only waterfall lines and labels, preserving all other artists."""
+        if self._is_drawing or self._toolbar_active or \
+                self._pending_update_args is not None:
+            self.update()
+            return
+        ax = getattr(self.widget.mpl.canvas, "ax_pattern", None)
+        if ax is None:
+            self.update()
+            return
+        started_at = time.perf_counter()
+        limits = ax.axis()
+        self._clear_waterfall_artists()
+        if self.model.waterfall_exist():
+            self._plot_waterfallpatterns()
+        ax.axis(limits)
+        build_seconds = time.perf_counter() - started_at
+        self._schedule_canvas_draw(
+            started_at, build_seconds, {"waterfall": build_seconds})
+
     def _plot_waterfallpatterns(self):
+        self._clear_waterfall_artists()
         if not self.widget.checkBox_ShowWaterfall.isChecked():
             return
         # t_start = time.time()
@@ -1642,6 +1888,13 @@ class MplController(object):
         emphasis_rows = self._get_waterfall_emphasis_rows()
         dim_alpha = 0.25
         highlight_alpha = 1.0
+        bgsub = self.widget.checkBox_BgSub.isChecked()
+        normalize = self.widget.checkBox_IntNorm.isChecked()
+        convert_wavelength = self.widget.checkBox_SetToBasePtnLambda.isChecked()
+        base_y = self.model.base_ptn.y_bgsub if bgsub else \
+            self.model.base_ptn.y_raw
+        base_max = float(np.nanmax(base_y)) if np.size(base_y) else 0.0
+        gap_fraction = self.widget.horizontalSlider_WaterfallGaps.value() / 100.0
         j = 0  # this is needed for waterfall gaps
         # get y_max
         for reverse_idx, pattern in enumerate(self.model.waterfall_ptn[::-1]):
@@ -1654,39 +1907,22 @@ class MplController(object):
                     transform=self.widget.mpl.canvas.ax_pattern.transAxes,
                     color=pattern.color)
                 """
-                if self.widget.checkBox_BgSub.isChecked():
-                    ygap = self.widget.horizontalSlider_WaterfallGaps.value() * \
-                        self.model.base_ptn.y_bgsub.max() * float(j) / 100.
-                    y_bgsub = pattern.y_bgsub
-                    if self.widget.checkBox_IntNorm.isChecked():
-                        y = y_bgsub / y_bgsub.max() * \
-                            self.model.base_ptn.y_bgsub.max()
-                    else:
-                        y = y_bgsub
-                    x_t = pattern.x_bgsub
-                else:
-                    ygap = self.widget.horizontalSlider_WaterfallGaps.value() * \
-                        self.model.base_ptn.y_raw.max() * float(j) / 100.
-                    if self.widget.checkBox_IntNorm.isChecked():
-                        y = pattern.y_raw / pattern.y_raw.max() *\
-                            self.model.base_ptn.y_raw.max()
-                    else:
-                        y = pattern.y_raw
-                    x_t = pattern.x_raw
-                if self.widget.checkBox_SetToBasePtnLambda.isChecked():
-                    x = convert_tth(x_t, pattern.wavelength,
-                                    self.model.base_ptn.wavelength)
-                else:
-                    x = x_t
+                ygap = gap_fraction * base_max * float(j)
+                x, y = self._waterfall_plot_data(
+                    pattern, bgsub=bgsub, normalize=normalize,
+                    convert_wavelength=convert_wavelength,
+                    base_max=base_max,
+                    base_wavelength=self.model.base_ptn.wavelength)
                 alpha = highlight_alpha
                 if emphasis_rows:
                     row_idx = len(self.model.waterfall_ptn) - 1 - reverse_idx
                     if row_idx not in emphasis_rows:
                         alpha = dim_alpha
-                self.widget.mpl.canvas.ax_pattern.plot(
+                line = self.widget.mpl.canvas.ax_pattern.plot(
                     x, y + ygap, c=pattern.color, lw=float(
                         self.widget.comboBox_WaterfallLineThickness.
-                        currentText()), alpha=alpha)
+                        currentText()), alpha=alpha)[0]
+                self._track_waterfall_artist(line)
                 if self.widget.checkBox_ShowWaterfallLabels.isChecked():
                     wf_fontsize = 12
                     if hasattr(self.widget, "comboBox_WaterfallFontSize"):
@@ -1695,12 +1931,13 @@ class MplController(object):
                                 self.widget.comboBox_WaterfallFontSize.currentText())
                         except Exception:
                             pass
-                    self.widget.mpl.canvas.ax_pattern.text(
+                    self._track_waterfall_artist(
+                        self.widget.mpl.canvas.ax_pattern.text(
                         (x[-1] - x[0]) * 0.01 + x[0], y[0] + ygap,
                         os.path.basename(pattern.fname),
                         verticalalignment='bottom', horizontalalignment='left',
                         color=mcolors.to_rgba(pattern.color, alpha),
-                        fontsize=wf_fontsize)
+                        fontsize=wf_fontsize))
         """
         self.widget.mpl.canvas.ax_pattern.text(
             0.01, 0.97 - n_display * 0.05,
@@ -2390,11 +2627,7 @@ class MplController(object):
             self.widget.mpl.canvas.ax_pattern.set_xlabel(xlabel)
             
             self.widget.mpl.canvas.ax_pattern.format_coord = \
-                lambda x, y: \
-                "\n 2\u03B8={0:.3f}\u00B0, I={1:.4e}, d-sp={2:.4f}\u212B".\
-                format(x, y,
-                    self.widget.doubleSpinBox_SetWavelength.value()
-                    / 2. / np.sin(np.radians(x / 2.)))
+                self._format_pattern_coord
             
             # ✅ Only set cake format_coord if ax_cake exists
             if hasattr(self.widget.mpl.canvas, 'ax_cake'):
@@ -2428,6 +2661,12 @@ class MplController(object):
             if self._pending_update_args is not None:
                 self._update_timer.start(0)
 
+    def _format_pattern_coord(self, x, y):
+        dsp = _bragg_dspacing(
+            x, self.widget.doubleSpinBox_SetWavelength.value())
+        dsp_text = "NA" if dsp is None else f"{dsp:.4f}\u212B"
+        return f"\n 2\u03B8={x:.3f}\u00B0, I={y:.4e}, d-sp={dsp_text}"
+
     def _format_coord_x_y_z_dsp(self, x, y):
         """
         Read 2theta, azimuthal angle, intensity, and d-spacing from the image
@@ -2437,30 +2676,18 @@ class MplController(object):
         """
         ax = self.widget.mpl.canvas.ax_cake
 
-        # compute d-spacing from x (2-theta)
-        try:
-            dsp = (self.widget.doubleSpinBox_SetWavelength.value()
-                   / 2.0 / np.sin(np.radians(x / 2.0)))
-        except Exception:
-            dsp = None
+        dsp = _bragg_dspacing(
+            x, self.widget.doubleSpinBox_SetWavelength.value())
 
-        # If no image on the axis, return x,y,dsp only
-        if not ax.images:
+        cake_artist = self._cake_artist
+        # If no Cake artist is available, return x,y,dsp only.
+        if cake_artist is None or getattr(cake_artist, "axes", None) is not ax:
             if dsp is None:
                 return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp=NA".format(x, y)
             return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp={:.4f}\u212B".format(x, y, dsp)
 
-        img = ax.images[0]
-        data = img.get_array()
+        data = self._cake_display_data
         if data is None:
-            if dsp is None:
-                return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp=NA".format(x, y)
-            return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp={:.4f}\u212B".format(x, y, dsp)
-
-        # extent -> map data coords to pixel indices
-        xmin, xmax, ymin, ymax = img.get_extent()
-        if xmax == xmin or ymax == ymin:
-            # degenerate extent
             if dsp is None:
                 return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp=NA".format(x, y)
             return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp={:.4f}\u212B".format(x, y, dsp)
@@ -2474,24 +2701,25 @@ class MplController(object):
                 return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp=NA".format(x, y)
             return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp={:.4f}\u212B".format(x, y, dsp)
 
-        # fractional positions (0..nx-1, 0..ny-1)
-        fx = (x - xmin) / (xmax - xmin) * (nx - 1)
-        fy = (y - ymin) / (ymax - ymin) * (ny - 1)
-
-        # nearest-neighbor
-        col = int(round(fx))
-        row = int(round(fy))
-
-        # handle origin
-        origin = getattr(img, 'origin', None)
-        if origin == 'upper':
-            row = (ny - 1) - row
-
-        # clamp & check bounds
-        if col < 0 or col >= nx or row < 0 or row >= ny:
+        tth_centers = self._cake_tth_centers
+        chi_centers = self._cake_chi_centers
+        if tth_centers is None or chi_centers is None or \
+                len(tth_centers) != nx or len(chi_centers) != ny:
             if dsp is None:
                 return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp=NA".format(x, y)
             return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp={:.4f}\u212B".format(x, y, dsp)
+        try:
+            tth_edges = _coordinate_edges(tth_centers)
+            chi_edges = _coordinate_edges(chi_centers)
+        except ValueError:
+            return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp=NA".format(x, y)
+        if not (tth_edges[0] <= x <= tth_edges[-1]) or \
+                not (chi_edges[0] <= y <= chi_edges[-1]):
+            if dsp is None:
+                return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp=NA".format(x, y)
+            return "2\u03B8={:.3f}\u00B0, azi={:.1f}, I=NA, d-sp={:.4f}\u212B".format(x, y, dsp)
+        col = _nearest_coordinate_index(tth_centers, x)
+        row = _nearest_coordinate_index(chi_centers, y)
 
         # read intensity, handle masked/invalid
         try:
