@@ -14,20 +14,17 @@ def _get_mplstyle_path(name):
 class MplCanvas(FigureCanvasQTAgg):
     """Matplotlib canvas used by PeakPo."""
 
+    _SUBPLOT_MARGINS = {
+        "left": 0.078,
+        "bottom": 0.0625,
+        "right": 0.969,
+        "top": 0.9375,
+        "hspace": 0.0,
+    }
+
     def __init__(self):
         self.fig = Figure()
-        bbox = self.fig.get_window_extent().transformed(
-            self.fig.dpi_scale_trans.inverted()
-        )
-        width, height = bbox.width * self.fig.dpi, bbox.height * self.fig.dpi
-
-        self.fig.subplots_adjust(
-            left=50 / width,
-            bottom=30 / height,
-            right=1 - 20 / width,
-            top=1 - 30 / height,
-            hspace=0.0,
-        )
+        self._apply_subplot_margins()
 
         self.bgColor = "black"
         self.objColor = "white"
@@ -46,7 +43,17 @@ class MplCanvas(FigureCanvasQTAgg):
         self.updateGeometry()
         self.show_empty_state(draw=False)
 
+    def _apply_subplot_margins(self):
+        """Use compact, DPI-independent margins for every axes rebuild.
+
+        ``Figure.clear()`` restores Matplotlib's broad platform defaults.
+        Reapplying this policy keeps the plot area consistent between macOS
+        and Windows, including on high-DPI Windows displays.
+        """
+        self.fig.subplots_adjust(**self._SUBPLOT_MARGINS)
+
     def _define_axes(self, h_cake):
+        self._apply_subplot_margins()
         self._current_h_cake = h_cake
         self.gs = GridSpec(100, 1)
         self.ax_pattern = self.fig.add_subplot(self.gs[h_cake + 1 : 99, 0])

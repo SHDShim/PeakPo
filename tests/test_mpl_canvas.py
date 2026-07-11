@@ -20,3 +20,12 @@ def test_cake_x_tick_labels_stay_hidden_after_axis_rebuild():
 
     assert not canvas.ax_cake.xaxis.get_tick_params()["labelbottom"]
     assert all(not label.get_visible() for label in canvas.ax_cake.get_xticklabels())
+
+
+def test_compact_subplot_margins_survive_canvas_rebuild():
+    canvas = MplCanvas()
+    canvas.resize_axes(30)
+
+    subplotpars = canvas.fig.subplotpars
+    assert subplotpars.left == canvas._SUBPLOT_MARGINS["left"]
+    assert subplotpars.right == canvas._SUBPLOT_MARGINS["right"]
