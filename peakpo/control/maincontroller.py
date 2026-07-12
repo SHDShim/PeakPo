@@ -735,10 +735,13 @@ class MainController(object):
         table.setHorizontalHeaderLabels(["Mouse action", "Context", "Result"])
         rows = [
             ("Left drag", "Any plot", "Zoom to the drawn rectangle."),
+            ("Hold X + left drag", "Any plot", "Zoom X only while keeping the current Y range."),
             ("Hold Y + left drag", "Any plot", "Zoom Y only; the box spans the full visible X range."),
             ("Hold P + left drag", "Any plot", "Pan the plot while keeping the current zoom."),
             ("Very small left drag", "Any plot", "Ignored to avoid accidental zoom."),
             ("Right click", "Any plot", "Zoom out by 20% in X and Y."),
+            ("Hold X + right click", "Any plot", "Zoom out 20% in X only while keeping Y fixed."),
+            ("Hold Y + right click", "Any plot", "Zoom out 20% in Y only while keeping X fixed."),
             ("Double right click", "Any plot", "Return to the full current view."),
             ("Left double click", "Any plot", "Inspect d-spacing and nearest JCPDS/hkl information."),
             ("Set ROI, then left drag", "Map or Sequence ROI", "Draw ROI on the 1D or Cake plot."),
@@ -1858,6 +1861,10 @@ class MainController(object):
 
     def on_key_press(self, event):
         key = str(getattr(event, "key", "") or "").lower()
+        if key == 'x':
+            if hasattr(self.plot_interaction_ctrl, "set_zoom_x_modifier"):
+                self.plot_interaction_ctrl.set_zoom_x_modifier(True)
+            return
         if key == 'y':
             if hasattr(self.plot_interaction_ctrl, "set_zoom_y_modifier"):
                 self.plot_interaction_ctrl.set_zoom_y_modifier(True)
@@ -1892,6 +1899,8 @@ class MainController(object):
 
     def on_key_release(self, event):
         key = str(getattr(event, "key", "") or "").lower()
+        if key == 'x' and hasattr(self.plot_interaction_ctrl, "set_zoom_x_modifier"):
+            self.plot_interaction_ctrl.set_zoom_x_modifier(False)
         if key == 'y' and hasattr(self.plot_interaction_ctrl, "set_zoom_y_modifier"):
             self.plot_interaction_ctrl.set_zoom_y_modifier(False)
         if key == 'p' and hasattr(self.plot_interaction_ctrl, "set_pan_modifier"):
