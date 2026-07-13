@@ -106,14 +106,17 @@ def apply_raised_toggle_style(
         base_color="#4f4f4f",
         hover_color="#5a5a5a",
         pressed_color="#3e3e3e",
-        border_color="#d99200",
+        border_color="#4a4a4a",
+        side_border_color="#3a3a3a",
         checked_color="#d99200",
         checked_hover_color="#eca91a",
         checked_pressed_color="#ad6500",
-        text_color="#f0f0f0",
+        checked_border_color="#6f5200",
+        checked_side_border_color="#5a4300",
+        text_color="#fff0a0",
         checked_text_color="#1f1f1f",
         compact=False):
-    """Style a non-toolbar checkable button with a raised orange bevel."""
+    """Style a non-toolbar checkable button without changing its base shape."""
     button.setFlat(False)
     button.setAutoDefault(False)
     button.setDefault(False)
@@ -121,40 +124,18 @@ def apply_raised_toggle_style(
     pressed_padding = "3px 10px 1px 10px" if compact else "4px 14px 2px 14px"
     button.setStyleSheet(
         "QPushButton {"
-        "background-color: qlineargradient("
-        "x1:0, y1:0, x2:0, y2:1,"
-        f"stop:0 {hover_color},"
-        f"stop:0.48 {base_color},"
-        f"stop:1 {pressed_color});"
         f"color: {text_color};"
-        "border: 1px solid #d99200;"
-        "border-top-color: #ffd45a;"
-        "border-left-color: #f0b51f;"
-        "border-right-color: #9f6400;"
-        "border-bottom-color: #704300;"
-        "border-radius: 0px;"
-        f"padding: {padding};"
-        "}"
-        "QPushButton:hover {"
-        "background-color: qlineargradient("
-        "x1:0, y1:0, x2:0, y2:1,"
-        "stop:0 #666666,"
-        f"stop:0.50 {hover_color},"
-        f"stop:1 {base_color});"
-        "border-top-color: #ffe17a;"
-        "border-left-color: #ffc43a;"
-        "border-right-color: #b17300;"
-        "border-bottom-color: #7c4b00;"
         "}"
         "QPushButton:pressed {"
         "background-color: qlineargradient("
         "x1:0, y1:0, x2:0, y2:1,"
-        f"stop:0 {pressed_color},"
-        f"stop:1 {base_color});"
-        "border-top-color: #704300;"
-        "border-left-color: #9f6400;"
-        "border-right-color: #f0b51f;"
-        "border-bottom-color: #ffd45a;"
+        f"stop:0 {checked_pressed_color},"
+        "stop:1 #d88c00);"
+        f"color: {checked_text_color};"
+        "border-top-color: rgba(255, 255, 255, 0.35);"
+        f"border-left-color: {checked_side_border_color};"
+        f"border-right-color: {checked_side_border_color};"
+        "border-bottom-color: #2f2200;"
         f"padding: {pressed_padding};"
         "}"
         "QPushButton:checked {"
@@ -164,11 +145,11 @@ def apply_raised_toggle_style(
         f"stop:0.50 {checked_hover_color},"
         f"stop:1 {checked_color});"
         f"color: {checked_text_color};"
-        f"border: 1px solid {border_color};"
-        "border-top-color: #ffe68a;"
-        "border-left-color: #ffc63a;"
-        "border-right-color: #a76300;"
-        "border-bottom-color: #704300;"
+        f"border: 1px solid {checked_border_color};"
+        "border-top-color: rgba(255, 255, 255, 0.65);"
+        f"border-left-color: {checked_side_border_color};"
+        f"border-right-color: {checked_side_border_color};"
+        "border-bottom-color: #433000;"
         f"padding: {padding};"
         "}"
         "QPushButton:checked:hover {"
@@ -183,16 +164,14 @@ def apply_raised_toggle_style(
         "x1:0, y1:0, x2:0, y2:1,"
         f"stop:0 {checked_pressed_color},"
         "stop:1 #d88c00);"
-        "border-top-color: #704300;"
-        "border-left-color: #a76300;"
-        "border-right-color: #ffc63a;"
-        "border-bottom-color: #ffe68a;"
+        "border-top-color: rgba(255, 255, 255, 0.35);"
+        f"border-left-color: {checked_side_border_color};"
+        f"border-right-color: {checked_side_border_color};"
+        "border-bottom-color: #2f2200;"
         f"padding: {pressed_padding};"
         "}"
         "QPushButton:focus {"
         "outline: none;"
-        "border-top-color: #ffe68a;"
-        "border-left-color: #ffc63a;"
         "}"
     )
 

@@ -191,6 +191,9 @@ class MainController(object):
         # Bring to front (important on macOS)
         self.widget.raise_()
         self.widget.activateWindow()
+        canvas = getattr(getattr(self.widget, "mpl", None), "canvas", None)
+        if canvas is not None:
+            QtCore.QTimer.singleShot(0, canvas.setFocus)
 
     def shutdown(self):
         if self._shutdown_done:

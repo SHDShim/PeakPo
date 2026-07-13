@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 import numpy as np
 from qtpy import QtWidgets
+from qtpy import QtCore
 
 from peakpo.control.mplcontroller import (
     _azimuth_shift_rows,
@@ -10,7 +11,10 @@ from peakpo.control.mplcontroller import (
     _coordinates_are_uniform,
     _nearest_coordinate_index,
 )
-from peakpo.control.plotinteractioncontroller import PlotInteractionController
+from peakpo.control.plotinteractioncontroller import (
+    PlotInteractionController,
+    _PlotKeyStateFilter,
+)
 from peakpo.view.mplwidget import MplCanvas
 
 
@@ -140,3 +144,24 @@ def test_x_modifier_right_click_zooms_x_only():
 
     np.testing.assert_allclose(canvas.ax_pattern.get_xlim(), [18.0, 42.0])
     np.testing.assert_allclose(canvas.ax_pattern.get_ylim(), [1.0, 2.0])
+
+
+def test_plot_key_state_filter_tracks_keys_before_canvas_focus():
+    ctrl, _canvas = _make_controller()
+    key_filter = _PlotKeyStateFilter(ctrl)
+
+    press = SimpleNamespace(
+        type=lambda: QtCore.QEvent.KeyPress,
+        text=lambda: "x",
+        key=lambda: QtCore.Qt.Key_X,
+    )
+    release = SimpleNamespace(
+        type=lambda: QtCore.QEvent.KeyRelease,
+        text=lambda: "x",
+        key=lambda: QtCore.Qt.Key_X,
+    )
+
+    assert key_filter.eventFilter(None, press) is False
+    assert ctrl._zoom_x_modifier is True
+    assert key_filter.eventFilter(None, release) is False
+    assert ctrl._zoom_x_modifier is False

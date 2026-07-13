@@ -147,9 +147,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setWindowTitle("PeakPo ver. " + str(__version__) + " on " + env)
         #
         self.build_ui()
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        if hasattr(self, "mpl") and hasattr(self.mpl, "canvas"):
+            self.setFocusProxy(self.mpl.canvas)
         self.connect_channel()
         # the two lines needs to be considred for move from this widget file
         self.actionCiting_PeakPo.triggered.connect(self.about)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        canvas = getattr(getattr(self, "mpl", None), "canvas", None)
+        if canvas is not None:
+            QtCore.QTimer.singleShot(0, canvas.setFocus)
 
     def build_ui(self):
         # self.pushButton_MakeBasePtn.setEnabled(False)

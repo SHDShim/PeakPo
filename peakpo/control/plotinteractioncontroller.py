@@ -5,6 +5,37 @@ from matplotlib.backend_bases import MouseButton
 from matplotlib import patches
 
 
+class _PlotKeyStateFilter(QtCore.QObject):
+    """Track plot modifier keys even before the canvas has focus."""
+
+    def __init__(self, controller):
+        super().__init__()
+        self._controller = controller
+
+    def eventFilter(self, _obj, event):
+        if event is None:
+            return False
+        event_type = event.type()
+        if event_type not in (
+                QtCore.QEvent.KeyPress, QtCore.QEvent.KeyRelease):
+            return False
+        key = str(getattr(event, "text", lambda: "")() or "").lower()
+        if not key:
+            key_code = getattr(event, "key", lambda: None)()
+            key_map = {
+                getattr(QtCore.Qt, "Key_X", None): "x",
+                getattr(QtCore.Qt, "Key_Y", None): "y",
+                getattr(QtCore.Qt, "Key_P", None): "p",
+            }
+            key = key_map.get(key_code, "")
+        if key not in ("x", "y", "p"):
+            return False
+
+        pressed = event_type == QtCore.QEvent.KeyPress
+        self._controller._set_key_state(key, pressed)
+        return False
+
+
 class PlotInteractionController(object):
     """Centralized mouse handling for the shared 1D/Cake plot."""
 
@@ -38,6 +69,7 @@ class PlotInteractionController(object):
         self._plot_help_active = False
         self._editable_xrange = None
         self._editable_xrange_drag = None
+        self._key_state_filter = None
 
     def connect(self):
         canvas = self.widget.mpl.canvas
@@ -45,6 +77,10 @@ class PlotInteractionController(object):
         canvas.mpl_connect('button_release_event', self.on_release)
         canvas.mpl_connect('motion_notify_event', self.on_motion)
         canvas.mpl_connect('figure_leave_event', self.on_leave)
+        app = QtWidgets.QApplication.instance()
+        if app is not None and self._key_state_filter is None:
+            self._key_state_filter = _PlotKeyStateFilter(self)
+            app.installEventFilter(self._key_state_filter)
         self.main._deactivate_toolbar_modes()
 
     def set_zoom_y_modifier(self, active):
@@ -55,6 +91,14 @@ class PlotInteractionController(object):
 
     def set_pan_modifier(self, active):
         self._pan_modifier = bool(active)
+
+    def _set_key_state(self, key, active):
+        if key == "x":
+            self._zoom_x_modifier = bool(active)
+        elif key == "y":
+            self._zoom_y_modifier = bool(active)
+        elif key == "p":
+            self._pan_modifier = bool(active)
 
     def on_press(self, event):
         self.main._deactivate_toolbar_modes()

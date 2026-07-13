@@ -143,23 +143,26 @@ Rules:
 
 Checkable (`setCheckable(true)`) push buttons should follow a consistent visual style that clearly distinguishes their unchecked and checked states without conflicting with the application's existing color semantics.
 
+- Use a single shared helper in `peakpo/view/ui_policy.py` for non-toolbar checkable buttons such as `Set ROI`, `Set position range from plot`, `Set FWHM max from plot`, and `Add range from plot`.
+- That helper should define the state template in one place: unchecked buttons use the normal Fusion button appearance with only a yellow label color, while pressed or checked buttons use the yellow active-button appearance.
+- Do not duplicate the same toggle-button QSS in controllers; reference the shared helper instead.
+
 ### Unchecked
 
-- Use the standard dark gray button background.
-- Draw a thin 1 px orange outline or border.
-- Use the normal button text color.
+- Preserve the normal Fusion button background, border, bevel, hover, and focus treatment.
+- Change only the label color to yellow so users can recognize the control as checkable.
 
 ### Checked
 
-- Fill the button with the same orange used for the unchecked border.
-- Use a slightly darker orange border, or no distinct border if the fill provides sufficient contrast.
-- Use a high-contrast text color, white or dark gray depending on the fill color.
+- Fill the button with the shared yellow/orange active-button style.
+- Use a darker orange border or edge treatment if it improves the raised-button effect.
+- Use high-contrast text, normally dark gray, on the yellow fill.
 - Optionally display a checkmark icon if appropriate.
 
 ### Rationale
 
-- The orange outline indicates that the button is checkable even in its normal state.
-- Filling the button with the same orange provides an immediate and intuitive indication that the option is enabled.
+- The yellow label indicates that the normal-looking button is checkable without making the unchecked state visually conflict with adjacent ordinary buttons.
+- Filling the button with yellow/orange provides an immediate and intuitive indication that the option is enabled or actively being pressed.
 - Using a single accent color for both states creates a strong visual association while avoiding conflicts with the application's existing color semantics:
   - Green: positive/save actions
   - Yellow: important actions
@@ -184,6 +187,11 @@ rules in individual views.
 - Top-toolbar `QPushButton` controls use a flat, non-beveled appearance.
   Preserve this treatment for new toolbar controls; panel buttons retain the
   application's default native shape unless they have an explicit local style.
+- Non-toolbar checkable buttons that start and stop plot interactions should
+  use the shared raised-toggle helper in `ui_policy.py` rather than per-button
+  inline styles. Their unchecked state should retain the normal Fusion button
+  look except for yellow label text; their pressed and checked states should
+  use the shared yellow active-button look. Keep typography regular-weight.
 - Colored panel actions retain their semantic fill but use the shared accent
   style's raised, native-button-like edge treatment rather than a flat tile.
 - Add new common colors, spacing, or dimensions to `ui_policy.py` rather than

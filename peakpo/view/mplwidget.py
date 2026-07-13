@@ -40,6 +40,7 @@ class MplCanvas(FigureCanvasQTAgg):
 
         super().__init__(self.fig)
         self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.updateGeometry()
         self.show_empty_state(draw=False)
 
@@ -163,7 +164,8 @@ class MplWidget(QtWidgets.QWidget):
         super().__init__(parent)
         self.canvas = MplCanvas()
         self.canvas.setParent(self)
-        self.canvas.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setFocusProxy(self.canvas)
         self.canvas.setFocus()
 
         self.vbl = QtWidgets.QVBoxLayout()
