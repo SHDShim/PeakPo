@@ -4,13 +4,44 @@
 
 This repository contains `PeakPo`, a Python desktop application for X-ray diffraction analysis.
 
+Main application functions include:
+
+- JCPDS overlaying and reference-bar display
+- Waterfall plotting and pattern stacking
+- Azimuthal integration for Cake images
+- Peak fitting and peak-parameter management
+- Unit-cell fitting
+- Map generation from selected ROIs
+- Difference mode / background subtraction workflows
+- Sequence analysis from ROI-selected CHI files
+- Plot inspection and navigation tools for 1D and Cake data
+
+Release-related work should use the `pypi-release` skill so packaging, build,
+validation, tagging, and publication stay consistent.
+
 ## Project Structure
 
 - `peakpo/`: main application package
 - `ui/`: Qt Designer UI source
 - `shortcuts/`: launcher helpers for local/manual use
 - `jupyter-tools/`: notebooks and utility material not shipped with the package
+- `docs/`: user and agent documentation for this repository; treat it as the
+  canonical location for Markdown guidance, usage notes, and development
+  references
 - `scripts/`: obsolete helper files; do not rely on them
+
+## Documentation Policy
+
+- Check `docs/` before adding new documentation or renaming existing files.
+- Keep filenames in `docs/` consistent with a lowercase kebab-case pattern
+  unless there is a strong reason to preserve an established exception.
+- Use clear, purpose-driven names that describe the content in plain language.
+- Do not change document content when only filename normalization is requested.
+- Prefer updating or extending existing documents in `docs/` when the topic
+  already exists, so related guidance stays consolidated and easy to find.
+- Treat `docs/` as the reference point for documentation consistency during
+  future updates, including work in other repositories that follow the same
+  pattern.
 
 ## Packaging and Distribution
 
@@ -34,6 +65,41 @@ This repository contains `PeakPo`, a Python desktop application for X-ray diffra
   normal workflows. Keep compatibility shims, legacy class locations, and
   representative read tests when changing serialization or session code.
 
+## Consistency Memory
+
+Treat this repository as a long-lived scientific application with a stable
+user-facing workflow. Future updates should preserve terminology, interaction
+patterns, and file conventions unless there is a strong reason to change them.
+
+- Before changing code, inspect the relevant controller, model, view, and
+  documentation files together.
+- Use the existing shared helpers and style policy modules before adding new
+  one-off logic or new UI styling.
+- Keep UI labels, tooltips, object names, connected actions, and documentation
+  wording aligned when a user-facing control changes.
+- Update `docs/` when behavior changes, especially for user workflows, mouse
+  actions, or menu placement.
+- Use `docs/` as the canonical place for future user and agent documentation,
+  and keep filenames in the established lowercase kebab-case format.
+- Treat the shared plot interaction controller as the source of truth for
+  mouse behavior on the 1D plot and Cake plot.
+- Remember that ROI workflows are spread across Map, Sequence, and Cake tabs;
+  keep those paths consistent when changing ROI behavior.
+- Preserve peak-fitting semantics in the `Fits` tab, including peak add/remove,
+  peak dragging, and constraint editing.
+- Preserve backward compatibility for legacy session and diffraction file
+  formats when changing serialization or loading code.
+- Prefer runtime policy helpers over edits to generated UI code when a change
+  affects application-wide behavior.
+- If a change introduces a new common pattern, add the shared rule or helper
+  first, then apply it in the feature code.
+- Treat graph update performance as a core constraint. Do not introduce
+  changes that make graphify updates slower unless the user explicitly asks
+  for a heavier rebuild or richer extraction path.
+- Prefer incremental graph updates and lightweight source changes whenever
+  possible, since graph freshness is important for future code review and
+  documentation consistency.
+
 ## Verification
 
 Use the `dev26a` Conda environment for local Python commands in this repository. Prefer the environment's Python executable directly when possible:
@@ -47,6 +113,15 @@ Use the `dev26a` Conda environment for local Python commands in this repository.
 Avoid assuming the shell's currently active Conda environment is correct. In particular, the `main` environment may be active in automated shells but is not the intended development environment for this project.
 
 Use judgment with GUI launch commands in headless or sandboxed environments.
+
+## Release Workflow
+
+- Use the `pypi-release` skill for PyPI packaging, release preparation, build,
+  validation, tagging, and publication tasks.
+- Follow the skill-driven workflow instead of ad hoc release steps so release
+  handling stays consistent across future updates.
+- Update package metadata in `pyproject.toml`, `setup.py`, changelog-style
+  notes, and release checks in the order recommended by the skill.
 
 ## Graphify
 

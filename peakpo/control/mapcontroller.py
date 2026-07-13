@@ -22,6 +22,7 @@ from .xrdiohelpers import (
 )
 from ..utils import get_temp_dir
 from ..utils.dialogs import dialog_openfiles_hide_param_dirs
+from ..view.ui_policy import apply_raised_toggle_style
 
 
 class MapController(object):
@@ -192,19 +193,12 @@ class MapController(object):
         if button is None:
             return
         button.setChecked(bool(active))
+        apply_raised_toggle_style(button, checked=active)
         if active:
             button.setText("ROI ON")
-            button.setStyleSheet(
-                "QPushButton { background-color: #d6a800; color: #1f1f1f; "
-                "border: 1px solid #b8860b; }")
             button.setToolTip("ROI selection is active. Click again to cancel.")
         else:
             button.setText("Set ROI")
-            button.setStyleSheet(
-                "QPushButton { background-color: #444444; color: #f0f0f0; "
-                "border: 1px solid #d6a800; }"
-                "QPushButton:hover { background-color: #505050; }"
-                "QPushButton:pressed { background-color: #383838; }")
             button.setToolTip("Click to draw an ROI on the 1D or Cake plot.")
 
     def _set_status(self, msg):

@@ -16,6 +16,7 @@ from .xrdiohelpers import (
     load_cake_data,
 )
 from ..utils.dialogs import dialog_openfiles_hide_param_dirs
+from ..view.ui_policy import apply_raised_toggle_style
 
 
 class SequenceController(object):
@@ -131,17 +132,12 @@ class SequenceController(object):
         if button is None:
             return
         button.setChecked(bool(active))
+        apply_raised_toggle_style(button, checked=active)
         if active:
             button.setText("ROI ON")
-            button.setStyleSheet(
-                "QPushButton { background-color: #d6a800; color: #1f1f1f; border: 1px solid #b88a00; }")
             button.setToolTip("ROI selection is active. Click again to cancel.")
         else:
             button.setText("Set ROI")
-            button.setStyleSheet(
-                "QPushButton { background-color: #444444; border: 1px solid #d6a800; color: #f0f0f0; }"
-                "QPushButton:hover { background-color: #505050; }"
-                "QPushButton:pressed { background-color: #383838; }")
             button.setToolTip("Click to draw an ROI on the 1D or Cake plot.")
 
     def _set_status(self, msg):

@@ -6,6 +6,7 @@ from qtpy import QtGui
 from qtpy import QtWidgets
 from .mplcontroller import MplController
 from .peakfittablecontroller import PeakfitTableController
+from ..view.ui_policy import apply_raised_toggle_style
 from ..utils import make_filename, get_temp_dir, dialog_openfile_hide_param_dirs
 from ..compat_pickle import PeakPoCompatDillUnpickler
 from ..model.param_session_io import load_section_from_param
@@ -15,13 +16,7 @@ from ..ds_section.section import DEFAULT_CENTER_HALF_RANGE, DEFAULT_FWHM_MIN, \
 
 
 def _set_toggle_button_style(button, checked):
-    if checked:
-        button.setStyleSheet(
-            "QPushButton {background-color: #e0b000; color: black;}"
-            "QPushButton:checked {background-color: #f1c232; color: black;}"
-        )
-    else:
-        button.setStyleSheet("")
+    apply_raised_toggle_style(button, checked=checked)
 
 
 class _TableBackspaceKeyFilter(QtCore.QObject):
@@ -75,6 +70,8 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
             self._fwhm_toggle_off_text, self)
         self.button_visual_position.setCheckable(True)
         self.button_visual_fwhm.setCheckable(True)
+        apply_raised_toggle_style(self.button_visual_position, checked=False)
+        apply_raised_toggle_style(self.button_visual_fwhm, checked=False)
         self._update_visual_toggle_style(self.button_visual_position, False)
         self._update_visual_toggle_style(self.button_visual_fwhm, False)
         self.button_apply = QtWidgets.QPushButton("Apply", self)
@@ -225,18 +222,7 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
         button.blockSignals(old_state)
 
     def _update_visual_toggle_style(self, button, checked):
-        if checked:
-            button.setStyleSheet(
-                "QPushButton { background-color: #d6a800; color: #1f1f1f; border: 1px solid #b88a00; }"
-                "QPushButton:hover { background-color: #e0b000; }"
-                "QPushButton:pressed { background-color: #c09000; }"
-            )
-        else:
-            button.setStyleSheet(
-                "QPushButton { background-color: #444444; border: 1px solid #d6a800; color: #f0f0f0; }"
-                "QPushButton:hover { background-color: #505050; }"
-                "QPushButton:pressed { background-color: #383838; }"
-            )
+        apply_raised_toggle_style(button, checked=checked)
 
     def _cancel_other_visual_toggle(self, active_button):
         if active_button is self.button_visual_position:
@@ -449,6 +435,7 @@ class _BackgroundSetupDialog(QtWidgets.QDialog):
         self.button_visual_anchor = QtWidgets.QPushButton("Add range from plot", self)
         self.button_remove_anchor = QtWidgets.QPushButton("Remove range", self)
         self.button_visual_anchor.setCheckable(True)
+        apply_raised_toggle_style(self.button_visual_anchor, checked=False)
         for button in (self.button_add_anchor, self.button_visual_anchor,
                        self.button_remove_anchor):
             button.setMinimumHeight(25)
@@ -914,33 +901,11 @@ class PeakFitController(object):
         button.setChecked(bool(checked))
         button.setDown(bool(checked))
         button.setText(on_text if checked else off_text)
-        if checked:
-            button.setStyleSheet(
-                "QPushButton { background-color: #d6a800; color: #1f1f1f; border: 1px solid #b88a00; }"
-                "QPushButton:hover { background-color: #e0b000; }"
-                "QPushButton:pressed { background-color: #c09000; }"
-            )
-        else:
-            button.setStyleSheet(
-                "QPushButton { background-color: #444444; border: 1px solid #d6a800; color: #f0f0f0; }"
-                "QPushButton:hover { background-color: #505050; }"
-                "QPushButton:pressed { background-color: #383838; }"
-            )
+        apply_raised_toggle_style(button, checked=checked)
         button.blockSignals(old_state)
 
     def _update_visual_toggle_style(self, button, checked):
-        if checked:
-            button.setStyleSheet(
-                "QPushButton { background-color: #d6a800; color: #1f1f1f; border: 1px solid #b88a00; }"
-                "QPushButton:hover { background-color: #e0b000; }"
-                "QPushButton:pressed { background-color: #c09000; }"
-            )
-        else:
-            button.setStyleSheet(
-                "QPushButton { background-color: #444444; border: 1px solid #d6a800; color: #f0f0f0; }"
-                "QPushButton:hover { background-color: #505050; }"
-                "QPushButton:pressed { background-color: #383838; }"
-            )
+        apply_raised_toggle_style(button, checked=checked)
 
     def _clear_constraints_toggle_buttons(self, except_button=None):
         pairs = [
@@ -1631,7 +1596,7 @@ class PeakFitController(object):
             self.plot_interaction_ctrl.cancel_range_tool()
             if hasattr(self.widget, "pushButton_RemoveBGAnchor"):
                 self.widget.pushButton_RemoveBGAnchor.setText("Remove range")
-                self.widget.pushButton_RemoveBGAnchor.setStyleSheet("")
+                _set_toggle_button_style(self.widget.pushButton_RemoveBGAnchor, False)
             return
 
         def remove_range(xmin, xmax):
@@ -1650,16 +1615,13 @@ class PeakFitController(object):
             self._sync_anchor_rows_to_section()
             if hasattr(self.widget, "pushButton_RemoveBGAnchor"):
                 self.widget.pushButton_RemoveBGAnchor.setText("Stop picking ranges")
-                self.widget.pushButton_RemoveBGAnchor.setStyleSheet(
-                    "QPushButton {background-color: #e0b000; color: black;}"
-                    "QPushButton:checked {background-color: #f1c232; color: black;}"
-                )
+                _set_toggle_button_style(self.widget.pushButton_RemoveBGAnchor, True)
 
         def deactivate():
             if hasattr(self.widget, "pushButton_RemoveBGAnchor"):
                 self.widget.pushButton_RemoveBGAnchor.setChecked(False)
                 self.widget.pushButton_RemoveBGAnchor.setText("Remove range")
-                self.widget.pushButton_RemoveBGAnchor.setStyleSheet("")
+                _set_toggle_button_style(self.widget.pushButton_RemoveBGAnchor, False)
 
         self.plot_interaction_ctrl.start_range_tool(
             "Remove background anchor range", remove_range, repeat=True, cancel_callback=deactivate)
@@ -1668,18 +1630,7 @@ class PeakFitController(object):
             _set_toggle_button_style(self.widget.pushButton_RemoveBGAnchor, True)
 
     def _set_bg_toggle_button_style(self, button, checked):
-        if checked:
-            button.setStyleSheet(
-                "QPushButton { background-color: #d6a800; color: #1f1f1f; border: 1px solid #b88a00; }"
-                "QPushButton:hover { background-color: #e0b000; }"
-                "QPushButton:pressed { background-color: #c09000; }"
-            )
-        else:
-            button.setStyleSheet(
-                "QPushButton { background-color: #444444; border: 1px solid #d6a800; color: #f0f0f0; }"
-                "QPushButton:hover { background-color: #505050; }"
-                "QPushButton:pressed { background-color: #383838; }"
-            )
+        apply_raised_toggle_style(button, checked=checked)
 
     def _arm_bg_anchor_range(self, checked=False):
         if self.plot_interaction_ctrl is None:
