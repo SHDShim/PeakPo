@@ -746,10 +746,9 @@ class CakeController(object):
         if not os.path.exists(poni_path):
             return [
                 ("Status", "Selected PONI file is missing."),
-                ("Path", str(poni_path)),
             ]
 
-        entries = [("Path", str(poni_path))]
+        entries = []
         try:
             poni_content = read_any_poni_file(poni_path)
         except OSError:

@@ -323,6 +323,9 @@ class MainController(object):
         """
         self.widget.pushButton_UpdateBackground.clicked.connect(
             self.update_bgsub)
+        if hasattr(self.widget, "pushButton_SetBackgroundROIToCurrentRange"):
+            self.widget.pushButton_SetBackgroundROIToCurrentRange.clicked.connect(
+                self.set_background_roi_to_current_range)
         if hasattr(self.widget, "pushButton_ResetBGParams"):
             self.widget.pushButton_ResetBGParams.clicked.connect(
                 self.reset_bg_params_to_default)
@@ -2085,6 +2088,16 @@ class MainController(object):
         '''
         this is only to read the current inputs and replot
         '''
+        limits = None
+        canvas = getattr(getattr(self.widget, "mpl", None), "canvas", None)
+        ax_pattern = getattr(canvas, "ax_pattern", None)
+        if ax_pattern is not None:
+            try:
+                xlim = ax_pattern.get_xlim()
+                ylim = ax_pattern.get_ylim()
+                limits = [xlim[0], xlim[1], ylim[0], ylim[1]]
+            except Exception:
+                limits = None
         if not self.model.base_ptn_exist():
             QtWidgets.QMessageBox.warning(self.widget, "Warning",
                                           "Load a base pattern first.")
@@ -2138,7 +2151,24 @@ class MainController(object):
                     "without raw data.".format(n_skipped))
         if self._plot_update_deferred():
             return
-        self.plot_new_graph()
+        if limits is None:
+            self.plot_new_graph()
+            return
+        self.plot_ctrl.refresh_pattern_data(limits=limits)
+        self.plot_ctrl.update_jcpds_only()
+        self._schedule_roi_overlays_after_plot_update()
+
+    def set_background_roi_to_current_range(self):
+        canvas = getattr(getattr(self.widget, "mpl", None), "canvas", None)
+        ax_pattern = getattr(canvas, "ax_pattern", None)
+        if ax_pattern is None:
+            return
+        try:
+            x0, x1 = ax_pattern.get_xlim()
+        except Exception:
+            return
+        self.widget.doubleSpinBox_Background_ROI_min.setValue(min(x0, x1))
+        self.widget.doubleSpinBox_Background_ROI_max.setValue(max(x0, x1))
 
     def reset_bg_params_to_default(self):
         self.widget.spinBox_BGParam0.setValue(20)

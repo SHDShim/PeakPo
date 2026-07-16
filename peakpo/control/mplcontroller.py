@@ -1026,7 +1026,7 @@ class MplController(object):
         return float(spin.value())
 
     def _track_jcpds_artist(self, artist, hkl=False, phase_index=None,
-                            base_alpha=None):
+                            base_alpha=None, base_color=None):
         if artist is not None:
             try:
                 artist.set_gid("peakpo_jcpds_hkl" if hkl else "peakpo_jcpds")
@@ -1036,6 +1036,7 @@ class MplController(object):
             artist._peakpo_jcpds_hkl = bool(hkl)
             artist._peakpo_jcpds_phase_index = phase_index
             artist._peakpo_jcpds_base_alpha = base_alpha
+            artist._peakpo_jcpds_base_color = base_color
             self._jcpds_overlay_artists.append(artist)
             if hkl:
                 self._jcpds_hkl_artists.append(artist)
@@ -1459,11 +1460,17 @@ class MplController(object):
                 phase_index = getattr(artist, "_peakpo_jcpds_phase_index", None)
                 if phase_index is None:
                     continue
+                alpha = self._get_jcpds_plot_alpha(phase_index, emphasis_rows)
                 try:
-                    artist.set_alpha(
-                        self._get_jcpds_plot_alpha(phase_index, emphasis_rows))
+                    artist.set_alpha(alpha)
                 except Exception:
                     pass
+                base_color = getattr(artist, "_peakpo_jcpds_base_color", None)
+                if base_color is not None:
+                    try:
+                        artist.set_color(mcolors.to_rgba(base_color, alpha))
+                    except Exception:
+                        pass
             self.widget.mpl.canvas.draw_idle()
             return
         canvas = self.widget.mpl.canvas
@@ -1804,6 +1811,9 @@ class MplController(object):
                         unique_entries, leg_jcpds.get_texts()):
                     alpha = self._get_jcpds_plot_alpha(phase_index, emphasis_rows)
                     txt.set_color(mcolors.to_rgba(color, alpha))
+                    self._track_jcpds_artist(
+                        txt, phase_index=phase_index, base_alpha=alpha,
+                        base_color=color)
         # print("JCPDS update takes {0:.2f}s at".format(time.time() - t_start),
         #      str(datetime.datetime.now())[:-7])
 

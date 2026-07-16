@@ -268,6 +268,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._setup_histogram_config_group()
         self._setup_plot_setup_group()
         self._setup_update_background_button()
+        self._setup_background_range_button()
+        self._setup_background_parameter_labels()
         self._setup_bg_default_button()
         self._setup_cake_colormap_control()
         self._setup_plot_control_export()
@@ -1559,6 +1561,38 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_UpdateBackground.setMinimumHeight(28)
         self.pushButton_UpdateBackground.setMaximumHeight(28)
         self.pushButton_UpdateBackground.setStyleSheet("")
+        if hasattr(self, "verticalLayout_21") and hasattr(self, "groupBox_7"):
+            self.verticalLayout_21.removeWidget(self.pushButton_UpdateBackground)
+            insert_index = self.verticalLayout_21.indexOf(self.groupBox_7) + 1
+            if insert_index <= 0:
+                insert_index = max(0, self.verticalLayout_21.count() - 1)
+            self.verticalLayout_21.insertWidget(
+                insert_index, self.pushButton_UpdateBackground)
+
+    def _setup_background_range_button(self):
+        if (not hasattr(self, "groupBox_4")) or \
+                (not hasattr(self, "gridLayout_9")) or \
+                hasattr(self, "pushButton_SetBackgroundROIToCurrentRange"):
+            return
+        self.pushButton_SetBackgroundROIToCurrentRange = QtWidgets.QPushButton(
+            "Set to current two theta range", self.groupBox_4)
+        self.pushButton_SetBackgroundROIToCurrentRange.setObjectName(
+            "pushButton_SetBackgroundROIToCurrentRange")
+        self.pushButton_SetBackgroundROIToCurrentRange.setToolTip(
+            "Copy the current 2-theta plot view into the background-fit range.")
+        self.pushButton_SetBackgroundROIToCurrentRange.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.pushButton_SetBackgroundROIToCurrentRange.setMinimumHeight(28)
+        self.gridLayout_9.addWidget(
+            self.pushButton_SetBackgroundROIToCurrentRange, 3, 0, 1, 3)
+
+    def _setup_background_parameter_labels(self):
+        for name, text in (
+                ("label_4", "N Points:"),
+                ("label_6", "N Order:"),
+                ("label_5", "N Iteration:")):
+            if hasattr(self, name):
+                getattr(self, name).setText(text)
 
     def _setup_light_background_checkbox(self):
         if (not hasattr(self, "groupBox_34")) or \
@@ -1638,9 +1672,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(self, "pushButton_ResetBGParams"):
             return
         self.pushButton_ResetBGParams = QtWidgets.QPushButton(
-            "Default params", self.groupBox_7)
+            "Reset to default", self.groupBox_7)
         self.pushButton_ResetBGParams.setObjectName("pushButton_ResetBGParams")
-        self.pushButton_ResetBGParams.setMinimumSize(QtCore.QSize(0, 25))
+        width = 75
+        if hasattr(self, "spinBox_BGParam0"):
+            width = max(width, self.spinBox_BGParam0.minimumWidth())
+        self.pushButton_ResetBGParams.setMinimumSize(QtCore.QSize(width, 25))
+        self.pushButton_ResetBGParams.setSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         self.pushButton_ResetBGParams.setToolTip(
             "Reset background parameters to defaults: N Points=20, N Order=10, N Iteration=20")
         self.gridLayout_5.addWidget(self.pushButton_ResetBGParams, 3, 2, 1, 1)
@@ -1743,6 +1782,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "pushButton_ExportPythonView",
             "pushButton_SetPosRange",
             "pushButton_SetFwhmMax",
+            "pushButton_SetBackgroundROIToCurrentRange",
             "pushButton_AddCurrentView",
             "pushButton_AddRangeFromPlot",
             "pushButton_RemoveBGAnchor",
@@ -2317,9 +2357,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.cake_hist_widget.spin_low_pct.setMinimumHeight(25)
         self.cake_hist_widget.spin_high_pct.setMinimumHeight(25)
         self.cake_hist_widget.label_low.setMinimumWidth(0)
-        self.cake_hist_widget.label_low.setMaximumWidth(60)
+        self.cake_hist_widget.label_low.setMaximumWidth(42)
+        self.cake_hist_widget.label_low.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.cake_hist_widget.label_high.setMinimumWidth(0)
-        self.cake_hist_widget.label_high.setMaximumWidth(65)
+        self.cake_hist_widget.label_high.setMaximumWidth(46)
+        self.cake_hist_widget.label_high.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         for spin in (self.cake_hist_widget.spin_low_pct,
                      self.cake_hist_widget.spin_high_pct):
             spin.setMinimumWidth(74)
@@ -2330,8 +2374,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.check_log, 0, 0, 1, 1)
         self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.button_reset_view, 0, 3, 1, 1)
         self.gridLayout_CakeTop.addWidget(self.cake_hist_widget.button_edge, 0, 5, 1, 1)
-        self.gridLayout_CakeTop.setColumnStretch(2, 1)
-        self.gridLayout_CakeTop.setColumnStretch(4, 1)
+        self.gridLayout_CakeTop.setColumnStretch(2, 0)
+        self.gridLayout_CakeTop.setColumnStretch(4, 0)
+        self.gridLayout_CakeTop.setColumnMinimumWidth(2, 8)
+        self.gridLayout_CakeTop.setColumnMinimumWidth(4, 8)
 
         if hasattr(self, "groupBox_CakeColormap"):
             self.groupBox_CakeColormap.setVisible(False)

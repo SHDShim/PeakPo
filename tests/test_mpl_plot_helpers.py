@@ -1,10 +1,13 @@
+import os
 from types import SimpleNamespace
 
 import numpy as np
+from matplotlib import colors as mcolors
 from qtpy import QtWidgets
 from qtpy import QtCore
 
 from peakpo.control.mplcontroller import (
+    MplController,
     _azimuth_shift_rows,
     _bragg_dspacing,
     _coordinate_edges,
@@ -16,6 +19,9 @@ from peakpo.control.plotinteractioncontroller import (
     _PlotKeyStateFilter,
 )
 from peakpo.view.mplwidget import MplCanvas
+
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 
 _APP = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -165,3 +171,108 @@ def test_plot_key_state_filter_tracks_keys_before_canvas_focus():
     assert ctrl._zoom_x_modifier is True
     assert key_filter.eventFilter(None, release) is False
     assert ctrl._zoom_x_modifier is False
+
+
+class _PhaseStub:
+    def __init__(self, name, color, volume):
+        self.name = name
+        self.color = color
+        self.v = volume
+        self.display = True
+        self.twk_int = 1.0
+        self.symmetry = "cubic"
+
+    def cal_dsp(self, pressure, temperature, use_table_for_0GPa=True):
+        del pressure, temperature, use_table_for_0GPa
+
+    def get_tthVSint(self, wavelength):
+        del wavelength
+        return np.asarray([5.0, 8.0]), np.asarray([10.0, 20.0])
+
+    def get_hkl_in_text(self):
+        return ["111", "200"]
+
+
+def _make_jcpds_plot_controller():
+    container = QtWidgets.QWidget()
+    canvas = MplCanvas()
+    canvas.toolbar = None
+    canvas.resize_axes(30)
+    canvas.ax_pattern.set_xlim(4.0, 12.0)
+    canvas.ax_pattern.set_ylim(0.0, 100.0)
+    canvas.ax_cake.set_xlim(4.0, 12.0)
+    canvas.ax_cake.set_ylim(-180.0, 180.0)
+
+    table = QtWidgets.QTableWidget(2, 1, container)
+    for row, label in enumerate(("phase a", "phase b")):
+        table.setItem(row, 0, QtWidgets.QTableWidgetItem(label))
+    table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+    table.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+
+    def _checkbox(checked=False):
+        box = QtWidgets.QCheckBox(container)
+        box.setChecked(checked)
+        return box
+
+    def _spinbox(value):
+        box = QtWidgets.QDoubleSpinBox(container)
+        box.setValue(value)
+        return box
+
+    def _slider(value):
+        slider = QtWidgets.QSlider(QtCore.Qt.Horizontal, container)
+        slider.setRange(0, 100)
+        slider.setValue(value)
+        return slider
+
+    def _combo(text):
+        combo = QtWidgets.QComboBox(container)
+        combo.addItem(text)
+        combo.setCurrentText(text)
+        return combo
+
+    widget = container
+    widget.mpl = SimpleNamespace(canvas=canvas)
+    widget.tableWidget_JCPDS = table
+    widget.checkBox_JCPDSinPattern = _checkbox(True)
+    widget.checkBox_JCPDSinCake = _checkbox(False)
+    widget.checkBox_ShowCake = _checkbox(False)
+    widget.checkBox_Intensity = _checkbox(True)
+    widget.checkBox_ShowMillerIndices = _checkbox(False)
+    widget.checkBox_UseJCPDSTable1bar = _checkbox(True)
+    widget.horizontalSlider_JCPDSBarScale = _slider(100)
+    widget.horizontalSlider_JCPDSBarPosition = _slider(0)
+    widget.doubleSpinBox_Pressure = _spinbox(0.0)
+    widget.doubleSpinBox_Temperature = _spinbox(300.0)
+    widget.doubleSpinBox_SetWavelength = _spinbox(0.3344)
+    widget.doubleSpinBox_JCPDS_ptn_Alpha = _spinbox(1.0)
+    widget.doubleSpinBox_JCPDS_cake_Alpha = _spinbox(0.25)
+    widget.comboBox_PtnJCPDSBarThickness = _combo("1")
+    widget.comboBox_LegendFontSize = _combo("12")
+
+    model = SimpleNamespace(
+        jcpds_lst=[
+            _PhaseStub("phase a", "#ff0000", 10.0),
+            _PhaseStub("phase b", "#00ff00", 20.0),
+        ],
+        jcpds_exist=lambda: True,
+    )
+    return MplController(model, widget), widget
+
+
+def test_jcpds_legend_text_highlight_tracks_selected_table_row():
+    ctrl, widget = _make_jcpds_plot_controller()
+
+    ctrl._plot_jcpds(widget.mpl.canvas.ax_pattern.axis())
+    legend = widget.mpl.canvas.ax_pattern.get_legend()
+    assert legend is not None
+
+    widget.tableWidget_JCPDS.selectRow(1)
+    ctrl.refresh_jcpds_overlay()
+
+    text_colors = {
+        text.get_text().split(",")[0]: mcolors.to_rgba(text.get_color())
+        for text in legend.get_texts()
+    }
+    assert np.isclose(text_colors["phase a"][-1], 0.25)
+    assert np.isclose(text_colors["phase b"][-1], 1.0)

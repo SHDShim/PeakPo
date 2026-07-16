@@ -198,7 +198,7 @@ class CakeControllerPoniTests(unittest.TestCase):
 
             poni_entries = table_values["poni_table"]
             cake_entries = table_values["cake_table"]
-            self.assertIn(("Path", str(poni_path)), poni_entries)
+            self.assertNotIn(("Path", str(poni_path)), poni_entries)
             self.assertIn(("PONI version", "2"), poni_entries)
             self.assertIn(("Wavelength", "0.3344"), poni_entries)
             self.assertIn(("Image pixels X", "4"), cake_entries)
