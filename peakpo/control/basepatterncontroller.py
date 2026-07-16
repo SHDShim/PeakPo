@@ -208,8 +208,7 @@ class BasePatternController(object):
 
         poni_all = self.cake_ctrl.get_all_temp_poni()
         if len(poni_all) == 1:
-            self.model.poni = poni_all[0]
-            self.widget.lineEdit_PONI.setText(self.model.poni)
+            self.cake_ctrl._set_current_poni(poni_all[0])
 
         if self.widget.checkBox_ShowCake.isChecked() and \
                 ((self.model.poni is not None) or

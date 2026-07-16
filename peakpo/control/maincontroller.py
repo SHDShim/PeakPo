@@ -59,6 +59,7 @@ class MainController(object):
 
         self.base_ptn_ctrl = BasePatternController(
             self.model, self.widget, session_ctrl=self.session_ctrl)
+        self.session_ctrl.cake_ctrl = self.base_ptn_ctrl.cake_ctrl
         print("  ✓ BasePatternController created")
         
         self.plot_ctrl = MplController(self.model, self.widget)
@@ -1797,7 +1798,11 @@ class MainController(object):
         poni_action = self._prompt_for_nav_carry_action("PONI", poni_action)
         if poni_action in ("carry_blank", "overwrite_existing"):
             self.model.poni = snap["poni"]
-            self.widget.lineEdit_PONI.setText('' if snap["poni"] is None else str(snap["poni"]))
+            if snap["poni"] is None:
+                self.base_ptn_ctrl.cake_ctrl._set_poni_line_edit_text("")
+                self.base_ptn_ctrl.cake_ctrl.refresh_config_metadata_panel()
+            else:
+                self.base_ptn_ctrl.cake_ctrl._set_current_poni(snap["poni"])
             carried_any = True
         self._record_nav_carry_result(results, "poni", poni_action)
 

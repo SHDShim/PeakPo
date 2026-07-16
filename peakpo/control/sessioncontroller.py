@@ -36,6 +36,7 @@ class SessionController(object):
     def __init__(self, model, widget):
         self.model = model
         self.widget = widget
+        self.cake_ctrl = None
         self._carryover_source_chi = None
         self._backup_table_refreshing = False
         self._last_param_category_presence = {
@@ -603,9 +604,14 @@ class SessionController(object):
             self.widget.textEdit_Jlist.setText(str(manifest_path))
             self.widget.textEdit_SessionFileName.setText(str(manifest_path))
             if self.model.poni_exist():
-                self.widget.lineEdit_PONI.setText(self.model.poni)
+                if self.cake_ctrl is not None:
+                    self.cake_ctrl._set_current_poni(self.model.poni)
+                else:
+                    self.widget.lineEdit_PONI.setText(self.model.poni)
             else:
                 self.widget.lineEdit_PONI.setText('')
+                if self.cake_ctrl is not None:
+                    self.cake_ctrl.refresh_config_metadata_panel()
             if self.model.diff_img_exist():
                 self.widget.textEdit_DiffractionImageFilename.setText(
                     self.model.diff_img.img_filename)
@@ -1080,9 +1086,14 @@ class SessionController(object):
             str(self.model.base_ptn.fname))
         self.widget.textEdit_SessionFileName.setText(str(filen_dpp))
         if self.model.poni_exist():
-            self.widget.lineEdit_PONI.setText(self.model.poni)
+            if self.cake_ctrl is not None:
+                self.cake_ctrl._set_current_poni(self.model.poni)
+            else:
+                self.widget.lineEdit_PONI.setText(self.model.poni)
         else:
             self.widget.lineEdit_PONI.setText('')
+            if self.cake_ctrl is not None:
+                self.cake_ctrl.refresh_config_metadata_panel()
         if self.model.diff_img_exist():
             self.widget.textEdit_DiffractionImageFilename.setText(
                 self.model.diff_img.img_filename)

@@ -440,6 +440,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             setHorizontalHeaderLabels(['Use', 'Label', 'Azi min', 'Azi max', 'Note'])
         self._setup_cake_integration_chi_list()
         self._setup_cake_integration_buttons()
+        self._setup_cake_metadata_panel()
         self._setup_cake_scale_layout()
         self.doubleSpinBox_Pressure.valueChanged.connect(
             self._update_pt_spinbox_colors)
@@ -756,6 +757,93 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             # The lower section also contains a status line and buttons, so it
             # needs slightly more space for the two table viewports to match.
             self.verticalLayout_37.setStretch(chi_group_index, 4)
+
+    def _setup_cake_metadata_panel(self):
+        if not hasattr(self, "verticalLayout_36") or \
+                hasattr(self, "groupBox_CakePoniTable"):
+            return
+
+        insert_idx = self.verticalLayout_36.count()
+        if hasattr(self, "groupBox_14"):
+            idx = self.verticalLayout_36.indexOf(self.groupBox_14)
+            if idx >= 0:
+                insert_idx = idx
+
+        self.groupBox_CakePoniTable = QtWidgets.QGroupBox(
+            "PONI contents", self.scrollAreaWidgetContents_7)
+        self.groupBox_CakePoniTable.setObjectName("groupBox_CakePoniTable")
+        self.groupBox_CakePoniTable.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        self.groupBox_CakePoniTable.setMinimumHeight(210)
+        self.groupBox_CakePoniTable.setMaximumHeight(280)
+        self.verticalLayout_CakePoniTable = QtWidgets.QVBoxLayout(
+            self.groupBox_CakePoniTable)
+        self.verticalLayout_CakePoniTable.setContentsMargins(12, 12, 12, 12)
+        self.verticalLayout_CakePoniTable.setSpacing(8)
+
+        self.tableWidget_CakePoniInfo = QtWidgets.QTableWidget(
+            self.groupBox_CakePoniTable)
+        self.tableWidget_CakePoniInfo.setObjectName("tableWidget_CakePoniInfo")
+        self._configure_key_value_table(
+            self.tableWidget_CakePoniInfo, ["Field", "Value"])
+        self.verticalLayout_CakePoniTable.addWidget(self.tableWidget_CakePoniInfo)
+
+        self.groupBox_CakeSummary = QtWidgets.QGroupBox(
+            "Cake information", self.scrollAreaWidgetContents_7)
+        self.groupBox_CakeSummary.setObjectName("groupBox_CakeSummary")
+        self.groupBox_CakeSummary.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        self.groupBox_CakeSummary.setMinimumHeight(210)
+        self.groupBox_CakeSummary.setMaximumHeight(280)
+        self.verticalLayout_CakeSummary = QtWidgets.QVBoxLayout(
+            self.groupBox_CakeSummary)
+        self.verticalLayout_CakeSummary.setContentsMargins(12, 12, 12, 12)
+        self.verticalLayout_CakeSummary.setSpacing(8)
+
+        self.tableWidget_CakeSummary = QtWidgets.QTableWidget(
+            self.groupBox_CakeSummary)
+        self.tableWidget_CakeSummary.setObjectName("tableWidget_CakeSummary")
+        self._configure_key_value_table(
+            self.tableWidget_CakeSummary, ["Item", "Value"])
+        self.verticalLayout_CakeSummary.addWidget(self.tableWidget_CakeSummary)
+
+        self.verticalLayout_36.insertWidget(insert_idx, self.groupBox_CakePoniTable)
+        self.verticalLayout_36.insertWidget(insert_idx + 1, self.groupBox_CakeSummary)
+        self.set_key_value_table_rows(
+            self.tableWidget_CakePoniInfo,
+            [("Status", "No PONI file selected.")])
+        self.set_key_value_table_rows(
+            self.tableWidget_CakeSummary,
+            [("Status", "Cake not loaded.")])
+
+    def _configure_key_value_table(self, table, headers):
+        table.setColumnCount(len(headers))
+        table.setHorizontalHeaderLabels(headers)
+        table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        table.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
+        table.setFocusPolicy(QtCore.Qt.NoFocus)
+        table.setWordWrap(True)
+        table.setAlternatingRowColors(True)
+        table.verticalHeader().setVisible(False)
+        table.horizontalHeader().setStretchLastSection(True)
+        table.horizontalHeader().setDefaultAlignment(
+            QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        table.setColumnWidth(0, 150)
+        table.setMinimumHeight(150)
+
+    def set_key_value_table_rows(self, table, entries):
+        entries = list(entries or [])
+        table.setRowCount(len(entries))
+        for row, (key, value) in enumerate(entries):
+            key_item = QtWidgets.QTableWidgetItem(str(key))
+            value_item = QtWidgets.QTableWidgetItem(str(value))
+            key_item.setFlags(QtCore.Qt.ItemIsEnabled)
+            value_item.setFlags(QtCore.Qt.ItemIsEnabled)
+            key_item.setTextAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+            value_item.setTextAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+            table.setItem(row, 0, key_item)
+            table.setItem(row, 1, value_item)
+        table.resizeRowsToContents()
 
     def _fix_tab_clipping(self):
         # Keep native tab visuals while nudging tab size metrics to prevent

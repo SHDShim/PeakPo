@@ -1,12 +1,11 @@
 import os
-import filecmp
 import shutil
 import glob
 from qtpy import QtWidgets
 import numpy as np
 from ..utils import dialog_savefile, writechi, get_directory, make_filename, \
     get_temp_dir, extract_filename, extract_extension, InformationBox, \
-        make_converted_poni2_filename, make_poni2_from_poni21, \
+        make_poni2_from_poni21, \
         read_any_poni_file, dialog_openfile_hide_param_dirs
 from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
@@ -23,6 +22,7 @@ class CakeController(object):
         self.cakemake_ctrl = CakemakeController(self.model, self.widget)
         self.plot_ctrl = MplController(self.model, self.widget)
         self.connect_channel()
+        self.refresh_config_metadata_panel()
 
     def connect_channel(self):
         self.widget.pushButton_Info.clicked.connect(self.show_tif_header)
@@ -236,6 +236,7 @@ class CakeController(object):
     def _set_image_file_box_missing(self):
         self.widget.textEdit_DiffractionImageFilename.setText(
             'Image file is missing. Move the raw image file into the same folder as CHI.')
+        self.refresh_config_metadata_panel()
 
     def _set_image_file_box(self):
         if self.model.diff_img_exist() and (self.model.diff_img.img_filename is not None):
@@ -243,6 +244,8 @@ class CakeController(object):
                 self.model.diff_img.img_filename)
         else:
             self._set_image_file_box_missing()
+            return
+        self.refresh_config_metadata_panel()
 
     def _warn_cannot_process_cake(self):
         QtWidgets.QMessageBox.warning(
@@ -294,6 +297,7 @@ class CakeController(object):
         for candidate in self._image_candidates_for_chi(chi_path):
             self.model.diff_img.img_filename = candidate
             if self.model.diff_img.read_cake_from_tempfile(temp_dir=temp_dir):
+                self.refresh_config_metadata_panel()
                 return True
         return False
 
@@ -303,7 +307,10 @@ class CakeController(object):
             self.model.reset_diff_img()
         self.model.diff_img.img_filename = self.model.make_filename(
             'tif', original=True)
-        return self.model.diff_img.read_cake_from_tempfile(temp_dir=temp_dir)
+        success = self.model.diff_img.read_cake_from_tempfile(temp_dir=temp_dir)
+        if success:
+            self.refresh_config_metadata_panel()
+        return success
 
     def show_tif_header(self):
         if not self.model.base_ptn_exist():
@@ -390,8 +397,7 @@ class CakeController(object):
             if self.model.poni is None:
                 poni_all = self.get_all_temp_poni()
                 if len(poni_all) == 1:
-                    self.model.poni = poni_all[0]
-                    self.widget.lineEdit_PONI.setText(self.model.poni)
+                    self._set_current_poni(poni_all[0])
             if not self.process_temp_cake():
                 self._warn_cannot_process_cake()
                 self.widget.checkBox_ShowCake.setChecked(False)
@@ -401,8 +407,7 @@ class CakeController(object):
         # if base pattern and image exist
         poni_all = self.get_all_temp_poni()
         if len(poni_all) == 1:
-            self.model.poni = poni_all[0]
-            self.widget.lineEdit_PONI.setText(self.model.poni)
+            self._set_current_poni(poni_all[0])
             if self.model.diff_img_exist():
                 #self.produce_cake()
                 self.process_temp_cake()
@@ -474,6 +479,7 @@ class CakeController(object):
             return False
         self.cakemake_ctrl.cook()
         self._set_image_file_box()
+        self.refresh_config_metadata_panel()
         return True
 
     def process_temp_cake(self):
@@ -486,10 +492,12 @@ class CakeController(object):
                 self._valid_loaded_cake() and
                 self._diff_img_related_to_chi(source_chi))
             if source_cake_loaded:
+                self.refresh_config_metadata_panel()
                 return True
             if self._load_cake_from_temp_for_chi(source_chi):
                 print(str(datetime.datetime.now())[:-7],
                     ": Load source Cake image from temporary file.")
+                self.refresh_config_metadata_panel()
                 return True
             return False
 
@@ -514,7 +522,7 @@ class CakeController(object):
             if success:
                 print(str(datetime.datetime.now())[:-7], 
                     ": Load cake image from temporary file.")
-                pass
+                self.refresh_config_metadata_panel()
             else:
                 print(str(datetime.datetime.now())[:-7], 
                     ": Create new temporary file for cake image.")
@@ -560,7 +568,17 @@ class CakeController(object):
 
     def _set_current_poni(self, poni_path):
         self.model.poni = poni_path
-        self.widget.lineEdit_PONI.setText(self.model.poni)
+        self._set_poni_line_edit_text(self.model.poni)
+        self.refresh_config_metadata_panel()
+
+    def _set_poni_line_edit_text(self, poni_path):
+        line_edit = self.widget.lineEdit_PONI
+        old_state = line_edit.blockSignals(True)
+        try:
+            line_edit.setText("" if poni_path is None else str(poni_path))
+            line_edit.setModified(False)
+        finally:
+            line_edit.blockSignals(old_state)
 
     def _sync_poni_from_line_edit(self, warn_if_missing=False):
         """
@@ -580,7 +598,7 @@ class CakeController(object):
             return False
         if poni_path != self.model.poni:
             self.model.poni = poni_path
-            self.widget.lineEdit_PONI.setText(self.model.poni)
+            self._set_poni_line_edit_text(self.model.poni)
         return True
 
     def _apply_poni_change(self, poni_path):
@@ -595,52 +613,67 @@ class CakeController(object):
         if (not os.path.exists(file_a)) or (not os.path.exists(file_b)):
             return False
         try:
-            return filecmp.cmp(file_a, file_b, shallow=False)
+            return os.path.samefile(file_a, file_b)
         except OSError:
             return False
 
-    def _choose_and_store_poni(self, temp_dir, current_poni=None):
-        filen = dialog_openfile_hide_param_dirs(
-            self.widget, "Open a PONI File",
-            self.model.chi_path, "PONI files (*.poni)")[0]
-        filename = str(filen)
-        if not os.path.exists(filename):
-            return False
-
-        if self._is_same_poni_file(filename, current_poni):
-            self._set_current_poni(current_poni)
-            return False
-
+    def _remove_temp_poni_files(self, keep=None):
+        keep_paths = set()
+        if keep:
+            keep_paths.add(os.path.abspath(keep))
         for existing_poni in self.get_all_temp_poni():
+            try:
+                if os.path.abspath(existing_poni) in keep_paths:
+                    continue
+            except OSError:
+                pass
             try:
                 os.remove(existing_poni)
             except OSError:
                 pass
 
-        # Check if the chosen poni file is version 2.1
-        poni_content = read_any_poni_file(filename)
+    def _store_selected_poni(self, filename, temp_dir, current_poni=None):
+        if not os.path.exists(filename):
+            return False
+        if self._is_same_poni_file(filename, current_poni):
+            self._set_current_poni(current_poni)
+            return False
+
+        stored_filename = extract_filename(filename) + '.' + \
+            extract_extension(filename)
+        stored_path = os.path.join(temp_dir, stored_filename)
+        if os.path.abspath(filename) != os.path.abspath(stored_path):
+            staging_path = stored_path + '.incoming'
+            try:
+                if os.path.exists(staging_path):
+                    os.remove(staging_path)
+            except OSError:
+                pass
+            shutil.copy2(filename, staging_path)
+            os.replace(staging_path, stored_path)
+
+        # PeakPo still expects a v2 PONI. Convert only the param-folder copy.
+        poni_content = read_any_poni_file(stored_path)
         if 'poni_version' in poni_content:
             try:
                 poni_version = float(poni_content['poni_version'])
             except (TypeError, ValueError):
                 poni_version = None
             if poni_version != 2.0:
-                output_file = make_converted_poni2_filename(filename)
-                make_poni2_from_poni21(filename, output_file)
-                shutil.move(output_file, temp_dir)
-                filen = extract_filename(output_file) + '.' + \
-                        extract_extension(output_file)
-            else:
-                shutil.copy(filename, temp_dir)
-                filen = extract_filename(filename) + '.' + \
-                        extract_extension(filename)
-        else:
-            shutil.copy(filename, temp_dir)
-            filen = extract_filename(filename) + '.' + \
-                    extract_extension(filename)
-
-        self._apply_poni_change(os.path.join(temp_dir, filen))
+                converted_path = stored_path + '.converted'
+                make_poni2_from_poni21(stored_path, converted_path)
+                os.replace(converted_path, stored_path)
+        self._remove_temp_poni_files(keep=stored_path)
+        self._apply_poni_change(stored_path)
         return True
+
+    def _choose_and_store_poni(self, temp_dir, current_poni=None):
+        filen = dialog_openfile_hide_param_dirs(
+            self.widget, "Open a PONI File",
+            self.model.chi_path, "PONI files (*.poni)")[0]
+        filename = str(filen)
+        return self._store_selected_poni(
+            filename, temp_dir, current_poni=current_poni)
 
     def get_poni(self):
         """
@@ -679,7 +712,119 @@ class CakeController(object):
 
     def load_new_poni_from_name(self):
         if self.widget.lineEdit_PONI.isModified():
-            if self._sync_poni_from_line_edit(warn_if_missing=True):
-                if self.model.diff_img_exist():
-                    self.produce_cake()
-                self._apply_changes_to_graph()
+            if not self._sync_poni_from_line_edit(warn_if_missing=True):
+                return
+            if not self.model.base_ptn_exist():
+                return
+            temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
+            self._store_selected_poni(self.model.poni, temp_dir)
+
+    def _format_metadata_label(self, key):
+        key = str(key or "").strip().replace("_", " ")
+        lowered = key.lower()
+        if lowered == "poni version":
+            return "PONI version"
+        if lowered == "detector config":
+            return "Detector config"
+        if lowered == "wavelength":
+            return "Wavelength"
+        return key[:1].upper() + key[1:]
+
+    def _format_float(self, value, precision=6):
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            return str(value)
+        if not np.isfinite(value):
+            return str(value)
+        return f"{value:.{precision}g}"
+
+    def _build_poni_table_entries(self):
+        poni_path = getattr(self.model, "poni", None)
+        if not poni_path:
+            return [("Status", "No PONI file selected.")]
+        if not os.path.exists(poni_path):
+            return [
+                ("Status", "Selected PONI file is missing."),
+                ("Path", str(poni_path)),
+            ]
+
+        entries = [("Path", str(poni_path))]
+        try:
+            poni_content = read_any_poni_file(poni_path)
+        except OSError:
+            return entries + [("Status", "Could not read PONI file.")]
+        for key, value in poni_content.items():
+            entries.append((self._format_metadata_label(key), value))
+        return entries
+
+    def _build_cake_summary_entries(self):
+        diff_img = getattr(self.model, "diff_img", None)
+        if diff_img is None:
+            return [("Status", "Cake not loaded.")]
+
+        entries = []
+        img = getattr(diff_img, "img", None)
+        if img is not None:
+            try:
+                img_arr = np.asarray(img)
+                img_y, img_x = img_arr.shape[:2]
+                entries.append(("Image pixels X", str(int(img_x))))
+                entries.append(("Image pixels Y", str(int(img_y))))
+                z_range = diff_img.get_img_zrange()
+                if z_range is not None:
+                    entries.append((
+                        "Image z range",
+                        f"{self._format_float(z_range[0])} to "
+                        f"{self._format_float(z_range[1])}",
+                    ))
+            except Exception:
+                pass
+
+        intensity_cake, tth_cake, chi_cake = diff_img.get_cake()
+        if intensity_cake is None or tth_cake is None or chi_cake is None:
+            if entries == []:
+                return [("Status", "Cake not loaded.")]
+            entries.append(("Cake status", "Cake not loaded."))
+            return entries
+
+        cake_arr = np.asarray(intensity_cake)
+        if cake_arr.ndim >= 2:
+            entries.append(("Cake pixels X", str(int(cake_arr.shape[1]))))
+            entries.append(("Cake pixels Y", str(int(cake_arr.shape[0]))))
+        else:
+            entries.append(("Cake pixels", str(int(cake_arr.size))))
+        try:
+            entries.append((
+                "2theta range",
+                f"{self._format_float(np.nanmin(tth_cake))} to "
+                f"{self._format_float(np.nanmax(tth_cake))} deg",
+            ))
+            entries.append((
+                "Azimuth range",
+                f"{self._format_float(np.nanmin(chi_cake))} to "
+                f"{self._format_float(np.nanmax(chi_cake))} deg",
+            ))
+        except Exception:
+            pass
+
+        finite_vals = cake_arr[np.isfinite(cake_arr)]
+        if finite_vals.size > 0:
+            entries.append((
+                "Cake z range",
+                f"{self._format_float(np.nanmin(finite_vals))} to "
+                f"{self._format_float(np.nanmax(finite_vals))}",
+            ))
+        return entries or [("Status", "Cake not loaded.")]
+
+    def refresh_config_metadata_panel(self):
+        if not hasattr(self.widget, "set_key_value_table_rows"):
+            return
+        if hasattr(self.widget, "tableWidget_CakePoniInfo"):
+            self.widget.set_key_value_table_rows(
+                self.widget.tableWidget_CakePoniInfo,
+                self._build_poni_table_entries())
+        if hasattr(self.widget, "tableWidget_CakeSummary"):
+            self.widget.set_key_value_table_rows(
+                self.widget.tableWidget_CakeSummary,
+                self._build_cake_summary_entries())
