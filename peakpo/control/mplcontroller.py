@@ -1805,8 +1805,17 @@ class MplController(object):
                 leg_jcpds = self.widget.mpl.canvas.ax_pattern.legend(
                     handles, labels, loc=1, framealpha=0.,
                     fontsize=legend_fontsize,
-                    handlelength=1)
+                    handlelength=0,
+                    handletextpad=0.0)
                 self._track_jcpds_artist(leg_jcpds)
+                legend_handles = getattr(leg_jcpds, "legend_handles", None)
+                if legend_handles is None:
+                    legend_handles = getattr(leg_jcpds, "legendHandles", [])
+                for handle in legend_handles:
+                    try:
+                        handle.set_visible(False)
+                    except Exception:
+                        pass
                 for (__handle, __label, color, phase_index), txt in zip(
                         unique_entries, leg_jcpds.get_texts()):
                     alpha = self._get_jcpds_plot_alpha(phase_index, emphasis_rows)

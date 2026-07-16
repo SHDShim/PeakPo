@@ -299,6 +299,7 @@ class JcpdsController(object):
         self.widget.tableWidget_JCPDS.clearContents()
         self.jcpdstable_ctrl.update()
         self.widget.tableWidget_JCPDS.selectRow(i - 1)
+        self._apply_changes_to_graph()
 
     def move_down_jcpds(self):
         # get selected cell number
@@ -317,6 +318,7 @@ class JcpdsController(object):
         self.widget.tableWidget_JCPDS.clearContents()
         self.jcpdstable_ctrl.update()
         self.widget.tableWidget_JCPDS.selectRow(i + 1)
+        self._apply_changes_to_graph()
 
     def remove_a_jcpds(self):
         table = self.widget.tableWidget_JCPDS

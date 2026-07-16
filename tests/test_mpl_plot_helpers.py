@@ -266,6 +266,10 @@ def test_jcpds_legend_text_highlight_tracks_selected_table_row():
     ctrl._plot_jcpds(widget.mpl.canvas.ax_pattern.axis())
     legend = widget.mpl.canvas.ax_pattern.get_legend()
     assert legend is not None
+    handles = getattr(legend, "legend_handles", None)
+    if handles is None:
+        handles = getattr(legend, "legendHandles", [])
+    assert all(not handle.get_visible() for handle in handles)
 
     widget.tableWidget_JCPDS.selectRow(1)
     ctrl.refresh_jcpds_overlay()
