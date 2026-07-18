@@ -720,8 +720,10 @@ class PeakFitController(object):
             connect(self.save_to_xls)
         self.widget.pushButton_PkFtSectionImport.clicked.connect(
             self.import_section_from_dpp)
-        self.widget.pushButton_PlotSelectedPkFtResults.clicked.connect(
-            self._plot_selected_fitting)
+        gsas_style_button = self.widget.pushButton_PlotSelectedPkFtResults
+        apply_raised_toggle_style(
+            gsas_style_button, checked=gsas_style_button.isChecked())
+        gsas_style_button.clicked.connect(self._plot_selected_fitting)
         if hasattr(self.widget, "pushButton_PkRemoveSelectedPeaks"):
             self.widget.pushButton_PkRemoveSelectedPeaks.clicked.connect(
                 self.remove_selected_peak_from_table)
@@ -2037,6 +2039,7 @@ class PeakFitController(object):
 
     def _plot_selected_fitting(self):
         button = self.widget.pushButton_PlotSelectedPkFtResults
+        apply_raised_toggle_style(button, checked=button.isChecked())
         if button.isChecked():
             button.setText("GSAS style ON")
             self.plot_ctrl.update_to_gsas_style()

@@ -9,6 +9,7 @@ from .ui_policy import (
     apply_accent_button_style,
     apply_colored_toolbar_style,
     apply_flat_toolbar_style,
+    apply_raised_toggle_style,
     set_button_height,
     set_toolbar_compact_width,
 )
@@ -1731,46 +1732,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             button, base_color, hover_color, pressed_color, border_color,
             text_color=text_color)
 
+    def _set_raised_toggle_button_style(self, button):
+        """Apply the common visual policy for non-toolbar toggle buttons."""
+        apply_raised_toggle_style(button, checked=button.isChecked())
+
     def _set_button_height(self, button, height=STANDARD_HEIGHT):
         set_button_height(button, height)
-
-    def _set_mouse_mode_button_style(self, button, checked_color,
-                                     hover_color, pressed_color,
-                                     border_color, segment="middle",
-                                     text_color="white"):
-        if segment == "left":
-            radius_rule = "border-top-left-radius: 6px; border-bottom-left-radius: 6px; border-top-right-radius: 0px; border-bottom-right-radius: 0px;"
-        elif segment == "right":
-            radius_rule = "border-top-left-radius: 0px; border-bottom-left-radius: 0px; border-top-right-radius: 6px; border-bottom-right-radius: 6px;"
-        elif segment == "single":
-            radius_rule = "border-radius: 6px;"
-        else:
-            radius_rule = "border-radius: 0px;"
-        button.setStyleSheet(
-            "QPushButton {"
-            "background-color: #eee8dc;"
-            "color: #2a241f;"
-            "border: 1px solid #b8ada0;"
-            f"{radius_rule}"
-            "padding: 2px 14px;"
-            "font-weight: 600;"
-            "}"
-            "QPushButton:hover {"
-            "background-color: #e3dbcf;"
-            "}"
-            "QPushButton:pressed {"
-            f"background-color: {pressed_color};"
-            f"color: {text_color};"
-            "}"
-            "QPushButton:checked {"
-            f"background-color: {checked_color};"
-            f"color: {text_color};"
-            f"border: 1px solid {border_color};"
-            "}"
-            "QPushButton:checked:hover {"
-            f"background-color: {hover_color};"
-            "}"
-        )
 
     def _setup_bg_default_button(self):
         if not hasattr(self, "gridLayout_5"):
@@ -1837,10 +1804,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._set_accent_button_style(
             self.pushButton_ConductFitting,
             "#b22222", "#c92a2a", "#8f1b1b", "#7a1313")
-        self._set_accent_button_style(
-            self.pushButton_AddRemoveFromMouse,
-            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
-            text_color="#1f1f1f")
+        self._set_raised_toggle_button_style(
+            self.pushButton_AddRemoveFromMouse)
         self._set_accent_button_style(
             self.pushButton_AddRemoveFromJlist,
             "#1f5e8c", "#2873a8", "#164870", "#123a55")
@@ -1938,26 +1903,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_MouseModePeakPick.setToolTip("Add or remove peaks from the plot")
         self.pushButton_MouseModeJCPDS.setToolTip("Click the plot to inspect nearest JCPDS line")
 
-        self._set_mouse_mode_button_style(
-            self.pushButton_MouseModeZoom,
-            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
-            segment="left",
-            text_color="#1f1f1f")
-        self._set_mouse_mode_button_style(
-            self.pushButton_MouseModeROI,
-            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
-            segment="middle",
-            text_color="#1f1f1f")
-        self._set_mouse_mode_button_style(
-            self.pushButton_MouseModePeakPick,
-            "#c27b00", "#d98b00", "#9a6100", "#7c4d00",
-            segment="middle",
-            text_color="#1f1f1f")
-        self._set_mouse_mode_button_style(
-            self.pushButton_MouseModeJCPDS,
-            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
-            segment="right",
-            text_color="#1f1f1f")
+        for button in (
+                self.pushButton_MouseModeZoom,
+                self.pushButton_MouseModeROI,
+                self.pushButton_MouseModePeakPick,
+                self.pushButton_MouseModeJCPDS):
+            self._set_raised_toggle_button_style(button)
 
         insert_idx = self.horizontalLayout_7.indexOf(self.checkBox_AutoY)
         if insert_idx < 0:
@@ -2876,10 +2827,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._set_accent_button_style(
             self.pushButton_MapLoadChi,
             "#1f7a3d", "#278f49", "#16592d", "#11411f")
-        self._set_accent_button_style(
-            self.pushButton_MapSetRoi,
-            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
-            text_color="#1f1f1f")
+        self._set_raised_toggle_button_style(self.pushButton_MapSetRoi)
         self.gridLayout_MapScale.addWidget(self.map_hist_widget, 0, 0, 1, 5)
         self.gridLayout_MapScale.addWidget(self.comboBox_MapCmap, 1, 0, 1, 2)
         self.gridLayout_MapScale.addWidget(self.checkBox_MapLog, 2, 0, 1, 2)
@@ -2990,10 +2938,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._set_accent_button_style(
             self.pushButton_SeqLoadChi,
             "#1f7a3d", "#278f49", "#16592d", "#11411f")
-        self._set_accent_button_style(
-            self.pushButton_SeqSetRoi,
-            "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
-            text_color="#1f1f1f")
+        self._set_raised_toggle_button_style(self.pushButton_SeqSetRoi)
         self.lineEdit_SeqRoiSummary = QtWidgets.QLineEdit(self.groupBox_SeqRoi)
         self.lineEdit_SeqRoiSummary.setObjectName("lineEdit_SeqRoiSummary")
         self.lineEdit_SeqRoiSummary.setReadOnly(True)
