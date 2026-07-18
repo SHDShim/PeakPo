@@ -7,6 +7,7 @@ import base64
 import traceback
 from json import JSONEncoder
 import json
+from fabio import fabioformats
 from ..ds_cake import DiffImg
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
@@ -55,6 +56,8 @@ class PeakPoModel(object):
         self.ucfit_lst = []
         self.diff_img = None
         self.poni = None
+        self.raw_image_path = None
+        self.h5_path = None
         self.session = None
         self.jcpds_path = ''
         self.chi_path = ''
@@ -231,6 +234,9 @@ class PeakPoModel(object):
         self.saved_pressure = model_r.get_saved_pressure()
         self.saved_temperature = model_r.get_saved_temperature()
         self.poni = model_r.poni
+        self.raw_image_path = getattr(
+            model_r, "raw_image_path", getattr(model_r, "h5_path", None))
+        self.h5_path = self.raw_image_path
         self.ucfit_lst = model_r.ucfit_lst
         self.session = model_r.session
         self.jcpds_path = model_r.jcpds_path
@@ -275,6 +281,10 @@ class PeakPoModel(object):
 
     def reset_poni(self):
         self.poni = None
+
+    def reset_raw_image_path(self):
+        self.raw_image_path = None
+        self.h5_path = None
 
     def base_ptn_exist(self):
         if self.base_ptn is None:
@@ -321,19 +331,61 @@ class PeakPoModel(object):
         """
         return make_filename(self.base_ptn.fname, extension, original=original)
 
+    def get_allowed_image_extensions(self):
+        fallback = (
+            "tif", "tiff", "mar3450", "mar3000", "mar2400", "mar2300",
+            "mar2000", "mar1800", "mar1600", "mar1200", "mccd", "cbf",
+            "edf", "img", "ge", "kcd", "dm3", "spe", "h5", "hdf5", "nxs",
+        )
+        try:
+            skip = {"cor", "msk", "spr", "xml", "xsd", "npy", "f2d", "bin"}
+            exts = []
+            for cls in fabioformats.get_classes():
+                values = getattr(cls, "DEFAULT_EXTENSIONS", None) or \
+                    getattr(cls, "extensions", None) or \
+                    getattr(cls, "EXTENSIONS", None) or []
+                for ext in values:
+                    ext = str(ext).strip().lower()
+                    if (ext == "") or (ext in skip) or (ext in exts):
+                        continue
+                    exts.append(ext)
+            return tuple(exts) if exts else fallback
+        except Exception:
+            return fallback
+
+    def get_default_raw_image_path(self):
+        if not self.base_ptn_exist():
+            return None
+        for ext in self.get_allowed_image_extensions():
+            candidate = self.make_filename(ext, original=False)
+            if os.path.exists(candidate):
+                return candidate
+        return None
+
     def get_associated_image_candidates(self):
         """
         Candidate raw-image filenames expected for current CHI.
         Includes both legacy (original=True) and exact-stem naming.
         """
-        exts = ("tif", "tiff", "mar3450", "cbf", "h5")
+        exts = self.get_allowed_image_extensions()
         candidates = []
+        preferred = getattr(self, "raw_image_path", None) or getattr(self, "h5_path", None)
+        if preferred:
+            candidates.append(preferred)
         for ext in exts:
             for original in (True, False):
                 filen = self.make_filename(ext, original=original)
                 if filen not in candidates:
                     candidates.append(filen)
         return candidates
+
+    def image_matches_base_pattern(self, filename):
+        if (not filename) or (not self.base_ptn_exist()):
+            return False
+        ext = extract_extension(str(filename)).lower()
+        if ext not in self.get_allowed_image_extensions():
+            return False
+        return samefilename(self.get_base_ptn_filename(), filename)
 
     def same_filename_as_base_ptn(self, filename):
         return samefilename(self.base_ptn.fname, filename)
@@ -700,6 +752,8 @@ class PeakPoModel8(PeakPoModel):
         self.ucfit_lst = []
         self.diff_img = None
         self.poni = None
+        self.raw_image_path = None
+        self.h5_path = None
         self.session = None
         self.jcpds_path = ''
         self.chi_path = ''

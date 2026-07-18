@@ -227,6 +227,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_HKLFontSize.setLayoutDirection(QtCore.Qt.RightToLeft)
         self.comboBox_LegendFontSize.setLayoutDirection(QtCore.Qt.RightToLeft)
         self.comboBox_WaterfallFontSize.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self._setup_cake_h5_selector()
         # Rebuild the original QtDesigner row layout to avoid inherited spacer
         # artifacts and match the "Line thickness" left/right arrangement.
         while self.horizontalLayout_4.count():
@@ -487,6 +488,55 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.ntb_NightView.setText("Night")
         self.mpl.ntb.addWidget(self.ntb_NightView)
         """
+
+    def _setup_cake_h5_selector(self):
+        if not hasattr(self, "verticalLayout_36") or hasattr(self, "lineEdit_H5"):
+            return
+
+        self.groupBox_H5 = QtWidgets.QGroupBox(self.scrollAreaWidgetContents_7)
+        size_policy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred,
+            QtWidgets.QSizePolicy.Fixed,
+        )
+        self.groupBox_H5.setSizePolicy(size_policy)
+        self.groupBox_H5.setTitle("")
+        self.groupBox_H5.setFlat(False)
+        self.groupBox_H5.setObjectName("groupBox_H5")
+
+        self.gridLayout_H5 = QtWidgets.QGridLayout(self.groupBox_H5)
+        self.gridLayout_H5.setContentsMargins(12, 12, 12, 12)
+        self.gridLayout_H5.setObjectName("gridLayout_H5")
+
+        self.label_H5 = QtWidgets.QLabel(self.groupBox_H5)
+        self.label_H5.setObjectName("label_H5")
+        self.label_H5.setText("Image")
+        self.gridLayout_H5.addWidget(self.label_H5, 1, 0, 1, 1)
+
+        self.lineEdit_H5 = QtWidgets.QLineEdit(self.groupBox_H5)
+        self.lineEdit_H5.setMinimumSize(QtCore.QSize(0, 25))
+        self.lineEdit_H5.setToolTip(
+            "Image file must have the same base name as the CHI file")
+        self.lineEdit_H5.setObjectName("lineEdit_H5")
+        self.gridLayout_H5.addWidget(self.lineEdit_H5, 1, 1, 1, 1)
+
+        self.pushButton_GetH5 = QtWidgets.QPushButton(self.groupBox_H5)
+        button_policy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Fixed,
+            QtWidgets.QSizePolicy.Fixed,
+        )
+        self.pushButton_GetH5.setSizePolicy(button_policy)
+        self.pushButton_GetH5.setMinimumSize(QtCore.QSize(0, 0))
+        self.pushButton_GetH5.setMaximumSize(QtCore.QSize(40, 16777215))
+        self.pushButton_GetH5.setToolTip("Open an image file")
+        self.pushButton_GetH5.setText("📂")
+        self.pushButton_GetH5.setObjectName("pushButton_GetH5")
+        self.gridLayout_H5.addWidget(self.pushButton_GetH5, 1, 2, 1, 1)
+
+        insert_index = self.verticalLayout_36.indexOf(self.groupBox_14)
+        if insert_index < 0:
+            self.verticalLayout_36.addWidget(self.groupBox_H5)
+        else:
+            self.verticalLayout_36.insertWidget(insert_index, self.groupBox_H5)
 
     def _setup_nav_carryover_config(self):
         if not hasattr(self, "scrollAreaWidgetContents_2") or \
@@ -1687,6 +1737,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _setup_peakfit_section_buttons(self):
         if not hasattr(self, "pushButton_PkFtSectionSetToCurrent"):
             return
+        if not hasattr(self, "checkBox_ApplyPeakConstraints") and \
+                hasattr(self, "groupBox_35") and hasattr(self, "gridLayout_17"):
+            self.checkBox_ApplyPeakConstraints = QtWidgets.QCheckBox(
+                "Apply constraints setup", self.groupBox_35)
+            self.checkBox_ApplyPeakConstraints.setObjectName(
+                "checkBox_ApplyPeakConstraints")
+            self.checkBox_ApplyPeakConstraints.setChecked(False)
+            self.checkBox_ApplyPeakConstraints.setToolTip(
+                "Apply the stored peak parameter constraints setup during fitting.")
+            self.gridLayout_17.addWidget(
+                self.checkBox_ApplyPeakConstraints, 2, 0, 1, 2)
         for name in (
             "pushButton_PkFtSectionRemove",
             "pushButton_PkFtSectionSetToCurrent",

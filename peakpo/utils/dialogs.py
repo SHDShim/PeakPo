@@ -17,6 +17,7 @@ class _HideParamFoldersProxyModel(QtCore.QSortFilterProxyModel):
         super(_HideParamFoldersProxyModel, self).__init__(*args, **kwargs)
         self._hide_param_dirs = True
         self._jcpds_filter_mode = self.JCPDS_FILTER_ALL
+        self._allowed_file_extensions = None
 
     @staticmethod
     def _natural_sort_key(text):
@@ -42,6 +43,18 @@ class _HideParamFoldersProxyModel(QtCore.QSortFilterProxyModel):
             self.JCPDS_FILTER_WITHOUT,
         }
         self._jcpds_filter_mode = mode if mode in valid_modes else self.JCPDS_FILTER_ALL
+        self.invalidateFilter()
+
+    def set_allowed_file_extensions(self, extensions):
+        if extensions is None:
+            self._allowed_file_extensions = None
+        else:
+            cleaned = set()
+            for ext in extensions:
+                ext = str(ext or "").strip().lower().lstrip(".")
+                if ext:
+                    cleaned.add(ext)
+            self._allowed_file_extensions = cleaned if cleaned else None
         self.invalidateFilter()
 
     def _chi_has_jcpds(self, file_path):
@@ -86,6 +99,10 @@ class _HideParamFoldersProxyModel(QtCore.QSortFilterProxyModel):
                 return not has_jcpds
 
         if not is_dir:
+            if self._allowed_file_extensions is not None:
+                file_path = str(model.filePath(index) or "")
+                ext = extract_extension(file_path).lower()
+                return ext in self._allowed_file_extensions
             return True
 
         if not self._hide_param_dirs:
@@ -317,7 +334,8 @@ def _build_open_dialog(
         obj, title, directory, file_filter, file_mode,
         default_hide_param_dirs=False,
         default_jcpds_only=False,
-        default_jcpds_filter_mode=None):
+        default_jcpds_filter_mode=None,
+        allowed_file_extensions=None):
     dialog = _OpenFileDialog(obj, title, directory, file_filter)
     dialog.setFileMode(file_mode)
     dialog.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, True)
@@ -332,6 +350,7 @@ def _build_open_dialog(
 
     proxy = _HideParamFoldersProxyModel(dialog)
     proxy.setRecursiveFilteringEnabled(False)
+    proxy.set_allowed_file_extensions(allowed_file_extensions)
     dialog.setProxyModel(proxy)
     _add_macos_volumes_sidebar_url(dialog)
     _attach_hide_param_checkbox(
@@ -349,13 +368,15 @@ def _build_open_dialog(
 def dialog_openfile_hide_param_dirs(
         obj, title, directory, file_filter, default_hide_param_dirs=False,
         default_jcpds_only=False,
-        default_jcpds_filter_mode=None):
+        default_jcpds_filter_mode=None,
+        allowed_file_extensions=None):
     dialog = _build_open_dialog(
         obj, title, directory, file_filter,
         QtWidgets.QFileDialog.ExistingFile,
         default_hide_param_dirs=default_hide_param_dirs,
         default_jcpds_only=default_jcpds_only,
-        default_jcpds_filter_mode=default_jcpds_filter_mode)
+        default_jcpds_filter_mode=default_jcpds_filter_mode,
+        allowed_file_extensions=allowed_file_extensions)
     try:
         if _exec_dialog(dialog):
             files = dialog.selectedFiles()
@@ -368,13 +389,15 @@ def dialog_openfile_hide_param_dirs(
 def dialog_openfiles_hide_param_dirs(
         obj, title, directory, file_filter, default_hide_param_dirs=False,
         default_jcpds_only=False,
-        default_jcpds_filter_mode=None):
+        default_jcpds_filter_mode=None,
+        allowed_file_extensions=None):
     dialog = _build_open_dialog(
         obj, title, directory, file_filter,
         QtWidgets.QFileDialog.ExistingFiles,
         default_hide_param_dirs=default_hide_param_dirs,
         default_jcpds_only=default_jcpds_only,
-        default_jcpds_filter_mode=default_jcpds_filter_mode)
+        default_jcpds_filter_mode=default_jcpds_filter_mode,
+        allowed_file_extensions=allowed_file_extensions)
     try:
         if _exec_dialog(dialog):
             files = getattr(dialog, "_expanded_selected_files", None)

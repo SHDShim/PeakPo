@@ -347,10 +347,21 @@ class CakeHistogramWidget(QtWidgets.QWidget):
         hist_max = CakeHistogramWidget._edge_histogram_upper_bound(arr, data_max)
         if not np.isfinite(hist_max) or hist_max <= 0:
             return None
+        values = np.asarray(arr, dtype=float).ravel()
+        values = values[np.isfinite(values) & (values > 0.0) & (values <= hist_max)]
+        if values.size < 16:
+            return None
 
-        # The visible saturation edge is clearest in a log-count histogram.
-        # Find the strongest populated drop after the main low-intensity peak.
-        hist, edges = np.histogram(arr, bins=256, range=(0.0, hist_max))
+        # Detect the edge in log-intensity space.  The Cake histogram is drawn
+        # on a linear axis, but the perceptual edge is the largest drop after
+        # compressing intensity values themselves, not only histogram counts.
+        log_values = np.log10(values)
+        log_min = float(log_values.min())
+        log_max = float(np.log10(hist_max))
+        if not np.isfinite(log_min) or not np.isfinite(log_max) or log_max <= log_min:
+            return None
+
+        hist, edges = np.histogram(log_values, bins=256, range=(log_min, log_max))
         counts = np.log10(hist.astype(float) + 1.0)
         if counts.size < 5 or np.max(counts) <= 0:
             return None
@@ -359,27 +370,20 @@ class CakeHistogramWidget(QtWidgets.QWidget):
         kernel /= kernel.sum()
         smooth = np.convolve(counts, kernel, mode="same")
         hist_smooth = np.convolve(hist.astype(float), kernel, mode="same")
-        peak_idx = int(np.argmax(smooth))
-        if peak_idx >= smooth.size - 2:
-            return None
 
         drops = smooth[:-1] - smooth[1:]
-        start = min(peak_idx + 1, drops.size - 1)
-        if start >= drops.size:
-            return None
 
         # Ignore sparse tails: a low-count bin followed by zero can be a
         # large log-scale drop but is not the dominant image-background edge.
         min_populated_count = max(3.0, 0.02 * float(np.max(hist_smooth)))
         populated = hist_smooth[:-1] >= min_populated_count
         candidates = np.flatnonzero((drops > 0.0) & populated)
-        candidates = candidates[candidates >= start]
         if candidates.size == 0:
             return None
 
         scores = drops[candidates]
         edge_idx = int(candidates[int(np.argmax(scores))] + 1)
-        edge = float(edges[edge_idx])
+        edge = float(10.0 ** edges[edge_idx])
         if not np.isfinite(edge) or edge <= 0:
             return None
         return edge

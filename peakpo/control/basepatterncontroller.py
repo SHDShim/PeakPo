@@ -139,6 +139,7 @@ class BasePatternController(object):
                 self.model.clear_display_ptn()
             self.widget.lineEdit_DiffractionPatternFileName.setText(
                 str(self.model.get_base_ptn_filename()))
+            self.cake_ctrl.refresh_config_metadata_panel()
             self._update_metadata_tab_for_chi(new_filename)
             self._notify_pattern_loaded(new_filename)
             if self.session_ctrl is not None:
@@ -153,12 +154,15 @@ class BasePatternController(object):
         self.model.set_chi_path(os.path.split(new_filename)[0])
         self.model.set_base_ptn(
             new_filename, self.widget.doubleSpinBox_SetWavelength.value())
+        if hasattr(self.model, "reset_raw_image_path"):
+            self.model.reset_raw_image_path()
         self.model.set_base_pattern_provenance(provenance)
         self._clear_peakfit_for_new_pattern()
         # self.widget.textEdit_DiffractionPatternFileName.setText(
         #    '1D Pattern: ' + self.model.get_base_ptn_filename())
         self.widget.lineEdit_DiffractionPatternFileName.setText(
             str(self.model.get_base_ptn_filename()))
+        self.cake_ctrl.refresh_config_metadata_panel()
         self._update_metadata_tab_for_chi(new_filename)
         self._notify_pattern_loaded(new_filename)
         # Prefer loading full PARAM session state when available for this CHI.
@@ -215,14 +219,14 @@ class BasePatternController(object):
                  self.widget.checkBox_IgnoreRawDataExistence.isChecked() or
                  is_azimuthal_chi):
             success = self.cake_ctrl.process_temp_cake()
-            if (not success) and \
-                    ((self.widget.checkBox_IgnoreRawDataExistence.isChecked() and
-                      (not self.model.associated_image_exists())) or
-                     is_azimuthal_chi):
-                QtWidgets.QMessageBox.warning(
-                    self.widget, 'Warning',
-                    'PeakPo cannot process Cake: no raw image or cached Cake files '
-                    'were found for this CHI or its full-azimuth source.')
+            if not success:
+                if ((self.widget.checkBox_IgnoreRawDataExistence.isChecked() and
+                     (not self.model.associated_image_exists())) or
+                        is_azimuthal_chi):
+                    QtWidgets.QMessageBox.warning(
+                        self.widget, 'Warning',
+                        'PeakPo cannot process Cake: no raw image or cached Cake files '
+                        'were found for this CHI or its full-azimuth source.')
                 self.widget.checkBox_ShowCake.setChecked(False)
         # Keep backup table in File > Data synchronized right after CHI load.
         if self.session_ctrl is not None:

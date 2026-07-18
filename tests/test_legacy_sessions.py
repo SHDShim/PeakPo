@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch
 from peakpo.compat_pickle import PeakPoCompatDillUnpickler
 from peakpo.control.sessioncontroller import SessionController
 from peakpo.ds_jcpds import Session
+from peakpo.ds_powdiff import PatternPeakPo
 from peakpo.model.model import PeakPoModel
 
 
@@ -18,6 +19,14 @@ LEGACY_SESSION_DIR = REPO_ROOT / "jupyter-tools" / "5_xrdfile_conversion"
 
 
 class LegacySessionCompatibilityTests(unittest.TestCase):
+    def test_pattern_peakpo_initializes_background_defaults(self):
+        pattern = PatternPeakPo()
+        self.assertEqual(pattern.params_chbg, [20, 10, 20])
+        self.assertIsNone(pattern.x_bg)
+        self.assertIsNone(pattern.y_bg)
+        self.assertIsNone(pattern.x_bgsub)
+        self.assertIsNone(pattern.y_bgsub)
+
     def test_bundled_legacy_dpp_files_are_readable(self):
         for path in sorted(LEGACY_SESSION_DIR.glob("*.dpp")):
             with self.subTest(path=path.name), path.open("rb") as stream:

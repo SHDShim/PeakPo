@@ -21,7 +21,7 @@ from .peakfittablecontroller import PeakfitTableController
 from .cakemakecontroller import CakemakeController
 from ..utils import dialog_savefile, dialog_openfile_hide_param_dirs, \
     dialog_existing_directory_hide_param_dirs, convert_wl_to_energy, \
-    get_temp_dir, make_filename, extract_filename
+    get_temp_dir, make_filename, extract_filename, basename_any
 from ..compat_pickle import PeakPoCompatDillUnpickler
 from ..model.param_session_io import (
     save_model_to_param,
@@ -622,6 +622,8 @@ class SessionController(object):
             self.widget.doubleSpinBox_Pressure.setValue(self.model.get_saved_pressure())
             self.widget.doubleSpinBox_Temperature.setValue(self.model.get_saved_temperature())
             self._apply_ui_state(ui_state or {})
+            if self.cake_ctrl is not None:
+                self.cake_ctrl.refresh_config_metadata_panel()
             self.update_inputs()
         self._sync_peakfit_selection_to_current_section()
         self.plot_ctrl.zoom_out_graph()
@@ -1101,6 +1103,8 @@ class SessionController(object):
             self.widget.textEdit_DiffractionImageFilename.setText(
                 'Image file must have the same name ' +
                 'as base ptn in the same folder.')
+        if self.cake_ctrl is not None:
+            self.cake_ctrl.refresh_config_metadata_panel()
         self.widget.doubleSpinBox_Pressure.setValue(
             self.model.get_saved_pressure())
         self.widget.doubleSpinBox_Temperature.setValue(
@@ -1145,7 +1149,7 @@ class SessionController(object):
             return False
         if not os.path.exists(self.model.session.chi_path):
             chi_path_from_fsession = os.path.dirname(str(fsession))
-            chi_basefilen = os.path.basename(self.model.session.pattern.fname)
+            chi_basefilen = basename_any(self.model.session.pattern.fname)
             chi_filen_at_fsession_dir = os.path.join(
                 chi_path_from_fsession, chi_basefilen)
             if os.path.exists(chi_filen_at_fsession_dir):
@@ -1194,10 +1198,10 @@ class SessionController(object):
                     new_wf_wavelength.append(ptn.wavelength)
                     new_wf_display.append(ptn.display)
                 elif os.path.exists(os.path.join(
-                        self.model.chi_path, os.path.basename(ptn.fname))):
+                        self.model.chi_path, basename_any(ptn.fname))):
                     new_wf_ptn_names.append(
                         os.path.join(
-                            self.model.chi_path, os.path.basename(ptn.fname)))
+                            self.model.chi_path, basename_any(ptn.fname)))
                     new_wf_wavelength.append(ptn.wavelength)
                     new_wf_display.append(ptn.display)
                 else:
@@ -1499,16 +1503,24 @@ class SessionController(object):
         '''
         this is to read from session file and put to the table
         '''
+        pattern = self.model.base_ptn
+        if not hasattr(pattern, "params_chbg") or pattern.params_chbg is None:
+            pattern.params_chbg = [20, 10, 20]
+        x_bg = getattr(pattern, "x_bg", None)
+        if x_bg is None or len(x_bg) == 0:
+            x_bg = getattr(pattern, "x_raw", None)
+        if x_bg is None or len(x_bg) == 0:
+            return
         self.widget.spinBox_BGParam0.setValue(
-            self.model.base_ptn.params_chbg[0])
+            pattern.params_chbg[0])
         self.widget.spinBox_BGParam1.setValue(
-            self.model.base_ptn.params_chbg[1])
+            pattern.params_chbg[1])
         self.widget.spinBox_BGParam2.setValue(
-            self.model.base_ptn.params_chbg[2])
+            pattern.params_chbg[2])
         self.widget.doubleSpinBox_Background_ROI_min.setValue(
-            self.model.base_ptn.x_bg[0])
+            x_bg[0])
         self.widget.doubleSpinBox_Background_ROI_max.setValue(
-            self.model.base_ptn.x_bg[-1])
+            x_bg[-1])
         # the line below seems to be unnecessary, as there should be bgsub
         # self.model.base_ptn.subtract_bg(bg_roi, bg_params, yshift=0)
         # if self.model.waterfall_exist():

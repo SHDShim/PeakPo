@@ -5,7 +5,7 @@ from qtpy import QtWidgets
 import numpy as np
 from ..utils import dialog_savefile, writechi, get_directory, make_filename, \
     get_temp_dir, extract_filename, extract_extension, InformationBox, \
-        make_poni2_from_poni21, \
+        make_poni2_from_poni21, samefilename, \
         read_any_poni_file, dialog_openfile_hide_param_dirs
 from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
@@ -29,9 +29,14 @@ class CakeController(object):
         self.widget.checkBox_ShowCake.clicked.connect(
             self.addremove_cake)
         self.widget.pushButton_GetPONI.clicked.connect(self.get_poni)
+        if hasattr(self.widget, "pushButton_GetH5"):
+            self.widget.pushButton_GetH5.clicked.connect(self.get_h5)
         self.widget.pushButton_ApplyCakeView.clicked.connect(self.update_cake)
         self.widget.lineEdit_PONI.editingFinished.connect(
             self.load_new_poni_from_name)
+        if hasattr(self.widget, "lineEdit_H5"):
+            self.widget.lineEdit_H5.editingFinished.connect(
+                self.load_new_h5_from_name)
         self.widget.pushButton_ResetCakeScale.clicked.connect(
             self.reset_max_cake_scale)
         if hasattr(self.widget, "comboBox_CakeColormap"):
@@ -232,6 +237,97 @@ class CakeController(object):
 
     def _ignore_raw_data_missing(self):
         return self.widget.checkBox_IgnoreRawDataExistence.isChecked()
+
+    def _default_raw_image_path(self):
+        getter = getattr(self.model, "get_default_raw_image_path", None)
+        if callable(getter):
+            return getter()
+        return None
+
+    def _set_raw_image_line_edit_text(self, image_path, mark_missing=False):
+        if not hasattr(self.widget, "lineEdit_H5"):
+            return
+        line_edit = self.widget.lineEdit_H5
+        old_state = line_edit.blockSignals(True)
+        try:
+            if mark_missing:
+                line_edit.setText(
+                    "Image file does not exist in the same folder as CHI.")
+                line_edit.setStyleSheet(
+                    "QLineEdit { background-color: #8b1e1e; color: white; }")
+            else:
+                line_edit.setText("" if image_path is None else str(image_path))
+                line_edit.setStyleSheet("")
+            line_edit.setModified(False)
+        finally:
+            line_edit.blockSignals(old_state)
+
+    def _is_valid_raw_image_for_current_chi(self, image_path):
+        checker = getattr(self.model, "image_matches_base_pattern", None)
+        if callable(checker):
+            return checker(image_path)
+        if (not image_path) or (not self.model.base_ptn_exist()):
+            return False
+        return samefilename(self.model.get_base_ptn_filename(), image_path)
+
+    def _adopt_default_or_selected_raw_image(self):
+        if not self.model.base_ptn_exist():
+            if hasattr(self.model, "raw_image_path"):
+                self.model.raw_image_path = None
+                self.model.h5_path = None
+            self._set_raw_image_line_edit_text(None)
+            return
+        if not hasattr(self.model, "raw_image_path"):
+            return
+        current_image = getattr(
+            self.model, "raw_image_path", getattr(self.model, "h5_path", None))
+        if current_image and self._is_valid_raw_image_for_current_chi(current_image) and \
+                os.path.exists(current_image):
+            self.model.raw_image_path = current_image
+            self.model.h5_path = current_image
+            self._set_raw_image_line_edit_text(current_image)
+            return
+        default_image = self._default_raw_image_path()
+        if default_image and os.path.exists(default_image):
+            self.model.raw_image_path = default_image
+            self.model.h5_path = default_image
+            self._set_raw_image_line_edit_text(default_image)
+            return
+        self.model.raw_image_path = None
+        self.model.h5_path = None
+        self._set_raw_image_line_edit_text(None, mark_missing=True)
+
+    def _sync_raw_image_from_line_edit(self, warn_if_invalid=False):
+        if not hasattr(self.widget, "lineEdit_H5"):
+            return True
+        image_path = self.widget.lineEdit_H5.text().strip()
+        if image_path == "" or image_path == "Image file does not exist in the same folder as CHI.":
+            self.model.raw_image_path = None
+            self.model.h5_path = None
+            self._adopt_default_or_selected_raw_image()
+            return True
+        if not os.path.exists(image_path):
+            if warn_if_invalid:
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning", "The image file does not exist.")
+            self._adopt_default_or_selected_raw_image()
+            return False
+        if not self._is_valid_raw_image_for_current_chi(image_path):
+            if warn_if_invalid:
+                allowed = ", ".join(
+                    "*." + ext for ext in getattr(
+                        self.model, "get_allowed_image_extensions", lambda: ())())
+                QtWidgets.QMessageBox.warning(
+                    self.widget, "Warning",
+                    "Image file must have the same base name as the CHI file "
+                    "and use a supported image extension.\n\n"
+                    "Supported types:\n" + allowed)
+            self._adopt_default_or_selected_raw_image()
+            return False
+        self.model.raw_image_path = image_path
+        self.model.h5_path = image_path
+        self._set_raw_image_line_edit_text(image_path)
+        return True
 
     def _set_image_file_box_missing(self):
         self.widget.textEdit_DiffractionImageFilename.setText(
@@ -571,14 +667,36 @@ class CakeController(object):
         self._set_poni_line_edit_text(self.model.poni)
         self.refresh_config_metadata_panel()
 
-    def _set_poni_line_edit_text(self, poni_path):
+    def _set_poni_line_edit_text(self, poni_path, mark_missing=False):
         line_edit = self.widget.lineEdit_PONI
         old_state = line_edit.blockSignals(True)
         try:
-            line_edit.setText("" if poni_path is None else str(poni_path))
+            if mark_missing:
+                line_edit.setText("No PONI file is assigned or found.")
+                line_edit.setStyleSheet(
+                    "QLineEdit { background-color: #8b1e1e; color: white; }")
+            else:
+                line_edit.setText("" if poni_path is None else str(poni_path))
+                line_edit.setStyleSheet("")
             line_edit.setModified(False)
         finally:
             line_edit.blockSignals(old_state)
+
+    def _adopt_current_or_found_poni(self):
+        if not self.model.base_ptn_exist():
+            self._set_poni_line_edit_text(None)
+            return
+        current_poni = getattr(self.model, "poni", None)
+        if current_poni and os.path.exists(current_poni):
+            self._set_poni_line_edit_text(current_poni)
+            return
+        poni_all = self.get_all_temp_poni()
+        if len(poni_all) == 1 and os.path.exists(poni_all[0]):
+            self.model.poni = poni_all[0]
+            self._set_poni_line_edit_text(poni_all[0])
+            return
+        self.model.poni = None
+        self._set_poni_line_edit_text(None, mark_missing=True)
 
     def _sync_poni_from_line_edit(self, warn_if_missing=False):
         """
@@ -589,12 +707,14 @@ class CakeController(object):
         read the visible field directly before loading the calibration.
         """
         poni_path = self.widget.lineEdit_PONI.text().strip()
-        if poni_path == "":
+        if poni_path in ("", "No PONI file is assigned or found."):
+            self._adopt_current_or_found_poni()
             return self.model.poni_exist()
         if not os.path.exists(poni_path):
             if warn_if_missing:
                 QtWidgets.QMessageBox.warning(
                     self.widget, 'Warning', 'The PONI file does not exist.')
+            self._adopt_current_or_found_poni()
             return False
         if poni_path != self.model.poni:
             self.model.poni = poni_path
@@ -710,6 +830,33 @@ class CakeController(object):
                     'More than 2 PONI files exist in TEMP folder. ' + \
                     'Delete except for a correct one.')
 
+    def get_h5(self):
+        if not self.model.base_ptn_exist():
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Open a CHI or base pattern first before choosing an image file.")
+            return
+        allowed_exts = getattr(
+            self.model, "get_allowed_image_extensions", lambda: ())()
+        filter_text = "Supported image files (*)"
+        filen = dialog_openfile_hide_param_dirs(
+            self.widget, "Open an image file",
+            self.model.chi_path, filter_text,
+            allowed_file_extensions=allowed_exts)[0]
+        filename = str(filen)
+        if filename == "":
+            return
+        if not self._is_valid_raw_image_for_current_chi(filename):
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Warning",
+                "Image file must have the same base name as the CHI file.")
+            self._adopt_default_or_selected_raw_image()
+            return
+        self.model.raw_image_path = filename
+        self.model.h5_path = filename
+        self._set_raw_image_line_edit_text(filename)
+        self.refresh_config_metadata_panel()
+
     def load_new_poni_from_name(self):
         if self.widget.lineEdit_PONI.isModified():
             if not self._sync_poni_from_line_edit(warn_if_missing=True):
@@ -718,6 +865,10 @@ class CakeController(object):
                 return
             temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
             self._store_selected_poni(self.model.poni, temp_dir)
+
+    def load_new_h5_from_name(self):
+        if hasattr(self.widget, "lineEdit_H5") and self.widget.lineEdit_H5.isModified():
+            self._sync_raw_image_from_line_edit(warn_if_invalid=True)
 
     def _format_metadata_label(self, key):
         key = str(key or "").strip().replace("_", " ")
@@ -817,6 +968,8 @@ class CakeController(object):
         return entries or [("Status", "Cake not loaded.")]
 
     def refresh_config_metadata_panel(self):
+        self._adopt_current_or_found_poni()
+        self._adopt_default_or_selected_raw_image()
         if not hasattr(self.widget, "set_key_value_table_rows"):
             return
         if hasattr(self.widget, "tableWidget_CakePoniInfo"):

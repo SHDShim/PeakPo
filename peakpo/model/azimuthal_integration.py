@@ -3,7 +3,7 @@ import json
 import os
 import re
 
-from ..utils import get_temp_dir
+from ..utils import basename_any, get_temp_dir, resolve_stored_path
 
 
 AZINT_FORMAT = "peakpo-azimuthal-integration"
@@ -122,46 +122,22 @@ def _relpath_or_abs(path, root):
 def _resolve_path(stored_path, root):
     if not stored_path:
         return ""
-    stored_path = str(stored_path)
-    if os.path.isabs(stored_path):
-        return os.path.abspath(stored_path)
-    root = os.path.abspath(root) if root else ""
-    if not root:
-        return os.path.abspath(stored_path)
-    return os.path.abspath(os.path.join(root, stored_path))
+    return resolve_stored_path(stored_path, root, missing_value="")
 
 
 def recover_existing_path(stored_path, search_roots=()):
     if not stored_path:
         return ""
-    candidate = os.path.abspath(str(stored_path))
-    if os.path.exists(candidate):
-        return candidate
-
-    basename = os.path.basename(candidate)
-    roots = []
-    for root in search_roots:
-        if root:
-            roots.append(os.path.abspath(str(root)))
-
-    for root in roots:
-        if not os.path.isdir(root):
-            continue
-        direct = os.path.join(root, basename)
-        if os.path.exists(direct):
-            return direct
-        for dirpath, _, filenames in os.walk(root):
-            if basename in filenames:
-                return os.path.join(dirpath, basename)
-    return candidate
+    return resolve_stored_path(stored_path, search_roots=search_roots, missing_value="")
 
 
 def resolve_path_with_fallback(stored_path, root, search_roots=()):
-    resolved = _resolve_path(stored_path, root)
-    if resolved and os.path.exists(resolved):
-        return resolved
-    roots = (root,) + tuple(search_roots)
-    return recover_existing_path(resolved, roots)
+    return resolve_stored_path(
+        stored_path,
+        root,
+        search_roots=search_roots,
+        missing_value="",
+    )
 
 
 def range_slug(ranges, label=""):
@@ -186,13 +162,13 @@ def output_dir_for_source(source_chi):
 
 
 def default_setup_path(source_chi):
-    stem = os.path.splitext(os.path.basename(source_chi))[0]
+    stem = os.path.splitext(basename_any(source_chi))[0]
     return os.path.join(output_dir_for_source(source_chi), f"{stem}__azimuth_setup.json")
 
 
 def unique_output_chi_path(source_chi, ranges, label=""):
     output_dir = output_dir_for_source(source_chi)
-    source_stem = os.path.splitext(os.path.basename(source_chi))[0]
+    source_stem = os.path.splitext(basename_any(source_chi))[0]
     slug = range_slug(ranges, label=label)
     base = f"{source_stem}__{slug}"
     if len(base) > 150:

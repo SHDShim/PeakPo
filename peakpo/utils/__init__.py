@@ -4,11 +4,13 @@ from .pyqtutils import (
     align_spinbox_right,
     align_all_spinboxes_right,
 )
-from .fileutils import samefilename, extract_filename, make_filename, \
+from .fileutils import samefilename, breakdown_filename, extract_filename, make_filename, \
     get_sorted_filelist, find_from_filelist, writechi, readchi, \
     load_chi_xy, extract_extension, change_file_path, get_directory, \
     get_temp_dir, get_unique_filename, backup_copy, read_any_poni_file, \
-        make_poni2_from_poni21, make_converted_poni2_filename
+        make_poni2_from_poni21, make_converted_poni2_filename, \
+    basename_any, dirname_any, native_relative_path, param_join, \
+    resolve_stored_path
 from .dialogs import (
     dialog_savefile,
     dialog_openfile_hide_param_dirs,

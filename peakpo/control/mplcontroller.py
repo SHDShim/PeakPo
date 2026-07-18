@@ -732,6 +732,17 @@ class MplController(object):
         import matplotlib.pyplot as plt
         import matplotlib.colors as mcolors
 
+        def _clear_failed_cake_state():
+            self._cake_artist = None
+            self._cake_display_data = None
+            self._clear_cake_overlay_artists()
+            hist_widget = getattr(self.widget, "cake_hist_widget", None)
+            if hist_widget is not None:
+                if hasattr(hist_widget, "clear"):
+                    hist_widget.clear()
+                elif hasattr(hist_widget, "_draw_empty_state"):
+                    hist_widget._draw_empty_state()
+
         def _coerce_cake_arrays(intensity, tth, chi):
             if intensity is None or tth is None or chi is None:
                 return None
@@ -760,13 +771,8 @@ class MplController(object):
         intensity_cake, tth_cake, chi_cake = self.model.diff_img.get_cake()
         coerced = _coerce_cake_arrays(intensity_cake, tth_cake, chi_cake)
         if coerced is None:
-            hist_widget = getattr(self.widget, "cake_hist_widget", None)
-            if hist_widget is not None:
-                if hasattr(hist_widget, "clear"):
-                    hist_widget.clear()
-                elif hasattr(hist_widget, "_draw_empty_state"):
-                    hist_widget._draw_empty_state()
-            return
+            _clear_failed_cake_state()
+            return False
         int_plot, tth_cake, chi_cake = coerced
         self._clear_cake_overlay_artists()
         int_plot = ma.array(int_plot, copy=False)
@@ -908,8 +914,12 @@ class MplController(object):
                     climits = np.asarray(exact_bounds, dtype=float)
 
 
-        tth_edges = _coordinate_edges(tth_cake)
-        chi_edges = _coordinate_edges(chi_cake)
+        try:
+            tth_edges = _coordinate_edges(tth_cake)
+            chi_edges = _coordinate_edges(chi_cake)
+        except ValueError:
+            _clear_failed_cake_state()
+            return False
         self._cake_tth_centers = np.asarray(tth_cake, dtype=float)
         self._cake_chi_centers = np.asarray(chi_cake, dtype=float)
         imshow_kwargs = {
@@ -1012,6 +1022,7 @@ class MplController(object):
                     self.widget.mpl.canvas.ax_cake.add_patch(rect))
         self._plot_selected_derived_chi_preview_overlay(
             tth_min, tth_max, chi_min, chi_max)
+        return True
 
     def _cake_hist_edge_width_percent(self):
         spin = getattr(self.widget, "doubleSpinBox_CakeHistEdgePct", None)
@@ -2554,8 +2565,12 @@ class MplController(object):
                     self.model.diff_img_exist():
                 new_height = self.widget.horizontalSlider_CakeAxisSize.value()
                 self.widget.mpl.canvas.resize_axes(new_height)
-                self._plot_cake()
+                if not self._plot_cake():
+                    self.widget.checkBox_ShowCake.setChecked(False)
+                    self.widget.mpl.canvas.resize_axes(1)
             else:
+                if self.widget.checkBox_ShowCake.isChecked():
+                    self.widget.checkBox_ShowCake.setChecked(False)
                 self.widget.mpl.canvas.resize_axes(1)
             stage_seconds["axes/cake"] = time.perf_counter() - stage_started_at
             stage_started_at = time.perf_counter()

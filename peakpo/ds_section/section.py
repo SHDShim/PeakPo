@@ -42,6 +42,7 @@ class Section(object):
         self.background_anchor_ranges = []
         self.source_provenance = {}
         self.peakinfo = {}
+        self._apply_peak_constraints_for_current_fit = True
         self._component_cache_token = None
         self._component_cache_bgsub = None
         self._component_cache_with_bg = None
@@ -236,13 +237,17 @@ class Section(object):
         index = (np.abs(np.asarray(x_c_lst) - x)).argmin()
         self.peaks_in_queue.pop(index)
 
-    def prepare_for_fitting(self, poly_order, maxwidth, centerrange):
+    def prepare_for_fitting(
+            self, poly_order, maxwidth, centerrange,
+            apply_peak_constraints=True):
         """
         :param x_center: numpy array of initial x values at picked centers
         :param y_center: numpy array of initial y values at picked centers
         :param fwhm: single float number for initial fwhm value
         """
         self.set_baseline(poly_order)
+        self._apply_peak_constraints_for_current_fit = bool(
+            apply_peak_constraints)
         baseline_mod = PolynomialModel(poly_order, prefix='b_')
         mod = baseline_mod
         pars = baseline_mod.make_params()
@@ -257,33 +262,57 @@ class Section(object):
             prefix = "p{0:d}_".format(i)
             peak_mod = PseudoVoigtModel(prefix=prefix, )
             pars.update(peak_mod.make_params())
-            center_min = self._peak_bound(
-                peak, 'center_min', peak['center'] - DEFAULT_CENTER_HALF_RANGE)
-            center_max = self._peak_bound(
-                peak, 'center_max', peak['center'] + DEFAULT_CENTER_HALF_RANGE)
-            sigma_min = self._peak_bound(peak, 'sigma_min', DEFAULT_FWHM_MIN)
-            sigma_max = self._peak_bound(peak, 'sigma_max', DEFAULT_FWHM_MAX)
-            amp_min = 0.0
-            amp_max = self._amplitude_max_bound(peak)
-            frac_min = self._peak_bound(peak, 'fraction_min', DEFAULT_NL_MIN)
-            frac_max = self._peak_bound(peak, 'fraction_max', DEFAULT_NL_MAX)
-            center_min, center_max = self._normalize_bounds(center_min, center_max)
-            sigma_min, sigma_max = self._normalize_bounds(sigma_min, sigma_max)
-            if np.isfinite(amp_max):
-                amp_min, amp_max = self._normalize_bounds(amp_min, amp_max)
-            frac_min, frac_max = self._normalize_bounds(frac_min, frac_max)
-            pars[prefix + 'center'].set(
-                value=peak['center'], min=center_min, max=center_max,
-                vary=peak['center_vary'])
-            pars[prefix + 'sigma'].set(
-                value=peak['sigma'], min=sigma_min, vary=peak['sigma_vary'],
-                max=sigma_max)
-            pars[prefix + 'amplitude'].set(
-                value=peak['amplitude'], min=amp_min, max=amp_max,
-                vary=peak['amplitude_vary'])
-            pars[prefix + 'fraction'].set(
-                value=peak['fraction'], min=frac_min, max=frac_max,
-                vary=peak['fraction_vary'])
+            if apply_peak_constraints:
+                center_min = self._peak_bound(
+                    peak, 'center_min',
+                    peak['center'] - DEFAULT_CENTER_HALF_RANGE,
+                    enabled_key='center_min_enabled')
+                center_max = self._peak_bound(
+                    peak, 'center_max',
+                    peak['center'] + DEFAULT_CENTER_HALF_RANGE,
+                    enabled_key='center_max_enabled')
+                sigma_min = self._peak_bound(
+                    peak, 'sigma_min', DEFAULT_FWHM_MIN,
+                    enabled_key='sigma_min_enabled')
+                sigma_max = self._peak_bound(
+                    peak, 'sigma_max', DEFAULT_FWHM_MAX,
+                    enabled_key='sigma_max_enabled')
+                amp_min = self._peak_bound(
+                    peak, 'amplitude_min', 0.0,
+                    enabled_key='amplitude_min_enabled')
+                amp_max = self._peak_bound(
+                    peak, 'amplitude_max', self._amplitude_max_bound(peak),
+                    enabled_key='amplitude_max_enabled')
+                frac_min = self._peak_bound(
+                    peak, 'fraction_min', DEFAULT_NL_MIN,
+                    enabled_key='fraction_min_enabled')
+                frac_max = self._peak_bound(
+                    peak, 'fraction_max', DEFAULT_NL_MAX,
+                    enabled_key='fraction_max_enabled')
+                center_min, center_max = self._normalize_bounds(center_min, center_max)
+                sigma_min, sigma_max = self._normalize_bounds(sigma_min, sigma_max)
+                if amp_max is not None and np.isfinite(amp_max):
+                    amp_min, amp_max = self._normalize_bounds(amp_min, amp_max)
+                frac_min, frac_max = self._normalize_bounds(frac_min, frac_max)
+                pars[prefix + 'center'].set(
+                    value=peak['center'], min=center_min, max=center_max,
+                    vary=peak['center_vary'])
+                pars[prefix + 'sigma'].set(
+                    value=peak['sigma'], min=sigma_min, vary=peak['sigma_vary'],
+                    max=sigma_max)
+                pars[prefix + 'amplitude'].set(
+                    value=peak['amplitude'], min=amp_min, max=amp_max,
+                    vary=peak['amplitude_vary'])
+                pars[prefix + 'fraction'].set(
+                    value=peak['fraction'], min=frac_min, max=frac_max,
+                    vary=peak['fraction_vary'])
+            else:
+                pars[prefix + 'center'].set(value=peak['center'], vary=True)
+                pars[prefix + 'sigma'].set(value=peak['sigma'], vary=True)
+                pars[prefix + 'amplitude'].set(
+                    value=peak['amplitude'], vary=True)
+                pars[prefix + 'fraction'].set(
+                    value=peak['fraction'], vary=True)
             peakinfo[prefix + 'phasename'] = peak['phasename']
             peakinfo[prefix + 'h'] = peak['h']
             peakinfo[prefix + 'k'] = peak['k']
@@ -294,10 +323,16 @@ class Section(object):
         self.peakinfo = peakinfo
         self.fit_model = mod
 
-    def _peak_bound(self, peak, key, default):
+    def _peak_bound(self, peak, key, default, enabled_key=None):
+        if enabled_key is not None:
+            enabled = peak.get(enabled_key, None)
+            if enabled is None:
+                enabled = key not in peak or peak.get(key) is not None
+            if not bool(enabled):
+                return None
         value = peak.get(key, default)
         if value is None:
-            return default
+            return None
         return float(value)
 
     def _amplitude_max_bound(self, peak):
@@ -446,7 +481,8 @@ class Section(object):
             peak['k'] = self.peakinfo[prefix + 'k']
             peak['l'] = self.peakinfo[prefix + 'l']
             i += 1
-        self.sync_peak_vary_flags_from_fit_result()
+        if self._apply_peak_constraints_for_current_fit:
+            self.sync_peak_vary_flags_from_fit_result()
         i = 0
         for factor in self.baseline_in_queue:
             prefix = "b_c{0:d}".format(i)

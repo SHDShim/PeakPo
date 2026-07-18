@@ -27,6 +27,9 @@ class _LineEditStub:
     def setModified(self, value):
         self.modified = bool(value)
 
+    def setStyleSheet(self, value):
+        self.style = str(value)
+
     def blockSignals(self, value):
         old = self._signals_blocked
         self._signals_blocked = bool(value)
@@ -52,6 +55,7 @@ class CakeControllerPoniTests(unittest.TestCase):
                 chi_path=str(source_dir),
                 poni=None,
                 diff_img_exist=lambda: False,
+                base_ptn_exist=lambda: False,
             )
             controller.widget = SimpleNamespace(
                 lineEdit_PONI=_LineEditStub(),
@@ -59,6 +63,7 @@ class CakeControllerPoniTests(unittest.TestCase):
             controller.get_all_temp_poni = Mock(return_value=[str(old_poni)])
             controller._apply_changes_to_graph = Mock()
             controller.produce_cake = Mock()
+            controller.refresh_config_metadata_panel = Mock()
 
             with patch(
                     "peakpo.control.cakecontroller.dialog_openfile_hide_param_dirs",
@@ -93,6 +98,7 @@ class CakeControllerPoniTests(unittest.TestCase):
                 chi_path=str(source_dir),
                 poni=None,
                 diff_img_exist=lambda: False,
+                base_ptn_exist=lambda: False,
             )
             controller.widget = SimpleNamespace(
                 lineEdit_PONI=_LineEditStub(),
@@ -100,6 +106,7 @@ class CakeControllerPoniTests(unittest.TestCase):
             controller.get_all_temp_poni = Mock(return_value=[])
             controller._apply_changes_to_graph = Mock()
             controller.produce_cake = Mock()
+            controller.refresh_config_metadata_panel = Mock()
 
             success = controller._store_selected_poni(str(selected), str(temp_dir))
 
@@ -158,12 +165,51 @@ class CakeControllerPoniTests(unittest.TestCase):
 
         controller = object.__new__(CakeController)
         controller.widget = SimpleNamespace(lineEdit_PONI=line_edit)
-        controller.model = SimpleNamespace(poni=None)
+        controller.model = SimpleNamespace(
+            poni=None,
+            base_ptn_exist=lambda: False,
+            diff_img=None,
+        )
+        controller.refresh_config_metadata_panel = Mock()
 
         controller._set_current_poni("/tmp/example.poni")
 
         self.assertEqual(controller.widget.lineEdit_PONI.value, "/tmp/example.poni")
         self.assertFalse(controller.widget.lineEdit_PONI.modified)
+
+    def test_image_file_dialog_uses_compact_filter_label(self):
+        with tempfile.TemporaryDirectory() as root:
+            root_path = Path(root)
+            image_path = root_path / "sample.cbf"
+            image_path.write_bytes(b"fake image")
+            allowed = ("tif", "tiff", "cbf", "edf", "h5", "hdf5")
+
+            controller = object.__new__(CakeController)
+            controller.model = SimpleNamespace(
+                chi_path=str(root_path),
+                raw_image_path=None,
+                h5_path=None,
+                base_ptn_exist=lambda: True,
+                get_allowed_image_extensions=lambda: allowed,
+            )
+            controller.widget = SimpleNamespace(
+                lineEdit_H5=_LineEditStub(),
+            )
+            controller._is_valid_raw_image_for_current_chi = Mock(return_value=True)
+            controller._set_raw_image_line_edit_text = Mock()
+            controller.refresh_config_metadata_panel = Mock()
+
+            with patch(
+                    "peakpo.control.cakecontroller.dialog_openfile_hide_param_dirs",
+                    return_value=(str(image_path), "")) as dialog_mock:
+                controller.get_h5()
+
+            dialog_mock.assert_called_once()
+            args, kwargs = dialog_mock.call_args
+            self.assertEqual(args[3], "Supported image files (*)")
+            self.assertEqual(kwargs["allowed_file_extensions"], allowed)
+            self.assertNotIn("*.tif", args[3])
+            self.assertEqual(controller.model.raw_image_path, str(image_path))
 
     def test_refresh_config_metadata_panel_populates_poni_and_cake_tables(self):
         with tempfile.TemporaryDirectory() as root:
@@ -186,8 +232,10 @@ class CakeControllerPoniTests(unittest.TestCase):
             controller.model = SimpleNamespace(
                 poni=str(poni_path),
                 diff_img=diff_img,
+                base_ptn_exist=lambda: False,
             )
             controller.widget = SimpleNamespace(
+                lineEdit_PONI=_LineEditStub(),
                 tableWidget_CakePoniInfo="poni_table",
                 tableWidget_CakeSummary="cake_table",
                 set_key_value_table_rows=lambda table, entries: table_values.__setitem__(

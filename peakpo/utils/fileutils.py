@@ -3,6 +3,7 @@ import glob
 import numpy as np
 import re
 import os
+import ntpath
 import shutil
 import collections
 
@@ -136,6 +137,112 @@ def samefilename(filen1, filen2):
     return (f1 == f2)
 
 
+def basename_any(path):
+    """Return the filename part for POSIX or Windows-style stored paths."""
+    if path is None:
+        return ""
+    path = str(path)
+    return ntpath.basename(os.path.basename(path))
+
+
+def dirname_any(path):
+    """Return the directory part for POSIX or Windows-style stored paths."""
+    if path is None:
+        return ""
+    path = str(path)
+    posix_dir = os.path.dirname(path)
+    win_dir = ntpath.dirname(path)
+    if "\\" in path and len(win_dir) > len(posix_dir):
+        return win_dir
+    return posix_dir
+
+
+def native_relative_path(stored_path):
+    """
+    Convert a serialized relative path to the current platform's separators.
+
+    Absolute Windows paths are left intact so fallback lookup can recover by
+    basename when those drives do not exist on the current machine.
+    """
+    if stored_path is None:
+        return None
+    stored_path = str(stored_path)
+    if os.path.isabs(stored_path) or ntpath.isabs(stored_path):
+        return stored_path
+    return stored_path.replace("\\", os.sep)
+
+
+def param_join(root, stored_relative_path):
+    """Join a root with a persisted relative path from any platform."""
+    rel_path = native_relative_path(stored_relative_path)
+    if rel_path is None:
+        return root
+    if os.path.isabs(rel_path) or ntpath.isabs(rel_path):
+        return rel_path
+    root_name = basename_any(root)
+    rel_portable = str(rel_path).replace("\\", "/")
+    prefix = root_name + "/"
+    if root_name and rel_portable == root_name:
+        rel_portable = ""
+    elif root_name and rel_portable.startswith(prefix):
+        rel_portable = rel_portable[len(prefix):]
+    return os.path.join(root, rel_portable.replace("/", os.sep))
+
+
+def resolve_stored_path(stored_path, root="", search_roots=(), missing_value=""):
+    """
+    Resolve a path loaded from disk across POSIX/Windows separator changes.
+
+    Lookup order:
+    - existing absolute/native path
+    - root + normalized relative path
+    - direct normalized relative path under each search root
+    - basename search under each search root
+    """
+    if stored_path in (None, ""):
+        return missing_value
+    stored_text = str(stored_path)
+    native_path = native_relative_path(stored_text)
+
+    if os.path.isabs(native_path):
+        candidate = os.path.abspath(native_path)
+    elif ntpath.isabs(native_path):
+        candidate = native_path
+    else:
+        base = os.path.abspath(root) if root else ""
+        candidate = os.path.abspath(os.path.join(base, native_path)) if base \
+            else os.path.abspath(native_path)
+    if os.path.exists(candidate):
+        return candidate
+
+    roots = []
+    for candidate_root in (root,) + tuple(search_roots or ()):
+        if candidate_root in (None, ""):
+            continue
+        abs_root = os.path.abspath(str(candidate_root))
+        if abs_root not in roots:
+            roots.append(abs_root)
+
+    if not (os.path.isabs(native_path) or ntpath.isabs(native_path)):
+        for candidate_root in roots:
+            direct = os.path.abspath(os.path.join(candidate_root, native_path))
+            if os.path.exists(direct):
+                return direct
+
+    leaf = basename_any(stored_text)
+    if leaf:
+        for candidate_root in roots:
+            if not os.path.isdir(candidate_root):
+                continue
+            direct = os.path.join(candidate_root, leaf)
+            if os.path.exists(direct):
+                return direct
+            for dirpath, _, filenames in os.walk(candidate_root):
+                if leaf in filenames:
+                    return os.path.join(dirpath, leaf)
+    return candidate
+
+
 def breakdown_filename(filen):
     """
     breakdown filename to path, name, extension
@@ -143,7 +250,8 @@ def breakdown_filename(filen):
     :param filen: filename
     :return: path, filename without extension, extension
     """
-    path, filen_ext = os.path.split(filen)
+    path = dirname_any(filen)
+    filen_ext = basename_any(filen)
     filen, ext = os.path.splitext(filen_ext)
 
     return path, filen, ext
@@ -184,7 +292,8 @@ def make_filename(filename, ext, temp_dir=None, original=False):
     :param ext: new extension without dot
     :return: new filename
     """
-    path, filen = os.path.split(filename)
+    path = dirname_any(filename)
+    filen = basename_any(filename)
     if original:
         new_filen = filen.split(os.extsep)[0] + '.' + ext
         # new_filen = (os.extsep).join(filen.split(os.extsep)[0:-1]) + '.' + ext
@@ -198,13 +307,7 @@ def make_filename(filename, ext, temp_dir=None, original=False):
 
 
 def change_file_path(filename, new_path):
-    path, filen_ext1 = os.path.split(filename)
-    # the if statement below is very rare case where path breakdown is incomplete
-    # when moving files from windows to osx
-    if filen_ext1.find("\\") != -1:
-        filen_ext = filen_ext1.split("\\")[-1]
-    else:
-        filen_ext = filen_ext1
+    filen_ext = basename_any(filename)
     new_filename = os.path.join(new_path, filen_ext)
     return new_filename
 

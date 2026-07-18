@@ -6,7 +6,7 @@ import math
 from dataclasses import dataclass
 import numpy as np
 
-from ..utils import get_temp_dir, readchi
+from ..utils import basename_any, get_temp_dir, readchi
 from ..ds_powdiff.DiffractionPattern import Pattern
 
 
@@ -205,7 +205,7 @@ def parse_dioptas_map_filename(filename):
 
     The final numeric block is a provenance/file identifier and is ignored.
     """
-    stem = os.path.splitext(os.path.basename(str(filename)))[0]
+    stem = os.path.splitext(basename_any(filename))[0]
     match = re.search(r"(?:^|_)map_(\d+)_(\d+)(?:_(\d+))?(?:$|_)", stem.lower())
     if match is None:
         return None
@@ -499,7 +499,7 @@ class DioptasMetadataCollection:
         return cls(exports)
 
     def get_coordinates(self, filename=None, frame_index=None):
-        base = os.path.splitext(os.path.basename(str(filename or "")))[0]
+        base = os.path.splitext(basename_any(filename or ""))[0]
         for export in self.exports:
             if export.output_base_name and export.output_base_name != base:
                 continue
@@ -670,7 +670,7 @@ def load_bgsub_or_raw_xy(chi_path, use_bgsub, chi_cache):
     # Priority 1: temp bgsub file under <chi>-param/
     try:
         temp_dir = get_temp_dir(chi_path)
-        base = os.path.splitext(os.path.basename(chi_path))[0]
+        base = os.path.splitext(basename_any(chi_path))[0]
         temp_bgsub = os.path.join(temp_dir, f"{base}.bgsub.chi")
         if os.path.exists(temp_bgsub):
             __, __, x, y = readchi(temp_bgsub)

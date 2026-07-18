@@ -1,5 +1,6 @@
 import os
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import numpy as np
 from matplotlib import colors as mcolors
@@ -71,6 +72,140 @@ def test_bragg_dspacing_validates_domain_and_uses_two_theta():
 
     expected = 0.3344 / (2.0 * np.sin(np.deg2rad(10.0)))
     assert np.isclose(_bragg_dspacing(20.0, 0.3344), expected)
+
+
+def test_update_impl_unchecks_show_cake_when_cake_cannot_be_plotted():
+    container = QtWidgets.QWidget()
+    canvas = MplCanvas()
+    canvas.toolbar = None
+    canvas.resize_axes(30)
+    canvas.ax_pattern.set_xlim(20.0, 40.0)
+    canvas.ax_pattern.set_ylim(1.0, 2.0)
+
+    show_cake = QtWidgets.QCheckBox(container)
+    show_cake.setChecked(True)
+    auto_y = QtWidgets.QCheckBox(container)
+    auto_y.setChecked(False)
+    long_cursor = QtWidgets.QCheckBox(container)
+    long_cursor.setChecked(False)
+    axis_size = QtWidgets.QSlider(QtCore.Qt.Horizontal, container)
+    axis_size.setRange(1, 100)
+    axis_size.setValue(30)
+    wavelength = QtWidgets.QDoubleSpinBox(container)
+    wavelength.setValue(0.3344)
+    short_title = QtWidgets.QCheckBox(container)
+    short_title.setChecked(True)
+    intensity = QtWidgets.QCheckBox(container)
+    intensity.setChecked(True)
+
+    widget = container
+    widget.mpl = SimpleNamespace(canvas=canvas)
+    widget.checkBox_ShowCake = show_cake
+    widget.checkBox_AutoY = auto_y
+    widget.checkBox_LongCursor = long_cursor
+    widget.horizontalSlider_CakeAxisSize = axis_size
+    widget.doubleSpinBox_SetWavelength = wavelength
+    widget.checkBox_ShortPlotTitle = short_title
+    widget.checkBox_Intensity = intensity
+
+    model = SimpleNamespace(
+        base_ptn_exist=lambda: True,
+        jcpds_exist=lambda: False,
+        diff_img_exist=lambda: True,
+        waterfall_exist=lambda: False,
+    )
+
+    ctrl = object.__new__(MplController)
+    ctrl.model = model
+    ctrl.widget = widget
+    ctrl.obj_color = "k"
+    ctrl._is_drawing = False
+    ctrl._toolbar_active = False
+    ctrl._pending_update_args = None
+    ctrl._derived_label_visible = False
+    ctrl._plot_cake = Mock(return_value=False)
+    ctrl._set_nightday_view = Mock()
+    ctrl._apply_pattern_background_style = Mock()
+    ctrl._plot_diffpattern = Mock()
+    ctrl._plot_derived_pattern_label = Mock(return_value=False)
+    ctrl._fits_tab_active = Mock(return_value=False)
+    ctrl._update_pnt_artist = Mock()
+    ctrl._ensure_vertical_cursor_artists = Mock()
+    ctrl.clear_vertical_cursor_position = Mock()
+    ctrl._schedule_canvas_draw = Mock()
+    ctrl._display_pattern_filename = Mock(return_value="/tmp/sample.chi")
+
+    ctrl._update_impl()
+
+    assert not widget.checkBox_ShowCake.isChecked()
+    ctrl._plot_cake.assert_called_once()
+
+
+def test_update_impl_unchecks_show_cake_when_no_cake_image_exists():
+    container = QtWidgets.QWidget()
+    canvas = MplCanvas()
+    canvas.toolbar = None
+    canvas.resize_axes(30)
+    canvas.ax_pattern.set_xlim(20.0, 40.0)
+    canvas.ax_pattern.set_ylim(1.0, 2.0)
+
+    show_cake = QtWidgets.QCheckBox(container)
+    show_cake.setChecked(True)
+    auto_y = QtWidgets.QCheckBox(container)
+    auto_y.setChecked(False)
+    long_cursor = QtWidgets.QCheckBox(container)
+    long_cursor.setChecked(False)
+    axis_size = QtWidgets.QSlider(QtCore.Qt.Horizontal, container)
+    axis_size.setRange(1, 100)
+    axis_size.setValue(30)
+    wavelength = QtWidgets.QDoubleSpinBox(container)
+    wavelength.setValue(0.3344)
+    short_title = QtWidgets.QCheckBox(container)
+    short_title.setChecked(True)
+    intensity = QtWidgets.QCheckBox(container)
+    intensity.setChecked(True)
+
+    widget = container
+    widget.mpl = SimpleNamespace(canvas=canvas)
+    widget.checkBox_ShowCake = show_cake
+    widget.checkBox_AutoY = auto_y
+    widget.checkBox_LongCursor = long_cursor
+    widget.horizontalSlider_CakeAxisSize = axis_size
+    widget.doubleSpinBox_SetWavelength = wavelength
+    widget.checkBox_ShortPlotTitle = short_title
+    widget.checkBox_Intensity = intensity
+
+    model = SimpleNamespace(
+        base_ptn_exist=lambda: True,
+        jcpds_exist=lambda: False,
+        diff_img_exist=lambda: False,
+        waterfall_exist=lambda: False,
+    )
+
+    ctrl = object.__new__(MplController)
+    ctrl.model = model
+    ctrl.widget = widget
+    ctrl.obj_color = "k"
+    ctrl._is_drawing = False
+    ctrl._toolbar_active = False
+    ctrl._pending_update_args = None
+    ctrl._derived_label_visible = False
+    ctrl._plot_cake = Mock()
+    ctrl._set_nightday_view = Mock()
+    ctrl._apply_pattern_background_style = Mock()
+    ctrl._plot_diffpattern = Mock()
+    ctrl._plot_derived_pattern_label = Mock(return_value=False)
+    ctrl._fits_tab_active = Mock(return_value=False)
+    ctrl._update_pnt_artist = Mock()
+    ctrl._ensure_vertical_cursor_artists = Mock()
+    ctrl.clear_vertical_cursor_position = Mock()
+    ctrl._schedule_canvas_draw = Mock()
+    ctrl._display_pattern_filename = Mock(return_value="/tmp/sample.chi")
+
+    ctrl._update_impl()
+
+    assert not widget.checkBox_ShowCake.isChecked()
+    ctrl._plot_cake.assert_not_called()
 
 
 class _LabelStub:

@@ -34,6 +34,20 @@ class CakeHistogramEdgeTests(unittest.TestCase):
         self.assertGreater(edge, 1150.0)
         self.assertLess(edge, 1300.0)
 
+    def test_largest_drop_edge_uses_log_intensity_axis(self):
+        values = np.concatenate([
+            np.linspace(80.0, 900.0, 30000),
+            np.linspace(920.0, 5200.0, 6000),
+            np.linspace(5300.0, 7000.0, 20),
+        ])
+
+        edge = CakeHistogramWidget._detect_largest_drop_edge(
+            values, float(values.max()))
+
+        self.assertIsNotNone(edge)
+        self.assertGreater(edge, 880.0)
+        self.assertLess(edge, 950.0)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -174,7 +174,8 @@ class PatternPeakPo(Pattern):
     This is used only for old PPSS file.
     '''
 
-    def __init__(self):
+    def __init__(self, filename=None):
+        super().__init__(filename=filename)
         self.color = 'white'
         self.display = False
         self.wavelength = 0.3344
@@ -187,5 +188,6 @@ class PatternPeakPo(Pattern):
 
 
 class AziPatternPeakPo(PatternPeakPo):
-    def __init__(self):
+    def __init__(self, filename=None):
+        super().__init__(filename=filename)
         self.azi_ranges = []

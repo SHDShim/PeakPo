@@ -791,6 +791,17 @@ class PeakFitController(object):
                         self._on_peak_table_selection_changed)
                     self._peak_table_selection_connected = True
 
+    def _apply_peak_constraints_enabled(self):
+        box = getattr(self.widget, "checkBox_ApplyPeakConstraints", None)
+        if box is None:
+            return False
+        return bool(box.isChecked())
+
+    def _set_apply_peak_constraints_checked(self, checked=True):
+        box = getattr(self.widget, "checkBox_ApplyPeakConstraints", None)
+        if box is not None:
+            box.setChecked(bool(checked))
+
     def _setup_constraints_peak_selector(self):
         """Add a Constraints-tab selector backed by the Peaks table rows."""
         if hasattr(self.widget, "comboBox_ConstraintPeak"):
@@ -1054,17 +1065,17 @@ class PeakFitController(object):
             table.setCellWidget(row, 5, use_max)
             table.setCellWidget(row, 6, max_box)
             val_box.valueChanged.connect(
-                lambda v, vr=row, vr_key=value_key: self._on_peak_param_changed(vr, vr_key, "value", v))
+                lambda v, pr=peak_row, vr_key=value_key: self._on_peak_param_changed(pr, vr_key, "value", v))
             vary_box.toggled.connect(
-                lambda s, vr=row, vr_key=value_key: self._on_peak_param_changed(vr, vr_key, "vary", s))
+                lambda s, pr=peak_row, vr_key=value_key: self._on_peak_param_changed(pr, vr_key, "vary", s))
             use_min.toggled.connect(
-                lambda s, vr=row, vr_key=value_key: self._on_peak_param_changed(vr, vr_key, "use_min", s))
+                lambda s, pr=peak_row, vr_key=value_key: self._on_peak_param_changed(pr, vr_key, "use_min", s))
             min_box.valueChanged.connect(
-                lambda v, vr=row, vr_key=value_key: self._on_peak_param_changed(vr, vr_key, "min", v))
+                lambda v, pr=peak_row, vr_key=value_key: self._on_peak_param_changed(pr, vr_key, "min", v))
             use_max.toggled.connect(
-                lambda s, vr=row, vr_key=value_key: self._on_peak_param_changed(vr, vr_key, "use_max", s))
+                lambda s, pr=peak_row, vr_key=value_key: self._on_peak_param_changed(pr, vr_key, "use_max", s))
             max_box.valueChanged.connect(
-                lambda v, vr=row, vr_key=value_key: self._on_peak_param_changed(vr, vr_key, "max", v))
+                lambda v, pr=peak_row, vr_key=value_key: self._on_peak_param_changed(pr, vr_key, "max", v))
         table.resizeColumnsToContents()
 
     def _make_spinbox(self, value, decimals=5):
@@ -1221,6 +1232,8 @@ class PeakFitController(object):
     def _on_peak_param_changed(self, row, param_key, change_type, value):
         if not self.model.current_section_exist():
             return
+        if row < 0 or row >= self.model.current_section.get_number_of_peaks_in_queue():
+            return
         self.model.current_section.invalidate_fit_result()
         peak = self.model.current_section.peaks_in_queue[row]
         min_key = f"{param_key}_min"
@@ -1300,6 +1313,7 @@ class PeakFitController(object):
                 self.plot_ctrl.refresh_selected_peak_marker()
         if change_type == "value" and param_key in ("amplitude", "center"):
             self._refresh_constraints_peak_selector(selected_row=row)
+        self._set_apply_peak_constraints_checked(True)
         self.set_tableWidget_PkParams_unsaved()
 
     def _sync_constraints_tab_row_to_model(self):
@@ -1432,6 +1446,7 @@ class PeakFitController(object):
             peak["center_min"] = float(xmin)
             peak["center_max"] = float(xmax)
             self._update_peak_constraint_min_max_widgets(row, "center")
+            self._set_apply_peak_constraints_checked(True)
             self.set_tableWidget_PkParams_unsaved()
         def cancel_button():
             self._set_constraints_toggle_button(
@@ -1494,6 +1509,7 @@ class PeakFitController(object):
             peak["sigma_min"] = 0.0
             peak["sigma_max"] = width
             self._update_peak_constraint_min_max_widgets(row, "sigma")
+            self._set_apply_peak_constraints_checked(True)
             self.set_tableWidget_PkParams_unsaved()
         def cancel_button():
             self._set_constraints_toggle_button(
@@ -1530,6 +1546,7 @@ class PeakFitController(object):
             "fwhm_min": float(self.widget.spinBox_DefaultFwhmMin.value()),
             "fwhm_max": float(self.widget.spinBox_DefaultFwhmMax.value()),
         }
+        self._set_apply_peak_constraints_checked(True)
 
     def _current_default_peak_bounds(self):
         if (hasattr(self.widget, "spinBox_CenterHalfRange") and
@@ -2651,7 +2668,9 @@ class PeakFitController(object):
         progress.show()
         QtWidgets.QApplication.processEvents()
         try:
-            self.model.current_section.prepare_for_fitting(order, 0.0, 0.0)
+            self.model.current_section.prepare_for_fitting(
+                order, 0.0, 0.0,
+                apply_peak_constraints=self._apply_peak_constraints_enabled())
             progress.setLabelText("Optimizing peak parameters...")
             QtWidgets.QApplication.processEvents()
             success, converged = self.model.current_section.conduct_fitting()

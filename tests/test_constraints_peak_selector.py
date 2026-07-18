@@ -47,6 +47,12 @@ def test_constraints_peak_selector_updates_peak_selection_and_marker():
     marker_refreshes = []
     controller.plot_ctrl.refresh_selected_peak_marker = (
         lambda: marker_refreshes.append(True) or True)
+    assert window.checkBox_ApplyPeakConstraints.text() == \
+        "Apply constraints setup"
+    assert not window.checkBox_ApplyPeakConstraints.isChecked()
+    idx = window.gridLayout_17.indexOf(window.checkBox_ApplyPeakConstraints)
+    row, col, row_span, col_span = window.gridLayout_17.getItemPosition(idx)
+    assert (row, col, row_span, col_span) == (2, 0, 1, 2)
     window.tabWidget_PeakFit.setCurrentWidget(window.tab_PeakFitConstraints)
     _APP.processEvents()
 
@@ -66,6 +72,14 @@ def test_constraints_peak_selector_updates_peak_selection_and_marker():
     assert controller._constraints_tab_current_row == 1
     assert window.tableWidget_PeakConstraintDetail.rowCount() == 4
     assert marker_refreshes
+
+    fwhm_value = window.tableWidget_PeakConstraintDetail.cellWidget(2, 1)
+    fwhm_value.setValue(0.08)
+    _APP.processEvents()
+
+    assert section.peaks_in_queue[1]["sigma"] == 0.08
+    assert section.peaks_in_queue[0]["sigma"] == 0.03
+    assert window.checkBox_ApplyPeakConstraints.isChecked()
 
     window.close()
     _APP.processEvents()
