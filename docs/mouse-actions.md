@@ -97,7 +97,7 @@ the section titled `Add (Shift+left click) / Remove (Shift+right click) peaks`.
 
 | Gesture | UI location | Result |
 | --- | --- | --- |
-| `Shift` + left click | `Fits` tab, plot area | Add a peak at the clicked position. |
+| `Shift` + left click | `Fits` tab, plot area | Add a peak and display its estimated initial profile in yellow. |
 | `Shift` + right click | `Fits` tab, plot area | Remove the nearest peak. |
 | `Shift` + left drag on a selected peak | `Fits` tab, plot area | Move the selected peak position. |
 
@@ -107,6 +107,7 @@ Notes:
 | --- | --- |
 | A peak row must be selected before dragging a peak marker | The drag updates the selected peak row. |
 | If the current fit already exists | Moving a peak invalidates the fit result. |
+| A peak is added manually or imported from JCPDS | PeakPo estimates its width from observed half-height crossings and uses the configured initial FWHM when no reliable crossings are available. |
 
 ## Peak Constraints and Background Setup
 
@@ -116,8 +117,8 @@ These actions use the plot as an input device for range selection.
 
 | Control | UI location | Result |
 | --- | --- | --- |
-| `Set position range from plot` | Peak constraints dialog | Open an editable X-range over the plot for the peak center limits. |
-| `Set FWHM max from plot` | Peak constraints dialog | Open an editable X-range over the plot for the peak width limits. |
+| `Constrain position from plot…` | Peak constraints page | Open an editable X-range and enable optional lower and upper position limits for the selected peak. |
+| `Constrain FWHM range from plot…` | Peak constraints page | Open an editable X-range and enable optional lower and upper FWHM limits for the selected peak. |
 
 Editable range behavior:
 

@@ -474,11 +474,11 @@ class PeakfitTableController(object):
                     old_state = table.blockSignals(True)
                     item.setText("{:.5e}".format(float(value)))
                     table.blockSignals(old_state)
-            plot_ctrl = getattr(
-                getattr(self.widget, "_peakpo_mpl_controller", None),
-                "refresh_selected_peak_marker", None)
-            if callable(plot_ctrl):
-                plot_ctrl()
+        refresh_profiles = getattr(
+            getattr(self.widget, "_peakpo_mpl_controller", None),
+            "refresh_peakfit_markers", None)
+        if callable(refresh_profiles):
+            refresh_profiles()
         # self.update_graph()
 
     def _peaklist_handle_ItemClicked(self, item):

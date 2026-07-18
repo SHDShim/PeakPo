@@ -9,6 +9,7 @@ DEFAULT_FWHM_MAX = 0.05
 DEFAULT_NL_MIN = 0.0
 DEFAULT_NL_MAX = 1.0
 MAX_BACKGROUND_ANCHOR_WEIGHT = 100.0
+POSITIVE_PARAMETER_MIN = 1e-15
 PEAK_PARAM_VARY_KEYS = {
     'amplitude': 'amplitude_vary',
     'center': 'center_vary',
@@ -180,11 +181,12 @@ class Section(object):
         # Clamp near-boundary clicks into the valid section range.
         x_center = min(max(float(x_center), x_min), x_max)
         y_center = self.get_nearest_intensity(x_center)
+        sigma = self.estimate_initial_peak_sigma(x_center, fwhm)
         peak = {}
         peak['center'] = x_center
         peak['amplitude'] = pseudo_voigt_amplitude_for_height(
-            y_center, fwhm, fraction=0.5)
-        peak['sigma'] = fwhm
+            y_center, sigma, fraction=0.5)
+        peak['sigma'] = sigma
         peak['fraction'] = 0.5
         peak['center_vary'] = True
         peak['amplitude_vary'] = True
@@ -195,14 +197,16 @@ class Section(object):
             "center_half_range", DEFAULT_CENTER_HALF_RANGE))
         peak['center_min'] = x_center - center_half_range
         peak['center_max'] = x_center + center_half_range
-        peak['center_min_enabled'] = True
-        peak['center_max_enabled'] = True
+        # These are template values only.  Optional limits must be enabled
+        # deliberately for each peak before a constrained fit uses them.
+        peak['center_min_enabled'] = False
+        peak['center_max_enabled'] = False
         peak['sigma_min'] = float(defaults.get(
             "fwhm_min", DEFAULT_FWHM_MIN))
         peak['sigma_max'] = float(defaults.get(
             "fwhm_max", DEFAULT_FWHM_MAX))
-        peak['sigma_min_enabled'] = True
-        peak['sigma_max_enabled'] = True
+        peak['sigma_min_enabled'] = False
+        peak['sigma_max_enabled'] = False
         peak['amplitude_min'] = 0.0
         peak['amplitude_max'] = None
         peak['amplitude_max_enabled'] = False
@@ -217,6 +221,98 @@ class Section(object):
         peak['l'] = hkl[2]
         self.peaks_in_queue.append(peak)
         return True
+
+    def estimate_initial_peak_sigma(self, x_center, fallback_sigma):
+        """Estimate PseudoVoigt HWHM from local observed half-height crossings."""
+        fallback_sigma = float(fallback_sigma)
+        if not np.isfinite(fallback_sigma) or fallback_sigma <= 0.0:
+            fallback_sigma = 0.01
+        if self.x is None or self.y_bgsub is None or len(self.x) < 3:
+            return fallback_sigma
+
+        x = np.asarray(self.x, dtype=float)
+        y = np.asarray(self.y_bgsub, dtype=float)
+        finite = np.isfinite(x) & np.isfinite(y)
+        if np.count_nonzero(finite) < 3:
+            return fallback_sigma
+        x = x[finite]
+        y = y[finite]
+        order = np.argsort(x)
+        x = x[order]
+        y = y[order]
+        spacing_values = np.diff(x)
+        spacing_values = spacing_values[spacing_values > 0.0]
+        if spacing_values.size == 0:
+            return fallback_sigma
+        spacing = float(np.median(spacing_values))
+
+        center = float(x_center)
+        apex_radius = max(3.0 * fallback_sigma, 3.0 * spacing)
+        apex_candidates = np.flatnonzero(np.abs(x - center) <= apex_radius)
+        if apex_candidates.size == 0:
+            return fallback_sigma
+        peak_index = int(apex_candidates[np.argmax(y[apex_candidates])])
+
+        crossing_radius = max(12.0 * fallback_sigma, 12.0 * spacing)
+        window = np.flatnonzero(np.abs(x - x[peak_index]) <= crossing_radius)
+        if window.size < 3:
+            return fallback_sigma
+        start = int(window[0])
+        stop = int(window[-1])
+        baseline = float(np.percentile(y[window], 10.0))
+        peak_height = float(y[peak_index])
+        if peak_height <= baseline:
+            return fallback_sigma
+        half_height = baseline + 0.5 * (peak_height - baseline)
+
+        left = self._half_height_crossing(
+            x, y, peak_index, start, half_height, direction=-1)
+        right = self._half_height_crossing(
+            x, y, peak_index, stop, half_height, direction=1)
+        if left is None or right is None or right <= left:
+            return fallback_sigma
+
+        sigma = 0.5 * (right - left)
+        if not np.isfinite(sigma) or sigma < 0.5 * spacing:
+            return fallback_sigma
+        return float(sigma)
+
+    @staticmethod
+    def _half_height_crossing(x, y, peak_index, limit, level, direction):
+        index = int(peak_index)
+        while index != int(limit):
+            next_index = index + int(direction)
+            y0 = float(y[index]) - float(level)
+            y1 = float(y[next_index]) - float(level)
+            if y0 == 0.0:
+                return float(x[index])
+            if y0 * y1 <= 0.0:
+                if y1 == y0:
+                    return 0.5 * float(x[index] + x[next_index])
+                fraction = -y0 / (y1 - y0)
+                return float(x[index] + fraction * (x[next_index] - x[index]))
+            index = next_index
+        return None
+
+    def get_initial_peak_profiles(self, bgsub=False):
+        """Return queued PseudoVoigt profiles before a fit result exists."""
+        if self.x is None:
+            return {}
+        x = np.asarray(self.x, dtype=float)
+        background = np.zeros_like(x)
+        if not bgsub and self.y_bg is not None:
+            background = np.asarray(self.y_bg, dtype=float)
+        profiles = {}
+        model = PseudoVoigtModel()
+        for index, peak in enumerate(self.peaks_in_queue):
+            params = model.make_params(
+                amplitude=float(peak.get('amplitude', 0.0)),
+                center=float(peak.get('center', 0.0)),
+                sigma=max(float(peak.get('sigma', 0.01)), 1e-15),
+                fraction=float(peak.get('fraction', 0.5)),
+            )
+            profiles[f"p{index:d}_"] = model.eval(params=params, x=x) + background
+        return profiles
 
     def get_order_of_baseline_in_queue(self):
         return self.baseline_in_queue.__len__() - 1
@@ -288,10 +384,10 @@ class Section(object):
                     enabled_key='center_max_enabled')
                 sigma_min = self._peak_bound(
                     peak, 'sigma_min', DEFAULT_FWHM_MIN,
-                    enabled_key='sigma_min_enabled')
+                    enabled_key='sigma_min_enabled', default_enabled=False)
                 sigma_max = self._peak_bound(
                     peak, 'sigma_max', DEFAULT_FWHM_MAX,
-                    enabled_key='sigma_max_enabled')
+                    enabled_key='sigma_max_enabled', default_enabled=False)
                 amp_min = self._peak_bound(
                     peak, 'amplitude_min', 0.0,
                     enabled_key='amplitude_min_enabled')
@@ -304,11 +400,14 @@ class Section(object):
                 frac_max = self._peak_bound(
                     peak, 'fraction_max', DEFAULT_NL_MAX,
                     enabled_key='fraction_max_enabled')
-                center_min, center_max = self._normalize_bounds(center_min, center_max)
-                sigma_min, sigma_max = self._normalize_bounds(sigma_min, sigma_max)
-                if amp_max is not None and np.isfinite(amp_max):
-                    amp_min, amp_max = self._normalize_bounds(amp_min, amp_max)
-                frac_min, frac_max = self._normalize_bounds(frac_min, frac_max)
+                center_min, center_max = self._intrinsic_peak_bounds(
+                    'center', center_min, center_max)
+                sigma_min, sigma_max = self._intrinsic_peak_bounds(
+                    'sigma', sigma_min, sigma_max)
+                amp_min, amp_max = self._intrinsic_peak_bounds(
+                    'amplitude', amp_min, amp_max)
+                frac_min, frac_max = self._intrinsic_peak_bounds(
+                    'fraction', frac_min, frac_max)
                 pars[prefix + 'center'].set(
                     value=peak['center'], min=center_min, max=center_max,
                     vary=peak['center_vary'])
@@ -322,12 +421,18 @@ class Section(object):
                     value=peak['fraction'], min=frac_min, max=frac_max,
                     vary=peak['fraction_vary'])
             else:
-                pars[prefix + 'center'].set(value=peak['center'], vary=True)
-                pars[prefix + 'sigma'].set(value=peak['sigma'], vary=True)
+                pars[prefix + 'center'].set(
+                    value=peak['center'], min=POSITIVE_PARAMETER_MIN,
+                    vary=True)
+                pars[prefix + 'sigma'].set(
+                    value=peak['sigma'], min=POSITIVE_PARAMETER_MIN,
+                    vary=True)
                 pars[prefix + 'amplitude'].set(
-                    value=peak['amplitude'], vary=True)
+                    value=peak['amplitude'], min=POSITIVE_PARAMETER_MIN,
+                    vary=True)
                 pars[prefix + 'fraction'].set(
-                    value=peak['fraction'], vary=True)
+                    value=peak['fraction'], min=DEFAULT_NL_MIN,
+                    max=DEFAULT_NL_MAX, vary=True)
             peakinfo[prefix + 'phasename'] = peak['phasename']
             peakinfo[prefix + 'h'] = peak['h']
             peakinfo[prefix + 'k'] = peak['k']
@@ -338,11 +443,17 @@ class Section(object):
         self.peakinfo = peakinfo
         self.fit_model = mod
 
-    def _peak_bound(self, peak, key, default, enabled_key=None):
+    def _peak_bound(
+            self, peak, key, default, enabled_key=None, default_enabled=None):
         if enabled_key is not None:
             enabled = peak.get(enabled_key, None)
             if enabled is None:
-                enabled = key not in peak or peak.get(key) is not None
+                if default_enabled is None:
+                    enabled = key not in peak or peak.get(key) is not None
+                else:
+                    enabled = (
+                        peak.get(key) is not None
+                        if key in peak else bool(default_enabled))
             if not bool(enabled):
                 return None
         value = peak.get(key, default)
@@ -354,15 +465,25 @@ class Section(object):
         del peak
         return np.inf
 
-    def _normalize_bounds(self, min_val, max_val):
-        if min_val is None or max_val is None:
-            return min_val, max_val
-        min_val = float(min_val)
-        max_val = float(max_val)
-        if min_val < max_val:
-            return min_val, max_val
-        eps = max(1e-12, abs(min_val) * 1e-12)
-        return min_val, min_val + eps
+    @staticmethod
+    def _intrinsic_peak_bounds(param_name, minimum, maximum):
+        domains = {
+            'center': (POSITIVE_PARAMETER_MIN, None),
+            'amplitude': (POSITIVE_PARAMETER_MIN, None),
+            'sigma': (POSITIVE_PARAMETER_MIN, None),
+            'fraction': (DEFAULT_NL_MIN, DEFAULT_NL_MAX),
+        }
+        domain_min, domain_max = domains[param_name]
+        bounded_min = domain_min if minimum is None else max(
+            domain_min, float(minimum))
+        if domain_max is None:
+            bounded_max = None if maximum is None else float(maximum)
+        else:
+            bounded_max = domain_max if maximum is None else min(
+                domain_max, float(maximum))
+        if bounded_max is not None and bounded_max <= bounded_min:
+            return domain_min, domain_max
+        return bounded_min, bounded_max
 
     def _background_anchor_samples(self):
         ranges = getattr(self, "background_anchor_ranges", [])

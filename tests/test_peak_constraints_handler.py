@@ -5,7 +5,7 @@ import pytest
 from lmfit.models import PseudoVoigtModel
 
 from peakpo.control.peakfitcontroller import PeakFitController
-from peakpo.ds_section.section import Section
+from peakpo.ds_section.section import Section, pseudo_voigt_amplitude_for_height
 from peakpo.model.model import PeakPoModel
 from peakpo.model.param_session_io import _dict_to_section
 
@@ -47,6 +47,10 @@ def test_single_peak_initial_height_matches_nearest_observed_intensity():
     assert section.set_single_peak(7.03, 0.04)
 
     peak = section.peaks_in_queue[0]
+    assert peak["center_min_enabled"] is False
+    assert peak["center_max_enabled"] is False
+    assert peak["sigma_min_enabled"] is False
+    assert peak["sigma_max_enabled"] is False
     model = PseudoVoigtModel()
     params = model.make_params(
         amplitude=peak["amplitude"],
@@ -57,6 +61,93 @@ def test_single_peak_initial_height_matches_nearest_observed_intensity():
     calculated_height = model.eval(
         params=params, x=np.asarray([peak["center"]]))[0]
     assert calculated_height == pytest.approx(20.0)
+
+
+def test_single_peak_estimates_width_from_observed_half_height_crossings():
+    x = np.linspace(6.8, 7.2, 401)
+    expected_sigma = 0.04
+    model = PseudoVoigtModel()
+    params = model.make_params(
+        amplitude=pseudo_voigt_amplitude_for_height(
+            100.0, expected_sigma, fraction=0.5),
+        center=7.0,
+        sigma=expected_sigma,
+        fraction=0.5,
+    )
+    observed = model.eval(params=params, x=x)
+    section = Section()
+    section.set(x, observed, np.zeros_like(x))
+
+    assert section.set_single_peak(7.002, 0.01)
+
+    assert section.peaks_in_queue[0]["sigma"] == pytest.approx(
+        expected_sigma, rel=0.05)
+
+
+def test_single_peak_uses_configured_width_when_no_peak_is_resolved():
+    section = Section()
+    section.set(
+        np.linspace(6.8, 7.2, 41),
+        np.ones(41),
+        np.zeros(41),
+    )
+
+    assert section.set_single_peak(7.0, 0.025)
+
+    assert section.peaks_in_queue[0]["sigma"] == pytest.approx(0.025)
+
+
+def test_new_peak_fwhm_bounds_are_unused_during_constrained_fit():
+    section = Section()
+    section.set(
+        np.linspace(6.8, 7.2, 41),
+        np.exp(-((np.linspace(6.8, 7.2, 41) - 7.0) / 0.03) ** 2),
+        np.zeros(41),
+    )
+    assert section.set_single_peak(7.0, 0.01)
+
+    section.prepare_for_fitting(
+        0, 0.0, 0.0, apply_peak_constraints=True)
+
+    sigma = section.parameters["p0_sigma"]
+    assert sigma.min > 0.0
+    assert np.isposinf(sigma.max)
+
+
+def test_missing_fwhm_bound_setup_defaults_to_unused():
+    controller = PeakFitController.__new__(PeakFitController)
+    controller.widget = SimpleNamespace()
+    controller._default_peak_bounds = {
+        "center_half_range": 0.05,
+        "fwhm_min": 0.0,
+        "fwhm_max": 0.05,
+    }
+
+    min_value, max_value, use_min, use_max = \
+        controller._peak_constraint_state(_peak(0.03), "sigma")
+
+    assert min_value == 0.0
+    assert max_value == 0.05
+    assert use_min is False
+    assert use_max is False
+
+
+def test_mouse_fwhm_range_enables_both_bounds():
+    peak = _peak(0.03)
+
+    PeakFitController._apply_fwhm_bounds_from_plot_range(
+        peak, 6.95, 7.08)
+
+    assert peak["sigma_min"] == 0.0
+    assert peak["sigma_max"] == pytest.approx(0.13)
+    assert peak["sigma_min_enabled"] is True
+    assert peak["sigma_max_enabled"] is True
+
+
+def test_optional_constraint_range_uses_template_for_missing_bounds():
+    assert PeakFitController._optional_bound_or_default(None, 6.95) == 6.95
+    assert PeakFitController._optional_bound_or_default(float("nan"), 7.05) == 7.05
+    assert PeakFitController._optional_bound_or_default(7.0, 6.95) == 7.0
 
 
 def test_peak_constraint_value_change_targets_selected_peak_row():
@@ -120,10 +211,16 @@ def test_prepare_for_fitting_can_ignore_stored_peak_constraints():
 
     center = section.parameters["p0_center"]
     sigma = section.parameters["p0_sigma"]
+    amplitude = section.parameters["p0_amplitude"]
+    fraction = section.parameters["p0_fraction"]
     assert center.vary is True
     assert sigma.vary is True
-    assert center.min != 6.95
-    assert center.max != 7.05
+    assert center.min > 0.0
+    assert np.isposinf(center.max)
+    assert amplitude.min > 0.0
+    assert sigma.min > 0.0
+    assert fraction.min == 0.0
+    assert fraction.max == 1.0
     assert section.peaks_in_queue[0]["center_min"] == 6.95
     assert section.peaks_in_queue[0]["center_vary"] is False
 
@@ -194,7 +291,7 @@ def test_prepare_for_fitting_respects_disabled_individual_bounds():
     center = section.parameters["p0_center"]
     sigma = section.parameters["p0_sigma"]
     assert center.vary is False
-    assert np.isneginf(center.min)
+    assert center.min > 0.0
     assert center.max == 7.05
     assert sigma.min == 0.02
     assert np.isposinf(sigma.max)
@@ -343,10 +440,49 @@ def test_prepare_for_fitting_respects_disabled_area_minimum():
     section.prepare_for_fitting(
         0, 0.0, 0.0, apply_peak_constraints=True)
 
-    assert np.isneginf(section.parameters["p0_amplitude"].min)
+    assert section.parameters["p0_amplitude"].min > 0.0
 
 
-def test_area_minimum_checkbox_updates_setup_and_master_checkbox():
+def test_intrinsic_peak_domains_override_conflicting_user_constraints():
+    section = Section()
+    section.set(np.linspace(0.1, 1.0, 20), np.ones(20), np.zeros(20))
+    section.peaks_in_queue = [{
+        **_peak(0.03),
+        "phasename": "MgO",
+        "h": 1,
+        "k": 1,
+        "l": 1,
+        "center_vary": True,
+        "sigma_vary": True,
+        "amplitude_vary": True,
+        "fraction_vary": True,
+        "center_min": -2.0,
+        "center_max": -1.0,
+        "center_min_enabled": True,
+        "center_max_enabled": True,
+        "sigma_min": -2.0,
+        "sigma_max_enabled": False,
+        "sigma_min_enabled": True,
+        "amplitude_min": -2.0,
+        "amplitude_min_enabled": True,
+        "fraction_min": -2.0,
+        "fraction_max": 2.0,
+        "fraction_min_enabled": True,
+        "fraction_max_enabled": True,
+    }]
+
+    section.prepare_for_fitting(
+        0, 0.0, 0.0, apply_peak_constraints=True)
+
+    assert section.parameters["p0_center"].min > 0.0
+    assert np.isposinf(section.parameters["p0_center"].max)
+    assert section.parameters["p0_amplitude"].min > 0.0
+    assert section.parameters["p0_sigma"].min > 0.0
+    assert section.parameters["p0_fraction"].min == 0.0
+    assert section.parameters["p0_fraction"].max == 1.0
+
+
+def test_editing_optional_constraint_does_not_change_fit_mode():
     section = Section()
     section.peaks_in_queue = [{
         **_peak(0.03),
@@ -368,10 +504,10 @@ def test_area_minimum_checkbox_updates_setup_and_master_checkbox():
     peak = section.peaks_in_queue[0]
     assert peak["amplitude_min_enabled"] is False
     assert peak["amplitude_min"] is None
-    assert apply_box.isChecked() is True
+    assert apply_box.isChecked() is False
 
 
-def test_default_constraint_changes_enable_master_checkbox():
+def test_editing_constraint_templates_does_not_change_fit_mode():
     apply_box = _CheckBox()
     controller = PeakFitController.__new__(PeakFitController)
     controller.widget = SimpleNamespace(
@@ -379,10 +515,10 @@ def test_default_constraint_changes_enable_master_checkbox():
 
     controller.set_default_peak_bounds_values(0.1, 0.01, 0.2)
 
-    assert apply_box.checked is True
+    assert apply_box.checked is False
 
 
-def test_applying_default_bounds_enables_master_checkbox():
+def test_applying_default_bounds_keeps_current_fit_mode():
     section = Section()
     section.peaks_in_queue = [_peak(0.03)]
     apply_box = _CheckBox()
@@ -406,4 +542,6 @@ def test_applying_default_bounds_enables_master_checkbox():
 
     controller.apply_default_peak_bounds_to_all_peaks()
 
-    assert apply_box.checked is True
+    assert apply_box.checked is False
+    assert section.peaks_in_queue[0]["sigma_min_enabled"] is True
+    assert section.peaks_in_queue[0]["sigma_max_enabled"] is True

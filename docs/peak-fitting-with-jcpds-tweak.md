@@ -50,8 +50,8 @@ To help manage complex datasets with many phases, PeakPo includes tools for visu
 
 ### Focus and Visibility
 - **Highlight/Dim Function**: You can highlight specific phases in the JCPDS list. When a phase is highlighted, others are dimmed, allowing you to focus on the markers of interest on the plot without removing other data.
+- **Reference-bar opacity and dimming**: In **Display → Config → JCPDS reference bars**, set independent **Pattern bar alpha** and **Cake bar alpha** values (Cake default: 0.60). **Dimming factor** is applied only to non-emphasized phases, multiplying the respective Pattern or Cake bar alpha.
 - **Miller Index Visibility**: Use the **Miller Index** checkbox to toggle the display of $(hkl)$ indices next to the JCPDS markers on the plot. This is essential for correctly identifying peaks during the initial peak picking and refinement stages.
 
 ## Summary Flow
 `Peak Fit (Mouse Add/Move)` $\rightarrow$ `Visual Constraints/BG Setup` $\rightarrow$ `Refine Peaks` $\rightarrow$ `Save Sections` $\rightarrow$ `Collect Results` $\rightarrow$ `Unit Cell Fit` $\rightarrow$ `Visualize via ucfit.jcpds`
-

@@ -207,7 +207,6 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
         self.controller.set_tableWidget_PkParams_unsaved()
         self.controller.peakfit_table_ctrl.update_peak_parameters()
         self.controller.peakfit_table_ctrl.update_peak_constraints()
-        self.controller._set_apply_peak_constraints_checked(True)
         self.controller.plot_ctrl.update()
 
     def _set_toggle_button(self, button, checked, on_text, off_text):
@@ -774,6 +773,30 @@ class PeakFitController(object):
             self._arm_constraints_fwhm_range)
         self._update_visual_toggle_style(self.widget.pushButton_SetPosRange, False)
         self._update_visual_toggle_style(self.widget.pushButton_SetFwhmMax, False)
+        self.widget.pushButton_SetPosRange.setText("Constrain position from plot…")
+        self.widget.pushButton_SetPosRange.setToolTip(
+            "Set optional lower and upper position limits for the selected peak.")
+        self.widget.pushButton_SetFwhmMax.setText("Constrain FWHM range from plot…")
+        self.widget.pushButton_SetFwhmMax.setToolTip(
+            "Set optional lower and upper FWHM limits for the selected peak.")
+        if hasattr(self.widget, "groupBox_DefaultBounds"):
+            self.widget.groupBox_DefaultBounds.setTitle("Constraint templates (optional)")
+            self.widget.groupBox_DefaultBounds.setToolTip(
+                "These values are templates only. Editing them does not "
+                "constrain any peak until you explicitly apply a template.")
+            template_labels = {
+                "Position +/- (degrees)": "Position window ± (template)",
+                "Initial FWHM": "Initial FWHM for new peaks",
+                "FWHM min": "FWHM lower limit (template)",
+                "FWHM max": "FWHM upper limit (template)",
+            }
+            for label in self.widget.groupBox_DefaultBounds.findChildren(
+                    QtWidgets.QLabel):
+                if label.text() in template_labels:
+                    label.setText(template_labels[label.text()])
+        if hasattr(self.widget, "groupBox_PeakConstraintEditor"):
+            self.widget.groupBox_PeakConstraintEditor.setTitle(
+                "Optional constraints for selected peak")
         self.widget.spinBox_CenterHalfRange.valueChanged.connect(
             self._on_default_bounds_changed)
         self.widget.spinBox_DefaultFwhmMin.valueChanged.connect(
@@ -1032,7 +1055,8 @@ class PeakFitController(object):
         peak = self.model.current_section.peaks_in_queue[peak_row]
         table.setColumnCount(7)
         table.setHorizontalHeaderLabels(
-            ["Parameter", "Value", "Vary", "Use Min", "Min", "Use Max", "Max"])
+            ["Parameter", "Initial value", "Refine", "Lower limit", "Value",
+             "Upper limit", "Value"])
         table.setRowCount(len(PARAMS))
         table.horizontalHeader().setVisible(True)
         for row, (label, value_key, vary_key, min_key, max_key, decimals) in enumerate(PARAMS):
@@ -1040,6 +1064,11 @@ class PeakFitController(object):
             lbl.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
             table.setCellWidget(row, 0, lbl)
             val_box = self._make_spinbox(peak.get(value_key, 0.0), decimals)
+            if value_key in ("amplitude", "center", "sigma"):
+                val_box.setMinimum(1e-15)
+            elif value_key == "fraction":
+                val_box.setMinimum(DEFAULT_NL_MIN)
+                val_box.setMaximum(DEFAULT_NL_MAX)
             table.setCellWidget(row, 1, val_box)
             vary_box = self._make_checkbox(peak.get(vary_key, True))
             table.setCellWidget(row, 2, vary_box)
@@ -1054,8 +1083,22 @@ class PeakFitController(object):
             max_box.setEnabled(use_max.isChecked())
             use_max.toggled.connect(max_box.setEnabled)
             if value_key == "amplitude":
+                use_min.setChecked(True)
+                use_min.setEnabled(False)
+                use_min.setToolTip("Physical domain: area must be greater than zero.")
+                min_box.setValue(0.0)
+                min_box.setEnabled(False)
                 use_max.setChecked(False)
                 use_max.setEnabled(False)
+                max_box.setEnabled(False)
+            elif value_key == "fraction":
+                for box in (use_min, use_max):
+                    box.setChecked(True)
+                    box.setEnabled(False)
+                    box.setToolTip("Physical domain: 0 ≤ nL ≤ 1.")
+                min_box.setValue(DEFAULT_NL_MIN)
+                max_box.setValue(DEFAULT_NL_MAX)
+                min_box.setEnabled(False)
                 max_box.setEnabled(False)
             table.setCellWidget(row, 3, use_min)
             table.setCellWidget(row, 4, min_box)
@@ -1113,7 +1156,7 @@ class PeakFitController(object):
                 min_enabled = min_val is not None if min_key in peak else True
             if min_val is None and min_key not in peak:
                 min_val = 0.0
-            return min_val, None, bool(min_enabled), False
+            return min_val, None, True, False
         if value_key == "center":
             center = float(peak.get("center", 0.0))
             if min_enabled is None:
@@ -1126,22 +1169,20 @@ class PeakFitController(object):
                 max_val = center + defaults["center_half_range"]
         elif value_key == "sigma":
             if min_enabled is None:
-                min_enabled = min_val is not None if min_key in peak else True
+                min_enabled = min_val is not None if min_key in peak else False
             if max_enabled is None:
-                max_enabled = max_val is not None if max_key in peak else True
+                max_enabled = max_val is not None if max_key in peak else False
             if min_val is None and min_key not in peak:
                 min_val = defaults["fwhm_min"]
             if max_val is None and max_key not in peak:
                 max_val = defaults["fwhm_max"]
         elif value_key == "fraction":
-            if min_enabled is None:
-                min_enabled = min_val is not None if min_key in peak else True
-            if max_enabled is None:
-                max_enabled = max_val is not None if max_key in peak else True
-            if min_val is None and min_key not in peak:
-                min_val = DEFAULT_NL_MIN
-            if max_val is None and max_key not in peak:
-                max_val = DEFAULT_NL_MAX
+            # nL's inclusive 0–1 range is an intrinsic physical domain, not
+            # an optional user constraint.
+            min_val = DEFAULT_NL_MIN
+            max_val = DEFAULT_NL_MAX
+            min_enabled = True
+            max_enabled = True
         if min_enabled is None:
             min_enabled = min_val is not None
         if value_key == "amplitude":
@@ -1293,11 +1334,11 @@ class PeakFitController(object):
                     item.setText("{:.5e}".format(float(value)))
                     table.blockSignals(old_state)
             self._update_peak_constraint_value_widgets(row, "center", value)
-            if hasattr(self, "plot_ctrl") and self.plot_ctrl is not None:
-                self.plot_ctrl.refresh_selected_peak_marker()
         if change_type == "value" and param_key in ("amplitude", "center"):
             self._refresh_constraints_peak_selector(selected_row=row)
-        self._set_apply_peak_constraints_checked(True)
+        if change_type == "value" and hasattr(self, "plot_ctrl") and \
+                self.plot_ctrl is not None:
+            self.plot_ctrl.refresh_peakfit_markers()
         self.set_tableWidget_PkParams_unsaved()
 
     def _sync_constraints_tab_row_to_model(self):
@@ -1389,8 +1430,8 @@ class PeakFitController(object):
             self.plot_interaction_ctrl.cancel_editable_xrange()
             self._set_constraints_toggle_button(
                 button, False,
-                "Set position range from plot (ON)",
-                "Set position range from plot")
+                "Constrain position from plot… (ON)",
+                "Constrain position from plot…")
             return
         table = self.widget.tableWidget_PkParams
         selected_rows = {r.row() for r in table.selectionModel().selectedRows()} if table.selectionModel() else set()
@@ -1399,46 +1440,49 @@ class PeakFitController(object):
         if len(selected_rows) != 1:
             self._set_constraints_toggle_button(
                 button, False,
-                "Set position range from plot (ON)",
-                "Set position range from plot")
+                "Constrain position from plot… (ON)",
+                "Constrain position from plot…")
             return
         row = selected_rows.pop()
         if not self.model.current_section_exist():
             self._set_constraints_toggle_button(
                 button, False,
-                "Set position range from plot (ON)",
-                "Set position range from plot")
+                "Constrain position from plot… (ON)",
+                "Constrain position from plot…")
             return
         n_peaks = self.model.current_section.get_number_of_peaks_in_queue()
         if row < 0 or row >= n_peaks:
             self._set_constraints_toggle_button(
                 button, False,
-                "Set position range from plot (ON)",
-                "Set position range from plot")
+                "Constrain position from plot… (ON)",
+                "Constrain position from plot…")
             return
         self._clear_constraints_toggle_buttons(except_button=button)
         def apply_range(xmin, xmax):
             peak = self.model.current_section.peaks_in_queue[row]
             peak["center_min"] = float(xmin)
             peak["center_max"] = float(xmax)
+            peak["center_min_enabled"] = True
+            peak["center_max_enabled"] = True
             self._update_peak_constraint_min_max_widgets(row, "center")
-            self._set_apply_peak_constraints_checked(True)
             self.set_tableWidget_PkParams_unsaved()
         def cancel_button():
             self._set_constraints_toggle_button(
                 button, False,
-                "Set position range from plot (ON)",
-                "Set position range from plot")
+                "Constrain position from plot… (ON)",
+                "Constrain position from plot…")
         peak = self.model.current_section.peaks_in_queue[row]
-        xmin, xmax = self.default_bound_values(peak, "center")
-        xmin = float(peak.get("center_min", xmin))
-        xmax = float(peak.get("center_max", xmax))
+        default_xmin, default_xmax = self.default_bound_values(peak, "center")
+        xmin = self._optional_bound_or_default(
+            peak.get("center_min"), default_xmin)
+        xmax = self._optional_bound_or_default(
+            peak.get("center_max"), default_xmax)
         if xmax <= xmin:
             xmin, xmax = self.default_bound_values(peak, "center")
         self._set_constraints_toggle_button(
             button, True,
-            "Set position range from plot (ON)",
-            "Set position range from plot")
+            "Constrain position from plot… (ON)",
+            "Constrain position from plot…")
         self.plot_interaction_ctrl.start_editable_xrange_tool(
             "Set peak position range", xmin, xmax, apply_range,
             cancel_callback=cancel_button)
@@ -1451,8 +1495,8 @@ class PeakFitController(object):
             self.plot_interaction_ctrl.cancel_editable_xrange()
             self._set_constraints_toggle_button(
                 button, False,
-                "Set FWHM max from plot (ON)",
-                "Set FWHM max from plot")
+                "Constrain FWHM range from plot… (ON)",
+                "Constrain FWHM range from plot…")
             return
         table = self.widget.tableWidget_PkParams
         selected_rows = {r.row() for r in table.selectionModel().selectedRows()} if table.selectionModel() else set()
@@ -1461,37 +1505,34 @@ class PeakFitController(object):
         if len(selected_rows) != 1:
             self._set_constraints_toggle_button(
                 button, False,
-                "Set FWHM max from plot (ON)",
-                "Set FWHM max from plot")
+                "Constrain FWHM range from plot… (ON)",
+                "Constrain FWHM range from plot…")
             return
         row = selected_rows.pop()
         if not self.model.current_section_exist():
             self._set_constraints_toggle_button(
                 button, False,
-                "Set FWHM max from plot (ON)",
-                "Set FWHM max from plot")
+                "Constrain FWHM range from plot… (ON)",
+                "Constrain FWHM range from plot…")
             return
         n_peaks = self.model.current_section.get_number_of_peaks_in_queue()
         if row < 0 or row >= n_peaks:
             self._set_constraints_toggle_button(
                 button, False,
-                "Set FWHM max from plot (ON)",
-                "Set FWHM max from plot")
+                "Constrain FWHM range from plot… (ON)",
+                "Constrain FWHM range from plot…")
             return
         self._clear_constraints_toggle_buttons(except_button=button)
         def apply_range(xmin, xmax):
             peak = self.model.current_section.peaks_in_queue[row]
-            width = abs(float(xmax) - float(xmin))
-            peak["sigma_min"] = 0.0
-            peak["sigma_max"] = width
+            self._apply_fwhm_bounds_from_plot_range(peak, xmin, xmax)
             self._update_peak_constraint_min_max_widgets(row, "sigma")
-            self._set_apply_peak_constraints_checked(True)
             self.set_tableWidget_PkParams_unsaved()
         def cancel_button():
             self._set_constraints_toggle_button(
                 button, False,
-                "Set FWHM max from plot (ON)",
-                "Set FWHM max from plot")
+                "Constrain FWHM range from plot… (ON)",
+                "Constrain FWHM range from plot…")
         peak = self.model.current_section.peaks_in_queue[row]
         detail_table = getattr(self.widget, "tableWidget_PeakConstraintDetail", None)
         if detail_table is not None and detail_table.rowCount() > 2:
@@ -1499,9 +1540,11 @@ class PeakFitController(object):
             if max_widget is not None:
                 current_max = float(max_widget.value())
             else:
-                current_max = float(peak.get("sigma_max", peak.get("sigma", 0.05)))
+                current_max = self._optional_bound_or_default(
+                    peak.get("sigma_max"), peak.get("sigma", 0.05))
         else:
-            current_max = float(peak.get("sigma_max", peak.get("sigma", 0.05)))
+            current_max = self._optional_bound_or_default(
+                peak.get("sigma_max"), peak.get("sigma", 0.05))
         center = float(peak.get("center", 0.0))
         if current_max <= 0.0:
             current_max = float(peak.get("sigma", 0.05)) if peak else 0.05
@@ -1510,11 +1553,27 @@ class PeakFitController(object):
         xmax = center + half
         self._set_constraints_toggle_button(
             button, True,
-            "Set FWHM max from plot (ON)",
-            "Set FWHM max from plot")
+            "Constrain FWHM range from plot… (ON)",
+            "Constrain FWHM range from plot…")
         self.plot_interaction_ctrl.start_editable_xrange_tool(
             "Set peak FWHM maximum", xmin, xmax, apply_range,
             cancel_callback=cancel_button)
+
+    @staticmethod
+    def _optional_bound_or_default(value, default):
+        """Return a finite optional bound or the supplied template value."""
+        try:
+            bound = float(value)
+        except (TypeError, ValueError):
+            bound = float(default)
+        return bound if np.isfinite(bound) else float(default)
+
+    @staticmethod
+    def _apply_fwhm_bounds_from_plot_range(peak, xmin, xmax):
+        peak["sigma_min"] = 0.0
+        peak["sigma_max"] = abs(float(xmax) - float(xmin))
+        peak["sigma_min_enabled"] = True
+        peak["sigma_max_enabled"] = True
 
     def _on_default_bounds_changed(self):
         self._default_peak_bounds = {
@@ -1522,7 +1581,6 @@ class PeakFitController(object):
             "fwhm_min": float(self.widget.spinBox_DefaultFwhmMin.value()),
             "fwhm_max": float(self.widget.spinBox_DefaultFwhmMax.value()),
         }
-        self._set_apply_peak_constraints_checked(True)
 
     def _current_default_peak_bounds(self):
         if (hasattr(self.widget, "spinBox_CenterHalfRange") and
@@ -1915,7 +1973,6 @@ class PeakFitController(object):
             self.widget.spinBox_DefaultFwhmMax.blockSignals(True)
             self.widget.spinBox_DefaultFwhmMax.setValue(float(fwhm_max))
             self.widget.spinBox_DefaultFwhmMax.blockSignals(False)
-        self._set_apply_peak_constraints_checked(True)
 
     def _apply_default_bounds_to_peak(self, peak):
         center = float(peak.get("center", 0.0))
@@ -1943,7 +2000,6 @@ class PeakFitController(object):
         peaks = self.model.current_section.peaks_in_queue
         for peak in peaks:
             self._apply_default_bounds_to_peak(peak)
-        self._set_apply_peak_constraints_checked(True)
         self.set_tableWidget_PkParams_unsaved()
         self.peakfit_table_ctrl.update_peak_constraints()
         if self._constraints_dialog is not None:

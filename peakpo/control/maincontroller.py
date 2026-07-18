@@ -435,6 +435,9 @@ class MainController(object):
             lambda _value: self.plot_ctrl.update_jcpds_only())
         self.widget.doubleSpinBox_JCPDS_ptn_Alpha.valueChanged.connect(
             lambda _value: self.plot_ctrl.update_jcpds_only())
+        if hasattr(self.widget, "doubleSpinBox_JCPDS_CakeBarAlpha"):
+            self.widget.doubleSpinBox_JCPDS_CakeBarAlpha.valueChanged.connect(
+                lambda _value: self.plot_ctrl.update_jcpds_only())
         self.widget.pushButton_UpdateJCPDSSteps.clicked.connect(
             self.update_jcpds_table)
         """
@@ -1423,7 +1426,9 @@ class MainController(object):
             ("plot_cfg/fontsize_legend", "comboBox_LegendFontSize"),
             ("plot_cfg/fontsize_waterfall_label", "comboBox_WaterfallFontSize"),
             ("plot_cfg/jcpds_alpha_pattern", "doubleSpinBox_JCPDS_ptn_Alpha"),
-            ("plot_cfg/jcpds_alpha_cake", "doubleSpinBox_JCPDS_cake_Alpha"),
+            ("plot_cfg/jcpds_dimming_factor", "doubleSpinBox_JCPDS_cake_Alpha"),
+            ("plot_cfg/jcpds_bar_alpha_cake",
+             "doubleSpinBox_JCPDS_CakeBarAlpha"),
             ("plot_cfg/jcpds_thickness_pattern", "comboBox_PtnJCPDSBarThickness"),
             ("plot_cfg/jcpds_thickness_cake", "comboBox_CakeJCPDSBarThickness"),
             ("plot_cfg/light_background", "checkBox_LightBackground"),

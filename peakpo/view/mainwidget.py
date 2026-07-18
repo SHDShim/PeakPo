@@ -198,6 +198,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_BasePtnLineThickness.setCurrentText('1')
         self.comboBox_PtnJCPDSBarThickness.setCurrentText('1')
         self.comboBox_CakeJCPDSBarThickness.setCurrentText('0.5')
+        # Settings, if present, are loaded later by MainController.read_setting.
+        self.doubleSpinBox_JCPDS_ptn_Alpha.setValue(1.0)
+        self.doubleSpinBox_JCPDS_cake_Alpha.setValue(0.2)
         self.comboBox_BkgnLineThickness.setCurrentText('0.5')
         self.comboBox_WaterfallLineThickness.setCurrentText('0.5')
         self.comboBox_VertCursorThickness.setCurrentText('1')
@@ -264,6 +267,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._setup_pressure_temperature_grid()
         self._setup_light_background_checkbox()
         self._setup_jcpds_bars_layout()
+        self._setup_jcpds_cake_bar_alpha_control()
         self._compact_jcpds_config_layout()
         self._setup_title_config_group()
         self._setup_histogram_config_group()
@@ -987,10 +991,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.groupBox_24.setParent(self.plotConfigContents)
         self.groupBox_13.setParent(self.plotConfigContents)
         self.groupBox_27.setParent(self.plotConfigContents)
+        # Keep the JCPDS appearance controls at the top of Display → Config:
+        # they are needed frequently while interpreting Cake images.
+        self.verticalLayout_PlotConfig.addWidget(self.groupBox_27)
         self.verticalLayout_PlotConfig.addWidget(self.groupBox_16)
         self.verticalLayout_PlotConfig.addWidget(self.groupBox_24)
         self.verticalLayout_PlotConfig.addWidget(self.groupBox_13)
-        self.verticalLayout_PlotConfig.addWidget(self.groupBox_27)
         self.verticalLayout_PlotConfig.addStretch(1)
 
     def _setup_pressure_temperature_grid(self):
@@ -1180,6 +1186,36 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_33.addItem(self._jcpds_config_bottom_spacer)
 
+    def _setup_jcpds_cake_bar_alpha_control(self):
+        """Add a Cake-only JCPDS opacity control beside the dimming setup."""
+        if hasattr(self, "doubleSpinBox_JCPDS_CakeBarAlpha") or \
+                not hasattr(self, "gridLayout_3"):
+            return
+        self.label_JCPDS_CakeBarAlpha = QtWidgets.QLabel(
+            "Cake bar alpha", self.groupBox_27)
+        self.label_JCPDS_CakeBarAlpha.setObjectName("label_JCPDS_CakeBarAlpha")
+        self.doubleSpinBox_JCPDS_CakeBarAlpha = QtWidgets.QDoubleSpinBox(
+            self.groupBox_27)
+        self.doubleSpinBox_JCPDS_CakeBarAlpha.setObjectName(
+            "doubleSpinBox_JCPDS_CakeBarAlpha")
+        self.doubleSpinBox_JCPDS_CakeBarAlpha.setRange(0.0, 1.0)
+        self.doubleSpinBox_JCPDS_CakeBarAlpha.setDecimals(2)
+        self.doubleSpinBox_JCPDS_CakeBarAlpha.setSingleStep(0.05)
+        self.doubleSpinBox_JCPDS_CakeBarAlpha.setValue(0.60)
+        self.doubleSpinBox_JCPDS_CakeBarAlpha.setKeyboardTracking(False)
+        self.doubleSpinBox_JCPDS_CakeBarAlpha.setMinimumHeight(25)
+        self.doubleSpinBox_JCPDS_CakeBarAlpha.setToolTip(
+            "Base opacity for JCPDS vertical bars in the Cake image. "
+            "Phase dimming is applied separately.")
+        # Keep the two base-alpha controls together, above their respective
+        # Pattern/Cake width controls.  Dimming is a secondary modifier.
+        self.gridLayout_3.addWidget(self.label_30, 2, 3, 1, 1)
+        self.gridLayout_3.addWidget(
+            self.doubleSpinBox_JCPDS_cake_Alpha, 2, 4, 1, 1)
+        self.gridLayout_3.addWidget(self.label_JCPDS_CakeBarAlpha, 0, 3, 1, 1)
+        self.gridLayout_3.addWidget(
+            self.doubleSpinBox_JCPDS_CakeBarAlpha, 0, 4, 1, 1)
+
     def _setup_title_config_group(self):
         if not hasattr(self, "verticalLayout_PlotConfig"):
             return
@@ -1323,7 +1359,27 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(self, "groupBox_13"):
             self.groupBox_13.setTitle("Label text")
         if hasattr(self, "groupBox_27"):
-            self.groupBox_27.setTitle("JCPDS bar properties")
+            self.groupBox_27.setTitle("JCPDS reference bars")
+            # Other setup helpers insert title and histogram groups before
+            # this method runs. Keep this frequently used control visible at
+            # the top of Display → Config after all those insertions.
+            self.verticalLayout_PlotConfig.removeWidget(self.groupBox_27)
+            self.verticalLayout_PlotConfig.insertWidget(0, self.groupBox_27)
+        if hasattr(self, "label_29"):
+            self.label_29.setText("Pattern bar alpha")
+        if hasattr(self, "label_30"):
+            self.label_30.setText("Dimming factor")
+        if hasattr(self, "label_22"):
+            self.label_22.setText("Pattern width")
+        if hasattr(self, "label_23"):
+            self.label_23.setText("Cake width")
+        if hasattr(self, "doubleSpinBox_JCPDS_ptn_Alpha"):
+            self.doubleSpinBox_JCPDS_ptn_Alpha.setToolTip(
+                "Base opacity for JCPDS vertical bars in the 1D Pattern.")
+        if hasattr(self, "doubleSpinBox_JCPDS_cake_Alpha"):
+            self.doubleSpinBox_JCPDS_cake_Alpha.setToolTip(
+                "Multiplier applied to non-emphasized JCPDS phases in both "
+                "Pattern and Cake.")
         if hasattr(self, "groupBox"):
             self.groupBox.setTitle("Pressure and temperature")
         if hasattr(self, "groupBox_8"):
@@ -1740,12 +1796,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not hasattr(self, "checkBox_ApplyPeakConstraints") and \
                 hasattr(self, "groupBox_35") and hasattr(self, "gridLayout_17"):
             self.checkBox_ApplyPeakConstraints = QtWidgets.QCheckBox(
-                "Apply constraints setup", self.groupBox_35)
+                "Use optional peak constraints", self.groupBox_35)
             self.checkBox_ApplyPeakConstraints.setObjectName(
                 "checkBox_ApplyPeakConstraints")
             self.checkBox_ApplyPeakConstraints.setChecked(False)
             self.checkBox_ApplyPeakConstraints.setToolTip(
-                "Apply the stored peak parameter constraints setup during fitting.")
+                "When unchecked, all peak parameters refine freely within "
+                "their physical domains. When checked, PeakPo also applies "
+                "the enabled per-peak limits and fixed-parameter settings.")
             self.gridLayout_17.addWidget(
                 self.checkBox_ApplyPeakConstraints, 2, 0, 1, 2)
         for name in (

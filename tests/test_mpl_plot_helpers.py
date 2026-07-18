@@ -19,6 +19,7 @@ from peakpo.control.plotinteractioncontroller import (
     PlotInteractionController,
     _PlotKeyStateFilter,
 )
+from peakpo.ds_section.section import Section
 from peakpo.view.mplwidget import MplCanvas
 
 
@@ -249,6 +250,53 @@ def test_peakfit_individual_profiles_are_yellow_and_total_remains_red():
     assert mcolors.to_rgba(lines[2].get_color()) == mcolors.to_rgba("red")
 
 
+def test_unfitted_peaks_plot_initial_profiles_without_gray_center_lines():
+    class TableStub:
+        def selectionModel(self):
+            return None
+
+        def currentItem(self):
+            return None
+
+        def currentRow(self):
+            return -1
+
+    canvas = MplCanvas()
+    canvas.resize_axes(30)
+    x = np.linspace(6.8, 7.2, 101)
+    section = Section()
+    section.set(
+        x,
+        50.0 * np.exp(-((x - 7.0) / 0.03) ** 2),
+        np.zeros_like(x),
+    )
+    assert section.set_single_peak(7.0, 0.01)
+    ctrl = object.__new__(MplController)
+    ctrl.model = SimpleNamespace(
+        current_section=section,
+        current_section_exist=lambda: True,
+        jcpds_lst=[],
+    )
+    ctrl.widget = SimpleNamespace(
+        mpl=SimpleNamespace(canvas=canvas),
+        checkBox_BgSub=SimpleNamespace(isChecked=lambda: False),
+        checkBox_ShowCake=SimpleNamespace(isChecked=lambda: False),
+        comboBox_BasePtnLineThickness=SimpleNamespace(currentText=lambda: "1.0"),
+        tableWidget_PkParams=TableStub(),
+        tableWidget_PeakConstraints=TableStub(),
+    )
+    ctrl._peakfit_overlay_artists = []
+    ctrl._peak_center_marker_artists = []
+    ctrl._selected_peak_marker_artists = []
+
+    ctrl._plot_peakfit()
+
+    assert len(canvas.ax_pattern.lines) == 1
+    line = canvas.ax_pattern.lines[0]
+    assert len(line.get_xdata()) == len(x)
+    assert mcolors.to_rgba(line.get_color()) == mcolors.to_rgba("yellow")
+
+
 class _LabelStub:
     def __init__(self):
         self.text = None
@@ -456,3 +504,30 @@ def test_jcpds_legend_text_highlight_tracks_selected_table_row():
     }
     assert np.isclose(text_colors["phase a"][-1], 0.25)
     assert np.isclose(text_colors["phase b"][-1], 1.0)
+    assert np.isclose(ctrl._get_jcpds_plot_alpha(0, {1}), 0.25)
+    assert np.isclose(ctrl._get_jcpds_plot_alpha(0, {1}, 0.6), 0.15)
+    assert ctrl._jcpds_bar_alphas() == (1.0, 0.6)
+
+
+def test_active_peak_guide_uses_nearest_displayed_observed_intensity():
+    controller = object.__new__(MplController)
+    controller.model = SimpleNamespace(current_section=SimpleNamespace(
+        x=np.asarray([8.1, 8.2, 8.3]),
+        y_bgsub=np.asarray([10.0, 20.0, 30.0]),
+        y_bg=np.asarray([1.0, 2.0, 3.0]),
+    ))
+    controller.widget = SimpleNamespace(
+        checkBox_BgSub=SimpleNamespace(isChecked=lambda: False))
+
+    assert controller._nearest_observed_peak_intensity(8.24) == 22.0
+
+    controller.widget.checkBox_BgSub = SimpleNamespace(isChecked=lambda: True)
+    assert controller._nearest_observed_peak_intensity(8.24) == 20.0
+
+
+def test_active_peak_triangle_sits_just_above_observed_intensity():
+    canvas = MplCanvas()
+    canvas.ax_pattern.set_ylim(0.0, 100.0)
+
+    assert MplController._active_peak_triangle_y(
+        canvas.ax_pattern, 40.0) == 42.0

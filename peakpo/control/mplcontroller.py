@@ -1118,35 +1118,46 @@ class MplController(object):
                     emphasis_rows.add(row)
         return emphasis_rows
 
-    def _jcpds_emphasis_alphas(self):
-        highlight = 1.0
-        dimmed = 0.5
+    def _jcpds_bar_alphas(self):
+        """Return independent base alpha values for Pattern and Cake bars."""
+        pattern = 1.0
+        cake = 0.6
         if hasattr(self.widget, "doubleSpinBox_JCPDS_ptn_Alpha"):
             try:
-                highlight = float(self.widget.doubleSpinBox_JCPDS_ptn_Alpha.value())
+                pattern = float(self.widget.doubleSpinBox_JCPDS_ptn_Alpha.value())
             except Exception:
                 pass
+        if hasattr(self.widget, "doubleSpinBox_JCPDS_CakeBarAlpha"):
+            try:
+                cake = float(self.widget.doubleSpinBox_JCPDS_CakeBarAlpha.value())
+            except Exception:
+                pass
+        return (min(1.0, max(0.0, pattern)),
+                min(1.0, max(0.0, cake)))
+
+    def _jcpds_dimming_factor(self):
+        value = 0.2
         if hasattr(self.widget, "doubleSpinBox_JCPDS_cake_Alpha"):
             try:
-                dimmed = float(self.widget.doubleSpinBox_JCPDS_cake_Alpha.value())
+                value = float(self.widget.doubleSpinBox_JCPDS_cake_Alpha.value())
             except Exception:
                 pass
-        highlight = min(1.0, max(0.0, highlight))
-        dimmed = min(1.0, max(0.0, dimmed))
-        return highlight, dimmed
+        return min(1.0, max(0.0, value))
 
-    def _get_jcpds_plot_alpha(self, phase_index, emphasis_rows):
-        highlight_alpha, dimmed_alpha = self._jcpds_emphasis_alphas()
+    def _get_jcpds_plot_alpha(self, phase_index, emphasis_rows,
+                              base_alpha=1.0):
+        """Apply phase dimming on top of a Pattern or Cake bar alpha."""
+        alpha = min(1.0, max(0.0, float(base_alpha)))
         if not emphasis_rows:
-            return highlight_alpha
+            return alpha
         phase = None
         if 0 <= phase_index < len(self.model.jcpds_lst):
             phase = self.model.jcpds_lst[phase_index]
         if phase is None or not getattr(phase, "display", False):
-            return highlight_alpha
+            return alpha
         if phase_index in emphasis_rows:
-            return highlight_alpha
-        return dimmed_alpha
+            return alpha
+        return alpha * self._jcpds_dimming_factor()
 
     def _artist_is_jcpds_overlay(self, artist, hkl_only=False):
         if getattr(artist, "_peakpo_jcpds_overlay", False):
@@ -1471,7 +1482,9 @@ class MplController(object):
                 phase_index = getattr(artist, "_peakpo_jcpds_phase_index", None)
                 if phase_index is None:
                     continue
-                alpha = self._get_jcpds_plot_alpha(phase_index, emphasis_rows)
+                alpha = self._get_jcpds_plot_alpha(
+                    phase_index, emphasis_rows,
+                    getattr(artist, "_peakpo_jcpds_base_alpha", 1.0))
                 try:
                     artist.set_alpha(alpha)
                 except Exception:
@@ -1694,6 +1707,7 @@ class MplController(object):
             if 0 <= idx < len(self.model.jcpds_lst) and
             getattr(self.model.jcpds_lst[idx], "display", False)
         }
+        pattern_bar_alpha, cake_bar_alpha = self._jcpds_bar_alphas()
         display_index = -1
         for row_idx, phase in enumerate(self.model.jcpds_lst):
             if not phase.display:
@@ -1738,7 +1752,7 @@ class MplController(object):
                 legend_label = "{0:}, {1:.3f} A^3".format(
                     phase.name, volume)
                 phase_alpha = self._get_jcpds_plot_alpha(
-                    row_idx, emphasis_rows)
+                    row_idx, emphasis_rows, pattern_bar_alpha)
                 jcpds_bars = self.widget.mpl.canvas.ax_pattern.vlines(
                     tth, bar_min, bar_max, colors=phase.color,
                     label=legend_label,
@@ -1748,7 +1762,8 @@ class MplController(object):
                     alpha=phase_alpha,
                     zorder=18)
                 self._track_jcpds_artist(
-                    jcpds_bars, phase_index=row_idx, base_alpha=phase_alpha)
+                    jcpds_bars, phase_index=row_idx,
+                    base_alpha=pattern_bar_alpha)
                 legend_entries.append(
                     (jcpds_bars, legend_label, phase.color, row_idx))
                 # hkl
@@ -1763,14 +1778,15 @@ class MplController(object):
                             horizontalalignment='center',
                             fontsize=int(
                                 self.widget.comboBox_HKLFontSize.currentText()),
-                            alpha=phase_alpha,
+                            alpha=self._get_jcpds_plot_alpha(
+                                row_idx, emphasis_rows),
                             zorder=19), hkl=True,
-                            phase_index=row_idx, base_alpha=phase_alpha)
+                            phase_index=row_idx, base_alpha=1.0)
                 # phase.name, phase.v.item()))
             if self.widget.checkBox_ShowCake.isChecked() and \
                     self.widget.checkBox_JCPDSinCake.isChecked():
                 phase_alpha = self._get_jcpds_plot_alpha(
-                    row_idx, emphasis_rows)
+                    row_idx, emphasis_rows, cake_bar_alpha)
                 self._track_jcpds_artist(
                     self.widget.mpl.canvas.ax_cake.vlines(
                     tth, np.ones_like(tth) * cakerange[2],
@@ -1779,7 +1795,7 @@ class MplController(object):
                         self.widget.comboBox_CakeJCPDSBarThickness.currentText()),
                     alpha=phase_alpha,
                     zorder=18),
-                    phase_index=row_idx, base_alpha=phase_alpha)
+                    phase_index=row_idx, base_alpha=cake_bar_alpha)
                 if self.widget.checkBox_ShowMillerIndices_Cake.isChecked():
                     all_hkl = phase.get_hkl_in_text()
                     hkl_list = [all_hkl[index] for index in valid_indices]
@@ -1792,9 +1808,11 @@ class MplController(object):
                             horizontalalignment='right',
                             fontsize=int(
                                 self.widget.comboBox_HKLFontSize.currentText()),
-                            alpha=phase_alpha,
+                            alpha=self._get_jcpds_plot_alpha(
+                                row_idx, emphasis_rows),
                             zorder=19), hkl=True,
-                            phase_index=row_idx, base_alpha=phase_alpha)
+                            phase_index=row_idx,
+                            base_alpha=1.0)
         if self.widget.checkBox_JCPDSinPattern.isChecked():
             legend_fontsize = 14
             if hasattr(self.widget, "comboBox_LegendFontSize"):
@@ -1829,10 +1847,11 @@ class MplController(object):
                         pass
                 for (__handle, __label, color, phase_index), txt in zip(
                         unique_entries, leg_jcpds.get_texts()):
-                    alpha = self._get_jcpds_plot_alpha(phase_index, emphasis_rows)
+                    alpha = self._get_jcpds_plot_alpha(
+                        phase_index, emphasis_rows)
                     txt.set_color(mcolors.to_rgba(color, alpha))
                     self._track_jcpds_artist(
-                        txt, phase_index=phase_index, base_alpha=alpha,
+                        txt, phase_index=phase_index, base_alpha=1.0,
                         base_color=color)
         # print("JCPDS update takes {0:.2f}s at".format(time.time() - t_start),
         #      str(datetime.datetime.now())[:-7])
@@ -2089,6 +2108,7 @@ class MplController(object):
         self._selected_peak_marker_artists = []
         if not self.model.current_section_exist():
             return
+        fitted = self.model.current_section.fitted()
         if self.model.current_section.peaks_exist():
             selected_row = self._get_selected_peak_parameter_row()
             peaks = self.model.current_section.peaks_in_queue
@@ -2097,14 +2117,18 @@ class MplController(object):
                 if row == selected_row:
                     peak = peaks[row] if row < len(peaks) else None
                     self._plot_selected_peak_marker(x_c, peak=peak)
-        if self.model.current_section.fitted():
+            if not fitted:
+                self._plot_initial_peak_profiles()
+        if fitted:
             bgsub = self.widget.checkBox_BgSub.isChecked()
             x_plot = self.model.current_section.x
             profiles = self.model.current_section.get_individual_profiles(
                 bgsub=bgsub)
             for key, value in profiles.items():
                 line = self.widget.mpl.canvas.ax_pattern.plot(
-                    x_plot, value, ls='-', c='yellow', lw=float(
+                    x_plot, value, ls='-',
+                    c='yellow' if str(key).startswith('p') else self.obj_color,
+                    lw=float(
                         self.widget.comboBox_BasePtnLineThickness.
                         currentText()))[0]
                 self._track_peakfit_artist(line)
@@ -2205,8 +2229,22 @@ class MplController(object):
             if row == selected_row:
                 peak = peaks[row] if row < len(peaks) else None
                 self._plot_selected_peak_marker(x_c, peak=peak)
+        if not self.model.current_section.fitted():
+            self._plot_initial_peak_profiles()
         self.widget.mpl.canvas.draw_idle()
         return True
+
+    def _plot_initial_peak_profiles(self):
+        bgsub = self.widget.checkBox_BgSub.isChecked()
+        profiles = self.model.current_section.get_initial_peak_profiles(
+            bgsub=bgsub)
+        x_plot = self.model.current_section.x
+        linewidth = float(
+            self.widget.comboBox_BasePtnLineThickness.currentText())
+        for value in profiles.values():
+            line = self.widget.mpl.canvas.ax_pattern.plot(
+                x_plot, value, ls='-', c='yellow', lw=linewidth, zorder=9)[0]
+            self._peak_center_marker_artists.append(line)
 
     def _get_selected_peak(self):
         selected_row = self._get_selected_peak_parameter_row()
@@ -2256,6 +2294,37 @@ class MplController(object):
         phase = peak.get('phasename', 'unknown')
         return f"{phase} ({h},{k},{l})"
 
+    def _nearest_observed_peak_intensity(self, x_center):
+        """Return the displayed observed intensity nearest a peak center."""
+        section = getattr(self.model, "current_section", None)
+        if section is None or section.x is None or section.y_bgsub is None:
+            return None
+        try:
+            x = np.asarray(section.x, dtype=float)
+            y = np.asarray(section.y_bgsub, dtype=float)
+            if not self.widget.checkBox_BgSub.isChecked() and section.y_bg is not None:
+                y = y + np.asarray(section.y_bg, dtype=float)
+            valid = np.isfinite(x) & np.isfinite(y)
+            if not np.any(valid):
+                return None
+            x = x[valid]
+            y = y[valid]
+            index = int(np.abs(x - float(x_center)).argmin())
+            return float(y[index])
+        except (TypeError, ValueError, AttributeError):
+            return None
+
+    @staticmethod
+    def _active_peak_triangle_y(axis, observed_y):
+        """Place the downward triangle just above the observed intensity."""
+        y_min, y_max = axis.get_ylim()
+        y_span = y_max - y_min
+        if not np.isfinite(y_span) or y_span <= 0.0:
+            return float(observed_y)
+        offset = 0.02 * y_span
+        return min(y_max - 0.01 * y_span,
+                   max(y_min + 0.01 * y_span, float(observed_y) + offset))
+
     def _plot_selected_peak_marker(self, x_center, peak=None):
         fitted = self.model.current_section.fitted()
         if peak is not None:
@@ -2264,18 +2333,28 @@ class MplController(object):
             color = 'tab:cyan' if fitted else 'tab:orange'
         linestyle = '-' if fitted else '-'
         self._selected_peak_marker_artists = []
-        line = self.widget.mpl.canvas.ax_pattern.axvline(
-            x_center, c=color, ls=linestyle, lw=1.4, zorder=20)
-        self._selected_peak_marker_artists.append(line)
-        marker = self.widget.mpl.canvas.ax_pattern.plot(
-            [x_center], [0.02], marker='^', markersize=7,
-            color=color, linestyle='None',
-            transform=self.widget.mpl.canvas.ax_pattern.get_xaxis_transform(),
-            zorder=21, clip_on=False)[0]
+        pattern_axis = self.widget.mpl.canvas.ax_pattern
+        observed_y = self._nearest_observed_peak_intensity(x_center)
+        marker_y = None
+        if observed_y is not None:
+            _, y_max = pattern_axis.get_ylim()
+            marker_y = self._active_peak_triangle_y(pattern_axis, observed_y)
+            line = pattern_axis.plot(
+                [x_center, x_center], [marker_y, y_max],
+                color=color, linestyle=linestyle, linewidth=1.4,
+                zorder=20)[0]
+            line._peakpo_active_peak_guide = True
+            self._selected_peak_marker_artists.append(line)
+        if marker_y is None:
+            marker_y = pattern_axis.get_ylim()[1]
+        marker = pattern_axis.plot(
+            [x_center], [marker_y], marker='v', markersize=8,
+            color=color, linestyle='None', zorder=21, clip_on=False)[0]
+        marker._peakpo_active_peak_triangle = True
         self._selected_peak_marker_artists.append(marker)
         if peak is not None:
             label_text = self._get_peak_hkl_label(peak)
-            y_pos = 0.97
+            y_pos = 0.94
             text_artist = self.widget.mpl.canvas.ax_pattern.text(
                 x_center, y_pos, label_text,
                 color='black', fontsize=9, fontweight='bold',
@@ -2291,7 +2370,7 @@ class MplController(object):
                 x_center, c=color, ls=linestyle, lw=1.2, zorder=20)
             self._selected_peak_marker_artists.append(line)
             marker = self.widget.mpl.canvas.ax_cake.plot(
-                [x_center], [0.02], marker='^', markersize=7,
+                [x_center], [0.985], marker='v', markersize=8,
                 color=color, linestyle='None',
                 transform=self.widget.mpl.canvas.ax_cake.get_xaxis_transform(),
                 zorder=21, clip_on=False)[0]
@@ -2316,8 +2395,23 @@ class MplController(object):
                     xdata = artist.get_xdata()
                     if len(xdata) == 1:
                         artist.set_xdata([x_center])
+                        if getattr(artist, "_peakpo_active_peak_triangle", False):
+                            observed_y = self._nearest_observed_peak_intensity(
+                                x_center)
+                            if observed_y is not None:
+                                artist.set_ydata([
+                                    self._active_peak_triangle_y(
+                                        artist.axes, observed_y)])
                     else:
                         artist.set_xdata([x_center, x_center])
+                        if getattr(artist, "_peakpo_active_peak_guide", False):
+                            observed_y = self._nearest_observed_peak_intensity(
+                                x_center)
+                            if observed_y is not None:
+                                _, y_max = artist.axes.get_ylim()
+                                marker_y = self._active_peak_triangle_y(
+                                    artist.axes, observed_y)
+                                artist.set_ydata([marker_y, y_max])
                 elif hasattr(artist, 'set_position'):
                     x, y = artist.get_position()
                     artist.set_position((x_center, y))
@@ -2327,10 +2421,6 @@ class MplController(object):
         return True
 
     def _plot_peak_center_marker(self, x_center):
-        line = self.widget.mpl.canvas.ax_pattern.axvline(
-            x_center, c=self.obj_color, ls='-', lw=0.6, alpha=0.35,
-            zorder=8)
-        self._peak_center_marker_artists.append(line)
         if hasattr(self.widget.mpl.canvas, 'ax_cake') and \
                 self.widget.checkBox_ShowCake.isChecked():
             line = self.widget.mpl.canvas.ax_cake.axvline(

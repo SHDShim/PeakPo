@@ -4,8 +4,10 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.12.2.dev0"
+__version__ = "7.12.2.dev2"
 """
+7.12.2.dev2: alpha and dimming scheme improvement
+7.12.2.dev1: UI design change for peak fitting
 7.12.2.dev0: development fixes after 7.12.1.
 7.12.1zr: constraints global control.
 7.12.0: update peak fitting and unit cell refining instructions.

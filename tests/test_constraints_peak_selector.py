@@ -47,8 +47,20 @@ def test_constraints_peak_selector_updates_peak_selection_and_marker():
     marker_refreshes = []
     controller.plot_ctrl.refresh_selected_peak_marker = (
         lambda: marker_refreshes.append(True) or True)
+    assert window.groupBox_27.title() == "JCPDS reference bars"
+    assert window.verticalLayout_PlotConfig.indexOf(window.groupBox_27) == 0
+    assert window.label_29.text() == "Pattern bar alpha"
+    assert window.label_30.text() == "Dimming factor"
+    assert window.label_JCPDS_CakeBarAlpha.text() == "Cake bar alpha"
+    assert window.doubleSpinBox_JCPDS_CakeBarAlpha.value() == 0.6
+    assert window.gridLayout_3.getItemPosition(
+        window.gridLayout_3.indexOf(window.doubleSpinBox_JCPDS_ptn_Alpha))[:2] == (0, 1)
+    assert window.gridLayout_3.getItemPosition(
+        window.gridLayout_3.indexOf(window.doubleSpinBox_JCPDS_CakeBarAlpha))[:2] == (0, 4)
+    assert window.gridLayout_3.getItemPosition(
+        window.gridLayout_3.indexOf(window.doubleSpinBox_JCPDS_cake_Alpha))[:2] == (2, 4)
     assert window.checkBox_ApplyPeakConstraints.text() == \
-        "Apply constraints setup"
+        "Use optional peak constraints"
     assert not window.checkBox_ApplyPeakConstraints.isChecked()
     idx = window.gridLayout_17.indexOf(window.checkBox_ApplyPeakConstraints)
     row, col, row_span, col_span = window.gridLayout_17.getItemPosition(idx)
@@ -79,7 +91,7 @@ def test_constraints_peak_selector_updates_peak_selection_and_marker():
 
     assert section.peaks_in_queue[1]["sigma"] == 0.08
     assert section.peaks_in_queue[0]["sigma"] == 0.03
-    assert window.checkBox_ApplyPeakConstraints.isChecked()
+    assert not window.checkBox_ApplyPeakConstraints.isChecked()
 
     window.close()
     _APP.processEvents()
