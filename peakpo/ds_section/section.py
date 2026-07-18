@@ -17,6 +17,20 @@ PEAK_PARAM_VARY_KEYS = {
 }
 
 
+def pseudo_voigt_amplitude_for_height(height, sigma, fraction=0.5):
+    """Convert a target center height to lmfit PseudoVoigt integrated area."""
+    sigma = float(sigma)
+    if not np.isfinite(sigma) or sigma <= 0.0:
+        return 0.0
+    gaussian_factor = np.sqrt(np.log(2.0) / np.pi)
+    lorentzian_factor = 1.0 / np.pi
+    height_per_area = (
+        (1.0 - float(fraction)) * gaussian_factor +
+        float(fraction) * lorentzian_factor
+    ) / sigma
+    return float(height) / height_per_area
+
+
 def normalize_peak_phase_name(phase_name):
     if not isinstance(phase_name, str):
         return phase_name
@@ -168,7 +182,8 @@ class Section(object):
         y_center = self.get_nearest_intensity(x_center)
         peak = {}
         peak['center'] = x_center
-        peak['amplitude'] = y_center * fwhm * 4.
+        peak['amplitude'] = pseudo_voigt_amplitude_for_height(
+            y_center, fwhm, fraction=0.5)
         peak['sigma'] = fwhm
         peak['fraction'] = 0.5
         peak['center_vary'] = True
@@ -454,11 +469,14 @@ class Section(object):
             pass
         return statistics
 
-    def sync_peak_vary_flags_from_fit_result(self):
+    def sync_peak_vary_flags_from_fit_result(self, missing_only=False):
+        """Restore vary flags from fit data, optionally only for legacy peaks."""
         params = getattr(getattr(self, "fit_result", None), "params", {}) or {}
         for i, peak in enumerate(self.peaks_in_queue):
             prefix = "p{0:d}_".format(i)
             for param_name, vary_key in PEAK_PARAM_VARY_KEYS.items():
+                if missing_only and vary_key in peak:
+                    continue
                 prm = params.get(prefix + param_name)
                 if prm is not None and hasattr(prm, "vary"):
                     peak[vary_key] = bool(prm.vary)
@@ -481,8 +499,6 @@ class Section(object):
             peak['k'] = self.peakinfo[prefix + 'k']
             peak['l'] = self.peakinfo[prefix + 'l']
             i += 1
-        if self._apply_peak_constraints_for_current_fit:
-            self.sync_peak_vary_flags_from_fit_result()
         i = 0
         for factor in self.baseline_in_queue:
             prefix = "b_c{0:d}".format(i)

@@ -661,7 +661,7 @@ def _dict_to_section(payload, param_dir, chi_root, missing_files=None):
             fit_payload["components"] = comps
     section.fit_result = None if fit_payload is None else _FitResultLite(fit_payload)
     if section.fit_result is not None:
-        section.sync_peak_vary_flags_from_fit_result()
+        section.sync_peak_vary_flags_from_fit_result(missing_only=True)
     section.parameters = None
     section.fit_model = None
     return section

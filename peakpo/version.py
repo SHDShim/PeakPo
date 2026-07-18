@@ -4,8 +4,9 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.12.1zr"
+__version__ = "7.12.2.dev0"
 """
+7.12.2.dev0: development fixes after 7.12.1.
 7.12.1zr: constraints global control.
 7.12.0: update peak fitting and unit cell refining instructions.
 7.11.13: overhaul Peak and Cell Fit workflows with improved provenance, 

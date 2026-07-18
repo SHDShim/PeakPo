@@ -2104,7 +2104,7 @@ class MplController(object):
                 bgsub=bgsub)
             for key, value in profiles.items():
                 line = self.widget.mpl.canvas.ax_pattern.plot(
-                    x_plot, value, ls='-', c=self.obj_color, lw=float(
+                    x_plot, value, ls='-', c='yellow', lw=float(
                         self.widget.comboBox_BasePtnLineThickness.
                         currentText()))[0]
                 self._track_peakfit_artist(line)

@@ -119,7 +119,7 @@ class PeakPoModel(object):
         sync_vary = getattr(
             self.current_section, "sync_peak_vary_flags_from_fit_result", None)
         if callable(sync_vary):
-            sync_vary()
+            sync_vary(missing_only=True)
 
     def clear_section_list(self):
         self.section_lst[:] = []

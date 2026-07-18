@@ -163,10 +163,6 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
             use_min_box.toggled.connect(min_box.setEnabled)
             use_max_box.toggled.connect(max_box.setEnabled)
             if value_key == "amplitude":
-                use_min_box.setChecked(True)
-                use_min_box.setEnabled(False)
-                min_box.setValue(0.0)
-                min_box.setEnabled(False)
                 use_max_box.setChecked(False)
                 use_max_box.setEnabled(False)
                 max_box.setEnabled(False)
@@ -197,8 +193,8 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
             use_min = bool(self.table.cellWidget(row, 3).isChecked())
             peak[f"{value_key}_min_enabled"] = use_min
             if value_key == "amplitude":
-                peak[min_key] = 0.0
-                peak["amplitude_min_enabled"] = True
+                peak[min_key] = float(self.table.cellWidget(row, 4).value()) \
+                    if use_min else None
                 peak[max_key] = None
                 peak["amplitude_max_enabled"] = False
             else:
@@ -211,6 +207,7 @@ class _PeakConstraintsDialog(QtWidgets.QDialog):
         self.controller.set_tableWidget_PkParams_unsaved()
         self.controller.peakfit_table_ctrl.update_peak_parameters()
         self.controller.peakfit_table_ctrl.update_peak_constraints()
+        self.controller._set_apply_peak_constraints_checked(True)
         self.controller.plot_ctrl.update()
 
     def _set_toggle_button(self, button, checked, on_text, off_text):
@@ -1112,7 +1109,11 @@ class PeakFitController(object):
         min_enabled = peak.get(min_enabled_key, None)
         max_enabled = peak.get(max_enabled_key, None)
         if value_key == "amplitude":
-            return 0.0, None, True, False
+            if min_enabled is None:
+                min_enabled = min_val is not None if min_key in peak else True
+            if min_val is None and min_key not in peak:
+                min_val = 0.0
+            return min_val, None, bool(min_enabled), False
         if value_key == "center":
             center = float(peak.get("center", 0.0))
             if min_enabled is None:
@@ -1172,18 +1173,11 @@ class PeakFitController(object):
         if use_min_box and min_box:
             use_min_box.blockSignals(True)
             min_box.blockSignals(True)
-            if value_key == "amplitude":
-                use_min_box.setChecked(True)
-                use_min_box.setEnabled(False)
-                min_box.setValue(0.0)
-                min_box.setEnabled(False)
-            else:
-                use_min_box.setChecked(use_min_enabled)
-                min_box.setValue(0.0 if min_val is None else min_val)
+            use_min_box.setChecked(use_min_enabled)
+            min_box.setValue(0.0 if min_val is None else min_val)
             use_min_box.blockSignals(False)
             min_box.blockSignals(False)
-            if value_key != "amplitude":
-                min_box.setEnabled(use_min_box.isChecked())
+            min_box.setEnabled(use_min_box.isChecked())
         if use_max_box and max_box:
             use_max_box.blockSignals(True)
             max_box.blockSignals(True)
@@ -1243,11 +1237,6 @@ class PeakFitController(object):
         elif change_type == "vary":
             peak[f"{param_key}_vary"] = bool(value)
         elif change_type == "use_min":
-            if param_key == "amplitude":
-                peak["amplitude_min"] = 0.0
-                peak["amplitude_min_enabled"] = True
-                self.set_tableWidget_PkParams_unsaved()
-                return
             peak[f"{param_key}_min_enabled"] = bool(value)
             if not bool(value):
                 peak[min_key] = None
@@ -1265,11 +1254,6 @@ class PeakFitController(object):
                 else:
                     peak[min_key] = 0.0
         elif change_type == "min":
-            if param_key == "amplitude":
-                peak["amplitude_min"] = 0.0
-                peak["amplitude_min_enabled"] = True
-                self.set_tableWidget_PkParams_unsaved()
-                return
             peak[f"{param_key}_min_enabled"] = True
             peak[min_key] = float(value)
         elif change_type == "use_max":
@@ -1348,18 +1332,10 @@ class PeakFitController(object):
             if use_min_widget is not None and min_widget is not None:
                 use_min = bool(use_min_widget.isChecked())
                 peak[f"{param_key}_min_enabled"] = use_min
-                if param_key == "amplitude":
-                    peak[f"{param_key}_min"] = 0.0
-                    peak[f"{param_key}_min_enabled"] = True
-                else:
-                    peak[f"{param_key}_min"] = (
-                        float(min_widget.value()) if use_min else None)
+                peak[f"{param_key}_min"] = (
+                    float(min_widget.value()) if use_min else None)
             if param_key == "amplitude":
-                peak[f"{param_key}_min"] = 0.0
-                peak[f"{param_key}_min_enabled"] = True
                 peak[f"{param_key}_max"] = None
-                peak["amplitude_max_enabled"] = bool(
-                    False)
                 peak[f"{param_key}_max_enabled"] = False
             elif use_max_widget is not None and max_widget is not None:
                 use_max = bool(use_max_widget.isChecked())
@@ -1939,6 +1915,7 @@ class PeakFitController(object):
             self.widget.spinBox_DefaultFwhmMax.blockSignals(True)
             self.widget.spinBox_DefaultFwhmMax.setValue(float(fwhm_max))
             self.widget.spinBox_DefaultFwhmMax.blockSignals(False)
+        self._set_apply_peak_constraints_checked(True)
 
     def _apply_default_bounds_to_peak(self, peak):
         center = float(peak.get("center", 0.0))
@@ -1966,6 +1943,7 @@ class PeakFitController(object):
         peaks = self.model.current_section.peaks_in_queue
         for peak in peaks:
             self._apply_default_bounds_to_peak(peak)
+        self._set_apply_peak_constraints_checked(True)
         self.set_tableWidget_PkParams_unsaved()
         self.peakfit_table_ctrl.update_peak_constraints()
         if self._constraints_dialog is not None:

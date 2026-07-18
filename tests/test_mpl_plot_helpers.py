@@ -208,6 +208,47 @@ def test_update_impl_unchecks_show_cake_when_no_cake_image_exists():
     ctrl._plot_cake.assert_not_called()
 
 
+def test_peakfit_individual_profiles_are_yellow_and_total_remains_red():
+    canvas = MplCanvas()
+    canvas.resize_axes(30)
+    x = np.asarray([1.0, 2.0, 3.0])
+    section = SimpleNamespace(
+        x=x,
+        peaks_exist=lambda: False,
+        fitted=lambda: True,
+        get_individual_profiles=lambda bgsub=False: {
+            "p0_": np.asarray([0.0, 1.0, 0.0]),
+            "p1_": np.asarray([0.0, 0.5, 0.0]),
+        },
+        get_fit_profile=lambda bgsub=False: np.asarray([0.0, 1.5, 0.0]),
+        get_fit_residue=lambda bgsub=False: np.zeros(3),
+        get_fit_residue_baseline=lambda bgsub=False: np.zeros(3),
+        get_yrange=lambda bgsub=False: (0.0, 1.5),
+    )
+    ctrl = object.__new__(MplController)
+    ctrl.model = SimpleNamespace(
+        current_section=section,
+        current_section_exist=lambda: True,
+    )
+    ctrl.widget = SimpleNamespace(
+        mpl=SimpleNamespace(canvas=canvas),
+        checkBox_BgSub=SimpleNamespace(isChecked=lambda: False),
+        comboBox_BasePtnLineThickness=SimpleNamespace(currentText=lambda: "1.0"),
+    )
+    ctrl._peakfit_overlay_artists = []
+    ctrl._clear_selected_peak_marker = lambda: None
+    ctrl._clear_peak_center_markers = lambda: None
+
+    ctrl._plot_peakfit()
+
+    lines = canvas.ax_pattern.lines
+    assert len(lines) == 3
+    assert all(
+        mcolors.to_rgba(line.get_color()) == mcolors.to_rgba("yellow")
+        for line in lines[:2])
+    assert mcolors.to_rgba(lines[2].get_color()) == mcolors.to_rgba("red")
+
+
 class _LabelStub:
     def __init__(self):
         self.text = None
