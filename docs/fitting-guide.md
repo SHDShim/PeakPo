@@ -26,6 +26,7 @@ The Peak Fit process allows you to define specific ranges of interest (Sections)
     *   Physical parameter domains always apply: area, position, and FWHM are greater than zero, while \(0 \leq nL \leq 1\). These domains override conflicting optional limits.
 6.  **Execute Fit**:
     *   Click **Conduct Fitting** to optimize the peak parameters.
+    *   For a completed fit shown in the **Peak Fit** tab, observed 1D data are displayed as unconnected markers, the calculated total profile remains a red line, and individual peak profiles are shown at 50% opacity.
 7.  **Save Results**:
     *   Click **Save**. **Critical**: You must save the section results before they can be collected for a Unit Cell Fit.
 

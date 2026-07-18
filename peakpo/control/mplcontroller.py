@@ -2003,7 +2003,7 @@ class MplController(object):
                 x, y = self.diff_ctrl.get_display_pattern(x, y)
             except Exception:
                 pass
-        if gsas_style:
+        if gsas_style or self._fitted_peakfit_results_visible():
             pattern_line = self.widget.mpl.canvas.ax_pattern.plot(
                 x, y, c=color, marker='o',
                 linestyle='None', ms=1.5)[0]
@@ -2125,12 +2125,14 @@ class MplController(object):
             profiles = self.model.current_section.get_individual_profiles(
                 bgsub=bgsub)
             for key, value in profiles.items():
+                is_peak_component = str(key).startswith('p')
                 line = self.widget.mpl.canvas.ax_pattern.plot(
                     x_plot, value, ls='-',
-                    c='yellow' if str(key).startswith('p') else self.obj_color,
+                    c='yellow' if is_peak_component else self.obj_color,
                     lw=float(
                         self.widget.comboBox_BasePtnLineThickness.
-                        currentText()))[0]
+                        currentText()),
+                    alpha=0.5 if is_peak_component else 1.0)[0]
                 self._track_peakfit_artist(line)
             total_profile = self.model.current_section.get_fit_profile(
                 bgsub=bgsub)
@@ -2535,6 +2537,17 @@ class MplController(object):
                 pass
         # Backward-compatible fallback.
         return self.widget.tabWidget.currentIndex() in (4, 5)
+
+    def _fitted_peakfit_results_visible(self):
+        """Whether the active 1D plot is showing a completed peak fit."""
+        section = getattr(self.model, "current_section", None)
+        fitted = getattr(section, "fitted", None)
+        if not callable(fitted):
+            return False
+        try:
+            return bool(fitted()) and bool(self._fits_tab_active())
+        except Exception:
+            return False
 
     def update(self, limits=None, gsas_style=False, cake_ylimits=None):
         if limits is not None:

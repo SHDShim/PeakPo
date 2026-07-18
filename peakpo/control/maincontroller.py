@@ -1322,6 +1322,7 @@ class MainController(object):
         Read default setting
         """
         self.settings = QtCore.QSettings('DS', 'PeakPo')
+        self._migrate_legacy_plot_config_settings()
         # self.settings.setFallbacksEnabled(False)
         self.model.set_chi_path(self.settings.value('chi_path'))
         self.model.set_jcpds_path(self.settings.value('jcpds_path'))
@@ -1398,6 +1399,20 @@ class MainController(object):
                     self._peakfit_default_bounds_setting_defaults().get(attr))
         self._normalize_peakfit_default_bounds_settings()
         self._sync_toolbar_plot_checkboxes()
+
+    def _migrate_legacy_plot_config_settings(self):
+        """Preserve the dimming preference after the JCPDS control rename."""
+        legacy_key = "plot_cfg/jcpds_alpha_cake"
+        current_key = "plot_cfg/jcpds_dimming_factor"
+        try:
+            if (not self.settings.contains(current_key) and
+                    self.settings.contains(legacy_key)):
+                self.settings.setValue(current_key,
+                                       self.settings.value(legacy_key))
+        except Exception:
+            # A settings backend should not prevent the application from
+            # starting; the control's built-in default remains available.
+            pass
 
     def _plot_config_setting_bindings(self):
         return [

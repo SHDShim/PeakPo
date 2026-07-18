@@ -220,6 +220,7 @@ def test_peakfit_individual_profiles_are_yellow_and_total_remains_red():
         get_individual_profiles=lambda bgsub=False: {
             "p0_": np.asarray([0.0, 1.0, 0.0]),
             "p1_": np.asarray([0.0, 0.5, 0.0]),
+            "b_": np.asarray([0.1, 0.1, 0.1]),
         },
         get_fit_profile=lambda bgsub=False: np.asarray([0.0, 1.5, 0.0]),
         get_fit_residue=lambda bgsub=False: np.zeros(3),
@@ -237,17 +238,45 @@ def test_peakfit_individual_profiles_are_yellow_and_total_remains_red():
         comboBox_BasePtnLineThickness=SimpleNamespace(currentText=lambda: "1.0"),
     )
     ctrl._peakfit_overlay_artists = []
+    ctrl.obj_color = "white"
     ctrl._clear_selected_peak_marker = lambda: None
     ctrl._clear_peak_center_markers = lambda: None
 
     ctrl._plot_peakfit()
 
     lines = canvas.ax_pattern.lines
-    assert len(lines) == 3
+    assert len(lines) == 4
     assert all(
         mcolors.to_rgba(line.get_color()) == mcolors.to_rgba("yellow")
         for line in lines[:2])
-    assert mcolors.to_rgba(lines[2].get_color()) == mcolors.to_rgba("red")
+    assert all(np.isclose(line.get_alpha(), 0.5) for line in lines[:2])
+    assert np.isclose(lines[2].get_alpha(), 1.0)
+    assert mcolors.to_rgba(lines[3].get_color()) == mcolors.to_rgba("red")
+
+
+def test_fitted_peakfit_display_uses_observed_markers_without_lines():
+    canvas = MplCanvas()
+    canvas.resize_axes(30)
+    ctrl = object.__new__(MplController)
+    ctrl.model = SimpleNamespace(
+        base_ptn=SimpleNamespace(color="white"),
+        current_section=SimpleNamespace(fitted=lambda: True),
+    )
+    ctrl.widget = SimpleNamespace(
+        mpl=SimpleNamespace(canvas=canvas),
+        checkBox_BgSub=SimpleNamespace(isChecked=lambda: True),
+        comboBox_BasePtnLineThickness=SimpleNamespace(currentText=lambda: "1.0"),
+    )
+    ctrl.diff_ctrl = None
+    ctrl._pattern_xy = lambda: (np.asarray([1.0, 2.0]),
+                                np.asarray([3.0, 4.0]))
+    ctrl._fits_tab_active = lambda: True
+
+    ctrl._plot_diffpattern()
+
+    observed = canvas.ax_pattern.lines[0]
+    assert observed.get_marker() == "o"
+    assert observed.get_linestyle() == "None"
 
 
 def test_unfitted_peaks_plot_initial_profiles_without_gray_center_lines():
