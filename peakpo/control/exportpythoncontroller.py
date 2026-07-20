@@ -43,11 +43,7 @@ class ExportPythonController(object):
 
         stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         if folder_prefix is None:
-            chi_path = str(getattr(self.model, "chi_path", "") or "")
-            chi_name = os.path.splitext(os.path.basename(chi_path))[0].strip()
-            if chi_name == "":
-                chi_name = "peakpo"
-            folder_prefix = f"{chi_name}-pkpo-exports"
+            folder_prefix = self._default_folder_prefix()
         export_dir = os.path.join(out_root, f"{folder_prefix}-{stamp}")
         os.makedirs(export_dir, exist_ok=True)
 
@@ -87,6 +83,25 @@ class ExportPythonController(object):
             f"Folder:\n{export_dir}\n\n"
             "Run:\npython replot_peakpo_export.py",
         )
+
+    def _default_folder_prefix(self):
+        candidates = []
+        get_base = getattr(self.model, "get_base_ptn_filename", None)
+        if callable(get_base):
+            try:
+                candidates.append(get_base())
+            except Exception:
+                pass
+        base_ptn = getattr(self.model, "base_ptn", None)
+        candidates.append(getattr(base_ptn, "fname", None))
+
+        for candidate in candidates:
+            if candidate in (None, ""):
+                continue
+            data_name = os.path.splitext(os.path.basename(str(candidate)))[0].strip()
+            if data_name:
+                return data_name
+        return "peakpo"
 
     def _capture_figure(self, fig):
         arrays = {}
