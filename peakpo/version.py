@@ -4,8 +4,9 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.12.2.dev5"
+__version__ = "7.12.2"
 """
+7.12.2: release after series of changes.
 7.12.2.dev5: fix export data folder name.
 7.12.1zr: constraints global control.
 7.12.0: update peak fitting and unit cell refining instructions.
