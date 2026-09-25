@@ -21,7 +21,7 @@ from .peakfittablecontroller import PeakfitTableController
 from .cakemakecontroller import CakemakeController
 from ..utils import dialog_savefile, dialog_openfile_hide_param_dirs, \
     dialog_existing_directory_hide_param_dirs, convert_wl_to_energy, \
-    get_temp_dir, make_filename, extract_filename, basename_any
+    get_temp_dir, make_filename, extract_filename, basename_any, show_warning
 from ..compat_pickle import PeakPoCompatDillUnpickler
 from ..model.param_session_io import (
     save_model_to_param,
@@ -310,7 +310,7 @@ class SessionController(object):
         )
         missing_csv = meta.get("missing_section_csv_files", []) or []
         if missing_csv:
-            QtWidgets.QMessageBox.warning(
+            show_warning(
                 self.widget, "Missing Section CSV",
                 "Some saved section CSV files were missing, so those sections "
                 "were skipped.\n\n"
@@ -774,7 +774,7 @@ class SessionController(object):
             )
         fallback_wf = meta.get("fallback_waterfall_files", []) or []
         if fallback_wf:
-            QtWidgets.QMessageBox.warning(
+            show_warning(
                 self.widget, "Waterfall Fallback Used",
                 "Some waterfall files were missing at their original paths.\n"
                 "PeakPo loaded fallback copies from PARAM/waterfall.\n\n"
@@ -838,7 +838,7 @@ class SessionController(object):
         )
         missing_csv = meta.get("missing_section_csv_files", []) or []
         if missing_csv:
-            QtWidgets.QMessageBox.warning(
+            show_warning(
                 self.widget, "Missing Section CSV",
                 "Some saved section CSV files were missing, so those sections "
                 "were skipped.\n\n"
@@ -847,7 +847,7 @@ class SessionController(object):
             )
         fallback_wf = meta.get("fallback_waterfall_files", []) or []
         if fallback_wf:
-            QtWidgets.QMessageBox.warning(
+            show_warning(
                 self.widget, "Waterfall Fallback Used",
                 "Some waterfall files were missing at their original paths.\n"
                 "PeakPo loaded fallback copies from PARAM/waterfall.\n\n"

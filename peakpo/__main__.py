@@ -70,6 +70,7 @@ def _verify_navigation_boundary(data_dir):
 
     from .control.maincontroller import MainController
     from .utils import get_sorted_filelist
+    from .utils.pyqtutils import CheckboxIndicatorStyle
 
     data_dir = os.path.abspath(data_dir)
     files = get_sorted_filelist(
@@ -79,7 +80,9 @@ def _verify_navigation_boundary(data_dir):
         return 2
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    app.setStyle("Fusion")
+    app._peakpo_style = CheckboxIndicatorStyle(
+        QtWidgets.QStyleFactory.create("Fusion"))
+    app.setStyle(app._peakpo_style)
     controller = MainController()
     window = controller.widget
     window.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
@@ -95,6 +98,27 @@ def _verify_navigation_boundary(data_dir):
     popup = getattr(window, "_peakpo_warning_popup", None)
     passed = bool(
         controller.model.base_ptn_exist()
+        and controller.model.base_ptn.fname == before
+        and popup is not None
+        and popup.parent() is window.centralWidget()
+    )
+    for expected in files[1:]:
+        window.pushButton_NextBasePtn.click()
+        app.processEvents()
+        passed = passed and os.path.samefile(
+            controller.model.base_ptn.fname, expected)
+    for expected in reversed(files[:-1]):
+        window.pushButton_PrevBasePtn.click()
+        app.processEvents()
+        passed = passed and os.path.samefile(
+            controller.model.base_ptn.fname, expected)
+
+    before = controller.model.base_ptn.fname
+    window.pushButton_PrevBasePtn.click()
+    app.processEvents()
+    popup = getattr(window, "_peakpo_warning_popup", None)
+    passed = bool(
+        passed
         and controller.model.base_ptn.fname == before
         and popup is not None
         and popup.parent() is window.centralWidget()

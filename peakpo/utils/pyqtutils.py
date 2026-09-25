@@ -75,19 +75,18 @@ class SpinBoxFixStyle(QtWidgets.QProxyStyle):
 
 
 def apply_spinbox_fix_style(spinbox):
-    """Install and retain a Python-owned proxy style on a spin box."""
-    base_style = QtWidgets.QStyleFactory.create("Fusion")
-    style = (
-        SpinBoxFixStyle(base_style)
-        if base_style is not None
-        else SpinBoxFixStyle()
-    )
-    spinbox._peakpo_spinbox_fix_style = style
-    spinbox.setStyle(style)
-    return style
+    """Use the application style for spin boxes without per-widget proxies.
+
+    Dynamic table cell widgets are destroyed and recreated during file
+    navigation. A Python-owned QProxyStyle attached to each cell can outlive
+    the C++ widget (or vice versa) while a paint event is pending. PeakPo's
+    application style includes :class:`SpinBoxFixStyle`, so inheriting that
+    shared style provides the same behavior without unsafe ownership cycles.
+    """
+    return spinbox.style()
 
 
-class CheckboxIndicatorStyle(QtWidgets.QProxyStyle):
+class CheckboxIndicatorStyle(SpinBoxFixStyle):
     """Draw checkboxes as a bordered square with an inset checked core."""
 
     ACCENT_FILL = "#bfbfbf"

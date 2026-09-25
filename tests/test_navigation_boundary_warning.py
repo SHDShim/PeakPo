@@ -141,11 +141,12 @@ def test_prev_button_without_valid_pattern_uses_safe_warning(monkeypatch):
     window.close()
 
 
-def test_spinbox_retains_python_proxy_style_after_garbage_collection():
+def test_spinbox_uses_shared_application_style_after_garbage_collection():
     spinbox = QtWidgets.QDoubleSpinBox()
-    apply_spinbox_fix_style(spinbox)
+    inherited_style = apply_spinbox_fix_style(spinbox)
 
     gc.collect()
 
-    assert spinbox.style() is spinbox._peakpo_spinbox_fix_style
+    assert spinbox.style() is inherited_style
+    assert not hasattr(spinbox, "_peakpo_spinbox_fix_style")
     spinbox.close()
