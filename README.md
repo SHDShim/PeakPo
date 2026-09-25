@@ -121,9 +121,19 @@ python -m peakpo
 [Installation Google Slides](https://docs.google.com/presentation/d/11nTraMvenpO7E3Cg7NAH2Qa4UpTwjJVcexdU-CPNE9Q/edit?usp=sharing) 
 
 
-## Where to download executables
+## Standalone downloads
 
-I no longer provide executable files. You can still download previous versions from [this Google Drive folder](https://drive.google.com/drive/folders/0B0kkQLbYpQDYfjBGT21uMkx5cU1JMHJIUUhGR1FkdDVUdzFYVUdKR0Zya2NRcFYtUmRVUGM?resourcekey=0-FT-Lc6ZeuUBMaqHzzjZSbg&usp=sharing).
+GitHub Actions builds standalone PeakPo bundles for Windows, macOS, and Linux.
+Tagged versions are attached to the corresponding
+[GitHub release](https://github.com/SHDShim/PeakPo/releases). Development builds
+can be downloaded from the workflow run's **Artifacts** section.
+
+The standalone bundles are not code-signed. Windows SmartScreen and macOS
+Gatekeeper may therefore ask for confirmation before first launch. The PyPI
+installation described above remains the recommended option.
+
+See [GitHub builds](docs/github-builds.md) for artifact names and release
+instructions.
 
 ## Where to get help
 

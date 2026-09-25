@@ -1,0 +1,182 @@
+name: Build distributions
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  python-distributions:
+    name: Python distributions
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: bundling/requirements-build.txt
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r bundling/requirements-build.txt
+
+      - name: Read package version
+        id: version
+        shell: python
+        run: |
+          import os
+          from peakpo.version import __version__
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"value={__version__}\n")
+
+      - name: Verify release tag
+        if: github.ref_type == 'tag'
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          PACKAGE_VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          python -c "import os; expected = 'v' + os.environ['PACKAGE_VERSION']; actual = os.environ['RELEASE_TAG']; assert actual == expected, f'tag {actual!r} does not match package version {expected!r}'"
+
+      - name: Build wheel and source distribution
+        run: python -m build
+
+      - name: Validate Python distributions
+        run: python -m twine check dist/peakpo-${{ steps.version.outputs.value }}*
+
+      - name: Upload Python distributions
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-distributions
+          path: |
+            dist/peakpo-${{ steps.version.outputs.value }}.tar.gz
+            dist/peakpo-${{ steps.version.outputs.value }}-py3-none-any.whl
+          if-no-files-found: error
+          retention-days: 30
+
+  standalone-executables:
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Linux x86_64
+            os: ubuntu-24.04
+            artifact: linux-x86_64
+          - label: Windows x86_64
+            os: windows-2025
+            artifact: windows-x86_64
+          - label: macOS Apple Silicon
+            os: macos-15
+            artifact: macos-arm64
+          - label: macOS Intel
+            os: macos-15-intel
+            artifact: macos-x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            setup.py
+            bundling/requirements-build.txt
+
+      - name: Install PeakPo and build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install . -r bundling/requirements-build.txt
+
+      - name: Read package version
+        id: version
+        shell: python
+        run: |
+          import os
+          from peakpo.version import __version__
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"value={__version__}\n")
+
+      - name: Build standalone application
+        env:
+          MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
+          QT_QPA_PLATFORM: offscreen
+        run: python -m PyInstaller --clean --noconfirm bundling/peakpo.spec
+
+      - name: Smoke-test Linux executable
+        if: runner.os == 'Linux'
+        run: test "$(dist/PeakPo/PeakPo --version)" = "${{ steps.version.outputs.value }}"
+
+      - name: Smoke-test Windows executable
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $actual = & "dist/PeakPo/PeakPo.exe" --version
+          if ($actual -ne "${{ steps.version.outputs.value }}") {
+            throw "Expected version ${{ steps.version.outputs.value }}, received $actual"
+          }
+
+      - name: Smoke-test macOS executable
+        if: runner.os == 'macOS'
+        run: test "$(dist/PeakPo.app/Contents/MacOS/PeakPo --version)" = "${{ steps.version.outputs.value }}"
+
+      - name: Archive Linux application
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p release
+          tar -C dist -czf "release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.tar.gz" PeakPo
+
+      - name: Archive Windows application
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+          Compress-Archive -Path "dist/PeakPo" -DestinationPath "release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.zip"
+
+      - name: Archive macOS application
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p release
+          ditto -c -k --sequesterRsrc --keepParent dist/PeakPo.app "release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.zip"
+
+      - name: Upload standalone application
+        uses: actions/upload-artifact@v7
+        with:
+          name: PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}
+          path: release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.*
+          if-no-files-found: error
+          retention-days: 30
+
+  github-release:
+    name: Create GitHub release
+    if: github.ref_type == 'tag'
+    needs:
+      - python-distributions
+      - standalone-executables
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download all distributions
+        uses: actions/download-artifact@v8
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish GitHub release assets
+        uses: softprops/action-gh-release@v3
+        with:
+          files: release-assets/*
+          fail_on_unmatched_files: true
+          generate_release_notes: true

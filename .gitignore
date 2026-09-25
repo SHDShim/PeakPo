@@ -48,14 +48,18 @@ qt.conf
 *~
 
 # =========================
-# Git
+# GitHub configuration
 # =========================
-.github/
+# Keep local GitHub agent files private, but track CI workflows.
+.github/*
+!.github/workflows/
+!.github/workflows/*.yml
 
 # =========================
 # opencode configuration
 # =========================
 .opencode/
+.kilo/
 
 # Codex memory / sessions
 .codex/
