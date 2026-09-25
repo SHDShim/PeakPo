@@ -34,9 +34,10 @@ jobs:
         shell: python
         run: |
           import os
-          from peakpo.version import __version__
+          import runpy
+          version = runpy.run_path("peakpo/version.py")["__version__"]
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
-              output.write(f"value={__version__}\n")
+              output.write(f"value={version}\n")
 
       - name: Verify release tag
         if: github.ref_type == 'tag'
@@ -104,9 +105,10 @@ jobs:
         shell: python
         run: |
           import os
-          from peakpo.version import __version__
+          import runpy
+          version = runpy.run_path("peakpo/version.py")["__version__"]
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
-              output.write(f"value={__version__}\n")
+              output.write(f"value={version}\n")
 
       - name: Build standalone application
         env:
