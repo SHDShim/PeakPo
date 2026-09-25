@@ -3,9 +3,28 @@ import os.path
 import re
 import glob
 import fnmatch
+import sys
 from .fileutils import extract_extension
 
 _FILECHOOSER_JCPDS_FILTER_SETTING = "filechooser/jcpds_filter_mode"
+
+
+def show_warning(parent, title, text):
+    """Show a warning without using the crash-prone native macOS alert."""
+    box = QtWidgets.QMessageBox(parent)
+    box.setIcon(QtWidgets.QMessageBox.Warning)
+    box.setWindowTitle(title)
+    box.setText(text)
+    box.setStandardButtons(QtWidgets.QMessageBox.Ok)
+    if sys.platform == "darwin":
+        option = getattr(
+            getattr(QtWidgets.QMessageBox, "Option", None),
+            "DontUseNativeDialog",
+            None,
+        )
+        if option is not None:
+            box.setOption(option, True)
+    return box.exec()
 
 
 class _HideParamFoldersProxyModel(QtCore.QSortFilterProxyModel):

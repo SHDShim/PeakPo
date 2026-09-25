@@ -95,6 +95,7 @@ jobs:
           cache-dependency-path: |
             setup.py
             bundling/requirements-build.txt
+            bundling/constraints-frozen.txt
 
       - name: Install Linux desktop runtime libraries
         if: runner.os == 'Linux'
@@ -118,7 +119,7 @@ jobs:
           ARCHFLAGS: ${{ matrix.archflags }}
         run: |
           python -m pip install --upgrade pip
-          python -m pip install . -r bundling/requirements-build.txt
+          python -m pip install . -r bundling/requirements-build.txt -c bundling/constraints-frozen.txt
 
       - name: Read package version
         id: version
@@ -160,6 +161,7 @@ jobs:
         run: |
           test "$(dist/PeakPo.app/Contents/MacOS/PeakPo --version)" = "${{ steps.version.outputs.value }}"
           dist/PeakPo.app/Contents/MacOS/PeakPo --verify-rendering
+          dist/PeakPo.app/Contents/MacOS/PeakPo --verify-warning-dialog
 
       - name: Build Linux installer
         if: runner.os == 'Linux'

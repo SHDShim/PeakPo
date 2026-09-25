@@ -33,7 +33,7 @@ from .sequencecontroller import SequenceController
 from .plotinteractioncontroller import PlotInteractionController
 from ..utils import dialog_savefile, writechi, convert_wl_to_energy, \
     get_sorted_filelist, find_from_filelist, make_filename, \
-    get_directory, get_temp_dir
+    get_directory, get_temp_dir, show_warning
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
 from ..ds_jcpds import UnitCell
@@ -2341,8 +2341,7 @@ class MainController(object):
                                          self.model.base_ptn.fname)[1])
 
         if idx_chi == -1:
-            QtWidgets.QMessageBox.warning(
-                self.widget, "Warning", "Cannot find current file")
+            show_warning(self.widget, "Warning", "Cannot find current file")
             return  # added newly
 
         step = self.widget.spinBox_FileStep.value()
@@ -2353,26 +2352,26 @@ class MainController(object):
         elif move == 'last':
             idx_chi_new = filelist_chi.__len__() - 1
             if idx_chi == idx_chi_new:
-                QtWidgets.QMessageBox.warning(
+                show_warning(
                     self.widget, "Warning", "It is already the last file.")
                 return
         elif move == 'first':
             idx_chi_new = 0
             if idx_chi == idx_chi_new:
-                QtWidgets.QMessageBox.warning(
+                show_warning(
                     self.widget, "Warning", "It is already the first file.")
                 return
 
         if idx_chi_new > filelist_chi.__len__() - 1:
             idx_chi_new = filelist_chi.__len__() - 1
             if idx_chi == idx_chi_new:
-                QtWidgets.QMessageBox.warning(
+                show_warning(
                     self.widget, "Warning", "It is already the last file.")
                 return
         if idx_chi_new < 0:
             idx_chi_new = 0
             if idx_chi == idx_chi_new:
-                QtWidgets.QMessageBox.warning(
+                show_warning(
                     self.widget, "Warning", "It is already the first file.")
                 return
         new_filename_chi = filelist_chi[idx_chi_new]
@@ -2384,9 +2383,8 @@ class MainController(object):
             self.plot_ctrl.update()
             self._schedule_roi_overlays_after_plot_update(flush_pending=True)
         else:
-            QtWidgets.QMessageBox.warning(self.widget, "Warning",
-                                          new_filename_chi +
-                                          " does not exist.")
+            show_warning(
+                self.widget, "Warning", new_filename_chi + " does not exist.")
 
     def _goto_dpp_next_file(self, move):
 
@@ -2407,13 +2405,13 @@ class MainController(object):
                                      dpp_filen)
 
         if idx_chi == -1:
-            QtWidgets.QMessageBox.warning(
+            show_warning(
                 self.widget, "Warning", "Cannot find current chi file")
             return  # added newly
 
         # for radioButton_NavDPP
         if idx_dpp == -1:
-            QtWidgets.QMessageBox.warning(
+            show_warning(
                 self.widget, "Warning",
                 "Cannot find current dpp file.\n" +
                 "Manually save one for current chi file first.")
@@ -2427,25 +2425,25 @@ class MainController(object):
         elif move == 'last':
             idx_chi_new = filelist_chi.__len__() - 1
             if idx_chi == idx_chi_new:
-                QtWidgets.QMessageBox.warning(
+                show_warning(
                     self.widget, "Warning", "It is already the last file.")
                 return
         elif move == 'first':
             idx_chi_new = 0
             if idx_chi == idx_chi_new:
-                QtWidgets.QMessageBox.warning(
+                show_warning(
                     self.widget, "Warning", "It is already the first file.")
                 return
         if idx_chi_new > filelist_chi.__len__() - 1:
             idx_chi_new = filelist_chi.__len__() - 1
             if idx_chi == idx_chi_new:
-                QtWidgets.QMessageBox.warning(
+                show_warning(
                     self.widget, "Warning", "It is already the last file.")
                 return
         if idx_chi_new < 0:
             idx_chi_new = 0
             if idx_chi == idx_chi_new:
-                QtWidgets.QMessageBox.warning(
+                show_warning(
                     self.widget, "Warning", "It is already the first file.")
                 return
 

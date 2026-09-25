@@ -40,7 +40,7 @@ explicit release step.
 Use Python 3.11 in a clean environment:
 
 ```bash
-python -m pip install . -r bundling/requirements-build.txt
+python -m pip install . -r bundling/requirements-build.txt -c bundling/constraints-frozen.txt
 python -m PyInstaller --clean --noconfirm bundling/peakpo.spec
 ```
 
@@ -59,4 +59,11 @@ offscreen and verifies that its dark-mode axes remain visible:
 
 ```bash
 dist/PeakPo/PeakPo --verify-rendering
+```
+
+On macOS, the workflow also exercises the warning shown when navigation reaches
+the final file. This guards against native Qt dialog regressions in frozen apps:
+
+```bash
+dist/PeakPo.app/Contents/MacOS/PeakPo --verify-warning-dialog
 ```

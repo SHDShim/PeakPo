@@ -16,6 +16,7 @@ from .dialogs import (
     dialog_openfile_hide_param_dirs,
     dialog_openfiles_hide_param_dirs,
     dialog_existing_directory_hide_param_dirs,
+    show_warning,
     ErrorMessageBox,
     InformationBox,
 )
