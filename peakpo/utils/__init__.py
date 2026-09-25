@@ -1,6 +1,7 @@
 from .pyqtutils import (
     undo_button_press,
     SpinBoxFixStyle,
+    apply_spinbox_fix_style,
     align_spinbox_right,
     align_all_spinboxes_right,
 )

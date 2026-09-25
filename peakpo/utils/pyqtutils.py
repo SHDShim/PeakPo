@@ -74,6 +74,19 @@ class SpinBoxFixStyle(QtWidgets.QProxyStyle):
         return super().subControlRect(cc, option, sc, widget)
 
 
+def apply_spinbox_fix_style(spinbox):
+    """Install and retain a Python-owned proxy style on a spin box."""
+    base_style = QtWidgets.QStyleFactory.create("Fusion")
+    style = (
+        SpinBoxFixStyle(base_style)
+        if base_style is not None
+        else SpinBoxFixStyle()
+    )
+    spinbox._peakpo_spinbox_fix_style = style
+    spinbox.setStyle(style)
+    return style
+
+
 class CheckboxIndicatorStyle(QtWidgets.QProxyStyle):
     """Draw checkboxes as a bordered square with an inset checked core."""
 

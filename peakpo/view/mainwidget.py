@@ -13,7 +13,11 @@ from .ui_policy import (
     set_button_height,
     set_toolbar_compact_width,
 )
-from ..utils import SpinBoxFixStyle, align_all_spinboxes_right, align_spinbox_right
+from ..utils import (
+    apply_spinbox_fix_style,
+    align_all_spinboxes_right,
+    align_spinbox_right,
+)
 from ..version import __version__
 from ..citation import __citation__
 from ..utils import InformationBox
@@ -116,7 +120,7 @@ class ToolbarTumblerDoubleSpinBox(QtWidgets.QDoubleSpinBox):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setKeyboardTracking(False)
-        self.setStyle(SpinBoxFixStyle())
+        apply_spinbox_fix_style(self)
         self.setFrame(False)
         self.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
         self.setAlignment(QtCore.Qt.AlignCenter)
@@ -126,7 +130,7 @@ class ToolbarTumblerSpinBox(QtWidgets.QSpinBox):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setKeyboardTracking(False)
-        self.setStyle(SpinBoxFixStyle())
+        apply_spinbox_fix_style(self)
         self.setFrame(False)
         self.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons)
         self.setAlignment(QtCore.Qt.AlignCenter)
@@ -171,23 +175,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.doubleSpinBox_JCPDSStep.setDisabled(True)
         """
         self.doubleSpinBox_JCPDSStep.setKeyboardTracking(False)
-        self.doubleSpinBox_JCPDSStep.setStyle(SpinBoxFixStyle())
+        apply_spinbox_fix_style(self.doubleSpinBox_JCPDSStep)
         self.doubleSpinBox_Pressure.setKeyboardTracking(False)
-        self.doubleSpinBox_Pressure.setStyle(SpinBoxFixStyle())
+        apply_spinbox_fix_style(self.doubleSpinBox_Pressure)
         self.doubleSpinBox_Temperature.setKeyboardTracking(False)
-        self.doubleSpinBox_Temperature.setStyle(SpinBoxFixStyle())
+        apply_spinbox_fix_style(self.doubleSpinBox_Temperature)
         self.spinBox_BGParam0.setKeyboardTracking(False)
         self.spinBox_BGParam1.setKeyboardTracking(False)
         self.spinBox_BGParam2.setKeyboardTracking(False)
-        self.spinBox_BGParam0.setStyle(SpinBoxFixStyle())
-        self.spinBox_BGParam1.setStyle(SpinBoxFixStyle())
-        self.spinBox_BGParam2.setStyle(SpinBoxFixStyle())
+        apply_spinbox_fix_style(self.spinBox_BGParam0)
+        apply_spinbox_fix_style(self.spinBox_BGParam1)
+        apply_spinbox_fix_style(self.spinBox_BGParam2)
         self.doubleSpinBox_Background_ROI_max.setKeyboardTracking(False)
         self.doubleSpinBox_Background_ROI_min.setKeyboardTracking(False)
-        self.doubleSpinBox_Background_ROI_max.setStyle(SpinBoxFixStyle())
-        self.doubleSpinBox_Background_ROI_min.setStyle(SpinBoxFixStyle())
+        apply_spinbox_fix_style(self.doubleSpinBox_Background_ROI_max)
+        apply_spinbox_fix_style(self.doubleSpinBox_Background_ROI_min)
         self.doubleSpinBox_SetWavelength.setKeyboardTracking(False)
-        self.doubleSpinBox_SetWavelength.setStyle(SpinBoxFixStyle())
+        apply_spinbox_fix_style(self.doubleSpinBox_SetWavelength)
         linethicknesses = ['0', '0.1', '0.2', '0.5', '0.75',
                            '1', '1.5', '2', '3', '4', '5']
         self.comboBox_BasePtnLineThickness.addItems(linethicknesses)
@@ -925,7 +929,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             bar = tab_widget.tabBar()
             bar.setStyleSheet("")
             bar.setExpanding(False)
-            tab_style = _NoClipTabStyle(bar.style())
+            base_style = QtWidgets.QStyleFactory.create("Fusion")
+            tab_style = (
+                _NoClipTabStyle(base_style)
+                if base_style is not None
+                else _NoClipTabStyle()
+            )
             self._tabbar_styles.append(tab_style)
             bar.setStyle(tab_style)
 
@@ -1258,7 +1267,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.spinBox_TitleFontSize.setValue(12)
         self.spinBox_TitleFontSize.setMinimumHeight(25)
         self.spinBox_TitleFontSize.setKeyboardTracking(False)
-        self.spinBox_TitleFontSize.setStyle(SpinBoxFixStyle())
+        apply_spinbox_fix_style(self.spinBox_TitleFontSize)
 
         self.label_TitleMaxLength = QtWidgets.QLabel("Max length", self.groupBox_TitleConfig)
         self.label_TitleMaxLength.setObjectName("label_TitleMaxLength")
@@ -1269,7 +1278,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.spinBox_TitleMaxLength.setValue(140)
         self.spinBox_TitleMaxLength.setMinimumHeight(25)
         self.spinBox_TitleMaxLength.setKeyboardTracking(False)
-        self.spinBox_TitleMaxLength.setStyle(SpinBoxFixStyle())
+        apply_spinbox_fix_style(self.spinBox_TitleMaxLength)
 
         self.gridLayout_TitleConfig.addWidget(self.label_TitleFontSize, 0, 2, 1, 1)
         self.gridLayout_TitleConfig.addWidget(self.spinBox_TitleFontSize, 0, 3, 1, 1)
@@ -1566,7 +1575,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.doubleSpinBox_ToolbarPStep.setSingleStep(self.doubleSpinBox_PStep.singleStep())
         self.doubleSpinBox_ToolbarPStep.setValue(self.doubleSpinBox_PStep.value())
         self.doubleSpinBox_ToolbarPStep.setKeyboardTracking(False)
-        self.doubleSpinBox_ToolbarPStep.setStyle(SpinBoxFixStyle())
+        apply_spinbox_fix_style(self.doubleSpinBox_ToolbarPStep)
         self.doubleSpinBox_ToolbarPStep.setMinimumHeight(28)
         self.doubleSpinBox_ToolbarPStep.setMaximumHeight(28)
         self.doubleSpinBox_ToolbarPStep.setAlignment(
@@ -1577,7 +1586,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.spinBox_ToolbarTStep.setSingleStep(self.spinBox_TStep.singleStep())
         self.spinBox_ToolbarTStep.setValue(self.spinBox_TStep.value())
         self.spinBox_ToolbarTStep.setKeyboardTracking(False)
-        self.spinBox_ToolbarTStep.setStyle(SpinBoxFixStyle())
+        apply_spinbox_fix_style(self.spinBox_ToolbarTStep)
         self.spinBox_ToolbarTStep.setMinimumHeight(28)
         self.spinBox_ToolbarTStep.setMaximumHeight(28)
         self.spinBox_ToolbarTStep.setAlignment(

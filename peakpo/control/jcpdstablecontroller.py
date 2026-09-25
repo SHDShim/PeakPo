@@ -1,7 +1,7 @@
 from qtpy import QtWidgets
 from qtpy import QtCore
 from qtpy import QtGui
-from ..utils import SpinBoxFixStyle
+from ..utils import apply_spinbox_fix_style
 from .mplcontroller import MplController
 
 
@@ -151,8 +151,8 @@ class JcpdsTableController(object):
                     "value", phase.twk_v0)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.valueChanged.\
                     connect(self._handle_doubleSpinBoxChanged)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setStyle(
-                    SpinBoxFixStyle())
+                apply_spinbox_fix_style(
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk)
                 self.widget.tableWidget_JCPDS.setCellWidget(
                     row, self.COL_V0, self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_V0twk.setFocusPolicy(
@@ -186,8 +186,8 @@ class JcpdsTableController(object):
                 self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.\
                     valueChanged.connect(
                         self._handle_doubleSpinBoxChanged)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.setStyle(
-                    SpinBoxFixStyle())
+                apply_spinbox_fix_style(
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk)
                 self.widget.tableWidget_JCPDS.setCellWidget(
                     row, self.COL_BA, self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_b_atwk.\
@@ -219,8 +219,8 @@ class JcpdsTableController(object):
                 self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.\
                     valueChanged.connect(
                         self._handle_doubleSpinBoxChanged)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.setStyle(
-                    SpinBoxFixStyle())
+                apply_spinbox_fix_style(
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk)
                 self.widget.tableWidget_JCPDS.setCellWidget(
                     row, self.COL_CA, self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_c_atwk.\
@@ -242,8 +242,8 @@ class JcpdsTableController(object):
                 "value", phase.twk_int)
             self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.valueChanged.\
                 connect(self._handle_doubleSpinBoxChanged)
-            self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setStyle(
-                SpinBoxFixStyle())
+            apply_spinbox_fix_style(
+                self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk)
             self.widget.tableWidget_JCPDS.setCellWidget(
                 row, self.COL_INT, self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk)
             self.widget.tableWidget_JCPDS_doubleSpinBox_inttwk.setFocusPolicy(
@@ -271,8 +271,8 @@ class JcpdsTableController(object):
                     "value", phase.twk_k0)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.valueChanged.\
                     connect(self._handle_doubleSpinBoxChanged)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setStyle(
-                    SpinBoxFixStyle())
+                apply_spinbox_fix_style(
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk)
                 self.widget.tableWidget_JCPDS.setCellWidget(
                     row, self.COL_K0, self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_K0twk.setFocusPolicy(
@@ -299,8 +299,8 @@ class JcpdsTableController(object):
                     "value", phase.twk_k0p)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.valueChanged.\
                     connect(self._handle_doubleSpinBoxChanged)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setStyle(
-                    SpinBoxFixStyle())
+                apply_spinbox_fix_style(
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk)
                 self.widget.tableWidget_JCPDS.setCellWidget(
                     row, self.COL_K0P, self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_K0ptwk.setFocusPolicy(
@@ -329,8 +329,8 @@ class JcpdsTableController(object):
                     "value", phase.twk_thermal_expansion)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
                     valueChanged.connect(self._handle_doubleSpinBoxChanged)
-                self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.setStyle(
-                    SpinBoxFixStyle())
+                apply_spinbox_fix_style(
+                    self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk)
                 self.widget.tableWidget_JCPDS_doubleSpinBox_alpha0twk.\
                     setFocusPolicy(QtCore.Qt.StrongFocus)
                 self.widget.tableWidget_JCPDS.setCellWidget(

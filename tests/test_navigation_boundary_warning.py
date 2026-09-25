@@ -2,13 +2,16 @@ import os
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+import gc
 from types import SimpleNamespace
 
+import pytest
 from qtpy import QtWidgets
 
 from peakpo.control import maincontroller
 from peakpo.control.maincontroller import MainController
 from peakpo.utils import dialogs
+from peakpo.utils import apply_spinbox_fix_style
 
 
 _APP = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -30,8 +33,16 @@ class _Checked:
         return self._checked
 
 
-def test_next_at_last_chi_file_shows_warning_without_loading(monkeypatch, tmp_path):
-    chi_file = tmp_path / "last.chi"
+@pytest.mark.parametrize(
+    ("move", "message"),
+    [
+        ("previous", "It is already the first file."),
+        ("next", "It is already the last file."),
+    ],
+)
+def test_chi_navigation_boundary_shows_warning_without_loading(
+        monkeypatch, tmp_path, move, message):
+    chi_file = tmp_path / "only.chi"
     chi_file.write_text("", encoding="utf-8")
     controller = MainController.__new__(MainController)
     controller.widget = SimpleNamespace(
@@ -49,9 +60,9 @@ def test_next_at_last_chi_file_shows_warning_without_loading(monkeypatch, tmp_pa
     monkeypatch.setattr(
         maincontroller, "show_warning", lambda *args: warnings.append(args[2]))
 
-    controller._goto_chi_next_file("next")
+    controller._goto_chi_next_file(move)
 
-    assert warnings == ["It is already the last file."]
+    assert warnings == [message]
 
 
 def test_macos_warning_disables_native_dialog(monkeypatch):
@@ -68,3 +79,13 @@ def test_macos_warning_disables_native_dialog(monkeypatch):
     dialogs.show_warning(None, "Warning", "It is already the last file.")
 
     assert observed == {"non_native": True}
+
+
+def test_spinbox_retains_python_proxy_style_after_garbage_collection():
+    spinbox = QtWidgets.QDoubleSpinBox()
+    apply_spinbox_fix_style(spinbox)
+
+    gc.collect()
+
+    assert spinbox.style() is spinbox._peakpo_spinbox_fix_style
+    spinbox.close()

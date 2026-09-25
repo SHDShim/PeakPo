@@ -2,7 +2,7 @@ import os
 from qtpy import QtWidgets
 from qtpy import QtCore
 from qtpy import QtGui
-from ..utils import SpinBoxFixStyle, extract_filename
+from ..utils import apply_spinbox_fix_style, extract_filename
 from .mplcontroller import MplController
 
 
@@ -79,8 +79,8 @@ class WaterfallTableController(object):
             self.widget.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
                 valueChanged.connect(
                     self._handle_doubleSpinBoxChanged)
-            self.widget.tableWidget_wfPatterns_doubleSpinBox_wavelength.\
-                setStyle(SpinBoxFixStyle())
+            apply_spinbox_fix_style(
+                self.widget.tableWidget_wfPatterns_doubleSpinBox_wavelength)
             self.widget.tableWidget_wfPatterns.setCellWidget(
                 row, 2,
                 self.widget.tableWidget_wfPatterns_doubleSpinBox_wavelength)

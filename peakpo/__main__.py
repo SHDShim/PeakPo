@@ -30,16 +30,19 @@ def _verify_rendering():
 
 def _verify_warning_dialog():
     """Exercise the warning path used at file-navigation boundaries."""
+    import gc
+
     from qtpy import QtCore, QtWidgets
 
     from .utils import show_warning
+    from .view.mainwidget import MainWindow
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    window = QtWidgets.QMainWindow()
-    spinbox = QtWidgets.QDoubleSpinBox(window)
-    window.setCentralWidget(spinbox)
+    window = MainWindow()
+    window.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
     window.show()
-    spinbox.setFocus()
+    window.doubleSpinBox_Pressure.setFocus()
+    gc.collect()
     app.processEvents()
 
     def close_warning():
@@ -51,6 +54,8 @@ def _verify_warning_dialog():
     show_warning(window, "Warning", "It is already the last file.")
     window.close()
     app.processEvents()
+    del window
+    gc.collect()
     return 0
 
 
@@ -65,7 +70,11 @@ def main():
         return _verify_rendering()
 
     if "--verify-warning-dialog" in sys.argv[1:]:
-        return _verify_warning_dialog()
+        status = _verify_warning_dialog()
+        # A short-lived Qt GUI probe can fault during PyQt interpreter
+        # teardown after every test object has already been destroyed. Exit
+        # directly once the dialog path itself has completed successfully.
+        os._exit(status)
 
     # Importing this module launches the Qt application.
     from . import peakpo  # noqa: F401

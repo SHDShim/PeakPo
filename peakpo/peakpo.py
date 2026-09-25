@@ -122,7 +122,7 @@ from .utils import ErrorMessageBox
 from .control import MainController
 from .utils.pyqtutils import CheckboxIndicatorStyle
 
-app.setStyle(CheckboxIndicatorStyle(app.style()))
+app.setStyle(CheckboxIndicatorStyle(QtWidgets.QStyleFactory.create('Fusion')))
 
 
 # ========================================
