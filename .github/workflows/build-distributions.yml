@@ -162,6 +162,11 @@ jobs:
           test "$(dist/PeakPo.app/Contents/MacOS/PeakPo --version)" = "${{ steps.version.outputs.value }}"
           dist/PeakPo.app/Contents/MacOS/PeakPo --verify-rendering
           dist/PeakPo.app/Contents/MacOS/PeakPo --verify-warning-dialog
+          nav_test_dir="${RUNNER_TEMP}/peakpo-navigation"
+          mkdir -p "$nav_test_dir"
+          cp tests/fixtures/navigation/only.chi "$nav_test_dir/"
+          dist/PeakPo.app/Contents/MacOS/PeakPo \
+            --verify-navigation-boundary "$nav_test_dir"
 
       - name: Build Linux installer
         if: runner.os == 'Linux'

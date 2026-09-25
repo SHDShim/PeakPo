@@ -118,6 +118,29 @@ def test_first_file_navigation_uses_focus_preserving_popup(
     window.close()
 
 
+def test_prev_button_without_valid_pattern_uses_safe_warning(monkeypatch):
+    window = QtWidgets.QMainWindow()
+    button = QtWidgets.QPushButton("Prev", window)
+    window.setCentralWidget(button)
+    window.show()
+
+    controller = MainController.__new__(MainController)
+    controller.widget = window
+    controller.model = SimpleNamespace(base_ptn_exist=lambda: False)
+    button.clicked.connect(lambda: controller.goto_next_file("previous"))
+
+    warnings = []
+    monkeypatch.setattr(
+        maincontroller,
+        "show_warning",
+        lambda *args: warnings.append(args[2]),
+    )
+    button.click()
+
+    assert warnings == ["Choose a base pattern first."]
+    window.close()
+
+
 def test_spinbox_retains_python_proxy_style_after_garbage_collection():
     spinbox = QtWidgets.QDoubleSpinBox()
     apply_spinbox_fix_style(spinbox)

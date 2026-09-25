@@ -2317,7 +2317,7 @@ class MainController(object):
         quick move to the next base pattern file
         """
         if not self.model.base_ptn_exist():
-            QtWidgets.QMessageBox.warning(
+            show_warning(
                 self.widget, "Warning", "Choose a base pattern first.")
             return
         use_dpp_nav = bool(
