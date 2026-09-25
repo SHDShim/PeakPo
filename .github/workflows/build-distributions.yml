@@ -205,7 +205,7 @@ jobs:
           $outputFilename = "PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}-setup"
           $isccArgs = @(
             '/DMyAppVersion="${{ steps.version.outputs.value }}"'
-            "--output-filename=$outputFilename"
+            "/F$outputFilename"
             "bundling/windows/peakpo.iss"
           )
           & $iscc @isccArgs
@@ -236,14 +236,22 @@ jobs:
           mkdir -p "$dmg_root" release
           ditto dist/PeakPo.app "$dmg_root/PeakPo.app"
           ln -s /Applications "$dmg_root/Applications"
-          hdiutil create \
-            -volname "PeakPo ${{ steps.version.outputs.value }}" \
-            -srcfolder "$dmg_root" \
-            -ov \
-            -format UDZO \
-            "release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.dmg"
-          hdiutil verify \
-            "release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.dmg"
+          dmg_path="release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.dmg"
+          for attempt in 1 2 3; do
+            if hdiutil create \
+              -volname "PeakPo ${{ steps.version.outputs.value }}" \
+              -srcfolder "$dmg_root" \
+              -ov \
+              -format UDZO \
+              "$dmg_path"; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            sleep 5
+          done
+          hdiutil verify "$dmg_path"
 
       - name: Upload standalone application
         uses: actions/upload-artifact@v7
