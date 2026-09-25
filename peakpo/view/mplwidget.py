@@ -23,19 +23,23 @@ class MplCanvas(FigureCanvasQTAgg):
     }
 
     def __init__(self):
-        self.fig = Figure()
-        self._apply_subplot_margins()
-
         self.bgColor = "black"
         self.objColor = "white"
         self._night_view = True
         self._current_h_cake = None
-        self._define_axes(1)
 
         try:
             mplstyle.use(_get_mplstyle_path("night.mplstyle"))
         except Exception:
             pass
+
+        # Load the theme before constructing the Figure and axes.  Matplotlib
+        # styles only affect artists created after ``style.use``; constructing
+        # black axes first can therefore leave default black spines and labels
+        # invisible in a clean frozen process.
+        self.fig = Figure()
+        self._apply_subplot_margins()
+        self._define_axes(1)
         self.fig.set_facecolor(self.bgColor)
 
         super().__init__(self.fig)
@@ -68,6 +72,8 @@ class MplCanvas(FigureCanvasQTAgg):
         self.ax_pattern.set_ylabel("Intensity (arbitrary unit)")
         self.ax_pattern.ticklabel_format(axis="y", style="sci", scilimits=(-2, 2))
         self.ax_pattern.get_yaxis().get_offset_text().set_position((-0.04, -0.1))
+        for ax in (self.ax_pattern, self.ax_cake):
+            self._update_axis_colors(ax, self.objColor)
         # The pattern axis owns the shared two-theta labels.  Apply this every
         # time the axes are created or cleared so theme caching cannot allow
         # Cake x tick labels to reappear after a full plot rebuild.

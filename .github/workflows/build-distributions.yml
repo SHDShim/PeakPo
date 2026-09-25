@@ -121,7 +121,9 @@ jobs:
 
       - name: Smoke-test Linux executable
         if: runner.os == 'Linux'
-        run: test "$(dist/PeakPo/PeakPo --version)" = "${{ steps.version.outputs.value }}"
+        run: |
+          test "$(dist/PeakPo/PeakPo --version)" = "${{ steps.version.outputs.value }}"
+          dist/PeakPo/PeakPo --verify-rendering
 
       - name: Smoke-test Windows executable
         if: runner.os == 'Windows'
@@ -131,35 +133,100 @@ jobs:
           if ($process.ExitCode -ne 0) {
             throw "PeakPo --version exited with code $($process.ExitCode)"
           }
+          $renderProcess = Start-Process -FilePath "dist/PeakPo/PeakPo.exe" -ArgumentList "--verify-rendering" -Wait -PassThru
+          if ($renderProcess.ExitCode -ne 0) {
+            throw "PeakPo rendering verification exited with code $($renderProcess.ExitCode)"
+          }
 
       - name: Smoke-test macOS executable
         if: runner.os == 'macOS'
-        run: test "$(dist/PeakPo.app/Contents/MacOS/PeakPo --version)" = "${{ steps.version.outputs.value }}"
+        run: |
+          test "$(dist/PeakPo.app/Contents/MacOS/PeakPo --version)" = "${{ steps.version.outputs.value }}"
+          dist/PeakPo.app/Contents/MacOS/PeakPo --verify-rendering
 
-      - name: Archive Linux application
+      - name: Build Linux installer
         if: runner.os == 'Linux'
         run: |
-          mkdir -p release
-          tar -C dist -czf "release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.tar.gz" PeakPo
+          package_root="${RUNNER_TEMP}/peakpo-deb"
+          mkdir -p \
+            "$package_root/DEBIAN" \
+            "$package_root/usr/bin" \
+            "$package_root/usr/lib/peakpo" \
+            "$package_root/usr/share/applications" \
+            "$package_root/usr/share/icons/hicolor/256x256/apps" \
+            release
+          cp -a dist/PeakPo/. "$package_root/usr/lib/peakpo/"
+          install -m 0755 bundling/linux/peakpo "$package_root/usr/bin/peakpo"
+          install -m 0644 bundling/linux/peakpo.desktop \
+            "$package_root/usr/share/applications/peakpo.desktop"
+          sed "s/@VERSION@/${{ steps.version.outputs.value }}/g" \
+            bundling/linux/control.in > "$package_root/DEBIAN/control"
+          python -c "from PIL import Image; Image.open('peakpo/assets/PeakPo.ico').convert('RGBA').save(r'$package_root/usr/share/icons/hicolor/256x256/apps/peakpo.png')"
+          dpkg-deb --root-owner-group --build "$package_root" \
+            "release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.deb"
+          dpkg-deb --info \
+            "release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.deb"
+          extract_root="${RUNNER_TEMP}/peakpo-deb-test"
+          dpkg-deb --extract \
+            "release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.deb" \
+            "$extract_root"
+          test "$("$extract_root/usr/lib/peakpo/PeakPo" --version)" = \
+            "${{ steps.version.outputs.value }}"
 
-      - name: Archive Windows application
+      - name: Build and test Windows installer
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path release | Out-Null
-          Compress-Archive -Path "dist/PeakPo" -DestinationPath "release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.zip"
+          $iscc = (Get-Command ISCC.exe -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) {
+            $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          }
+          if (-not (Test-Path $iscc)) {
+            throw "Inno Setup compiler was not found"
+          }
+          & $iscc '/DMyAppVersion="${{ steps.version.outputs.value }}"' "bundling/windows/peakpo.iss"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Inno Setup failed with exit code $LASTEXITCODE"
+          }
+          $installer = "release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}-setup.exe"
+          $installDir = Join-Path $env:RUNNER_TEMP "PeakPo-installed"
+          $installProcess = Start-Process -FilePath $installer -ArgumentList @(
+            "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$installDir"
+          ) -Wait -PassThru
+          if ($installProcess.ExitCode -ne 0) {
+            throw "PeakPo installer exited with code $($installProcess.ExitCode)"
+          }
+          $appProcess = Start-Process -FilePath "$installDir/PeakPo.exe" -ArgumentList "--version" -Wait -PassThru
+          if ($appProcess.ExitCode -ne 0) {
+            throw "Installed PeakPo --version exited with code $($appProcess.ExitCode)"
+          }
+          $renderProcess = Start-Process -FilePath "$installDir/PeakPo.exe" -ArgumentList "--verify-rendering" -Wait -PassThru
+          if ($renderProcess.ExitCode -ne 0) {
+            throw "Installed PeakPo rendering verification exited with code $($renderProcess.ExitCode)"
+          }
 
-      - name: Archive macOS application
+      - name: Build and verify macOS disk image
         if: runner.os == 'macOS'
         run: |
-          mkdir -p release
-          ditto -c -k --sequesterRsrc --keepParent dist/PeakPo.app "release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.zip"
+          dmg_root="${RUNNER_TEMP}/peakpo-dmg"
+          mkdir -p "$dmg_root" release
+          ditto dist/PeakPo.app "$dmg_root/PeakPo.app"
+          ln -s /Applications "$dmg_root/Applications"
+          hdiutil create \
+            -volname "PeakPo ${{ steps.version.outputs.value }}" \
+            -srcfolder "$dmg_root" \
+            -ov \
+            -format UDZO \
+            "release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.dmg"
+          hdiutil verify \
+            "release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.dmg"
 
       - name: Upload standalone application
         uses: actions/upload-artifact@v7
         with:
           name: PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}
-          path: release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}.*
+          path: release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}*
           if-no-files-found: error
           retention-days: 30
 

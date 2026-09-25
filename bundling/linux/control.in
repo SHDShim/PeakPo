@@ -1,0 +1,10 @@
+Package: peakpo
+Version: @VERSION@
+Section: science
+Priority: optional
+Architecture: amd64
+Maintainer: S.-H. Dan Shim <shdshim@gmail.com>
+Homepage: https://github.com/SHDShim/PeakPo
+Description: X-ray diffraction analysis for high pressure science
+ PeakPo provides diffraction visualization, JCPDS overlays, peak fitting,
+ unit-cell fitting, mapping, sequence analysis, and azimuthal integration.

@@ -1,7 +1,7 @@
 # GitHub builds
 
 The `Build distributions` GitHub Actions workflow creates installable Python
-packages and standalone desktop bundles. It runs manually through **Actions >
+packages and native desktop installers. It runs manually through **Actions >
 Build distributions > Run workflow** and automatically when a version tag is
 pushed.
 
@@ -11,17 +11,15 @@ Each successful run provides these workflow artifacts:
 
 - `peakpo-<version>.tar.gz`: Python source distribution.
 - `peakpo-<version>-py3-none-any.whl`: Python wheel.
-- `PeakPo-<version>-windows-x86_64.zip`: Windows application directory,
-  containing `PeakPo.exe` and its runtime files.
-- `PeakPo-<version>-macos-arm64.zip`: macOS application for Apple Silicon.
-- `PeakPo-<version>-macos-x86_64.zip`: macOS application for Intel processors.
-- `PeakPo-<version>-linux-x86_64.tar.gz`: Linux application directory,
-  containing the `PeakPo` executable and its runtime files.
+- `PeakPo-<version>-windows-x86_64-setup.exe`: Windows installer.
+- `PeakPo-<version>-macos-arm64.dmg`: macOS disk image for Apple Silicon.
+- `PeakPo-<version>-macos-x86_64.dmg`: macOS disk image for Intel processors.
+- `PeakPo-<version>-linux-x86_64.deb`: Debian/Ubuntu Linux installer.
 
-The standalone bundles include Python and PeakPo's runtime dependencies. They
-do not require a separate Python environment. They are unsigned: users may need
-to approve the application in Windows Security or macOS Privacy & Security on
-first launch.
+The installers include Python and PeakPo's runtime dependencies. They do not
+require a separate Python environment. They are unsigned: users may need to
+approve the application in Windows Security or macOS Privacy & Security on
+first launch. On macOS, open the DMG and drag PeakPo into Applications.
 
 ## Create a release
 
@@ -55,3 +53,10 @@ dist/PeakPo/PeakPo --version
 
 On macOS, use `dist/PeakPo.app/Contents/MacOS/PeakPo --version`. On Windows,
 use `dist\\PeakPo\\PeakPo.exe --version`.
+
+The frozen-build rendering check constructs the actual Qt/Matplotlib canvas
+offscreen and verifies that its dark-mode axes remain visible:
+
+```bash
+dist/PeakPo/PeakPo --verify-rendering
+```

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=PeakPo
+Comment=X-ray diffraction analysis
+Exec=peakpo
+Icon=peakpo
+Terminal=false
+Categories=Science;Education;
