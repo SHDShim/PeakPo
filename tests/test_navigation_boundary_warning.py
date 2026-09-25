@@ -6,7 +6,7 @@ import gc
 from types import SimpleNamespace
 
 import pytest
-from qtpy import QtWidgets
+from qtpy import QtCore, QtWidgets
 
 from peakpo.control import maincontroller
 from peakpo.control.maincontroller import MainController
@@ -65,20 +65,57 @@ def test_chi_navigation_boundary_shows_warning_without_loading(
     assert warnings == [message]
 
 
-def test_macos_warning_disables_native_dialog(monkeypatch):
-    observed = {}
+def test_navigation_warning_is_in_window_and_preserves_focus():
+    window = QtWidgets.QMainWindow()
+    spinbox = QtWidgets.QDoubleSpinBox(window)
+    window.setCentralWidget(spinbox)
+    window.show()
+    spinbox.setFocus()
+    _APP.processEvents()
 
-    def fake_exec(box):
-        option = QtWidgets.QMessageBox.Option.DontUseNativeDialog
-        observed["non_native"] = box.testOption(option)
-        return QtWidgets.QMessageBox.Ok
+    popup = dialogs.show_warning(
+        window, "Warning", "It is already the last file.")
+    _APP.processEvents()
 
-    monkeypatch.setattr(dialogs.sys, "platform", "darwin")
-    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", fake_exec)
+    assert popup.parent() is spinbox
+    assert popup.isVisible()
+    assert _APP.focusWidget() is spinbox
+    assert popup.testAttribute(QtCore.Qt.WA_ShowWithoutActivating)
+    window.close()
 
-    dialogs.show_warning(None, "Warning", "It is already the last file.")
 
-    assert observed == {"non_native": True}
+def test_first_file_navigation_uses_focus_preserving_popup(
+        monkeypatch, tmp_path):
+    chi_file = tmp_path / "only.chi"
+    chi_file.write_text("", encoding="utf-8")
+    window = QtWidgets.QMainWindow()
+    focused = QtWidgets.QDoubleSpinBox(window)
+    window.setCentralWidget(focused)
+    window.radioButton_SortbyNme = _Checked(True)
+    window.spinBox_FileStep = _Value(1)
+    window.show()
+    focused.setFocus()
+    _APP.processEvents()
+
+    controller = MainController.__new__(MainController)
+    controller.widget = window
+    controller.model = SimpleNamespace(
+        chi_path=str(tmp_path),
+        base_ptn=SimpleNamespace(fname=str(chi_file)),
+    )
+    controller._capture_nav_carry_state = lambda: None
+    monkeypatch.setattr(
+        maincontroller,
+        "get_sorted_filelist",
+        lambda *args, **kwargs: [str(chi_file)],
+    )
+
+    controller._goto_chi_next_file("previous")
+    _APP.processEvents()
+
+    assert window._peakpo_warning_popup.isVisible()
+    assert _APP.focusWidget() is focused
+    window.close()
 
 
 def test_spinbox_retains_python_proxy_style_after_garbage_collection():

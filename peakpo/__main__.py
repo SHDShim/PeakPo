@@ -45,18 +45,20 @@ def _verify_warning_dialog():
     gc.collect()
     app.processEvents()
 
-    def close_warning():
-        for widget in app.topLevelWidgets():
-            if isinstance(widget, QtWidgets.QMessageBox):
-                widget.accept()
-
-    QtCore.QTimer.singleShot(100, close_warning)
-    show_warning(window, "Warning", "It is already the last file.")
+    focused_widget = app.focusWidget()
+    popup = show_warning(
+        window, "Warning", "It is already the last file.")
+    app.processEvents()
+    passed = bool(
+        popup is not None
+        and popup.isVisible()
+        and app.focusWidget() is focused_widget
+    )
     window.close()
     app.processEvents()
     del window
     gc.collect()
-    return 0
+    return 0 if passed else 1
 
 
 def main():

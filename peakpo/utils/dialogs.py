@@ -3,28 +3,69 @@ import os.path
 import re
 import glob
 import fnmatch
-import sys
 from .fileutils import extract_extension
 
 _FILECHOOSER_JCPDS_FILTER_SETTING = "filechooser/jcpds_filter_mode"
 
 
-def show_warning(parent, title, text):
-    """Show a warning without using the crash-prone native macOS alert."""
-    box = QtWidgets.QMessageBox(parent)
-    box.setIcon(QtWidgets.QMessageBox.Warning)
-    box.setWindowTitle(title)
-    box.setText(text)
-    box.setStandardButtons(QtWidgets.QMessageBox.Ok)
-    if sys.platform == "darwin":
-        option = getattr(
-            getattr(QtWidgets.QMessageBox, "Option", None),
-            "DontUseNativeDialog",
-            None,
+class _InWindowWarning(QtWidgets.QFrame):
+    """Focus-preserving warning popup embedded in the application window."""
+
+    def __init__(self, title, text, parent):
+        super().__init__(parent)
+        self.setObjectName("peakpoInWindowWarning")
+        self.setAttribute(QtCore.Qt.WA_ShowWithoutActivating, True)
+        self.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.setStyleSheet(
+            "QFrame#peakpoInWindowWarning {"
+            " background: #4a3a12; border: 2px solid #e0a800;"
+            " border-radius: 6px; }"
+            "QLabel { color: white; background: transparent; }"
         )
-        if option is not None:
-            box.setOption(option, True)
-    return box.exec()
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.setContentsMargins(14, 10, 14, 10)
+        label = QtWidgets.QLabel(f"⚠  {title}: {text}", self)
+        label.setFocusPolicy(QtCore.Qt.NoFocus)
+        label.setWordWrap(True)
+        layout.addWidget(label)
+        self.setMinimumWidth(320)
+        self.setMaximumWidth(560)
+
+    def mousePressEvent(self, event):
+        self.hide()
+        event.accept()
+
+
+def show_warning(parent, title, text):
+    """Show a non-modal warning without changing the active window or focus."""
+    if parent is None:
+        parent = QtWidgets.QApplication.activeWindow()
+    if parent is None:
+        return None
+    host = parent.centralWidget() if isinstance(
+        parent, QtWidgets.QMainWindow) else parent
+    previous = getattr(parent, "_peakpo_warning_popup", None)
+    if previous is not None:
+        previous.hide()
+        previous.deleteLater()
+
+    popup = _InWindowWarning(title, text, host)
+    popup.adjustSize()
+    popup.resize(
+        min(popup.maximumWidth(), max(popup.minimumWidth(), popup.width())),
+        popup.height(),
+    )
+    popup.move(max(8, (host.width() - popup.width()) // 2), 12)
+    popup.show()
+    popup.raise_()
+    parent._peakpo_warning_popup = popup
+
+    timer = QtCore.QTimer(popup)
+    timer.setSingleShot(True)
+    timer.timeout.connect(popup.hide)
+    timer.start(5000)
+    popup._dismiss_timer = timer
+    return popup
 
 
 class _HideParamFoldersProxyModel(QtCore.QSortFilterProxyModel):
