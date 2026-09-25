@@ -96,6 +96,23 @@ jobs:
             setup.py
             bundling/requirements-build.txt
 
+      - name: Install Linux desktop runtime libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            libegl1 \
+            libgl1 \
+            libxkbcommon-x11-0 \
+            libxcb-cursor0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-util1 \
+            libxcb-xkb1
+
       - name: Install PeakPo and build tools
         env:
           ARCHFLAGS: ${{ matrix.archflags }}
@@ -185,11 +202,17 @@ jobs:
           if (-not (Test-Path $iscc)) {
             throw "Inno Setup compiler was not found"
           }
-          & $iscc '/DMyAppVersion="${{ steps.version.outputs.value }}"' "bundling/windows/peakpo.iss"
+          $outputFilename = "PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}-setup"
+          $isccArgs = @(
+            '/DMyAppVersion="${{ steps.version.outputs.value }}"'
+            "--output-filename=$outputFilename"
+            "bundling/windows/peakpo.iss"
+          )
+          & $iscc @isccArgs
           if ($LASTEXITCODE -ne 0) {
             throw "Inno Setup failed with exit code $LASTEXITCODE"
           }
-          $installer = "release/PeakPo-${{ steps.version.outputs.value }}-${{ matrix.artifact }}-setup.exe"
+          $installer = "release/$outputFilename.exe"
           $installDir = Join-Path $env:RUNNER_TEMP "PeakPo-installed"
           $installProcess = Start-Process -FilePath $installer -ArgumentList @(
             "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$installDir"
