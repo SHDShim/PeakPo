@@ -5,6 +5,8 @@ import datetime
 from ..utils import writechi, readchi, make_filename, load_chi_xy
 from .background import fit_bg_cheb_auto
 
+DEFAULT_BG_PARAMS = (10, 20, 40)
+
 
 class Pattern(object):
     """
@@ -22,7 +24,7 @@ class Pattern(object):
         self.y_bgsub = None
         self.x_bg = None
         self.y_bg = None
-        self.params_chbg = [20, 10, 20]
+        self.params_chbg = list(DEFAULT_BG_PARAMS)
 
     def read_file(self, fname):
         """

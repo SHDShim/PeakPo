@@ -26,6 +26,7 @@ COLORS = {
     "important_hover": "#e0b31b",
     "important_pressed": "#b88f00",
     "important_border": "#8f6f00",
+    "existing_setup": "#e85c5c",
 }
 
 
@@ -52,8 +53,8 @@ def set_nav_destination_indicator(button, has_param=None):
     painter = QtGui.QPainter(pixmap)
     painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
     if has_param:
-        painter.setPen(QtGui.QPen(QtGui.QColor("#75bd83"), 1.3))
-        painter.setBrush(QtGui.QBrush(QtGui.QColor("#75bd83")))
+        painter.setPen(QtGui.QPen(QtGui.QColor(COLORS["existing_setup"]), 1.3))
+        painter.setBrush(QtGui.QBrush(QtGui.QColor(COLORS["existing_setup"])))
     else:
         painter.setPen(QtGui.QPen(QtGui.QColor("#c1c1c1"), 1.5))
         painter.setBrush(QtCore.Qt.NoBrush)
@@ -61,6 +62,18 @@ def set_nav_destination_indicator(button, has_param=None):
     painter.end()
     button.setIcon(QtGui.QIcon(pixmap))
     button.setIconSize(QtCore.QSize(12, 12))
+
+
+def set_nav_setup_mode_style(combo):
+    """Use the destination indicator color when Existing is selected."""
+    existing_index = combo.findData("saved")
+    if existing_index >= 0:
+        combo.setItemData(existing_index,
+                          QtGui.QColor(COLORS["existing_setup"]),
+                          QtCore.Qt.ForegroundRole)
+    color = (COLORS["existing_setup"]
+             if combo.currentData() == "saved" else "")
+    combo.setStyleSheet(f"QComboBox {{ color: {color}; }}" if color else "")
 
 
 def apply_flat_toolbar_style(button, compact=False):

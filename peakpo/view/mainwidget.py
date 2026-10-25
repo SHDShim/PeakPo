@@ -5,12 +5,14 @@ from .qtd import Ui_MainWindow
 from .cakehistwidget import CakeHistogramWidget
 from .maphistwidget import MapHistogramWidget
 from .ui_policy import (
+    COLORS,
     STANDARD_HEIGHT,
     apply_accent_button_style,
     apply_colored_toolbar_style,
     apply_flat_toolbar_style,
     apply_raised_toggle_style,
     set_button_height,
+    set_nav_setup_mode_style,
     set_toolbar_compact_width,
 )
 from ..utils import (
@@ -19,6 +21,7 @@ from ..utils import (
     align_spinbox_right,
 )
 from ..version import __version__
+from ..ds_powdiff.DiffractionPattern import DEFAULT_BG_PARAMS
 from ..citation import __citation__
 from ..utils import InformationBox
 # exec(open(os.path.join(os.path.curdir, 'version.py')).read())
@@ -161,6 +164,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def showEvent(self, event):
         super().showEvent(event)
+        QtCore.QTimer.singleShot(0, self._fit_nav_setup_dropdown)
         canvas = getattr(getattr(self, "mpl", None), "canvas", None)
         if canvas is not None:
             QtCore.QTimer.singleShot(0, canvas.setFocus)
@@ -186,6 +190,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         apply_spinbox_fix_style(self.spinBox_BGParam0)
         apply_spinbox_fix_style(self.spinBox_BGParam1)
         apply_spinbox_fix_style(self.spinBox_BGParam2)
+        for spinbox, value in zip(
+                (self.spinBox_BGParam0, self.spinBox_BGParam1,
+                 self.spinBox_BGParam2), DEFAULT_BG_PARAMS):
+            spinbox.setValue(value)
         self.doubleSpinBox_Background_ROI_max.setKeyboardTracking(False)
         self.doubleSpinBox_Background_ROI_min.setKeyboardTracking(False)
         apply_spinbox_fix_style(self.doubleSpinBox_Background_ROI_max)
@@ -628,13 +636,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.groupBox_NavCarryBehavior)
         self.comboBox_NavParamModeConfig.setObjectName(
             "comboBox_NavParamModeConfig")
-        self.comboBox_NavParamModeConfig.addItem("Use saved PARAM", "saved")
+        self.comboBox_NavParamModeConfig.addItem("Use existing setup", "saved")
         self.comboBox_NavParamModeConfig.addItem(
             "Carry enabled settings", "carry")
         self.comboBox_NavParamModeConfig.addItem(
             "Custom category rules", "custom")
         self.comboBox_NavParamModeConfig.setToolTip(
-            "Controls how Prev and Next open a CHI with saved PARAM. "
+            "Controls how Prev and Next use an existing setup. "
             "Custom uses the JCPDS and other-setting rules below.")
         self.gridLayout_NavCarryBehavior.addWidget(
             self.label_NavParamMode, 0, 0)
@@ -762,6 +770,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _sync_nav_param_custom_visibility(self, _index=None):
         custom = self.comboBox_NavParamModeConfig.currentData() == "custom"
+        for name in ("comboBox_NavParamMode", "comboBox_NavParamModeConfig"):
+            combo = getattr(self, name, None)
+            if combo is not None:
+                set_nav_setup_mode_style(combo)
+        self._fit_nav_setup_dropdown()
         for name in (
                 "label_CarryNavExistingJCPDS",
                 "comboBox_CarryNavExistingJCPDS",
@@ -771,6 +784,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 "checkBox_CarryNavPopupOverwrite"):
             if hasattr(self, name):
                 getattr(self, name).setVisible(custom)
+
+    def _fit_nav_setup_dropdown(self):
+        combo = getattr(self, "comboBox_NavParamMode", None)
+        if combo is None:
+            return
+        label_width = max(
+            combo.fontMetrics().horizontalAdvance(combo.itemText(index))
+            for index in range(combo.count()))
+        combo.setFixedSize(label_width + 36, STANDARD_HEIGHT)
 
     def set_param_dirty_status(self, dirty=False):
         dirty = bool(dirty)
@@ -1229,7 +1251,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         colors = {
             "white": "#f0f0f0",
             "green": "#8bc34a",
-            "red": "#ef5350",
+            "red": COLORS["existing_setup"],
         }
         color = colors.get(status_level, colors["white"])
         self.label_CarryNavStatus.setText(status_text)
@@ -1557,7 +1579,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         register(getattr(self, "pushButton_AddBasePtn", None),
                  "Add the current CHI file to the waterfall list.")
         register(getattr(self, "comboBox_NavParamMode", None),
-                 "Choose whether Prev and Next use saved PARAM or carry current settings.")
+                 "Choose whether Prev and Next use existing setup or carry current settings.")
         register(getattr(self, "pushButton_S_NextBasePtn", None),
                  "Open the next diffraction file.")
         register(getattr(self, "pushButton_NewBasePtn", None),
@@ -1859,7 +1881,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_ResetBGParams.setSizePolicy(
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         self.pushButton_ResetBGParams.setToolTip(
-            "Reset background parameters to defaults: N Points=20, N Order=10, N Iteration=20")
+            "Reset background parameters to defaults: "
+            f"N Points={DEFAULT_BG_PARAMS[0]}, "
+            f"N Order={DEFAULT_BG_PARAMS[1]}, "
+            f"N Iteration={DEFAULT_BG_PARAMS[2]}")
         self.gridLayout_5.addWidget(self.pushButton_ResetBGParams, 3, 2, 1, 1)
 
     def _setup_peakfit_section_buttons(self):
@@ -2231,12 +2256,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                         self.frame_TopToolbarRow1)
                     self.comboBox_NavParamMode.setObjectName(
                         "comboBox_NavParamMode")
-                    self.comboBox_NavParamMode.addItem("PARAM: Saved", "saved")
-                    self.comboBox_NavParamMode.addItem("PARAM: Carry", "carry")
-                    self.comboBox_NavParamMode.addItem("PARAM: Custom", "custom")
+                    self.comboBox_NavParamMode.addItem("Setup: Existing", "saved")
+                    self.comboBox_NavParamMode.addItem("Setup: Carry", "carry")
+                    self.comboBox_NavParamMode.addItem("Setup: Custom", "custom")
                     self.comboBox_NavParamMode.setToolTip(
-                        "Choose how Prev and Next open a CHI with saved PARAM.")
-                    self.comboBox_NavParamMode.setFixedSize(130, STANDARD_HEIGHT)
+                        "Choose how Prev and Next use an existing setup.")
+                    set_nav_setup_mode_style(self.comboBox_NavParamMode)
+                    self._fit_nav_setup_dropdown()
                     self.layout_TopToolbarRow1.addWidget(
                         self.comboBox_NavParamMode, 0)
             elif widget in (

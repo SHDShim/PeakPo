@@ -4,8 +4,10 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.12.4.dev0"
+__version__ = "7.12.4.dev1"
 """
+7.12.4.dev1: clarify existing CHI setups, correct unsaved-change status after
+             navigation, and update background parameter defaults to 10/20/40.
 7.12.4.dev0: refine CHI navigation and PARAM carry-over choices; restore
              working-state plots at data limits; improve Waterfall controls.
 7.12.3: prevent CHI navigation from reopening the last file when filenames

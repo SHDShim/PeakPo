@@ -4448,7 +4448,7 @@
                           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                          </property>
                          <property name="value">
-                          <number>20</number>
+                          <number>40</number>
                          </property>
                         </widget>
                        </item>
@@ -4476,7 +4476,7 @@
                           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                          </property>
                          <property name="value">
-                          <number>10</number>
+                          <number>20</number>
                          </property>
                         </widget>
                        </item>
@@ -4498,7 +4498,7 @@
                           </font>
                          </property>
                          <property name="text">
-                          <string>N Iteration (20):</string>
+                          <string>N Iteration (40):</string>
                          </property>
                         </widget>
                        </item>
@@ -4526,7 +4526,7 @@
                           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                          </property>
                          <property name="value">
-                          <number>20</number>
+                          <number>10</number>
                          </property>
                         </widget>
                        </item>
@@ -4548,7 +4548,7 @@
                           </font>
                          </property>
                          <property name="text">
-                          <string>N Points (20):</string>
+                          <string>N Points (10):</string>
                          </property>
                         </widget>
                        </item>
@@ -4609,7 +4609,7 @@
                           </font>
                          </property>
                          <property name="text">
-                          <string>N Order (10):</string>
+                          <string>N Order (20):</string>
                          </property>
                         </widget>
                        </item>

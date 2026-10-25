@@ -1,4 +1,5 @@
 import os
+from contextlib import nullcontext
 from types import SimpleNamespace
 
 import pytest
@@ -13,6 +14,7 @@ from peakpo.model.model import PeakPoModel
 from peakpo.model.param_session_io import model_param_signature
 from peakpo.utils import writechi
 from peakpo.view.mainwidget import MainWindow
+from peakpo.view.ui_policy import COLORS
 import numpy as np
 
 
@@ -39,6 +41,23 @@ def test_param_mode_controls_and_waterfall_button_layout():
         window.pushButton_ApplyWaterfallChange.width())
     assert window.comboBox_NavParamMode.currentData() == "saved"
     assert window.comboBox_NavParamModeConfig.currentData() == "saved"
+    assert window.comboBox_NavParamMode.currentText() == "Setup: Existing"
+    combo = window.comboBox_NavParamMode
+    widest_label = max(combo.fontMetrics().horizontalAdvance(
+        combo.itemText(index)) for index in range(combo.count()))
+    assert 30 <= combo.width() - widest_label <= 42
+    assert combo.width() < 155
+    style_option = QtWidgets.QStyleOptionComboBox()
+    style_option.initFrom(combo)
+    text_rect = combo.style().subControlRect(
+        QtWidgets.QStyle.CC_ComboBox, style_option,
+        QtWidgets.QStyle.SC_ComboBoxEditField, combo)
+    assert text_rect.width() >= widest_label
+    assert window.comboBox_NavParamModeConfig.currentText() == (
+        "Use existing setup")
+    assert COLORS["existing_setup"] in window.comboBox_NavParamMode.styleSheet()
+    assert COLORS["existing_setup"] in (
+        window.comboBox_NavParamModeConfig.styleSheet())
     assert window.comboBox_CarryNavExistingJCPDS.isHidden()
     window.close()
     _APP.processEvents()
@@ -82,6 +101,8 @@ def test_toolbar_and_config_mode_share_one_setting():
         window.comboBox_NavParamMode.findData("custom"))
     controller._on_nav_param_mode_changed(window.comboBox_NavParamMode)
     assert window.comboBox_NavParamModeConfig.currentData() == "custom"
+    assert window.comboBox_NavParamMode.styleSheet() == ""
+    assert window.comboBox_NavParamModeConfig.styleSheet() == ""
     assert not window.comboBox_CarryNavExistingJCPDS.isHidden()
     assert values["nav_param_mode"] == "custom"
 
@@ -131,7 +152,10 @@ def test_navigation_buttons_preview_actual_step_destination(
     assert not window.pushButton_S_PrevBasePtn.isEnabled()
     assert window.pushButton_S_NextBasePtn.isEnabled()
     assert "file_003.chi" in window.pushButton_S_NextBasePtn.toolTip()
-    assert "Use saved PARAM" in window.pushButton_S_NextBasePtn.toolTip()
+    assert "Use existing setup" in window.pushButton_S_NextBasePtn.toolTip()
+    icon_color = window.pushButton_S_NextBasePtn.icon().pixmap(
+        12, 12).toImage().pixelColor(6, 6).name()
+    assert icon_color == COLORS["existing_setup"]
 
     controller.model.get_base_ptn_filename = lambda: str(
         tmp_path / "file_002.chi")
@@ -187,3 +211,66 @@ def test_dirty_status_compares_current_file_with_loaded_baseline(tmp_path):
     controller._refresh_param_dirty_status()
 
     assert statuses == [False, True, False]
+
+
+@pytest.mark.parametrize("mode", ["saved", "carry"])
+def test_navigation_baseline_accounts_for_plot_normalization(
+        monkeypatch, tmp_path, mode):
+    current = tmp_path / "file_001.chi"
+    destination = tmp_path / "file_002.chi"
+    current.write_text("", encoding="utf-8")
+    destination.write_text("", encoding="utf-8")
+    monkeypatch.setattr(
+        maincontroller, "is_new_param_folder",
+        lambda path: path.endswith("file_002-param"))
+
+    base_ptn = SimpleNamespace(fname=str(current))
+    model = SimpleNamespace(
+        chi_path=str(tmp_path),
+        base_ptn=base_ptn,
+        base_ptn_exist=lambda: True,
+        get_base_ptn_filename=lambda: base_ptn.fname)
+    statuses = []
+    controller = MainController.__new__(MainController)
+    controller.model = model
+    controller.widget = SimpleNamespace(
+        radioButton_SortbyNme=SimpleNamespace(isChecked=lambda: True),
+        spinBox_FileStep=SimpleNamespace(value=lambda: 1),
+        comboBox_NavSaveMode=SimpleNamespace(currentData=lambda: "never"),
+        comboBox_NavParamMode=SimpleNamespace(currentData=lambda: mode),
+        set_param_dirty_status=statuses.append)
+    controller._navigation_in_progress = False
+    controller._nav_filled_missing = False
+    signature = ["loaded"]
+    controller._current_param_signature = lambda: signature[0]
+    controller._capture_nav_carry_state = lambda: {}
+    controller._defer_plot_updates = nullcontext
+    controller.session_ctrl = SimpleNamespace(
+        save_for_navigation=lambda *args: True,
+        save_recovery_state=lambda: None)
+
+    def load(filename):
+        base_ptn.fname = filename
+        signature[0] = "loaded"
+        controller._on_pattern_ready(filename)
+
+    def apply_carry(_state):
+        if mode == "carry":
+            signature[0] = "carried"
+
+    controller.base_ptn_ctrl = SimpleNamespace(_load_a_new_pattern=load)
+    controller._apply_nav_carry_state = apply_carry
+    controller.plot_ctrl = SimpleNamespace(update=lambda: None)
+    controller._schedule_roi_overlays_after_plot_update = (
+        lambda **_kwargs: signature.__setitem__(
+            0, "normalized" if mode == "saved" else "carried and normalized"))
+
+    controller._goto_chi_next_file("next")
+    controller._refresh_param_dirty_status()
+
+    assert base_ptn.fname == str(destination)
+    assert statuses[-1] is (mode == "carry")
+    if mode == "saved":
+        signature[0] = "user edit"
+        controller._refresh_param_dirty_status()
+        assert statuses[-1] is True

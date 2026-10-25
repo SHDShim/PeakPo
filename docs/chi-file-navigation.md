@@ -16,14 +16,14 @@ filenames. Choose **Open selected file** to continue or **Stay on current file**
 cancel. This also applies when navigating with DPP files. With **Time**
 selected, PeakPo does not ask about name sets.
 
-## PARAM choice for Prev and Next
+## Setup choice for Prev and Next
 
 The toolbar control between **Prev** and **Next** selects how the destination
 CHI is opened. It is synchronized with **Prev/Next action** under **When next
 file already has information** in **JCPDS > Data**. The selection stays in
 effect for subsequent navigation.
 
-- **Saved** (default for new installations): use the destination's saved PARAM
+- **Existing** (default for new installations): use the destination's saved PARAM
   without carry-over. When no saved PARAM exists, carry the enabled categories.
 - **Carry**: replace the enabled categories with current settings. Any other
   categories in the destination's saved PARAM remain intact.
@@ -31,8 +31,9 @@ effect for subsequent navigation.
   installations with those saved rules start in Custom so their behavior is
   preserved. The separate controls appear only in this mode.
 
-The green dot on Prev or Next means its destination has a valid saved PARAM;
-the hollow gray dot means it does not. The tooltip gives the destination
+The red dot on Prev or Next means its destination has a valid saved PARAM;
+the hollow gray dot means it does not. **Setup: Existing** appears in the
+same red when selected. The tooltip gives the destination
 filename and action. A button is disabled when no file exists in that
 direction at the selected step. The dot describes the destination and does
 not indicate whether the current file has unsaved changes.
@@ -41,7 +42,8 @@ The **Save** button has its normal toolbar appearance when the current PARAM
 matches the state loaded or last saved for that CHI. It turns yellow when
 PARAM settings change, including settings carried into the file. This status
 updates after navigation and periodically while editing; reverting all
-changes restores the normal appearance.
+changes restores the normal appearance. Automatic plot setup after opening an
+existing setup does not count as a user change.
 
 **Add Current Chi to Waterfall List** is in the Waterfall tab above **Update
 plot**. It adds the current CHI to the waterfall list.

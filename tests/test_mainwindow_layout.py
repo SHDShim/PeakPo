@@ -8,6 +8,7 @@ import numpy as np
 from qtpy import QtWidgets
 
 from peakpo.control.maincontroller import MainController
+from peakpo.ds_powdiff.DiffractionPattern import PatternPeakPo
 from peakpo.view.mainwidget import MainWindow
 from peakpo.view.mplwidget import MplCanvas
 
@@ -95,6 +96,14 @@ def test_pattern_background_tab_has_full_width_range_and_default_buttons():
         QtWidgets.QSizePolicy.Minimum)
     assert window.pushButton_ResetBGParams.minimumWidth() == (
         window.spinBox_BGParam0.minimumWidth())
+    boxes = (window.spinBox_BGParam0, window.spinBox_BGParam1,
+             window.spinBox_BGParam2)
+    assert tuple(box.value() for box in boxes) == (10, 20, 40)
+    for box in boxes:
+        box.setValue(1)
+    MainController.reset_bg_params_to_default(SimpleNamespace(widget=window))
+    assert tuple(box.value() for box in boxes) == (10, 20, 40)
+    assert PatternPeakPo().params_chbg == [10, 20, 40]
     assert window.verticalLayout_21.indexOf(window.groupBox_7) < (
         window.verticalLayout_21.indexOf(window.pushButton_UpdateBackground))
 

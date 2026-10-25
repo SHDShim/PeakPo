@@ -92,6 +92,10 @@ Behavior:
 
 ## Peak Fitting
 
+The `Pattern` tab background parameters start at **N Points 10**, **N Order
+20**, and **N Iteration 40** for a new pattern. `Reset to default` restores
+these values; opening a saved setup restores its stored values.
+
 Peak fitting mouse actions are available on the `Fits` tab. The main control is
 the section titled `Add (Shift+left click) / Remove (Shift+right click) peaks`.
 

@@ -42,6 +42,7 @@ from ..utils import dialog_savefile, writechi, convert_wl_to_energy, \
 # retro compatibility
 from ..ds_jcpds import UnitCell
 from ..ds_powdiff import get_DataSection
+from ..ds_powdiff.DiffractionPattern import DEFAULT_BG_PARAMS
 #from utils import readchi, make_filename, writechi
 
 
@@ -290,13 +291,13 @@ class MainController(object):
                 message = "No " + label.lower() + " CHI file at this step."
             else:
                 if has_param and mode == "saved":
-                    action = "Use saved PARAM."
+                    action = "Use existing setup."
                 elif has_param and mode == "carry":
                     action = "Carry enabled settings; keep other saved values."
                 elif has_param:
                     action = "Apply custom category rules."
                 else:
-                    action = "No saved PARAM; carry enabled settings."
+                    action = "No existing setup; carry enabled settings."
                 message = label + ": " + os.path.basename(target) + ". " + action
             button.setToolTip(message)
             button.setStatusTip(message)
@@ -2186,8 +2187,8 @@ class MainController(object):
         if carried_any and snap.get("source_chi"):
             status_text = "From " + snap["source_chi"] + ": " + status_text
         elif destination_has_param and self._nav_param_mode() == "saved":
-            status_text = "Using saved PARAM for " + os.path.basename(destination) + "."
-            status_level = "green"
+            status_text = "Using existing setup for " + os.path.basename(destination) + "."
+            status_level = "red"
         if hasattr(self.widget, "set_nav_carry_status"):
             self.widget.set_nav_carry_status(status_text, status_level)
 
@@ -2533,9 +2534,9 @@ class MainController(object):
         self.widget.doubleSpinBox_Background_ROI_max.setValue(max(x0, x1))
 
     def reset_bg_params_to_default(self):
-        self.widget.spinBox_BGParam0.setValue(20)
-        self.widget.spinBox_BGParam1.setValue(10)
-        self.widget.spinBox_BGParam2.setValue(20)
+        self.widget.spinBox_BGParam0.setValue(DEFAULT_BG_PARAMS[0])
+        self.widget.spinBox_BGParam1.setValue(DEFAULT_BG_PARAMS[1])
+        self.widget.spinBox_BGParam2.setValue(DEFAULT_BG_PARAMS[2])
 
     def apply_pt_to_graph(self):
         if self._plot_update_deferred():
@@ -2766,6 +2767,11 @@ class MainController(object):
                 self._schedule_roi_overlays_after_plot_update(
                     flush_pending=True)
                 self.session_ctrl.save_recovery_state()
+                if (self._nav_param_mode() == "saved" and
+                        is_new_param_folder(get_temp_dir(new_filename_chi))):
+                    # Plot setup can normalize saved display controls after
+                    # autoload recorded the baseline. That is not a user edit.
+                    self._on_pattern_ready(new_filename_chi)
             finally:
                 self._navigation_in_progress = False
         else:
