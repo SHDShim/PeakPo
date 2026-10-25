@@ -5,7 +5,7 @@ Stateful mode controls retain their controller-specific styles because their
 appearance communicates application state rather than button role.
 """
 
-from qtpy import QtWidgets
+from qtpy import QtCore, QtGui, QtWidgets
 
 
 COMPACT_HEIGHT = 25
@@ -42,6 +42,27 @@ def set_toolbar_compact_width(button):
     button.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
 
 
+def set_nav_destination_indicator(button, has_param=None):
+    """Mark a navigation destination without changing the button's role color."""
+    if has_param is None:
+        button.setIcon(QtGui.QIcon())
+        return
+    pixmap = QtGui.QPixmap(12, 12)
+    pixmap.fill(QtCore.Qt.transparent)
+    painter = QtGui.QPainter(pixmap)
+    painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    if has_param:
+        painter.setPen(QtGui.QPen(QtGui.QColor("#75bd83"), 1.3))
+        painter.setBrush(QtGui.QBrush(QtGui.QColor("#75bd83")))
+    else:
+        painter.setPen(QtGui.QPen(QtGui.QColor("#c1c1c1"), 1.5))
+        painter.setBrush(QtCore.Qt.NoBrush)
+    painter.drawEllipse(QtCore.QRectF(2, 2, 8, 8))
+    painter.end()
+    button.setIcon(QtGui.QIcon(pixmap))
+    button.setIconSize(QtCore.QSize(12, 12))
+
+
 def apply_flat_toolbar_style(button, compact=False):
     """Style a neutral top-toolbar button."""
     button.setFlat(True)
@@ -69,6 +90,11 @@ def apply_flat_toolbar_style(button, compact=False):
         "QPushButton:focus {"
         "outline: none;"
         "border: 1px solid rgba(255, 255, 255, 0.18);"
+        "}"
+        "QPushButton:disabled {"
+        "color: #898989;"
+        "background-color: rgba(255, 255, 255, 0.025);"
+        "border: 1px solid rgba(255, 255, 255, 0.05);"
         "}"
     )
 

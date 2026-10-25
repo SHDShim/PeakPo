@@ -535,7 +535,9 @@ def _fit_result_to_dict_with_csv(section):
     return out
 
 
-def _section_to_dict(section, section_tag, section_payloads, chi_root, param_dir):
+def _section_to_dict(
+        section, section_tag, section_payloads, chi_root, param_dir,
+        signature_only=False):
     columns = []
     if section.x is not None:
         columns.append(("x", section.x))
@@ -551,20 +553,30 @@ def _section_to_dict(section, section_tag, section_payloads, chi_root, param_dir
         if best_fit is not None:
             columns.append(("fit_best", best_fit))
             fit_payload["best_fit_column"] = "fit_best"
-        try:
-            comps = fit.eval_components(x=section.x) or {}
-        except Exception:
-            comps = {}
-        for comp_name in sorted(comps.keys(), key=_component_sort_key):
-            col_name = f"comp_{_sanitize_name(comp_name)}"
-            columns.append((col_name, comps[comp_name]))
-            fit_payload["component_columns"][comp_name] = col_name
+        if not signature_only:
+            try:
+                comps = fit.eval_components(x=section.x) or {}
+            except Exception:
+                comps = {}
+            for comp_name in sorted(comps.keys(), key=_component_sort_key):
+                col_name = f"comp_{_sanitize_name(comp_name)}"
+                columns.append((col_name, comps[comp_name]))
+                fit_payload["component_columns"][comp_name] = col_name
 
     section_csv_file = None
     section_csv_columns = [name for name, _ in columns]
     if columns:
         section_rel = _portable_join("sections", f"{section_tag}.csv")
-        section_payloads[section_rel] = _compute_section_csv_payload(columns)
+        if signature_only:
+            section_digest = hashlib.sha256()
+            for name, values in columns:
+                array = np.asarray(values, dtype=np.float64)
+                section_digest.update(name.encode("utf-8"))
+                section_digest.update(str(array.shape).encode("ascii"))
+                section_digest.update(array.tobytes())
+            section_payloads[section_rel] = section_digest.digest()
+        else:
+            section_payloads[section_rel] = _compute_section_csv_payload(columns)
         section_csv_file = _serialize_param_reference(
             os.path.join(param_dir, section_rel), chi_root)
 
@@ -732,7 +744,9 @@ def _collect_companion_files(param_dir):
     return sorted(rel_files)
 
 
-def _prepare_payloads(model, param_dir, ui_state=None):
+def _prepare_payloads(
+        model, param_dir, ui_state=None, include_waterfall_payloads=True,
+        signature_only=False):
     chi_root = model.chi_path
     cake_tth_file = None
     cake_azi_file = None
@@ -765,7 +779,8 @@ def _prepare_payloads(model, param_dir, ui_state=None):
         if (src is not None) and os.path.exists(src):
             rel = _portable_join("waterfall", f"{i:04d}_{basename_any(src)}")
             try:
-                waterfall_payloads[rel] = _file_bytes(src)
+                if include_waterfall_payloads:
+                    waterfall_payloads[rel] = _file_bytes(src)
                 fallback_rel = _serialize_param_reference(
                     os.path.join(param_dir, rel), chi_root)
             except Exception:
@@ -814,6 +829,7 @@ def _prepare_payloads(model, param_dir, ui_state=None):
                 section_payloads=section_payloads,
                 chi_root=chi_root,
                 param_dir=param_dir,
+                signature_only=signature_only,
             )
             for i, s in enumerate(model.section_lst)
         ],
@@ -825,6 +841,7 @@ def _prepare_payloads(model, param_dir, ui_state=None):
                 section_payloads=section_payloads,
                 chi_root=chi_root,
                 param_dir=param_dir,
+                signature_only=signature_only,
             )
             if model.current_section is not None else None
         ),
@@ -840,6 +857,28 @@ def _prepare_payloads(model, param_dir, ui_state=None):
         "ui_state": ui_state or {},
     }
     return session_data, sections_data, jcpds_data, ui_data, section_payloads, waterfall_payloads
+
+
+def model_param_signature(model, ui_state=None):
+    """Fingerprint PARAM settings without writing files or reading CHI copies."""
+    if model is None or not model.base_ptn_exist():
+        return None
+    for pattern in [model.base_ptn] + list(model.waterfall_ptn):
+        _ensure_pattern_background_defaults(pattern)
+    param_dir = get_temp_dir(model.get_base_ptn_filename(), branch="-param")
+    session, sections, jcpds, ui, section_files, _ = _prepare_payloads(
+        model, param_dir, ui_state=ui_state,
+        include_waterfall_payloads=False, signature_only=True)
+    digest = hashlib.sha256()
+    for item in (session, sections, jcpds, ui):
+        digest.update(json.dumps(
+            item, sort_keys=True, default=_json_default).encode("utf-8"))
+        digest.update(b"\0")
+    for name, payload in sorted(section_files.items()):
+        digest.update(name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(payload)
+    return digest.hexdigest()
 
 
 def _highlight_changed_files(changed_files):

@@ -39,6 +39,7 @@ class SessionController(object):
         self.model = model
         self.widget = widget
         self.cake_ctrl = None
+        self.param_saved_callback = None
         self._carryover_source_chi = None
         self._manual_saved_chi = None
         self._recovered_current_chi = None
@@ -907,6 +908,9 @@ class SessionController(object):
                 save_origin=("manual" if mode == "all" and
                              origin == "manual" else "navigation"))
             self.refresh_backup_table()
+            callback = getattr(self, "param_saved_callback", None)
+            if callable(callback):
+                callback()
             print("Navigation PARAM save:", result.manifest_path)
             return True
         except Exception as exc:
@@ -1014,7 +1018,9 @@ class SessionController(object):
                 tab = getattr(self.widget, name, None)
                 if tab is not None and 0 <= index < tab.count():
                     tab.setCurrentIndex(index)
-            plot_ctrl.update()
+            # A plain update replaces the rescale queued by _sync_ui_from_model.
+            # Rescale after restoring tabs so the first visible plot uses data limits.
+            plot_ctrl.zoom_out_graph()
             print("Restored last working state:", chi_file)
             return True
         except Exception as exc:
@@ -1615,6 +1621,9 @@ class SessionController(object):
             self.widget.lineEdit_PkFtSectionsStatus.setStyleSheet("")
             self.widget.lineEdit_PkFtSectionsStatus.setText(
                 "Sections table status: no unsaved section-list changes.")
+        callback = getattr(self, "param_saved_callback", None)
+        if callable(callback):
+            callback()
         return True
 
     def save_ppss(self, quiet=False):

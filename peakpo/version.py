@@ -4,8 +4,10 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.12.3"
+__version__ = "7.12.4.dev0"
 """
+7.12.4.dev0: refine CHI navigation and PARAM carry-over choices; restore
+             working-state plots at data limits; improve Waterfall controls.
 7.12.3: prevent CHI navigation from reopening the last file when filenames
         overlap, and keep the carry-over choice in a Qt dialog.
 7.12.2: release after series of changes.

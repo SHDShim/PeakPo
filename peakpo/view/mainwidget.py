@@ -622,6 +622,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.gridLayout_NavCarryBehavior.setHorizontalSpacing(16)
         self.gridLayout_NavCarryBehavior.setVerticalSpacing(10)
 
+        self.label_NavParamMode = QtWidgets.QLabel(
+            "Prev/Next action", self.groupBox_NavCarryBehavior)
+        self.comboBox_NavParamModeConfig = QtWidgets.QComboBox(
+            self.groupBox_NavCarryBehavior)
+        self.comboBox_NavParamModeConfig.setObjectName(
+            "comboBox_NavParamModeConfig")
+        self.comboBox_NavParamModeConfig.addItem("Use saved PARAM", "saved")
+        self.comboBox_NavParamModeConfig.addItem(
+            "Carry enabled settings", "carry")
+        self.comboBox_NavParamModeConfig.addItem(
+            "Custom category rules", "custom")
+        self.comboBox_NavParamModeConfig.setToolTip(
+            "Controls how Prev and Next open a CHI with saved PARAM. "
+            "Custom uses the JCPDS and other-setting rules below.")
+        self.gridLayout_NavCarryBehavior.addWidget(
+            self.label_NavParamMode, 0, 0)
+        self.gridLayout_NavCarryBehavior.addWidget(
+            self.comboBox_NavParamModeConfig, 0, 1)
+
         self.label_CarryNavExistingJCPDS = QtWidgets.QLabel(
             "JCPDS", self.groupBox_NavCarryBehavior)
         self.label_CarryNavExistingJCPDS.setObjectName("label_CarryNavExistingJCPDS")
@@ -645,15 +664,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "Overwrite with carried settings")
 
         self.gridLayout_NavCarryBehavior.addWidget(
-            self.label_CarryNavExistingJCPDS, 0, 0, 1, 1)
+            self.label_CarryNavExistingJCPDS, 1, 0, 1, 1)
         self.gridLayout_NavCarryBehavior.addWidget(
-            self.comboBox_CarryNavExistingJCPDS, 0, 1, 1, 1)
+            self.comboBox_CarryNavExistingJCPDS, 1, 1, 1, 1)
         self.gridLayout_NavCarryBehavior.addWidget(
-            self.label_CarryNavExistingOther, 1, 0, 1, 1)
+            self.label_CarryNavExistingOther, 2, 0, 1, 1)
         self.gridLayout_NavCarryBehavior.addWidget(
-            self.comboBox_CarryNavExistingOther, 1, 1, 1, 1)
+            self.comboBox_CarryNavExistingOther, 2, 1, 1, 1)
         self.gridLayout_NavCarryBehavior.setColumnStretch(1, 1)
         self.verticalLayout_31.insertWidget(insert_idx + 1, self.groupBox_NavCarryBehavior)
+        self.comboBox_NavParamModeConfig.currentIndexChanged.connect(
+            self._sync_nav_param_custom_visibility)
+        self._sync_nav_param_custom_visibility()
 
         self.groupBox_NavSave = QtWidgets.QGroupBox(
             "Save PARAM when leaving a file", self.scrollAreaWidgetContents_2)
@@ -736,6 +758,38 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._nav_carry_status_level = "white"
         self.checkBox_CarryNavInlineStatus.toggled.connect(
             self._sync_nav_carry_status_visibility)
+        self._sync_nav_param_custom_visibility()
+
+    def _sync_nav_param_custom_visibility(self, _index=None):
+        custom = self.comboBox_NavParamModeConfig.currentData() == "custom"
+        for name in (
+                "label_CarryNavExistingJCPDS",
+                "comboBox_CarryNavExistingJCPDS",
+                "label_CarryNavExistingOther",
+                "comboBox_CarryNavExistingOther",
+                "checkBox_CarryNavPopupConflict",
+                "checkBox_CarryNavPopupOverwrite"):
+            if hasattr(self, name):
+                getattr(self, name).setVisible(custom)
+
+    def set_param_dirty_status(self, dirty=False):
+        dirty = bool(dirty)
+        if getattr(self, "_param_dirty_state", None) is dirty:
+            return
+        self._param_dirty_state = dirty
+        button = self.pushButton_LoadDPP
+        if dirty:
+            self._set_colored_flat_toolbar_button_style(
+                button, "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
+                text_color="#1f1f1f")
+            message = "Unsaved PARAM changes in the current CHI file."
+        else:
+            self._set_flat_toolbar_button_style(button, compact=False)
+            message = "Save the current PeakPo status to PARAM files."
+        button.setToolTip(message)
+        button.setStatusTip(message)
+        if hasattr(self, "_compact_help_widgets"):
+            self._compact_help_widgets[button] = message
 
     def _reorder_cake_subtabs(self):
         if not all(hasattr(self, name) for name in (
@@ -1501,7 +1555,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         register(getattr(self, "pushButton_S_PrevBasePtn", None),
                  "Open the previous diffraction file.")
         register(getattr(self, "pushButton_AddBasePtn", None),
-                 "Add the current diffraction file to the waterfall list.")
+                 "Add the current CHI file to the waterfall list.")
+        register(getattr(self, "comboBox_NavParamMode", None),
+                 "Choose whether Prev and Next use saved PARAM or carry current settings.")
         register(getattr(self, "pushButton_S_NextBasePtn", None),
                  "Open the next diffraction file.")
         register(getattr(self, "pushButton_NewBasePtn", None),
@@ -2149,7 +2205,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         row1_widgets = [
             getattr(self, "pushButton_S_PrevBasePtn", None),
-            getattr(self, "pushButton_AddBasePtn", None),
             getattr(self, "pushButton_S_NextBasePtn", None),
             getattr(self, "pushButton_NewBasePtn", None),
             getattr(self, "pushButton_LoadDPP", None),
@@ -2162,18 +2217,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self._set_button_height(widget)
             if widget in (
                 getattr(self, "pushButton_S_PrevBasePtn", None),
-                getattr(self, "pushButton_AddBasePtn", None),
                 getattr(self, "pushButton_S_NextBasePtn", None),
             ):
                 if widget == getattr(self, "pushButton_S_PrevBasePtn", None):
                     widget.setText("Prev")
-                elif widget == getattr(self, "pushButton_AddBasePtn", None):
-                    widget.setText("Wfall+")
                 elif widget == getattr(self, "pushButton_S_NextBasePtn", None):
                     widget.setText("Next")
                 self._set_flat_toolbar_button_style(widget, compact=True)
                 set_toolbar_compact_width(widget)
                 self.layout_TopToolbarRow1.addWidget(widget, 0)
+                if widget == getattr(self, "pushButton_S_PrevBasePtn", None):
+                    self.comboBox_NavParamMode = QtWidgets.QComboBox(
+                        self.frame_TopToolbarRow1)
+                    self.comboBox_NavParamMode.setObjectName(
+                        "comboBox_NavParamMode")
+                    self.comboBox_NavParamMode.addItem("PARAM: Saved", "saved")
+                    self.comboBox_NavParamMode.addItem("PARAM: Carry", "carry")
+                    self.comboBox_NavParamMode.addItem("PARAM: Custom", "custom")
+                    self.comboBox_NavParamMode.setToolTip(
+                        "Choose how Prev and Next open a CHI with saved PARAM.")
+                    self.comboBox_NavParamMode.setFixedSize(130, STANDARD_HEIGHT)
+                    self.layout_TopToolbarRow1.addWidget(
+                        self.comboBox_NavParamMode, 0)
             elif widget in (
                 getattr(self, "pushButton_NewBasePtn", None),
                 getattr(self, "pushButton_LoadDPP", None),
@@ -2184,10 +2249,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                         "#2f8a57", "#3a9d66", "#267048", "#225f3d",
                         text_color="#f3fff7")
                 elif widget == getattr(self, "pushButton_LoadDPP", None):
-                    self._set_colored_flat_toolbar_button_style(
-                        widget,
-                        "#d6a800", "#e0b31b", "#b88f00", "#8f6f00",
-                        text_color="#1f1f1f")
+                    self._set_flat_toolbar_button_style(
+                        widget, compact=False)
                 else:
                     self._set_flat_toolbar_button_style(widget, compact=False)
                 widget.setMinimumWidth(0)
@@ -2201,6 +2264,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.layout_TopToolbarRow1.addWidget(widget, 0)
             if widget == getattr(self, "pushButton_S_NextBasePtn", None):
                 self.layout_TopToolbarRow1.addSpacing(28)
+
+        wfall_button = getattr(self, "pushButton_AddBasePtn", None)
+        if wfall_button is not None:
+            wfall_button.setParent(self.scrollAreaWidgetContents_6)
+            wfall_button.setText("Add Current Chi to Waterfall List")
+            wfall_button.setToolTip(
+                "Add the current CHI file to the waterfall list.")
+            set_button_height(wfall_button)
+            wfall_button.setMinimumWidth(0)
+            wfall_button.setMaximumWidth(16777215)
+            wfall_button.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+            apply_raised_toggle_style(wfall_button)
+            self.verticalLayout_35.insertWidget(
+                self.verticalLayout_35.indexOf(
+                    self.pushButton_ApplyWaterfallChange),
+                wfall_button)
+            wfall_button.show()
 
         toolbar_p_inc = getattr(self, "pushButton_S_PIncrease", None)
         toolbar_p_dec = getattr(self, "pushButton_S_PDecrease", None)

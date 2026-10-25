@@ -31,8 +31,12 @@ from .exportpythoncontroller import ExportPythonController
 from .mapcontroller import MapController
 from .sequencecontroller import SequenceController
 from .plotinteractioncontroller import PlotInteractionController
+from ..model.param_session_io import (
+    is_new_param_folder, model_param_signature)
+from ..model.azimuthal_integration import provenance_for_chi
+from ..view.ui_policy import set_nav_destination_indicator
 from ..utils import dialog_savefile, writechi, convert_wl_to_energy, \
-    get_sorted_filelist, find_from_filelist, chi_name_set, make_filename, \
+    get_sorted_filelist, find_from_filelist, same_chi_name_set, make_filename, \
     get_directory, get_temp_dir, show_warning
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
@@ -55,6 +59,9 @@ class MainController(object):
         print("  ✓ PeakPoModel8 created")
 
         self.session_ctrl = SessionController(self.model, self.widget)
+        self.session_ctrl.param_saved_callback = self._on_param_saved
+        self._param_saved_signature = None
+        self._param_baseline_chi = None
         print("  ✓ SessionController created")
 
         self.base_ptn_ctrl = BasePatternController(
@@ -93,6 +100,8 @@ class MainController(object):
         self.cakeazi_ctrl = CakeAziController(self.model, self.widget)
         self.cakeazi_ctrl.set_helpers(base_ptn_ctrl=self.base_ptn_ctrl)
         self.base_ptn_ctrl.set_pattern_loaded_callback(self._on_base_pattern_loaded)
+        self.base_ptn_ctrl.set_pattern_ready_callback(self._on_pattern_ready)
+        self.base_ptn_ctrl.set_manual_open_callback(self._open_chi_manually)
         print("  ✓ CakeAziController created")
         
         self.waterfall_ctrl = WaterfallController(self.model, self.widget)
@@ -144,6 +153,11 @@ class MainController(object):
         
         self.read_setting()
         print("  ✓ read_setting() done")
+        for combo in (self.widget.comboBox_NavParamMode,
+                      self.widget.comboBox_NavParamModeConfig):
+            combo.currentIndexChanged.connect(
+                lambda _index, source=combo:
+                self._on_nav_param_mode_changed(source))
         self.widget.comboBox_NavSaveMode.currentIndexChanged.connect(
             lambda _index: self.settings.setValue(
                 "nav_save_mode",
@@ -166,6 +180,11 @@ class MainController(object):
         self._recovery_timer.setInterval(180000)
         self._recovery_timer.timeout.connect(
             self._save_periodic_recovery)
+        self._param_dirty_timer = QtCore.QTimer(self.widget)
+        self._param_dirty_timer.setInterval(3000)
+        self._param_dirty_timer.timeout.connect(self._refresh_param_dirty_status)
+        self._param_dirty_timer.start()
+        self.widget.set_param_dirty_status(False)
         
         print("MainController.__init__ - DONE\n")
 
@@ -199,6 +218,158 @@ class MainController(object):
         self._nav_filled_missing = False
         if hasattr(self, "cakeazi_ctrl") and (self.cakeazi_ctrl is not None):
             self.cakeazi_ctrl.refresh_derived_chi_ui(select_path=filename)
+        self._refresh_nav_destination_indicators()
+
+    def _current_param_signature(self):
+        if not self.model.base_ptn_exist():
+            return None
+        return model_param_signature(
+            self.model, ui_state=self.session_ctrl._collect_ui_state())
+
+    def _on_pattern_ready(self, filename):
+        self._param_baseline_chi = os.path.normcase(os.path.abspath(filename))
+        try:
+            self._param_saved_signature = self._current_param_signature()
+        except Exception as exc:
+            print("PARAM status baseline failed:", exc)
+            self._param_saved_signature = None
+        self.widget.set_param_dirty_status(False)
+
+    def _on_param_saved(self):
+        if self.model.base_ptn_exist():
+            self._on_pattern_ready(self.model.get_base_ptn_filename())
+            self._refresh_nav_destination_indicators()
+
+    def _refresh_param_dirty_status(self):
+        if not self.model.base_ptn_exist() or \
+                getattr(self, "_navigation_in_progress", False):
+            return
+        current = os.path.normcase(os.path.abspath(
+            self.model.get_base_ptn_filename()))
+        if current != self._param_baseline_chi:
+            return
+        try:
+            signature = self._current_param_signature()
+        except Exception as exc:
+            print("PARAM status check failed:", exc)
+            return
+        if self._param_saved_signature is not None:
+            self.widget.set_param_dirty_status(
+                signature != self._param_saved_signature)
+
+    def _refresh_nav_destination_indicators(self):
+        buttons = (
+            (self.widget.pushButton_S_PrevBasePtn, -1, "Previous"),
+            (self.widget.pushButton_S_NextBasePtn, 1, "Next"),
+        )
+        files = []
+        index = -1
+        if self.model.base_ptn_exist():
+            files = get_sorted_filelist(
+                self.model.chi_path,
+                sorted_by_name=self.widget.radioButton_SortbyNme.isChecked(),
+                search_ext="*.chi")
+            index = find_from_filelist(
+                files, os.path.basename(self.model.get_base_ptn_filename()))
+        step = self.widget.spinBox_FileStep.value()
+        mode = self._nav_param_mode()
+        for button, direction, label in buttons:
+            target = None
+            if index >= 0 and files:
+                target_index = max(
+                    0, min(index + direction * step, len(files) - 1))
+                if target_index != index:
+                    target = files[target_index]
+            if target is not None and not os.path.isfile(target):
+                target = None
+            has_param = (is_new_param_folder(get_temp_dir(target))
+                         if target is not None else None)
+            set_nav_destination_indicator(button, has_param)
+            button.setEnabled(target is not None)
+            if target is None:
+                message = "No " + label.lower() + " CHI file at this step."
+            else:
+                if has_param and mode == "saved":
+                    action = "Use saved PARAM."
+                elif has_param and mode == "carry":
+                    action = "Carry enabled settings; keep other saved values."
+                elif has_param:
+                    action = "Apply custom category rules."
+                else:
+                    action = "No saved PARAM; carry enabled settings."
+                message = label + ": " + os.path.basename(target) + ". " + action
+            button.setToolTip(message)
+            button.setStatusTip(message)
+            if hasattr(self.widget, "_compact_help_widgets"):
+                self.widget._compact_help_widgets[button] = message
+
+    def _confirm_manual_open_param_choice(self, current, selected):
+        box = QtWidgets.QMessageBox(self.widget)
+        box.setOption(QtWidgets.QMessageBox.DontUseNativeDialog, True)
+        box.setTextFormat(QtCore.Qt.PlainText)
+        box.setIcon(QtWidgets.QMessageBox.Question)
+        box.setWindowTitle("Open CHI with existing PARAM")
+        box.setText("The selected CHI file has a saved PARAM session.")
+        box.setInformativeText(
+            "Current: " + os.path.basename(current) + "\n"
+            "Selected: " + os.path.basename(selected) + "\n\n"
+            "Use its saved PARAM, or carry the enabled settings from the current file? "
+            "Carried settings replace the corresponding saved values.")
+        existing_button = box.addButton(
+            "Use existing PARAM", QtWidgets.QMessageBox.AcceptRole)
+        carry_button = box.addButton(
+            "Carry current settings", QtWidgets.QMessageBox.ActionRole)
+        cancel_button = box.addButton(
+            "Cancel", QtWidgets.QMessageBox.RejectRole)
+        box.setDefaultButton(existing_button)
+        box.setEscapeButton(cancel_button)
+        box.exec()
+        if box.clickedButton() == carry_button:
+            return "carry"
+        if box.clickedButton() == existing_button:
+            return "existing"
+        return "cancel"
+
+    def _open_chi_manually(self, filename):
+        if not os.path.isfile(filename):
+            self.base_ptn_ctrl._setshow_new_base_ptn(filename)
+            return
+        target = filename
+        provenance = provenance_for_chi(filename)
+        if self.base_ptn_ctrl._is_derived_provenance(provenance):
+            source = self.base_ptn_ctrl._recover_source_chi(
+                provenance.get("source_chi"), filename)
+            if source and os.path.isfile(source):
+                target = source
+        current = (self.model.get_base_ptn_filename()
+                   if self.model.base_ptn_exist() else None)
+        different = current is not None and not self.base_ptn_ctrl._same_path(
+            current, target)
+        choice = "existing"
+        if different and is_new_param_folder(get_temp_dir(target)):
+            choice = self._confirm_manual_open_param_choice(current, target)
+            if choice == "cancel":
+                return
+        if different:
+            if not self.session_ctrl.save_for_navigation(
+                    self.widget.comboBox_NavSaveMode.currentData(),
+                    self._nav_filled_missing):
+                return
+            self.session_ctrl.save_recovery_state()
+        carry_state = (self._capture_nav_carry_state()
+                       if different and choice == "carry" else None)
+        self.base_ptn_ctrl._setshow_new_base_ptn(filename)
+        if (carry_state is not None and self.model.base_ptn_exist() and
+                self.base_ptn_ctrl._same_path(
+                    self.model.get_base_ptn_filename(), target)):
+            with self._defer_plot_updates():
+                self._apply_nav_carry_state(
+                    carry_state, force_overwrite_existing=True)
+            self.plot_ctrl.update()
+        if different and self.model.base_ptn_exist() and \
+                self.base_ptn_ctrl._same_path(
+                    self.model.get_base_ptn_filename(), target):
+            self.session_ctrl.save_recovery_state()
 
     def _confirm_map_param_save(self, current, filename):
         box = QtWidgets.QMessageBox(self.widget)
@@ -270,8 +441,10 @@ class MainController(object):
         self._recovery_timer.start()
 
     def _restore_last_working_state(self):
-        self.session_ctrl.restore_recovery_state(
+        restored = self.session_ctrl.restore_recovery_state(
             self.base_ptn_ctrl, self.plot_ctrl)
+        if restored:
+            self._refresh_param_dirty_status()
 
     def _save_periodic_recovery(self):
         if (self._navigation_in_progress or
@@ -543,6 +716,16 @@ class MainController(object):
             lambda: self.goto_next_file('previous'))
         self.widget.pushButton_S_NextBasePtn.clicked.connect(
             lambda: self.goto_next_file('next'))
+        self.widget.spinBox_FileStep.valueChanged.connect(
+            lambda _value: self._refresh_nav_destination_indicators())
+        self.widget.radioButton_SortbyNme.toggled.connect(
+            lambda _checked: self._refresh_nav_destination_indicators())
+        self.widget.radioButton_SortbyTime.toggled.connect(
+            lambda _checked: self._refresh_nav_destination_indicators())
+        self.widget.pushButton_LoadDPP.clicked.connect(
+            lambda: QtCore.QTimer.singleShot(
+                0, self._refresh_nav_destination_indicators))
+        self._refresh_nav_destination_indicators()
         self.widget.pushButton_LastBasePtn.clicked.connect(
             lambda: self.goto_next_file('last'))
         self.widget.pushButton_FirstBasePtn.clicked.connect(
@@ -1400,6 +1583,8 @@ class MainController(object):
         self.settings.setValue(
             "nav_save_mode", self.widget.comboBox_NavSaveMode.currentData())
         self.settings.setValue(
+            "nav_param_mode", self.widget.comboBox_NavParamMode.currentData())
+        self.settings.setValue(
             "restore_working_state",
             self.widget.checkBox_RestoreWorkingState.isChecked())
 
@@ -1481,6 +1666,12 @@ class MainController(object):
                 self._load_widget_from_settings(
                     key, getattr(self.widget, attr),
                     self._carry_nav_setting_defaults().get(attr))
+        param_mode = self._read_nav_param_mode_setting()
+        for combo in (self.widget.comboBox_NavParamMode,
+                      self.widget.comboBox_NavParamModeConfig):
+            index = combo.findData(param_mode)
+            combo.setCurrentIndex(index if index >= 0 else 0)
+        self.widget._sync_nav_param_custom_visibility()
         mode = str(self.settings.value("nav_save_mode", "incomplete"))
         index = self.widget.comboBox_NavSaveMode.findData(mode)
         self.widget.comboBox_NavSaveMode.setCurrentIndex(max(index, 0))
@@ -1708,6 +1899,34 @@ class MainController(object):
             return True
         return bool(getattr(self.widget, checkbox_attr).isChecked())
 
+    def _nav_param_mode(self):
+        combo = getattr(self.widget, "comboBox_NavParamMode", None)
+        return combo.currentData() if combo is not None else "custom"
+
+    def _read_nav_param_mode_setting(self):
+        if self.settings.contains("nav_param_mode"):
+            mode = str(self.settings.value("nav_param_mode", "saved"))
+            return mode if mode in ("saved", "carry", "custom") else "saved"
+        if (self.settings.contains("carry_nav_existing_jcpds") or
+                self.settings.contains("carry_nav_existing_other")):
+            # Earlier installations used category-specific rules. Retain them.
+            return "custom"
+        return "saved"
+
+    def _on_nav_param_mode_changed(self, source):
+        mode = source.currentData()
+        other = (self.widget.comboBox_NavParamModeConfig
+                 if source is self.widget.comboBox_NavParamMode
+                 else self.widget.comboBox_NavParamMode)
+        index = other.findData(mode)
+        if index >= 0 and other.currentIndex() != index:
+            previous = other.blockSignals(True)
+            other.setCurrentIndex(index)
+            other.blockSignals(previous)
+        self.widget._sync_nav_param_custom_visibility()
+        self.settings.setValue("nav_param_mode", mode)
+        self._refresh_nav_destination_indicators()
+
     def _get_nav_carry_existing_mode(self, key):
         attr = "comboBox_CarryNavExistingJCPDS" if key == "jcpds" \
             else "comboBox_CarryNavExistingOther"
@@ -1718,11 +1937,21 @@ class MainController(object):
             return "overwrite"
         return "keep"
 
-    def _get_nav_carry_action(self, key, checkbox_attr, presence):
+    def _get_nav_carry_action(
+            self, key, checkbox_attr, presence,
+            force_overwrite_existing=False, destination_has_param=False):
         if not self._is_nav_carry_enabled(checkbox_attr):
+            return "skip"
+        if force_overwrite_existing:
+            return ("overwrite_existing" if presence.get(key, False)
+                    else "carry_blank")
+        mode = self._nav_param_mode()
+        if mode == "saved" and destination_has_param:
             return "skip"
         if not bool(presence.get(key, False)):
             return "carry_blank"
+        if mode == "carry":
+            return "overwrite_existing"
         mode = self._get_nav_carry_existing_mode(key)
         if mode == "overwrite":
             return "overwrite_existing"
@@ -1842,43 +2071,51 @@ class MainController(object):
                 level = "red"
         return (". ".join(messages) + ".", level)
 
-    def _apply_nav_carry_state(self, snap):
+    def _apply_nav_carry_state(self, snap, force_overwrite_existing=False):
         carried_any = False
         results = []
         presence = self.session_ctrl.get_last_param_category_presence()
         skip_restore_keys = set(snap.get("_skip_restore_keys", []) or [])
+        destination = (self.model.get_base_ptn_filename()
+                       if self.model.base_ptn_exist() else "")
+        destination_has_param = bool(destination) and is_new_param_folder(
+            get_temp_dir(destination))
 
-        jcpds_action = self._get_nav_carry_action(
-            "jcpds", "checkBox_CarryNavJCPDS", presence)
-        jcpds_action = self._prompt_for_nav_carry_action("JCPDS", jcpds_action)
+        def choose_action(key, checkbox_attr, label):
+            action = self._get_nav_carry_action(
+                key, checkbox_attr, presence,
+                force_overwrite_existing=force_overwrite_existing,
+                destination_has_param=destination_has_param)
+            if force_overwrite_existing or self._nav_param_mode() != "custom":
+                return action
+            return self._prompt_for_nav_carry_action(label, action)
+
+        jcpds_action = choose_action(
+            "jcpds", "checkBox_CarryNavJCPDS", "JCPDS")
         if jcpds_action in ("carry_blank", "overwrite_existing"):
             self.model.jcpds_lst = copy.deepcopy(snap["jcpds_lst"])
             self.jcpdstable_ctrl.update()
             carried_any = True
         self._record_nav_carry_result(results, "jcpds", jcpds_action)
 
-        pressure_action = self._get_nav_carry_action(
-            "pressure", "checkBox_CarryNavPressure", presence)
-        pressure_action = self._prompt_for_nav_carry_action("Pressure", pressure_action)
+        pressure_action = choose_action(
+            "pressure", "checkBox_CarryNavPressure", "Pressure")
         if pressure_action in ("carry_blank", "overwrite_existing"):
             self.model.save_pressure(float(snap["pressure"]))
             self.widget.doubleSpinBox_Pressure.setValue(float(snap["pressure"]))
             carried_any = True
         self._record_nav_carry_result(results, "pressure", pressure_action)
 
-        temperature_action = self._get_nav_carry_action(
-            "temperature", "checkBox_CarryNavTemperature", presence)
-        temperature_action = self._prompt_for_nav_carry_action(
-            "Temperature", temperature_action)
+        temperature_action = choose_action(
+            "temperature", "checkBox_CarryNavTemperature", "Temperature")
         if temperature_action in ("carry_blank", "overwrite_existing"):
             self.model.save_temperature(float(snap["temperature"]))
             self.widget.doubleSpinBox_Temperature.setValue(float(snap["temperature"]))
             carried_any = True
         self._record_nav_carry_result(results, "temperature", temperature_action)
 
-        cake_action = self._get_nav_carry_action(
-            "cake_z_scale", "checkBox_CarryNavCakeZScale", presence)
-        cake_action = self._prompt_for_nav_carry_action("2D image scale", cake_action)
+        cake_action = choose_action(
+            "cake_z_scale", "checkBox_CarryNavCakeZScale", "2D image scale")
         if cake_action in ("carry_blank", "overwrite_existing"):
             cake = snap["cake_z_scale"]
             self.widget.horizontalSlider_VMin.setValue(int(cake["min_bar"]))
@@ -1893,10 +2130,8 @@ class MainController(object):
             carried_any = True
         self._record_nav_carry_result(results, "cake_z_scale", cake_action)
 
-        background_action = self._get_nav_carry_action(
-            "background", "checkBox_CarryNavBackground", presence)
-        background_action = self._prompt_for_nav_carry_action(
-            "Background", background_action)
+        background_action = choose_action(
+            "background", "checkBox_CarryNavBackground", "Background")
         if background_action in ("carry_blank", "overwrite_existing"):
             bg = snap["background"]
             self.widget.doubleSpinBox_Background_ROI_min.setValue(float(bg["roi_min"]))
@@ -1909,10 +2144,8 @@ class MainController(object):
             carried_any = True
         self._record_nav_carry_result(results, "background", background_action)
 
-        waterfall_action = self._get_nav_carry_action(
-            "waterfall_list", "checkBox_CarryNavWaterfall", presence)
-        waterfall_action = self._prompt_for_nav_carry_action(
-            "Waterfall list", waterfall_action)
+        waterfall_action = choose_action(
+            "waterfall_list", "checkBox_CarryNavWaterfall", "Waterfall list")
         if (waterfall_action in ("carry_blank", "overwrite_existing")) and \
                 ("waterfall_list" not in skip_restore_keys):
             self.model.waterfall_ptn = copy.deepcopy(snap["waterfall_list"])
@@ -1920,9 +2153,8 @@ class MainController(object):
             carried_any = True
         self._record_nav_carry_result(results, "waterfall_list", waterfall_action)
 
-        poni_action = self._get_nav_carry_action(
-            "poni", "checkBox_CarryNavPONI", presence)
-        poni_action = self._prompt_for_nav_carry_action("PONI", poni_action)
+        poni_action = choose_action(
+            "poni", "checkBox_CarryNavPONI", "PONI")
         if poni_action in ("carry_blank", "overwrite_existing"):
             self.model.poni = snap["poni"]
             if snap["poni"] is None:
@@ -1933,10 +2165,8 @@ class MainController(object):
             carried_any = True
         self._record_nav_carry_result(results, "poni", poni_action)
 
-        fits_action = self._get_nav_carry_action(
-            "fits_information", "checkBox_CarryNavFits", presence)
-        fits_action = self._prompt_for_nav_carry_action(
-            "Fitting results", fits_action)
+        fits_action = choose_action(
+            "fits_information", "checkBox_CarryNavFits", "Fitting results")
         if fits_action in ("carry_blank", "overwrite_existing"):
             self.model.section_lst = copy.deepcopy(snap["fits_information"]["section_lst"])
             self.model.current_section = copy.deepcopy(snap["fits_information"]["current_section"])
@@ -1953,6 +2183,11 @@ class MainController(object):
             self.session_ctrl.set_carryover_source_chi(None)
 
         status_text, status_level = self._format_nav_carry_status(results)
+        if carried_any and snap.get("source_chi"):
+            status_text = "From " + snap["source_chi"] + ": " + status_text
+        elif destination_has_param and self._nav_param_mode() == "saved":
+            status_text = "Using saved PARAM for " + os.path.basename(destination) + "."
+            status_level = "green"
         if hasattr(self.widget, "set_nav_carry_status"):
             self.widget.set_nav_carry_status(status_text, status_level)
 
@@ -1961,6 +2196,7 @@ class MainController(object):
         self.session_ctrl.refresh_backup_table()
         self._nav_filled_missing = any(
             item["action"] == "carry_blank" for item in results)
+        QtCore.QTimer.singleShot(0, self._refresh_param_dirty_status)
 
     def _get_cake_scale_bar_value(self):
         return 0
@@ -2437,7 +2673,7 @@ class MainController(object):
 
     def _confirm_chi_name_set_transition(self, new_filename):
         current_filename = self.model.base_ptn.fname
-        if chi_name_set(current_filename) == chi_name_set(new_filename):
+        if same_chi_name_set(current_filename, new_filename):
             return True
 
         box = QtWidgets.QMessageBox(self.widget)

@@ -97,6 +97,24 @@ def chi_name_set(filename):
     return re.sub(r"\d+$", "", stem)
 
 
+def same_chi_name_set(first_filename, second_filename):
+    """Match CHI sequences numbered at the end or just before a fixed suffix."""
+    if chi_name_set(first_filename) == chi_name_set(second_filename):
+        return True
+
+    def fixed_suffix_parts(filename):
+        stem = os.path.splitext(basename_any(filename))[0].casefold()
+        match = re.fullmatch(r"(.*\D)(\d+)(\D+)(\d+)", stem)
+        if match is None:
+            return None
+        prefix, _, separator, final_number = match.groups()
+        return prefix, separator, final_number
+
+    first_parts = fixed_suffix_parts(first_filename)
+    return first_parts is not None and first_parts == fixed_suffix_parts(
+        second_filename)
+
+
 def get_sorted_filelist(path, search_ext='*.chi', sorted_by_name=True):
     filelist = glob.glob(os.path.join(path, search_ext))
     if sorted_by_name:

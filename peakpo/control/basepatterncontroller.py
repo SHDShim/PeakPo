@@ -12,6 +12,7 @@ from ..model.azimuthal_integration import (
     provenance_for_chi,
     resolve_path_with_fallback,
 )
+from ..model.param_session_io import is_new_param_folder
 
 
 class BasePatternController(object):
@@ -21,6 +22,8 @@ class BasePatternController(object):
         self.widget = widget
         self.session_ctrl = session_ctrl
         self.pattern_loaded_callback = None
+        self.pattern_ready_callback = None
+        self.manual_open_callback = None
         self.plot_ctrl = MplController(self.model, self.widget)
         self.cake_ctrl = CakeController(self.model, self.widget)
         self.connect_channel()
@@ -28,9 +31,19 @@ class BasePatternController(object):
     def set_pattern_loaded_callback(self, callback):
         self.pattern_loaded_callback = callback
 
+    def set_pattern_ready_callback(self, callback):
+        self.pattern_ready_callback = callback
+
+    def set_manual_open_callback(self, callback):
+        self.manual_open_callback = callback
+
     def _notify_pattern_loaded(self, filename):
         if callable(self.pattern_loaded_callback):
             self.pattern_loaded_callback(filename)
+
+    def _notify_pattern_ready(self, filename):
+        if callable(self.pattern_ready_callback):
+            self.pattern_ready_callback(filename)
 
     def connect_channel(self):
         self.widget.pushButton_NewBasePtn.clicked.connect(
@@ -47,12 +60,18 @@ class BasePatternController(object):
             "Data files (*.chi)", default_hide_param_dirs=True)
         if not filen:
             return
-        self._setshow_new_base_ptn(str(filen))
+        self._open_selected_pattern(str(filen))
 
     def load_new_base_pattern_from_name(self):
         if self.widget.lineEdit_DiffractionPatternFileName.isModified():
             filen = self.widget.lineEdit_DiffractionPatternFileName.text()
-            self._setshow_new_base_ptn(filen)
+            self._open_selected_pattern(filen)
+
+    def _open_selected_pattern(self, filename):
+        if callable(self.manual_open_callback):
+            self.manual_open_callback(filename)
+        else:
+            self._setshow_new_base_ptn(filename)
 
     def _same_path(self, path_a, path_b):
         if not path_a or not path_b:
@@ -92,12 +111,16 @@ class BasePatternController(object):
                 if source_chi and os.path.exists(source_chi):
                     migration_target = source_chi
             self.model.set_chi_path(os.path.split(migration_target)[0])
-            if self.session_ctrl is not None:
+            if (self.session_ctrl is not None and not is_new_param_folder(
+                    get_temp_dir(migration_target))):
                 migrated = self.session_ctrl.migrate_dpp_for_chi_if_exists(
                     migration_target)
                 if migrated:
                     print(str(datetime.datetime.now())[:-7],
                           ': Loaded legacy DPP, converted to PARAM, and archived DPP.')
+                    if self.model.base_ptn_exist():
+                        self._notify_pattern_ready(
+                            self.model.get_base_ptn_filename())
                     return
             if self.model.base_ptn_exist():
                 old_filename = self.model.get_base_ptn_filename()
@@ -174,6 +197,7 @@ class BasePatternController(object):
                 self.session_ctrl.refresh_backup_table()
                 print(str(datetime.datetime.now())[:-7],
                     ': Loaded PARAM session for this CHI.')
+                self._notify_pattern_ready(new_filename)
                 return
         print(str(datetime.datetime.now())[:-7], 
                 ": Receive request to open ", 
@@ -207,6 +231,7 @@ class BasePatternController(object):
                 (not self.widget.checkBox_IgnoreRawDataExistence.isChecked()) and \
                 (not is_azimuthal_chi):
             self.widget.checkBox_ShowCake.setChecked(False)
+            self._notify_pattern_ready(new_filename)
             return
         # self._update_bg_params_in_widget()
 
@@ -231,6 +256,7 @@ class BasePatternController(object):
         # Keep backup table in File > Data synchronized right after CHI load.
         if self.session_ctrl is not None:
             self.session_ctrl.refresh_backup_table()
+        self._notify_pattern_ready(new_filename)
 
     def _load_derived_display_pattern(self, derived_filename, provenance):
         source_chi = provenance.get("source_chi")

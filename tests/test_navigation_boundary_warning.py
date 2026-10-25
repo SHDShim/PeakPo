@@ -16,7 +16,8 @@ from peakpo.control.sessioncontroller import SessionController
 from peakpo.control import sessioncontroller
 from peakpo.utils import dialogs
 from peakpo.utils import apply_spinbox_fix_style
-from peakpo.utils.fileutils import chi_name_set, find_from_filelist
+from peakpo.utils.fileutils import (
+    chi_name_set, find_from_filelist, same_chi_name_set)
 from peakpo.utils import writechi
 from peakpo.model.model import PeakPoModel
 
@@ -121,11 +122,13 @@ def test_recovery_state_restores_last_chi_and_model(tmp_path):
     controller.model = PeakPoModel()
     loader = SimpleNamespace(_load_a_new_pattern=lambda path: None)
     updates = []
-    plot = SimpleNamespace(update=lambda: updates.append(True))
+    plot = SimpleNamespace(
+        update=lambda: updates.append("plain"),
+        zoom_out_graph=lambda: updates.append("rescaled"))
     assert controller.restore_recovery_state(loader, plot)
     assert controller.model.get_base_ptn_filename() == str(chi_file)
     assert controller.model.get_saved_pressure() == 15.0
-    assert updates == [True]
+    assert updates == ["rescaled"]
 
 
 @pytest.mark.parametrize(
@@ -229,6 +232,15 @@ def test_chi_name_set_uses_stem_before_final_number():
     assert chi_name_set("file.chi") != chi_name_set("picture.chi")
 
 
+def test_same_chi_name_set_accepts_number_before_fixed_suffix():
+    first = "8R_map_3_S1_map_11_003_0001.chi"
+    second = "8R_map_3_S1_map_11_002_0001.chi"
+    assert same_chi_name_set(first, second)
+    assert same_chi_name_set("file_001.chi", "FILE_002.chi")
+    assert not same_chi_name_set(first, "8R_map_3_S1_map_11_002_0002.chi")
+    assert not same_chi_name_set(first, "picture_002_0001.chi")
+
+
 def test_same_name_set_needs_no_confirmation(tmp_path):
     controller = MainController.__new__(MainController)
     controller.model = SimpleNamespace(
@@ -236,6 +248,11 @@ def test_same_name_set_needs_no_confirmation(tmp_path):
 
     assert controller._confirm_chi_name_set_transition(
         str(tmp_path / "file_002.chi")) is True
+
+    controller.model.base_ptn.fname = str(
+        tmp_path / "8R_map_3_S1_map_11_003_0001.chi")
+    assert controller._confirm_chi_name_set_transition(
+        str(tmp_path / "8R_map_3_S1_map_11_002_0001.chi")) is True
 
 
 @pytest.mark.parametrize(
