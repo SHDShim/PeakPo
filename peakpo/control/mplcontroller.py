@@ -122,6 +122,7 @@ class MplController(object):
         self._pending_draw_profile = None
         self._after_draw_callbacks = []
         self._last_auto_cake_filename = None
+        self._cake_scale_by_chi = {}
         self._update_timer = QtCore.QTimer(self.widget)
         self._update_timer.setSingleShot(True)
         self._update_timer.timeout.connect(self._flush_update_request)
@@ -142,6 +143,7 @@ class MplController(object):
         self._cake_chi_centers = None
         self._cake_artist = None
         self._cake_display_data = None
+        self._cake_display_filename = None
         self._cake_data_cache_key = None
         self._cake_data_cache = None
         self._cake_source_stats_key = None
@@ -724,6 +726,66 @@ class MplController(object):
             i += 1
     """
 
+    def _cake_scale_key(self):
+        try:
+            filename = self.model.get_base_ptn_filename()
+        except Exception:
+            return None
+        return os.path.normcase(os.path.abspath(filename)) if filename else None
+
+    def cake_scale_state_for_current_file(self):
+        key = self._cake_scale_key()
+        state = self._cake_scale_by_chi.get(key) if key else None
+        return dict(state) if state is not None else None
+
+    def restore_cake_scale_state(self, state, *, overwrite=False):
+        """Register exact limits loaded from PARAM, keeping newer in-memory edits."""
+        key = self._cake_scale_key()
+        if (key is None or (key in self._cake_scale_by_chi and not overwrite)
+                or not state):
+            return
+        try:
+            vmin, vmax = float(state["vmin"]), float(state["vmax"])
+            if not np.isfinite(vmin) or not np.isfinite(vmax) or vmax <= vmin:
+                return
+            self._cake_scale_by_chi[key] = {
+                "vmin": max(0.0, vmin), "vmax": vmax,
+                "low_pct": float(state.get("low_pct", 0.0)),
+                "high_pct": float(state.get("high_pct", 20.0)),
+                "data_signature": state.get("data_signature"),
+                "edited": True,
+            }
+        except (KeyError, TypeError, ValueError):
+            return
+
+    def _remember_cake_scale(self, *, edited=False):
+        key = self._cake_scale_key()
+        hist = getattr(self.widget, "cake_hist_widget", None)
+        if key is None or key != self._cake_display_filename or hist is None:
+            return
+        bounds = hist.current_bounds()
+        if bounds is None:
+            return
+        self._cake_scale_by_chi[key] = {
+            "vmin": bounds[0], "vmax": bounds[1],
+            "low_pct": float(hist.spin_low_pct.value()),
+            "high_pct": float(hist.spin_high_pct.value()),
+            "data_signature": hist._data_signature,
+            "edited": edited or self._cake_scale_by_chi.get(key, {}).get(
+                "edited", False),
+        }
+
+    def _matching_cake_scale(self, data_signature):
+        state = self.cake_scale_state_for_current_file()
+        if state is None:
+            return None
+        old_signature = state.get("data_signature")
+        if (old_signature is not None and data_signature is not None
+                and tuple(old_signature) != tuple(data_signature)):
+            self._cake_scale_by_chi.pop(self._cake_scale_key(), None)
+            return None
+        return state
+
     def _plot_cake(self):
         """
         Controls cake viewing as well as mask
@@ -735,6 +797,7 @@ class MplController(object):
         def _clear_failed_cake_state():
             self._cake_artist = None
             self._cake_display_data = None
+            self._cake_display_filename = None
             self._clear_cake_overlay_artists()
             hist_widget = getattr(self.widget, "cake_hist_widget", None)
             if hist_widget is not None:
@@ -894,15 +957,24 @@ class MplController(object):
                 cake_filename is not None and
                 cake_filename != self._last_auto_cake_filename)
 
+            saved_scale = (self._matching_cake_scale(data_signature)
+                           if not diff_mode else None)
+
             auto_bounds = None
-            if (not diff_mode) and is_new_cake_file:
+            if (not diff_mode) and is_new_cake_file and saved_scale is None:
                 auto_bounds = hist_widget.auto_edge_bounds_for_values(
                     int_new,
                     self._cake_hist_edge_width_percent(),
                     self._cake_hist_edge_position_percent())
+            if is_new_cake_file:
                 self._last_auto_cake_filename = cake_filename
 
-            if auto_bounds is not None:
+            if saved_scale is not None:
+                hist_widget.apply_auto_view(
+                    saved_scale["low_pct"], saved_scale["high_pct"])
+                climits = np.asarray([
+                    saved_scale["vmin"], saved_scale["vmax"]], dtype=float)
+            elif auto_bounds is not None:
                 hist_widget.apply_auto_view(
                     auto_bounds["low_pct"], auto_bounds["high_pct"])
                 climits = np.asarray([
@@ -953,11 +1025,14 @@ class MplController(object):
             self._cake_artist = ax_cake.pcolormesh(
                 tth_edges, chi_edges, int_new, **mesh_kwargs)
         self._cake_display_data = int_new
+        self._cake_display_filename = self._cake_scale_key()
         if hist_widget is not None:
             hist_widget.set_data(
                 int_new, vmin=float(climits[0]), vmax=float(climits[1]),
                 data_token=cache_key, finite_values=finite_values,
                 data_signature=data_signature)
+            if not diff_mode:
+                self._remember_cake_scale()
 
         # get gray scale color map and make sure masked data points are colored red
         """
@@ -1651,6 +1726,7 @@ class MplController(object):
         cake_artist.set_clim(float(climits[0]), float(climits[1]))
 
         if hist_widget is not None:
+            previous = self.cake_scale_state_for_current_file()
             finite_values = None
             data_signature = None
             if self._cake_data_cache is not None:
@@ -1662,6 +1738,10 @@ class MplController(object):
                 data_token=self._cake_data_cache_key,
                 finite_values=finite_values,
                 data_signature=data_signature)
+            changed_limits = (previous is None or
+                              float(climits[0]) != previous["vmin"] or
+                              float(climits[1]) != previous["vmax"])
+            self._remember_cake_scale(edited=changed_limits)
         build_seconds = time.perf_counter() - started_at
         self._schedule_canvas_draw(
             started_at, build_seconds, {"Cake style": build_seconds})

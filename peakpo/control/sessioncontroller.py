@@ -449,6 +449,9 @@ class SessionController(object):
                 "low_pct": float(hist.spin_low_pct.value()),
                 "high_pct": float(hist.spin_high_pct.value()),
             }
+            scale = self.plot_ctrl.cake_scale_state_for_current_file()
+            if scale is not None and scale.get("edited"):
+                cake_hist["scale"] = scale
         return {
             "pt_controls": {
                 "p_step": self.widget.doubleSpinBox_PStep.value(),
@@ -549,6 +552,7 @@ class SessionController(object):
                         combo.setCurrentIndex(idx)
             hist = cake.get("hist", {})
             if hasattr(self.widget, "cake_hist_widget") and hist != {}:
+                self.plot_ctrl.restore_cake_scale_state(hist.get("scale"))
                 if "log_y" in hist:
                     self.widget.cake_hist_widget.check_log.setChecked(bool(hist["log_y"]))
                 if "focus_range" in hist:

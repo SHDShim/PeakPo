@@ -182,6 +182,7 @@ class CakeController(object):
                 combo.setCurrentIndex(idx)
 
     def _set_cake_bound_from_hist(self, bound_type, intensity_value):
+        self.plot_ctrl._remember_cake_scale(edited=True)
         prefactor = self.widget.spinBox_MaxCakeScale.value() / \
             (10. ** self._get_cake_scale_bar_value())
         if prefactor <= 0:
@@ -214,6 +215,7 @@ class CakeController(object):
         return int(np.clip(round(float(intensity_value) / prefactor * 100.0), 0, 1000))
 
     def _set_cake_range_from_hist(self, vmin, vmax):
+        self.plot_ctrl._remember_cake_scale(edited=True)
         prefactor = self.widget.spinBox_MaxCakeScale.value() / \
             (10. ** self._get_cake_scale_bar_value())
         if prefactor <= 0:

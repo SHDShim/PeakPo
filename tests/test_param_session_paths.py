@@ -99,7 +99,7 @@ class ParamSessionPathTests(unittest.TestCase):
             success, meta = load_model_from_param(restored, str(base_chi))
 
             self.assertTrue(success, msg=str(meta))
-            self.assertEqual(restored.base_ptn.params_chbg, [20, 10, 20])
+            self.assertEqual(restored.base_ptn.params_chbg, [10, 20, 40])
             self.assertTrue(np.array_equal(restored.base_ptn.x_bg, restored.base_ptn.x_raw))
             self.assertTrue(np.array_equal(restored.base_ptn.x_bgsub, restored.base_ptn.x_raw))
             self.assertTrue(np.array_equal(restored.base_ptn.y_bg, np.zeros_like(restored.base_ptn.y_raw)))

@@ -21,12 +21,53 @@ from peakpo.control.plotinteractioncontroller import (
 )
 from peakpo.ds_section.section import Section
 from peakpo.view.mplwidget import MplCanvas
+from peakpo.view.cakehistwidget import CakeHistogramWidget
 
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 
 _APP = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+
+
+def test_cake_color_limits_follow_each_chi_across_navigation(tmp_path):
+    paths = [str(tmp_path / "first.chi"), str(tmp_path / "second.chi")]
+    current = [paths[0]]
+    hist = CakeHistogramWidget()
+    controller = object.__new__(MplController)
+    controller.model = SimpleNamespace(
+        get_base_ptn_filename=lambda: current[0])
+    controller.widget = SimpleNamespace(cake_hist_widget=hist)
+    controller._cake_scale_by_chi = {}
+
+    first_data = np.arange(1.0, 101.0)
+    hist.set_data(first_data, vmin=12.25, vmax=72.75)
+    controller._cake_display_filename = controller._cake_scale_key()
+    controller._remember_cake_scale(edited=True)
+    first_signature = hist._data_signature
+
+    current[0] = paths[1]
+    controller._remember_cake_scale(edited=True)
+    assert controller.cake_scale_state_for_current_file() is None
+    second_data = np.arange(100.0, 201.0)
+    hist.set_data(second_data, vmin=120.0, vmax=180.0)
+    controller._cake_display_filename = controller._cake_scale_key()
+    controller._remember_cake_scale()
+
+    current[0] = paths[0]
+    restored = controller._matching_cake_scale(first_signature)
+    assert (restored["vmin"], restored["vmax"]) == (12.25, 72.75)
+    reloaded = object.__new__(MplController)
+    reloaded.model = controller.model
+    reloaded._cake_scale_by_chi = {}
+    reloaded.restore_cake_scale_state(restored)
+    assert reloaded._matching_cake_scale(first_signature)["vmax"] == 72.75
+    controller.restore_cake_scale_state(
+        {"vmin": 20.0, "vmax": 80.0})
+    assert controller.cake_scale_state_for_current_file()["vmin"] == 12.25
+    assert controller._matching_cake_scale((101, 1.0, 100.0, 50.5)) is None
+
+    hist.close()
 
 
 def test_coordinate_edges_expand_pixel_centers_by_half_a_bin():

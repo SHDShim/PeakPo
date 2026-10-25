@@ -45,6 +45,11 @@ updates after navigation and periodically while editing; reverting all
 changes restores the normal appearance. Automatic plot setup after opening an
 existing setup does not count as a user change.
 
+The Cake histogram's blue and orange intensity limits are remembered separately
+for each CHI during navigation. Returning to a file restores its adjusted
+limits and histogram view. Saving PARAM or a recovery snapshot also stores the
+exact adjusted limits; reopening that setup restores them.
+
 **Add Current Chi to Waterfall List** is in the Waterfall tab above **Update
 plot**. It adds the current CHI to the waterfall list.
 

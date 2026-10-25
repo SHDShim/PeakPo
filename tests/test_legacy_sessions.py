@@ -21,7 +21,7 @@ LEGACY_SESSION_DIR = REPO_ROOT / "jupyter-tools" / "5_xrdfile_conversion"
 class LegacySessionCompatibilityTests(unittest.TestCase):
     def test_pattern_peakpo_initializes_background_defaults(self):
         pattern = PatternPeakPo()
-        self.assertEqual(pattern.params_chbg, [20, 10, 20])
+        self.assertEqual(pattern.params_chbg, [10, 20, 40])
         self.assertIsNone(pattern.x_bg)
         self.assertIsNone(pattern.y_bg)
         self.assertIsNone(pattern.x_bgsub)

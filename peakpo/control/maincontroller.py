@@ -1868,6 +1868,9 @@ class MainController(object):
                 "low_pct": float(hist.spin_low_pct.value()),
                 "high_pct": float(hist.spin_high_pct.value()),
             }
+            scale = self.plot_ctrl.cake_scale_state_for_current_file()
+            if scale is not None and scale.get("edited"):
+                cake_hist["scale"] = scale
         return {
             "source_chi": source_chi,
             "jcpds_lst": copy.deepcopy(self.model.jcpds_lst),
@@ -2124,6 +2127,8 @@ class MainController(object):
             self._set_cake_scale_bar_value(int(cake["scale_bar"]))
             hist = cake.get("hist", {})
             if hasattr(self.widget, "cake_hist_widget") and hist != {}:
+                self.plot_ctrl.restore_cake_scale_state(
+                    hist.get("scale"), overwrite=True)
                 self.widget.cake_hist_widget.check_log.setChecked(bool(hist.get("log_y", True)))
                 self.widget.cake_hist_widget.check_focus.setChecked(bool(hist.get("focus_range", True)))
                 self.widget.cake_hist_widget.spin_low_pct.setValue(float(hist.get("low_pct", 0.0)))

@@ -170,6 +170,9 @@ class BasePatternController(object):
             return
 
         if self.session_ctrl is not None:
+            plot_ctrl = getattr(self.session_ctrl, "plot_ctrl", None)
+            if plot_ctrl is not None:
+                plot_ctrl._remember_cake_scale()
             # Reset carry-over provenance for generic/manual loads.
             self.session_ctrl.set_carryover_source_chi(None)
         if hasattr(self.widget, "set_nav_carry_status"):
