@@ -248,6 +248,11 @@ class MainController(object):
             self._param_saved_signature = None
         self.widget.set_param_dirty_status(
             self._recovered_dirty_chi is not None)
+        map_ctrl = getattr(self, "map_ctrl", None)
+        if callable(getattr(map_ctrl, "maybe_restore_for_chi", None)):
+            QtCore.QTimer.singleShot(
+                0, lambda: map_ctrl.maybe_restore_for_chi(
+                    map_ctrl._current_displayed_chi()))
 
     def _on_param_saved(self):
         if self.model.base_ptn_exist():
@@ -270,7 +275,15 @@ class MainController(object):
         return self._current_param_signature() != self._param_saved_signature
 
     def _snapshot_departing_chi(self):
-        saved = self.session_ctrl.save_recovery_state()
+        # A saved PARAM already protects a clean setup. Keep full snapshots
+        # for unsaved edits and files that have no saved PARAM yet.
+        dirty_callback = getattr(self.session_ctrl, "param_dirty_callback", None)
+        try:
+            clean = callable(dirty_callback) and not dirty_callback()
+        except Exception:
+            clean = False
+        saved = self.session_ctrl.save_recovery_state(
+            prefer_saved_param=clean)
         recovery_toggle = getattr(
             getattr(self, "widget", None), "checkBox_RestoreWorkingState", None)
         if saved is False and recovery_toggle is not None and \
@@ -442,7 +455,7 @@ class MainController(object):
         if different and self.model.base_ptn_exist() and \
                 self.base_ptn_ctrl._same_path(
                     self.model.get_base_ptn_filename(), target):
-            self.session_ctrl.save_recovery_state()
+            self.session_ctrl.save_recovery_state(prefer_saved_param=True)
 
     def _confirm_map_param_save(self, current, filename):
         box = QtWidgets.QMessageBox(self.widget)
@@ -519,7 +532,7 @@ class MainController(object):
         if copied_poni:
             self.base_ptn_ctrl.cake_ctrl._set_current_poni(copied_poni)
         self.plot_ctrl.update()
-        self.session_ctrl.save_recovery_state()
+        self.session_ctrl.save_recovery_state(prefer_saved_param=True)
         return True
 
     def show_window(self):
@@ -3039,7 +3052,7 @@ class MainController(object):
                 self.plot_ctrl.update()
                 self._schedule_roi_overlays_after_plot_update(
                     flush_pending=True)
-                self.session_ctrl.save_recovery_state()
+                self.session_ctrl.save_recovery_state(prefer_saved_param=True)
                 loaded_existing = (self._nav_param_mode() in ("existing_only", "saved") and
                                    destination_has_param)
                 if loaded_existing or fresh_without_param:

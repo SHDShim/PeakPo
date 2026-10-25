@@ -4,8 +4,11 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.12.4.dev4"
+__version__ = "7.12.4"
 """
+7.12.4: improve CHI navigation recovery speed; restore named Map sets from
+        working folders and cache Map data for faster ROI updates. Includes
+        CHI navigation, PARAM, PONI, and Cake fixes from the development series.
 7.12.4.dev4: handle macOS metadata sidecars and disappearing staging files
              when navigating CHI folders copied from Windows.
 7.12.4.dev3: align CHI navigation and PARAM save defaults; strengthen setup

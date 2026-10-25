@@ -32,6 +32,9 @@ qt.conf
 # =========================
 .matplotlib/
 
+# Derived Map analysis cache beside CHI data
+map_param/
+
 # =========================
 # Logs and runtime files
 # =========================

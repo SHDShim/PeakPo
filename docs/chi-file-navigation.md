@@ -125,16 +125,19 @@ they are not part of the saved setup. Temporary save cleanup also tolerates
 these metadata files disappearing while their matching data files are removed.
 
 **Working state recovery** is enabled by default. PeakPo saves a private copy
-of the open CHI analysis every three minutes, on navigation, and on a normal
-quit. It restores the latest available copy at the next launch, including the
-active file and tab selection, then rescales the plot to the recovered data.
-When a file has unsaved setup changes, PeakPo also keeps its private copy while
-you visit other CHI files. **Existing only** always opens that file's saved
-PARAM when one exists, so Save is gray until you change the setup. For a CHI
-without saved PARAM, PeakPo can restore its private working copy on return;
-the Save button is yellow until you save it. The latest private snapshot is
-also used for startup recovery. Clean copies from previous files are removed
-during navigation.
+of the open CHI analysis every three minutes and on a normal quit. During
+navigation it records the active CHI, tab selection, and saved PARAM location
+when PARAM exists. If a CHI has no saved PARAM, navigation writes a full private
+snapshot instead. It restores the recorded file and setup at the next launch,
+then rescales the plot to the recovered data. Recent unsaved changes to the
+file opened by navigation may be absent until the next periodic snapshot or
+normal quit; use **Save** when those changes must be preserved immediately.
+When a departing file has unsaved setup changes, PeakPo also keeps a full
+private copy while you visit other CHI files. **Existing only** always opens
+that file's saved PARAM when one exists, so Save is gray until you change the
+setup. For a CHI without saved PARAM, PeakPo can restore its private working
+copy on return; the Save button is yellow until you save it. Clean copies from
+previous files are removed during navigation.
 These copies are stored in the operating system's application data folder,
 separately from CHI PARAM folders. Uncheck
 **Restore last working state when PeakPo starts** to disable both saving and

@@ -773,7 +773,7 @@ def find_temp_cake_triplet(chi_path):
     return triplets[0]
 
 
-def load_cake_data(chi_path, cake_cache):
+def load_cake_data(chi_path, cake_cache, mmap_mode=None):
     if chi_path in cake_cache:
         return cake_cache[chi_path]
 
@@ -781,13 +781,33 @@ def load_cake_data(chi_path, cake_cache):
     if triplet is None:
         return None
 
-    tth = np.load(triplet[0])
-    azi = np.load(triplet[1])
-    intensity = np.load(triplet[2])
+    tth = np.load(triplet[0], mmap_mode=mmap_mode)
+    azi = np.load(triplet[1], mmap_mode=mmap_mode)
+    intensity = np.load(triplet[2], mmap_mode=mmap_mode)
     payload = (
         np.asarray(tth, dtype=float),
         np.asarray(azi, dtype=float),
-        np.asarray(intensity, dtype=float),
+        intensity if mmap_mode else np.asarray(intensity, dtype=float),
     )
     cake_cache[chi_path] = payload
     return payload
+
+
+def sum_cake_roi(cake, roi):
+    """Sum a Cake ROI without copying a rectangular memory-mapped image."""
+    tth, azi, intensity = cake
+    xmin, xmax, ymin, ymax = roi
+    if (np.all(np.isfinite(tth)) and np.all(np.isfinite(azi)) and
+            np.all(np.diff(tth) >= 0) and np.all(np.diff(azi) >= 0)):
+        col0 = int(np.searchsorted(tth, xmin, side="left"))
+        col1 = int(np.searchsorted(tth, xmax, side="right"))
+        row0 = int(np.searchsorted(azi, ymin, side="left"))
+        row1 = int(np.searchsorted(azi, ymax, side="right"))
+        if col1 <= col0 or row1 <= row0:
+            return np.nan
+        return float(np.nansum(intensity[row0:row1, col0:col1]))
+    mt = (tth >= xmin) & (tth <= xmax)
+    ma = (azi >= ymin) & (azi <= ymax)
+    if not np.any(mt) or not np.any(ma):
+        return np.nan
+    return float(np.nansum(intensity[np.ix_(ma, mt)]))

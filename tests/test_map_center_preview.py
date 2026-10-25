@@ -71,13 +71,14 @@ def test_map_progress_is_hidden_during_forced_save_prompt(tmp_path):
 
 
 @pytest.mark.parametrize("current_in_set", [False, True])
-def test_entering_map_tab_previews_center_only_for_external_chi(
+def test_entering_map_tab_does_not_reopen_an_old_set(
         tmp_path, current_in_set):
     selected = [str(tmp_path / "map_001.chi")]
     current = selected[0] if current_in_set else str(tmp_path / "other.chi")
     controller = MapController.__new__(MapController)
     controller._chi_files = selected
     controller._current_displayed_chi = lambda: current
+    controller.maybe_restore_for_chi = lambda filename: False
     active_tab = object()
     controller.widget = SimpleNamespace(
         tab_Map=active_tab,
@@ -89,7 +90,7 @@ def test_entering_map_tab_previews_center_only_for_external_chi(
 
     controller._on_main_tab_changed(0)
 
-    assert previews == ([] if current_in_set else [True])
+    assert previews == []
 
 
 def test_center_preview_uses_normal_chi_opening_path(tmp_path):
@@ -158,7 +159,7 @@ def test_map_file_open_respects_param_navigation_save(
     controller.session_ctrl = SimpleNamespace(
         save_for_navigation=lambda mode, filled: (
             actions.append(("save", mode, filled)) or save_succeeds),
-        save_recovery_state=lambda: actions.append(("recovery",)))
+        save_recovery_state=lambda **kwargs: actions.append(("recovery",)))
     controller.base_ptn_ctrl = SimpleNamespace(
         _load_a_new_pattern=lambda path: (
             actions.append(("open", path)), active.__setitem__(0, path)))
@@ -197,7 +198,7 @@ def test_forced_map_switch_honors_param_prompt(
     controller.session_ctrl = SimpleNamespace(
         save_dpp=lambda: actions.append("manual save") or True,
         save_for_navigation=lambda *args: pytest.fail("unexpected auto save"),
-        save_recovery_state=lambda: None)
+        save_recovery_state=lambda **kwargs: None)
     controller.base_ptn_ctrl = SimpleNamespace(
         _load_a_new_pattern=lambda path: (
             actions.append("open"), active.__setitem__(0, path)))

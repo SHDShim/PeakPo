@@ -46,7 +46,7 @@ def test_manual_open_existing_param_choice(
     controller.plot_ctrl = SimpleNamespace(update=lambda: None)
     controller.session_ctrl = SimpleNamespace(
         save_for_navigation=lambda *args: saved.append("param") or True,
-        save_recovery_state=lambda: saved.append("recovery"))
+        save_recovery_state=lambda **kwargs: saved.append("recovery"))
     controller.base_ptn_ctrl = SimpleNamespace(
         _is_derived_provenance=lambda provenance: False,
         _same_path=lambda a, b: os.path.normcase(os.path.abspath(a)) ==

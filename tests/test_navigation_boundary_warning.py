@@ -1,3 +1,4 @@
+import json
 import os
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -159,6 +160,67 @@ def test_recovery_state_restores_last_chi_and_model(tmp_path):
     assert controller.model.get_base_ptn_filename() == str(chi_file)
     assert controller.model.get_saved_pressure() == 15.0
     assert updates == ["rescaled"]
+
+
+def test_navigation_recovery_uses_saved_param_pointer(tmp_path):
+    chi_file = tmp_path / "file_001.chi"
+    writechi(str(chi_file), np.asarray([1.0, 2.0]),
+             np.asarray([10.0, 12.0]))
+    model = PeakPoModel()
+    model.set_base_ptn(str(chi_file), 0.3344)
+    model.save_pressure(10.0)
+    sessioncontroller.save_model_to_param(model, create_backup=False)
+    model.save_pressure(15.0)
+    widget = SimpleNamespace(
+        checkBox_RestoreWorkingState=_Checked(True),
+        textEdit_SessionFileName=SimpleNamespace(setText=lambda value: None),
+        textEdit_Jlist=SimpleNamespace(setText=lambda value: None))
+    controller = SessionController.__new__(SessionController)
+    controller.model = model
+    controller.widget = widget
+    controller._recovery_root = lambda: str(tmp_path / "app-data")
+    controller._commit_inputs_before_save = lambda: pytest.fail(
+        "pointer checkpoint must not serialize the current model")
+    controller._sync_ui_from_model = lambda **kwargs: None
+    controller.refresh_backup_table = lambda: None
+
+    assert controller.save_recovery_state(prefer_saved_param=True)
+    state_path = tmp_path / "app-data" / "last-state.json"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    assert state["recovery_source"] == "saved_param"
+    assert state["param_dir"] == str(tmp_path / "file_001-param")
+    assert not os.path.isdir(controller._recovery_dir(str(chi_file)))
+
+    restored_model = PeakPoModel()
+    controller.model = restored_model
+    loader = SimpleNamespace(_load_a_new_pattern=lambda path:
+                             restored_model.set_base_ptn(path, 0.3344))
+    plot = SimpleNamespace(zoom_out_graph=lambda: None)
+    assert controller.restore_recovery_state(loader, plot)
+    assert restored_model.get_saved_pressure() == 10.0
+    assert controller._recovered_current_chi is None
+
+
+def test_navigation_recovery_without_saved_param_keeps_full_snapshot(tmp_path):
+    chi_file = tmp_path / "unsaved.chi"
+    writechi(str(chi_file), np.asarray([1.0, 2.0]),
+             np.asarray([10.0, 12.0]))
+    model = PeakPoModel()
+    model.set_base_ptn(str(chi_file), 0.3344)
+    controller = SessionController.__new__(SessionController)
+    controller.model = model
+    controller.widget = SimpleNamespace(
+        checkBox_RestoreWorkingState=_Checked(True))
+    controller._recovery_root = lambda: str(tmp_path / "app-data")
+    controller._commit_inputs_before_save = lambda: None
+    controller._collect_ui_state = lambda: {}
+
+    assert controller.save_recovery_state(prefer_saved_param=True)
+    state = json.loads((tmp_path / "app-data" / "last-state.json").read_text(
+        encoding="utf-8"))
+    assert state["recovery_source"] == "private"
+    assert os.path.isfile(os.path.join(state["param_dir"],
+                                   "peakpo_manifest.json"))
 
 
 @pytest.mark.parametrize(
@@ -394,7 +456,7 @@ def test_name_set_confirmation_only_applies_to_name_navigation(
     controller._nav_filled_missing = False
     controller.session_ctrl = SimpleNamespace(
         save_for_navigation=lambda *args: True,
-        save_recovery_state=lambda: None)
+        save_recovery_state=lambda **kwargs: None)
 
     controller._goto_chi_next_file("next")
 

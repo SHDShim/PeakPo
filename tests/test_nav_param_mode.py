@@ -239,7 +239,7 @@ def test_strict_existing_navigation_skips_private_recovery(
             currentData=lambda: "existing_only"))
     controller.session_ctrl = SimpleNamespace(
         save_for_navigation=lambda *args: True,
-        save_recovery_state=lambda: True)
+        save_recovery_state=lambda **kwargs: True)
     calls = []
     controller._capture_nav_carry_state = lambda: {}
     controller._reset_setup_for_unsaved_navigation = lambda: calls.append("reset")
@@ -591,7 +591,7 @@ def test_carried_poni_is_copied_before_cached_cake_load(
     controller._nav_filled_missing = False
     controller.session_ctrl = SimpleNamespace(
         save_for_navigation=lambda *args: True,
-        save_recovery_state=lambda: True)
+        save_recovery_state=lambda **kwargs: True)
     controller._snapshot_departing_chi = lambda: True
     controller._capture_nav_carry_state = lambda: {"poni": str(source)}
     controller._reset_setup_for_unsaved_navigation = lambda: None
@@ -817,7 +817,7 @@ def test_navigation_baseline_accounts_for_plot_normalization(
     controller._defer_plot_updates = nullcontext
     controller.session_ctrl = SimpleNamespace(
         save_for_navigation=lambda *args: True,
-        save_recovery_state=lambda: None)
+        save_recovery_state=lambda **kwargs: None)
 
     def load(filename):
         base_ptn.fname = filename

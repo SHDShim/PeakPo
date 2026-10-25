@@ -1027,7 +1027,7 @@ class SessionController(object):
             pass
         self._recovered_current_chi = None
 
-    def save_recovery_state(self):
+    def save_recovery_state(self, prefer_saved_param=False):
         if any(arg.startswith("--verify-") for arg in sys.argv[1:]) or \
                 not self.widget.checkBox_RestoreWorkingState.isChecked() or \
                 not self.model.base_ptn_exist():
@@ -1036,7 +1036,11 @@ class SessionController(object):
         if not os.path.isfile(chi_file):
             return False
         try:
-            self._commit_inputs_before_save()
+            visible_param = os.path.splitext(chi_file)[0] + "-param"
+            use_saved_param = (prefer_saved_param and
+                               is_new_param_folder(visible_param))
+            if not use_saved_param:
+                self._commit_inputs_before_save()
             root = self._recovery_root()
             previous_chi = None
             try:
@@ -1045,27 +1049,31 @@ class SessionController(object):
                     previous_chi = json.load(stream).get("chi_file")
             except (OSError, ValueError):
                 pass
-            dirty_callback = getattr(self, "param_dirty_callback", None)
-            dirty = bool(dirty_callback()) if callable(dirty_callback) else False
-            current_dir = self._recovery_dir(chi_file)
-            save_model_to_param(
-                self.model, ui_state=self._collect_ui_state(),
-                create_backup=False, param_dir=current_dir,
-                save_origin="recovery")
-            working_path = os.path.join(current_dir, "working-state.json")
-            fd, temp_working = tempfile.mkstemp(dir=current_dir, prefix="working-")
-            try:
-                with os.fdopen(fd, "w", encoding="utf-8") as stream:
-                    json.dump({"dirty": dirty}, stream)
-                    stream.flush()
-                    os.fsync(stream.fileno())
-                os.replace(temp_working, working_path)
-            finally:
-                if os.path.exists(temp_working):
-                    os.unlink(temp_working)
+            if not use_saved_param:
+                dirty_callback = getattr(self, "param_dirty_callback", None)
+                dirty = bool(dirty_callback()) if callable(dirty_callback) else False
+                current_dir = self._recovery_dir(chi_file)
+                save_model_to_param(
+                    self.model, ui_state=self._collect_ui_state(),
+                    create_backup=False, param_dir=current_dir,
+                    save_origin="recovery")
+                working_path = os.path.join(current_dir, "working-state.json")
+                fd, temp_working = tempfile.mkstemp(dir=current_dir, prefix="working-")
+                try:
+                    with os.fdopen(fd, "w", encoding="utf-8") as stream:
+                        json.dump({"dirty": dirty}, stream)
+                        stream.flush()
+                        os.fsync(stream.fileno())
+                    os.replace(temp_working, working_path)
+                finally:
+                    if os.path.exists(temp_working):
+                        os.unlink(temp_working)
             os.makedirs(root, exist_ok=True)
             state = {
                 "chi_file": chi_file,
+                "recovery_source": ("saved_param" if use_saved_param else "private"),
+                "param_dir": (visible_param if use_saved_param else
+                              self._recovery_dir(chi_file)),
                 "tabs": {
                     name: getattr(self.widget, name).currentIndex()
                     for name in ("tabWidget", "tabWidget_3", "tabWidget1",
@@ -1103,7 +1111,17 @@ class SessionController(object):
             chi_file = state.get("chi_file")
             if not chi_file or not os.path.isfile(chi_file):
                 return False
-            param_dir = self._recovery_dir(chi_file)
+            visible_param = os.path.splitext(chi_file)[0] + "-param"
+            if state.get("recovery_source") == "saved_param":
+                recorded_param = state.get("param_dir")
+                if (not recorded_param or
+                        os.path.normcase(os.path.abspath(recorded_param)) !=
+                        os.path.normcase(os.path.abspath(visible_param))):
+                    return False
+                param_dir = visible_param
+            else:
+                # Checkpoints written before pointer support remain readable.
+                param_dir = self._recovery_dir(chi_file)
             if not is_new_param_folder(param_dir):
                 return False
             base_ptn_ctrl._load_a_new_pattern(chi_file)
@@ -1114,10 +1132,8 @@ class SessionController(object):
             self._sync_ui_from_model(
                 manifest_path=str(meta.get("manifest", "")),
                 ui_state=meta.get("ui_state", {}))
-            self._recovered_current_chi = chi_file
-            visible_param = os.path.join(
-                os.path.dirname(chi_file),
-                os.path.splitext(os.path.basename(chi_file))[0] + "-param")
+            self._recovered_current_chi = (
+                chi_file if param_dir != visible_param else None)
             manifest_path = (os.path.join(visible_param, MANIFEST_FILE)
                              if is_new_param_folder(visible_param) else "")
             self.widget.textEdit_SessionFileName.setText(manifest_path)

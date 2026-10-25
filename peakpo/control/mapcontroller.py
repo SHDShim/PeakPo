@@ -11,16 +11,17 @@ import matplotlib.patches as mpatches
 
 from .xrdiohelpers import (
     DioptasMetadataCollection,
+    discover_dioptas_metadata_files,
     MapPointInfo,
     build_coordinate_grid,
     extract_scan_coordinates,
     load_chi_xy,
-    load_bgsub_or_raw_xy,
-    refresh_temp_bgsub_for_chi_files,
     find_temp_cake_triplet,
     load_cake_data,
+    sum_cake_roi,
 )
-from ..utils import get_temp_dir
+from .mapdatacache import MapDataCache
+from ..utils import get_directory
 from ..utils.dialogs import dialog_openfiles_hide_param_dirs
 from ..view.ui_policy import apply_raised_toggle_style
 
@@ -53,6 +54,8 @@ class MapController(object):
         self._lin_to_file = {}
         self._chi_cache = {}
         self._cake_cache = {}
+        self._cake_fingerprints = {}
+        self._map_cache = MapDataCache()
         self._grid = (1, 1)
         self._roi_1d = None
         self._roi_2d = None
@@ -65,6 +68,10 @@ class MapController(object):
 
         self._sync_ui_from_roi = False
         self._progress_dialog = None
+        self._restoring_state = False
+        self._loading_map_files = False
+        self._pending_map_compute = False
+        self._pending_map_scale = None
 
         self._build_canvas()
         self._connect_channel()
@@ -118,6 +125,9 @@ class MapController(object):
         self.widget.tabWidget.currentChanged.connect(self._on_main_tab_changed)
 
         self.widget.pushButton_MapLoadChi.clicked.connect(self._load_chi_files)
+        if hasattr(self.widget, "comboBox_MapSet"):
+            self.widget.comboBox_MapSet.currentIndexChanged.connect(
+                self._on_map_set_selected)
         self.widget.spinBox_MapNx.valueChanged.connect(self._on_grid_changed)
         self.widget.spinBox_MapNy.valueChanged.connect(self._on_grid_changed)
         self.widget.comboBox_MapOrder.currentIndexChanged.connect(self._on_grid_changed)
@@ -169,10 +179,29 @@ class MapController(object):
             self.deactivate_interactions()
             self._clear_roi_overlays()
         else:
-            if (self._chi_files and
-                    not self._chi_file_in_selected_set(
-                        self._current_displayed_chi())):
-                self._preview_center_file()
+            current = self._current_displayed_chi()
+            if current:
+                self.maybe_restore_for_chi(current)
+            elif not self._chi_files:
+                folder = getattr(getattr(self, "model", None), "chi_path", None)
+                if folder and os.path.isdir(folder):
+                    states = self._refresh_available_sets(folder)
+                    if states:
+                        self._restore_map_state(states[0])
+            if getattr(self, "_pending_map_compute", False):
+                self._pending_map_compute = False
+                self._compute_map()
+                scale = getattr(self, "_pending_map_scale", None)
+                self._pending_map_scale = None
+                if scale is not None:
+                    for value, control in zip(
+                            scale, (self.widget.doubleSpinBox_MapVmin,
+                                    self.widget.doubleSpinBox_MapVmax)):
+                        if value is not None:
+                            blocker = QtCore.QSignalBlocker(control)
+                            control.setValue(float(value))
+                            del blocker
+                    self._draw_map()
             self.refresh_current_marker()
             self.refresh_roi_overlays()
 
@@ -280,27 +309,297 @@ class MapController(object):
         if not files:
             return
 
-        self._chi_input_files = list(files)
+        self._loading_map_files = True
+        try:
+            self._chi_input_files = list(files)
+            self._roi_1d = None
+            self._roi_2d = None
+            self._open_progress("Map Loading", "Preparing selected CHI files...", 4)
+            try:
+                self._refresh_loaded_files(reset_grid=True, progress=True)
+                nx, ny = self._grid
+                order_text = "input order" if self._ignore_file_numbers() else "filename order"
+                coord_source = "metadata" if self._has_complete_coordinate_assignment() else "guessed"
+                self._set_status(
+                    f"Loaded {len(self._chi_files)} CHI files using {order_text}. "
+                    f"Grid ({coord_source}): {nx} x {ny}"
+                )
+                self._update_progress(3, "Selecting full-pattern ROI...")
+                self._set_default_1d_full_range_roi()
+            finally:
+                self._close_progress()
+            if self._roi_1d is not None:
+                self._compute_map()
+            else:
+                self._draw_map()
+        finally:
+            self._loading_map_files = False
+        self._save_map_state()
+
+    def _save_map_state(self):
+        if (getattr(self, "_restoring_state", False) or
+                getattr(self, "_loading_map_files", False) or
+                not getattr(self, "_chi_input_files", None)):
+            return
+        cache = getattr(self, "_map_cache", None)
+        if cache is None or cache.directory is None:
+            return
+        state = {
+            "name": cache.set_name,
+            "files": [os.path.basename(path) for path in self._chi_input_files],
+            "grid": list(self._grid),
+            "order": self.widget.comboBox_MapOrder.currentIndex(),
+            "roi_1d": list(self._roi_1d) if self._roi_1d else None,
+            "roi_2d": list(self._roi_2d) if self._roi_2d else None,
+            "cmap": self.widget.comboBox_MapCmap.currentText(),
+            "log": self.widget.checkBox_MapLog.isChecked(),
+            "vmin": self.widget.doubleSpinBox_MapVmin.value(),
+            "vmax": self.widget.doubleSpinBox_MapVmax.value(),
+            "pct_low": self.widget.doubleSpinBox_MapPctLow.value(),
+            "pct_high": self.widget.doubleSpinBox_MapPctHigh.value(),
+        }
+        if cache.save_state(state):
+            self._refresh_available_sets(
+                os.path.dirname(self._chi_input_files[0]), cache.directory)
+
+    def _refresh_available_sets(self, folder, selected_directory=None):
+        combo = getattr(self.widget, "comboBox_MapSet", None)
+        label = getattr(self.widget, "label_MapSet", None)
+        if combo is None or label is None:
+            return []
+        states = MapDataCache.discover_states(folder)
+        states = [state for state in states if all(
+            os.path.isfile(os.path.join(folder, name)) for name in state["files"])]
+        blocker = QtCore.QSignalBlocker(combo)
+        try:
+            combo.clear()
+            combo.addItem("Choose map set", None)
+            for state in states:
+                combo.addItem(state.get("name") or os.path.basename(
+                    state["_directory"]), state)
+            if selected_directory:
+                for index, state in enumerate(states, start=1):
+                    if state["_directory"] == selected_directory:
+                        combo.setCurrentIndex(index)
+                        break
+            combo.setVisible(bool(states))
+            label.setVisible(bool(states))
+        finally:
+            del blocker
+        return states
+
+    def _on_map_set_selected(self, index):
+        if index <= 0 or getattr(self, "_restoring_state", False):
+            return
+        state = self.widget.comboBox_MapSet.itemData(index)
+        if isinstance(state, dict):
+            self._restore_map_state(state)
+
+    def maybe_restore_for_chi(self, filename):
+        if (not filename or getattr(self, "_loading_map_files", False) or
+                getattr(self, "_restoring_state", False)):
+            return False
+        folder = os.path.dirname(os.path.abspath(filename))
+        if (self._chi_files and self._chi_file_in_selected_set(filename) and
+                getattr(getattr(self, "_map_cache", None), "root_directory", None) ==
+                os.path.join(folder, "map_param")):
+            return False
+        states = self._refresh_available_sets(folder)
+        basename = os.path.basename(filename).casefold()
+        matching = [state for state in states if basename in {
+            name.casefold() for name in state["files"]}]
+        if matching and self._restore_map_state(matching[0]):
+            return True
+        pattern = MapDataCache.file_set_pattern(filename).casefold()
+        recorded_pattern = any(
+            MapDataCache.file_set_pattern(name).casefold() == pattern
+            for state in states for name in state["files"])
+        if not recorded_pattern and self._restore_unrecorded_set(filename, folder):
+            return True
+        self._clear_map_for_nonmember(filename)
+        return False
+
+    def _clear_map_for_nonmember(self, filename):
+        """Remove a stale Map view without changing or saving the plotted CHI."""
+        if (not getattr(self, "_chi_files", None) and
+                getattr(self, "_map_data", None) is None):
+            return
+        self.deactivate_interactions()
+        self._clear_roi_overlays()
+        self._chi_input_files = []
+        self._chi_files = []
+        self._pos_idx = []
+        self._lin_to_file = {}
+        self._chi_cache = {}
+        self._cake_cache = {}
+        self._cake_fingerprints = {}
+        self._map_cache = MapDataCache()
+        self._map_points = []
+        self._map_data = None
+        self._map_im = None
         self._roi_1d = None
         self._roi_2d = None
-        self._open_progress("Map Loading", "Preparing selected CHI files...", 4)
+        self._map_coordinate_mode = False
+        self._coord_x = []
+        self._coord_y = []
+        self._coord_to_file = {}
+        self._pending_map_compute = False
+        self._pending_map_scale = None
+        self._grid = (1, 1)
+        self._sync_ui_from_roi = True
         try:
-            self._refresh_loaded_files(reset_grid=True, progress=True)
-            nx, ny = self._grid
-            order_text = "input order" if self._ignore_file_numbers() else "filename order"
-            coord_source = "metadata" if self._has_complete_coordinate_assignment() else "guessed"
-            self._set_status(
-                f"Loaded {len(self._chi_files)} CHI files using {order_text}. "
-                f"Grid ({coord_source}): {nx} x {ny}"
-            )
-            self._update_progress(3, "Selecting full-pattern ROI...")
-            self._set_default_1d_full_range_roi()
+            self.widget.spinBox_MapNx.setValue(1)
+            self.widget.spinBox_MapNy.setValue(1)
         finally:
-            self._close_progress()
-        if self._roi_1d is not None:
-            self._compute_map()
-        else:
+            self._sync_ui_from_roi = False
+        self.widget.lineEdit_MapRoiSummary.clear()
+        self._set_loaded_count()
+        self._draw_map()
+        self._set_status(
+            f"No Map set contains {os.path.basename(filename)}. "
+            "Choose a Map set or load CHI files.")
+
+    def _restore_unrecorded_set(self, filename, folder):
+        """Seed a named set from an older flat map_param cache."""
+        if not os.path.isdir(os.path.join(folder, "map_param")):
+            return False
+        pattern = MapDataCache.file_set_pattern(filename).casefold()
+        try:
+            with os.scandir(folder) as entries:
+                files = [entry.path for entry in entries
+                         if entry.is_file() and
+                         not entry.name.startswith(".") and
+                         entry.name.casefold().endswith(".chi") and
+                         not entry.name.casefold().endswith(
+                             (".bg.chi", ".bgsub.chi")) and
+                         MapDataCache.file_set_pattern(entry.name).casefold() == pattern]
+        except OSError:
+            return False
+        if not files or not MapDataCache.has_legacy_data(folder, [filename]):
+            return False
+        self._loading_map_files = True
+        try:
+            self._pending_map_compute = False
+            self._pending_map_scale = None
+            self._chi_input_files = sorted(files, key=self._filename_sort_key)
+            self._roi_1d = None
+            self._roi_2d = None
+            self._refresh_loaded_files(reset_grid=True)
+            self._set_default_1d_full_range_roi()
+            if self._roi_1d:
+                if self._is_map_tab_active():
+                    self._compute_map()
+                else:
+                    self._pending_map_compute = True
+                    self._pending_map_scale = None
+            else:
+                self._draw_map()
+        finally:
+            self._loading_map_files = False
+        self._save_map_state()
+        return True
+
+    def _restore_map_state(self, state):
+        if getattr(self, "_restoring_state", False):
+            return False
+        folder = os.path.dirname(os.path.dirname(state["_directory"]))
+        files = [os.path.join(folder, name) for name in state["files"]]
+        if not files or not all(os.path.isfile(path) for path in files):
+            return False
+        grid = state.get("grid")
+        if (not isinstance(grid, list) or len(grid) != 2 or
+                any(not isinstance(value, int) or value < 1 for value in grid)):
+            return False
+        try:
+            int(state.get("order", 0))
+            for key, length in (("roi_1d", 2), ("roi_2d", 4)):
+                roi = state.get(key)
+                if roi is not None and (
+                        not isinstance(roi, list) or len(roi) != length or
+                        not all(np.isfinite(float(value)) for value in roi)):
+                    return False
+            for key in ("vmin", "vmax", "pct_low", "pct_high"):
+                if key in state and not np.isfinite(float(state[key])):
+                    return False
+        except (TypeError, ValueError, OverflowError):
+            return False
+        self._restoring_state = True
+        try:
+            self._pending_map_compute = False
+            self._pending_map_scale = None
+            self._chi_input_files = files
+            self._roi_1d = None
+            self._roi_2d = None
+            controls = (self.widget.spinBox_MapNx, self.widget.spinBox_MapNy,
+                        self.widget.comboBox_MapOrder,
+                        self.widget.comboBox_MapCmap,
+                        self.widget.checkBox_MapLog,
+                        self.widget.doubleSpinBox_MapVmin,
+                        self.widget.doubleSpinBox_MapVmax,
+                        self.widget.doubleSpinBox_MapPctLow,
+                        self.widget.doubleSpinBox_MapPctHigh)
+            blockers = [QtCore.QSignalBlocker(control) for control in controls]
+            try:
+                self.widget.spinBox_MapNx.setValue(grid[0])
+                self.widget.spinBox_MapNy.setValue(grid[1])
+                self.widget.comboBox_MapOrder.setCurrentIndex(int(state.get("order", 0)))
+                self.widget.comboBox_MapCmap.setCurrentText(str(state.get("cmap", "viridis")))
+                self.widget.checkBox_MapLog.setChecked(bool(state.get("log", False)))
+                for key, control in (
+                        ("vmin", self.widget.doubleSpinBox_MapVmin),
+                        ("vmax", self.widget.doubleSpinBox_MapVmax),
+                        ("pct_low", self.widget.doubleSpinBox_MapPctLow),
+                        ("pct_high", self.widget.doubleSpinBox_MapPctHigh)):
+                    if key in state:
+                        control.setValue(float(state[key]))
+            finally:
+                del blockers
+            self._refresh_loaded_files(reset_grid=False)
+            displayed = (self._current_displayed_chi()
+                         if getattr(self, "model", None) is not None else None)
+            if displayed and not self._chi_file_in_selected_set(displayed):
+                self._clear_map_for_nonmember(displayed)
+                return False
+            for key, attr, length in (("roi_1d", "_roi_1d", 2),
+                                      ("roi_2d", "_roi_2d", 4)):
+                roi = state.get(key)
+                if isinstance(roi, list) and len(roi) == length:
+                    setattr(self, attr, tuple(float(value) for value in roi))
+            if self._roi_1d:
+                xmin, xmax = self._roi_1d
+                self.widget.lineEdit_MapRoiSummary.setText(
+                    f"1D: 2theta [{xmin:.3f}, {xmax:.3f}]")
+            elif self._roi_2d:
+                xmin, xmax, ymin, ymax = self._roi_2d
+                self.widget.lineEdit_MapRoiSummary.setText(
+                    f"2D: 2theta [{xmin:.3f}, {xmax:.3f}], azi [{ymin:.3f}, {ymax:.3f}]")
+            else:
+                self.widget.lineEdit_MapRoiSummary.setText("")
+            if self._roi_1d or self._roi_2d:
+                if self._is_map_tab_active():
+                    self._compute_map()
+                else:
+                    self._pending_map_compute = True
+                    self._pending_map_scale = (
+                        state.get("vmin"), state.get("vmax"))
+            else:
+                self._pending_map_compute = False
+                self._pending_map_scale = None
+                self._draw_map()
+            # Map computation resets the scale; restore the chosen display range.
+            for key, control in (("vmin", self.widget.doubleSpinBox_MapVmin),
+                                 ("vmax", self.widget.doubleSpinBox_MapVmax)):
+                if key in state:
+                    blocker = QtCore.QSignalBlocker(control)
+                    control.setValue(float(state[key]))
+                    del blocker
             self._draw_map()
+            self._refresh_available_sets(folder, state["_directory"])
+            if not (self._roi_1d or self._roi_2d):
+                self._set_status(f"Restored Map set {state.get('name', '')}.")
+            return True
+        finally:
+            self._restoring_state = False
 
     def _guess_grid_dims(self, n_files):
         if n_files <= 0:
@@ -384,19 +683,29 @@ class MapController(object):
                 )
             x_pos = None
             y_pos = None
-            param_dir = get_temp_dir(chi_path)
-            if param_dir not in metadata_cache:
-                metadata_cache[param_dir] = DioptasMetadataCollection.from_param_dir(param_dir)
-            metadata = metadata_cache[param_dir]
-            coords = metadata.get_coordinates(filename=chi_path, frame_index=None)
-            if coords is not None:
-                x_pos, y_pos = coords
-            else:
-                for h5_path in self._h5_candidates_for_chi(chi_path):
+            param_dir = get_directory(chi_path, "-param")
+            h5_candidates = self._h5_candidates_for_chi(chi_path)
+            sources = discover_dioptas_metadata_files(param_dir) + h5_candidates
+
+            def resolve_coordinates():
+                if param_dir not in metadata_cache:
+                    metadata_cache[param_dir] = DioptasMetadataCollection.from_param_dir(
+                        param_dir)
+                metadata = metadata_cache[param_dir]
+                coords = metadata.get_coordinates(filename=chi_path,
+                                                  frame_index=None)
+                if coords is not None:
+                    return coords
+                for h5_path in h5_candidates:
                     coords = extract_scan_coordinates(h5_path, frame_index=None)
                     if coords is not None:
-                        x_pos, y_pos = coords
-                        break
+                        return coords
+                return None
+
+            coords = self._map_cache.coordinates(
+                chi_path, sources, resolve_coordinates)
+            if coords is not None:
+                x_pos, y_pos = coords
             points.append(MapPointInfo(
                 filepath=chi_path,
                 filename=os.path.basename(chi_path),
@@ -406,6 +715,7 @@ class MapController(object):
             ))
             if progress and total > 0:
                 QtWidgets.QApplication.processEvents()
+        self._map_cache.save_coordinates()
         self._map_points = points
         valid_coords = self._has_complete_coordinate_assignment()
         return valid_coords
@@ -441,10 +751,15 @@ class MapController(object):
         if progress:
             self._update_progress(1, "Sorting files and building map grid...")
         self._chi_files = self._ordered_chi_files(self._chi_input_files)
+        map_cache = getattr(self, "_map_cache", None)
+        if map_cache is None:
+            map_cache = self._map_cache = MapDataCache()
+        map_cache.set_files(self._chi_files)
         self._pos_idx = self._derive_position_indices(self._chi_files)
         self._rebuild_linear_lookup()
         self._chi_cache = {}
         self._cake_cache = {}
+        self._cake_fingerprints = {}
         self._map_data = None
         self._map_coordinate_mode = False
         self._coord_x = []
@@ -565,7 +880,7 @@ class MapController(object):
         if not self._chi_files:
             return
         try:
-            x, __ = self._load_bgsub_xy_if_requested(self._chi_files[0])
+            x, __ = self._load_chi_xy(self._chi_files[0])
             if x.size == 0:
                 return
             xmin = float(np.nanmin(x))
@@ -839,18 +1154,36 @@ class MapController(object):
     def _load_chi_xy(self, chi_path):
         return load_chi_xy(chi_path, self._chi_cache)
 
-    def _load_bgsub_xy_if_requested(self, chi_path):
-        use_bgsub = bool(
-            getattr(self.widget, "checkBox_BgSub", None) and
-            self.widget.checkBox_BgSub.isChecked()
-        )
-        return load_bgsub_or_raw_xy(chi_path, use_bgsub, self._chi_cache)
-
     def _find_temp_cake_triplet(self, chi_path):
         return find_temp_cake_triplet(chi_path)
 
     def _load_cake_data(self, chi_path):
-        return load_cake_data(chi_path, self._cake_cache)
+        triplet = self._find_temp_cake_triplet(chi_path)
+        if triplet is None:
+            self._cake_cache.pop(chi_path, None)
+            self._cake_fingerprints.pop(chi_path, None)
+            return None
+        try:
+            fingerprint = tuple(
+                (path, os.path.getsize(path), os.stat(path).st_mtime_ns)
+                for path in triplet)
+        except OSError:
+            return None
+        if (chi_path in self._cake_cache and
+                self._cake_fingerprints.get(chi_path) == fingerprint):
+            payload = self._cake_cache.pop(chi_path)
+            self._cake_cache[chi_path] = payload
+            return payload
+        self._cake_cache.pop(chi_path, None)
+        payload = load_cake_data(chi_path, {}, mmap_mode="r")
+        if payload is not None:
+            self._cake_cache[chi_path] = payload
+            self._cake_fingerprints[chi_path] = fingerprint
+            if len(self._cake_cache) > 8:
+                removed = next(iter(self._cake_cache))
+                self._cake_cache.pop(removed)
+                self._cake_fingerprints.pop(removed, None)
+        return payload
 
     def _current_displayed_chi(self):
         if not getattr(self.model, "base_ptn", None):
@@ -888,60 +1221,6 @@ class MapController(object):
             return int(matches[0])
         return None
 
-    def _preferred_bg_reference_chi(self):
-        shown = self._current_displayed_chi()
-        if shown and (shown in self._chi_files):
-            return shown
-        if self._chi_files:
-            return self._chi_files[0]
-        return None
-
-    def _refresh_temp_bgsub_if_requested(self, progress_offset=0, progress_span=None):
-        use_bgsub = bool(
-            getattr(self.widget, "checkBox_BgSub", None) and
-            self.widget.checkBox_BgSub.isChecked()
-        )
-        if (not use_bgsub) or (self._roi_1d is None) or (not self._chi_files):
-            return
-
-        bg_roi = [
-            float(self.widget.doubleSpinBox_Background_ROI_min.value()),
-            float(self.widget.doubleSpinBox_Background_ROI_max.value()),
-        ]
-        bg_params = [
-            int(self.widget.spinBox_BGParam0.value()),
-            int(self.widget.spinBox_BGParam1.value()),
-            int(self.widget.spinBox_BGParam2.value()),
-        ]
-
-        def on_bg_progress(i, total, chi_path):
-            if progress_span is None:
-                return
-            value = progress_offset + min(int(i), int(total))
-            label = "Refreshing temporary background files..."
-            if chi_path:
-                label = f"Refreshing background: {os.path.basename(chi_path)}"
-            self._update_progress(value, label)
-
-        result = refresh_temp_bgsub_for_chi_files(
-            self._chi_files,
-            preferred_chi=self._preferred_bg_reference_chi(),
-            bg_roi=bg_roi,
-            bg_params=bg_params,
-            progress_callback=on_bg_progress,
-        )
-        ref_name = os.path.basename(result["reference"]) if result["reference"] else "N/A"
-        if result["updated"] > 0:
-            self._set_status(
-                f"Temp BG refresh complete: {result['updated']} updated "
-                f"(reference: {ref_name}).")
-        if result["failed"] > 0:
-            first_path, first_err = result["failures"][0]
-            first_name = os.path.basename(first_path)
-            self._set_status(
-                f"Temp BG refresh: {result['updated']} updated, "
-                f"{result['failed']} failed. First: {first_name} ({first_err})")
-
     def _compute_map(self):
         if not self._chi_files:
             self._set_status("Load CHI files first.")
@@ -971,51 +1250,41 @@ class MapController(object):
             self.widget.checkBox_BgSub.isChecked() and
             self._roi_1d is not None
         )
-        progress_max = n + (n if use_bgsub else 0) + 2
+        bg_roi = (
+            float(self.widget.doubleSpinBox_Background_ROI_min.value()),
+            float(self.widget.doubleSpinBox_Background_ROI_max.value()),
+        ) if use_bgsub else None
+        bg_params = (
+            int(self.widget.spinBox_BGParam0.value()),
+            int(self.widget.spinBox_BGParam1.value()),
+            int(self.widget.spinBox_BGParam2.value()),
+        ) if use_bgsub else None
+        progress_max = n + 2
         self._open_progress("Map Processing", "Preparing map computation...", progress_max)
 
         try:
-            self._refresh_temp_bgsub_if_requested(
-                progress_offset=0,
-                progress_span=n if use_bgsub else None,
-            )
-            compute_offset = n if use_bgsub else 0
-
             values = np.full(n, np.nan, dtype=float)
             failures = []
             for i, chi_path in enumerate(self._chi_files):
                 self._update_progress(
-                    compute_offset + i,
+                    i,
                     f"Integrating ROI: {os.path.basename(chi_path)}",
                 )
                 try:
                     if self._roi_1d is not None:
-                        x, y = self._load_bgsub_xy_if_requested(chi_path)
-                        xmin, xmax = self._roi_1d
-                        m = (x >= xmin) & (x <= xmax)
-                        if not np.any(m):
-                            values[i] = np.nan
-                        else:
-                            # Requested behavior: add all intensities in ROI range.
-                            values[i] = float(np.nansum(y[m]))
+                        values[i] = self._map_cache.sum_roi(
+                            chi_path, self._roi_1d,
+                            bg_roi=bg_roi, bg_params=bg_params)
                     else:
                         cake = self._load_cake_data(chi_path)
                         if cake is None:
                             raise RuntimeError("No cake temp files")
-                        tth, azi, intensity = cake
-                        xmin, xmax, ymin, ymax = self._roi_2d
-                        mt = (tth >= xmin) & (tth <= xmax)
-                        ma = (azi >= ymin) & (azi <= ymax)
-                        if (not np.any(mt)) or (not np.any(ma)):
-                            values[i] = np.nan
-                        else:
-                            sub = intensity[np.ix_(ma, mt)]
-                            values[i] = float(np.nansum(sub))
+                        values[i] = sum_cake_roi(cake, self._roi_2d)
                 except Exception as exc:
                     failures.append((chi_path, str(exc)))
                     values[i] = np.nan
 
-            self._update_progress(compute_offset + n, "Building map grid...")
+            self._update_progress(n, "Building map grid...")
             self._map_coordinate_mode = False
             self._coord_x = []
             self._coord_y = []
@@ -1053,7 +1322,7 @@ class MapController(object):
                         grid[y, x] = val
                 self._map_data = grid
 
-            self._update_progress(compute_offset + n + 1, "Drawing map...")
+            self._update_progress(n + 1, "Drawing map...")
 
             # Recomputing map should always refresh Min/Max from new data.
             self._scale_reset()
@@ -1195,6 +1464,7 @@ class MapController(object):
             if hasattr(self.widget, "map_hist_widget"):
                 self.widget.map_hist_widget.clear()
             self._map_canvas.draw_idle()
+            self._save_map_state()
             return
 
         data = self._display_map_data()
@@ -1244,6 +1514,7 @@ class MapController(object):
         self._map_ax.set_axis_off()
         self._add_current_marker(draw=False)
         self._map_canvas.draw_idle()
+        self._save_map_state()
 
     def _current_pixel_xy(self):
         file_idx = self._current_file_idx()

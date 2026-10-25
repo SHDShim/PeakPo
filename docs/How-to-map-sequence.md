@@ -3,7 +3,16 @@
 ## Map (2D spatial map)
 
 1. Open the `Map` tab.
-2. Click `Load CHI files` and select all map `.chi` files.
+2. Click `Load CHI files` and select all map `.chi` files. PeakPo saves the
+   selected file list, grid, ROI, and Map display controls under `map_param/`.
+   When a CHI from that saved set is opened later, the Map tab restores those
+   controls and recomputes the map when the Map tab is opened. If the folder contains
+   several saved sets, use `Map set` in the Data panel to switch between them.
+   An older `map_param/` with no saved set record is upgraded by grouping CHI
+   files that share the current file's name pattern.
+   If the plotted CHI belongs to no saved Map set, PeakPo clears the loaded
+   Map data and plot while leaving the CHI plot open. Saved sets remain
+   available in the `Map set` dropdown.
    If the currently plotted CHI is outside the selected set, PeakPo opens the
    file at the map grid's center. Before this automatic switch, PeakPo asks
    whether to save the current CHI's PARAM session, open without saving PARAM,
@@ -29,7 +38,15 @@
 ### Notes
 
 - File order is sorted by filename number (with special handling for `map_###` names).
-- If `Bg` is ON, 1D integration uses bg-subtracted CHI when available.
+- If `Bg` is ON, Map fits the background using the current background ROI and
+  parameters. Changing the Map ROI reuses that fit; changing the background
+  controls or a source CHI recomputes it. Map does not write these derived
+  results into each file's PARAM session.
+- For CHI files in one folder, Map saves each selected file set in a named
+  subfolder of `map_param/`. Derived 1D data is disposable, but the same
+  subfolder also holds the Map tab's saved state. Deleting `map_param/`
+  removes both the cached calculations and saved Map selections. If the data
+  folder is read-only, Map works in memory for the current session.
 - 2D ROI uses raw cake intensity (no bg subtraction).
 
 ---
