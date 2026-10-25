@@ -6,7 +6,7 @@ from .pyqtutils import (
     align_all_spinboxes_right,
 )
 from .fileutils import samefilename, breakdown_filename, extract_filename, make_filename, \
-    get_sorted_filelist, find_from_filelist, writechi, readchi, \
+    get_sorted_filelist, find_from_filelist, chi_name_set, writechi, readchi, \
     load_chi_xy, extract_extension, change_file_path, get_directory, \
     get_temp_dir, get_unique_filename, backup_copy, read_any_poni_file, \
         make_poni2_from_poni21, make_converted_poni2_filename, \

@@ -91,6 +91,12 @@ def find_from_filelist(flist, filen):
     return -1
 
 
+def chi_name_set(filename):
+    """Return the case-insensitive filename stem before its final number."""
+    stem = os.path.splitext(basename_any(filename))[0].casefold()
+    return re.sub(r"\d+$", "", stem)
+
+
 def get_sorted_filelist(path, search_ext='*.chi', sorted_by_name=True):
     filelist = glob.glob(os.path.join(path, search_ext))
     if sorted_by_name:

@@ -32,7 +32,7 @@ from .mapcontroller import MapController
 from .sequencecontroller import SequenceController
 from .plotinteractioncontroller import PlotInteractionController
 from ..utils import dialog_savefile, writechi, convert_wl_to_energy, \
-    get_sorted_filelist, find_from_filelist, make_filename, \
+    get_sorted_filelist, find_from_filelist, chi_name_set, make_filename, \
     get_directory, get_temp_dir, show_warning
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
@@ -2332,11 +2332,35 @@ class MainController(object):
             self._goto_chi_next_file(move)
         return
 
+    def _confirm_chi_name_set_transition(self, new_filename):
+        current_filename = self.model.base_ptn.fname
+        if chi_name_set(current_filename) == chi_name_set(new_filename):
+            return True
+
+        box = QtWidgets.QMessageBox(self.widget)
+        box.setOption(QtWidgets.QMessageBox.DontUseNativeDialog, True)
+        box.setTextFormat(QtCore.Qt.PlainText)
+        box.setIcon(QtWidgets.QMessageBox.Warning)
+        box.setWindowTitle("Different CHI name set")
+        box.setText("The selected CHI file belongs to a different name set.")
+        box.setInformativeText(
+            "Current: " + os.path.basename(current_filename) + "\n"
+            "Selected: " + os.path.basename(new_filename) + "\n\n"
+            "Open the selected file?")
+        open_button = box.addButton(
+            "Open selected file", QtWidgets.QMessageBox.AcceptRole)
+        stay_button = box.addButton(
+            "Stay on current file", QtWidgets.QMessageBox.RejectRole)
+        box.setDefaultButton(stay_button)
+        box.setEscapeButton(stay_button)
+        box.exec()
+        return box.clickedButton() == open_button
+
     def _goto_chi_next_file(self, move):
-        nav_state = self._capture_nav_carry_state()
+        sort_by_name = self.widget.radioButton_SortbyNme.isChecked()
         filelist_chi = get_sorted_filelist(
             self.model.chi_path,
-            sorted_by_name=self.widget.radioButton_SortbyNme.isChecked(),
+            sorted_by_name=sort_by_name,
             search_ext='*.chi')
 
         idx_chi = find_from_filelist(filelist_chi,
@@ -2385,6 +2409,10 @@ class MainController(object):
                 self.widget, "Warning", f"It is already the {boundary} file.")
             return
         if os.path.exists(new_filename_chi):
+            if sort_by_name and not self._confirm_chi_name_set_transition(
+                    new_filename_chi):
+                return
+            nav_state = self._capture_nav_carry_state()
             with self._defer_plot_updates():
                 self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
                 self._apply_nav_carry_state(nav_state)
@@ -2397,13 +2425,14 @@ class MainController(object):
 
     def _goto_dpp_next_file(self, move):
 
+        sort_by_name = self.widget.radioButton_SortbyNme.isChecked()
         filelist_chi = get_sorted_filelist(
             self.model.chi_path,
-            sorted_by_name=self.widget.radioButton_SortbyNme.isChecked(),
+            sorted_by_name=sort_by_name,
             search_ext='*.chi')
         filelist_dpp = get_sorted_filelist(
             self.model.chi_path,
-            sorted_by_name=self.widget.radioButton_SortbyNme.isChecked(),
+            sorted_by_name=sort_by_name,
             search_ext='*.dpp')
 
         idx_chi = find_from_filelist(filelist_chi,
@@ -2456,6 +2485,15 @@ class MainController(object):
                     self.widget, "Warning", "It is already the first file.")
                 return
 
+        new_filename_chi = filelist_chi[idx_chi_new]
+        if not os.path.exists(new_filename_chi):
+            show_warning(
+                self.widget, "Warning", new_filename_chi + " does not exist.")
+            return
+        if sort_by_name and not self._confirm_chi_name_set_transition(
+                new_filename_chi):
+            return
+
         auto_save_move = True
         if hasattr(self.widget, "checkBox_SaveDPPMove"):
             auto_save_move = bool(self.widget.checkBox_SaveDPPMove.isChecked())
@@ -2470,7 +2508,6 @@ class MainController(object):
             if reply == QtWidgets.QMessageBox.Yes:
                 self.session_ctrl.save_dpp()
 
-        new_filename_chi = filelist_chi[idx_chi_new]
         new_filename_dpp = make_filename(new_filename_chi, 'dpp')
         idx = find_from_filelist(filelist_dpp,
                                  new_filename_dpp)

@@ -3,6 +3,7 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import gc
+from contextlib import nullcontext
 from types import SimpleNamespace
 
 import pytest
@@ -12,7 +13,7 @@ from peakpo.control import maincontroller
 from peakpo.control.maincontroller import MainController
 from peakpo.utils import dialogs
 from peakpo.utils import apply_spinbox_fix_style
-from peakpo.utils.fileutils import find_from_filelist
+from peakpo.utils.fileutils import chi_name_set, find_from_filelist
 
 
 _APP = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -127,6 +128,131 @@ def test_next_never_reloads_current_chi_when_lookup_is_wrong(
     controller._goto_chi_next_file("next")
 
     assert warnings == ["It is already the last file."]
+
+
+def test_chi_name_set_uses_stem_before_final_number():
+    assert chi_name_set("file_001.chi") == chi_name_set("FILE_011.chi")
+    assert chi_name_set("file_011.chi") != chi_name_set("picture_001.chi")
+    assert chi_name_set("file.chi") != chi_name_set("picture.chi")
+
+
+def test_same_name_set_needs_no_confirmation(tmp_path):
+    controller = MainController.__new__(MainController)
+    controller.model = SimpleNamespace(
+        base_ptn=SimpleNamespace(fname=str(tmp_path / "file_001.chi")))
+
+    assert controller._confirm_chi_name_set_transition(
+        str(tmp_path / "file_002.chi")) is True
+
+
+@pytest.mark.parametrize(
+    ("button_text", "expected"),
+    [("Open selected file", True), ("Stay on current file", False)],
+)
+def test_name_set_dialog_shows_destination_and_respects_choice(
+        tmp_path, button_text, expected):
+    window = QtWidgets.QMainWindow()
+    controller = MainController.__new__(MainController)
+    controller.widget = window
+    controller.model = SimpleNamespace(
+        base_ptn=SimpleNamespace(fname=str(tmp_path / "file_011.chi")))
+    observed = []
+
+    def choose():
+        box = next(
+            widget for widget in _APP.topLevelWidgets()
+            if isinstance(widget, QtWidgets.QMessageBox) and widget.isVisible()
+        )
+        observed.append((
+            box.testOption(QtWidgets.QMessageBox.DontUseNativeDialog),
+            box.informativeText(),
+            box.defaultButton().text(),
+        ))
+        next(button for button in box.buttons()
+             if button.text() == button_text).click()
+
+    QtCore.QTimer.singleShot(0, choose)
+    try:
+        result = controller._confirm_chi_name_set_transition(
+            str(tmp_path / "picture_001.chi"))
+        assert result is expected
+        assert observed[0][0] is True
+        assert "file_011.chi" in observed[0][1]
+        assert "picture_001.chi" in observed[0][1]
+        assert observed[0][2] == "Stay on current file"
+    finally:
+        window.close()
+
+
+@pytest.mark.parametrize("use_dpp", [False, True])
+def test_declining_new_name_set_leaves_current_file_open(
+        tmp_path, use_dpp):
+    current = tmp_path / "file_011.chi"
+    destination = tmp_path / "picture_001.chi"
+    current.write_text("", encoding="utf-8")
+    destination.write_text("", encoding="utf-8")
+    if use_dpp:
+        (tmp_path / "file_011.dpp").write_text("", encoding="utf-8")
+    controller = MainController.__new__(MainController)
+    controller.widget = SimpleNamespace(
+        radioButton_SortbyNme=_Checked(True),
+        spinBox_FileStep=_Value(1),
+    )
+    controller.model = SimpleNamespace(
+        chi_path=str(tmp_path),
+        base_ptn=SimpleNamespace(fname=str(current)),
+    )
+    confirmations = []
+    controller._confirm_chi_name_set_transition = lambda filename: (
+        confirmations.append(filename) or False)
+    controller._capture_nav_carry_state = lambda: pytest.fail(
+        "cancelled navigation must not capture carry-over state")
+    controller.session_ctrl = SimpleNamespace(
+        save_dpp=lambda **kwargs: pytest.fail("cancelled navigation must not save DPP"))
+
+    if use_dpp:
+        controller._goto_dpp_next_file("next")
+    else:
+        controller._goto_chi_next_file("next")
+
+    assert confirmations == [str(destination)]
+    assert controller.model.base_ptn.fname == str(current)
+
+
+@pytest.mark.parametrize("sort_by_name", [True, False])
+def test_name_set_confirmation_only_applies_to_name_navigation(
+        tmp_path, sort_by_name):
+    current = tmp_path / "file_011.chi"
+    destination = tmp_path / "picture_001.chi"
+    current.write_text("", encoding="utf-8")
+    destination.write_text("", encoding="utf-8")
+    os.utime(current, (1, 1))
+    os.utime(destination, (2, 2))
+    controller = MainController.__new__(MainController)
+    controller.widget = SimpleNamespace(
+        radioButton_SortbyNme=_Checked(sort_by_name),
+        spinBox_FileStep=_Value(1),
+    )
+    controller.model = SimpleNamespace(
+        chi_path=str(tmp_path),
+        base_ptn=SimpleNamespace(fname=str(current)),
+    )
+    confirmations = []
+    controller._confirm_chi_name_set_transition = lambda filename: (
+        confirmations.append(filename) or True)
+    controller._capture_nav_carry_state = lambda: {}
+    controller._defer_plot_updates = nullcontext
+    controller.base_ptn_ctrl = SimpleNamespace(
+        _load_a_new_pattern=lambda filename: setattr(
+            controller.model.base_ptn, "fname", filename))
+    controller._apply_nav_carry_state = lambda state: None
+    controller.plot_ctrl = SimpleNamespace(update=lambda: None)
+    controller._schedule_roi_overlays_after_plot_update = lambda **kwargs: None
+
+    controller._goto_chi_next_file("next")
+
+    assert controller.model.base_ptn.fname == str(destination)
+    assert confirmations == ([str(destination)] if sort_by_name else [])
 
 
 @pytest.mark.parametrize(
