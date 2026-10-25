@@ -84,11 +84,10 @@ def readchi(filen):
 
 
 def find_from_filelist(flist, filen):
-    i = 0
-    for s in flist:
-        if s.find(filen) != -1:
+    target = os.path.normcase(basename_any(filen))
+    for i, path in enumerate(flist):
+        if os.path.normcase(basename_any(path)) == target:
             return i
-        i += 1
     return -1
 
 

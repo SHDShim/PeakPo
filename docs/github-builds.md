@@ -62,8 +62,17 @@ dist/PeakPo/PeakPo --verify-rendering
 ```
 
 On macOS, the workflow also exercises the warning shown when navigation reaches
-the final file. This guards against native Qt dialog regressions in frozen apps:
+the final file. This guards against boundary-warning regressions in frozen apps:
 
 ```bash
 dist/PeakPo.app/Contents/MacOS/PeakPo --verify-warning-dialog
+```
+
+On Windows, the workflow exercises the carry-over choice and a two-file CHI
+navigation sequence in name order. The sequence checks that Next stops at the
+last file even when its filename is contained in another filename:
+
+```powershell
+dist/PeakPo/PeakPo.exe --verify-carry-dialog
+dist/PeakPo/PeakPo.exe --verify-navigation-boundary C:\path\to\chi-files
 ```

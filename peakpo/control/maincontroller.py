@@ -1641,6 +1641,9 @@ class MainController(object):
             return action
 
         box = QtWidgets.QMessageBox(self.widget)
+        # Keep this choice in Qt to avoid platform-native dialog handling
+        # during CHI navigation in packaged desktop builds.
+        box.setOption(QtWidgets.QMessageBox.DontUseNativeDialog, True)
         box.setIcon(QtWidgets.QMessageBox.Question)
         box.setWindowTitle("Carry-forward choice")
         box.setText(label + " already exists in this file.")
@@ -2375,6 +2378,12 @@ class MainController(object):
                     self.widget, "Warning", "It is already the first file.")
                 return
         new_filename_chi = filelist_chi[idx_chi_new]
+        if os.path.normcase(os.path.abspath(new_filename_chi)) == \
+                os.path.normcase(os.path.abspath(self.model.base_ptn.fname)):
+            boundary = "last" if move in ("next", "last") else "first"
+            show_warning(
+                self.widget, "Warning", f"It is already the {boundary} file.")
+            return
         if os.path.exists(new_filename_chi):
             with self._defer_plot_updates():
                 self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)

@@ -155,6 +155,18 @@ jobs:
           if ($renderProcess.ExitCode -ne 0) {
             throw "PeakPo rendering verification exited with code $($renderProcess.ExitCode)"
           }
+          $carryProcess = Start-Process -FilePath "dist/PeakPo/PeakPo.exe" -ArgumentList "--verify-carry-dialog" -Wait -PassThru
+          if ($carryProcess.ExitCode -ne 0) {
+            throw "PeakPo carry-over dialog verification exited with code $($carryProcess.ExitCode)"
+          }
+          $navTestDir = Join-Path $env:RUNNER_TEMP "peakpo-navigation"
+          New-Item -ItemType Directory -Path $navTestDir -Force | Out-Null
+          Copy-Item "tests/fixtures/navigation/only.chi" (Join-Path $navTestDir "map_1.chi")
+          Copy-Item "tests/fixtures/navigation/only.chi" (Join-Path $navTestDir "1.chi")
+          $navProcess = Start-Process -FilePath "dist/PeakPo/PeakPo.exe" -ArgumentList @("--verify-navigation-boundary", $navTestDir) -Wait -PassThru
+          if ($navProcess.ExitCode -ne 0) {
+            throw "PeakPo name-navigation verification exited with code $($navProcess.ExitCode)"
+          }
 
       - name: Smoke-test macOS executable
         if: runner.os == 'macOS'

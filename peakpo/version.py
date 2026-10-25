@@ -4,8 +4,10 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.12.2"
+__version__ = "7.12.3"
 """
+7.12.3: prevent CHI navigation from reopening the last file when filenames
+        overlap, and keep the carry-over choice in a Qt dialog.
 7.12.2: release after series of changes.
 7.12.2.dev5: fix export data folder name.
 7.12.1zr: constraints global control.

@@ -12,6 +12,7 @@ from peakpo.control import maincontroller
 from peakpo.control.maincontroller import MainController
 from peakpo.utils import dialogs
 from peakpo.utils import apply_spinbox_fix_style
+from peakpo.utils.fileutils import find_from_filelist
 
 
 _APP = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -63,6 +64,106 @@ def test_chi_navigation_boundary_shows_warning_without_loading(
     controller._goto_chi_next_file(move)
 
     assert warnings == [message]
+
+
+def test_filelist_lookup_requires_complete_filename(tmp_path):
+    map_file = tmp_path / "map_1.chi"
+    last_file = tmp_path / "1.chi"
+
+    assert find_from_filelist([str(map_file), str(last_file)], "1.chi") == 1
+    assert find_from_filelist(
+        [str(map_file), str(last_file)], str(last_file)) == 1
+
+
+@pytest.mark.parametrize("sort_by_name", [True, False])
+def test_last_chi_with_name_contained_in_another_file_stops_at_boundary(
+        monkeypatch, tmp_path, sort_by_name):
+    map_file = tmp_path / "map_1.chi"
+    last_file = tmp_path / "1.chi"
+    map_file.write_text("", encoding="utf-8")
+    last_file.write_text("", encoding="utf-8")
+    os.utime(map_file, (1, 1))
+    os.utime(last_file, (2, 2))
+    controller = MainController.__new__(MainController)
+    controller.widget = SimpleNamespace(
+        radioButton_SortbyNme=_Checked(sort_by_name),
+        spinBox_FileStep=_Value(1),
+    )
+    controller.model = SimpleNamespace(
+        chi_path=str(tmp_path),
+        base_ptn=SimpleNamespace(fname=str(last_file)),
+    )
+    controller._capture_nav_carry_state = lambda: None
+    warnings = []
+    monkeypatch.setattr(
+        maincontroller, "show_warning", lambda *args: warnings.append(args[2]))
+
+    controller._goto_chi_next_file("next")
+
+    assert warnings == ["It is already the last file."]
+
+
+def test_next_never_reloads_current_chi_when_lookup_is_wrong(
+        monkeypatch, tmp_path):
+    map_file = tmp_path / "map_1.chi"
+    last_file = tmp_path / "1.chi"
+    map_file.write_text("", encoding="utf-8")
+    last_file.write_text("", encoding="utf-8")
+    controller = MainController.__new__(MainController)
+    controller.widget = SimpleNamespace(
+        radioButton_SortbyNme=_Checked(True),
+        spinBox_FileStep=_Value(1),
+    )
+    controller.model = SimpleNamespace(
+        chi_path=str(tmp_path),
+        base_ptn=SimpleNamespace(fname=str(last_file)),
+    )
+    controller._capture_nav_carry_state = lambda: None
+    monkeypatch.setattr(maincontroller, "find_from_filelist", lambda *args: 0)
+    warnings = []
+    monkeypatch.setattr(
+        maincontroller, "show_warning", lambda *args: warnings.append(args[2]))
+
+    controller._goto_chi_next_file("next")
+
+    assert warnings == ["It is already the last file."]
+
+
+@pytest.mark.parametrize(
+    ("action", "button_text", "expected"),
+    [
+        ("keep_existing", "Carry over", "overwrite_existing"),
+        ("overwrite_existing", "Use existing", "keep_existing"),
+    ],
+)
+def test_nav_carry_choice_uses_qt_dialog(action, button_text, expected):
+    window = QtWidgets.QMainWindow()
+    controller = MainController.__new__(MainController)
+    controller.widget = window
+    window.checkBox_CarryNavPopupConflict = _Checked(True)
+    window.checkBox_CarryNavPopupOverwrite = _Checked(True)
+    observed = []
+
+    def choose():
+        boxes = [
+            widget for widget in _APP.topLevelWidgets()
+            if isinstance(widget, QtWidgets.QMessageBox) and widget.isVisible()
+        ]
+        assert len(boxes) == 1
+        box = boxes[0]
+        observed.append(box.testOption(QtWidgets.QMessageBox.DontUseNativeDialog))
+        button = next(
+            button for button in box.buttons() if button.text() == button_text
+        )
+        button.click()
+
+    QtCore.QTimer.singleShot(0, choose)
+    try:
+        result = controller._prompt_for_nav_carry_action("JCPDS", action)
+        assert result == expected
+        assert observed == [True]
+    finally:
+        window.close()
 
 
 def test_navigation_warning_is_in_window_and_preserves_focus():

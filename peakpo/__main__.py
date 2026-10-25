@@ -64,6 +64,47 @@ def _verify_warning_dialog():
     return 0 if passed else 1
 
 
+def _verify_carry_dialog():
+    """Exercise the carry-over choice in a packaged desktop build."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from qtpy import QtCore, QtWidgets
+
+    from .control.maincontroller import MainController
+    from .view.mainwidget import MainWindow
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow()
+    window.show()
+    window.checkBox_CarryNavPopupConflict.setChecked(True)
+    controller = MainController.__new__(MainController)
+    controller.widget = window
+    selected = []
+
+    def choose_carry_over():
+        boxes = [
+            widget for widget in app.topLevelWidgets()
+            if isinstance(widget, QtWidgets.QMessageBox) and widget.isVisible()
+        ]
+        if len(boxes) != 1:
+            return
+        box = boxes[0]
+        selected.append(box.testOption(QtWidgets.QMessageBox.DontUseNativeDialog))
+        next(button for button in box.buttons()
+             if button.text() == "Carry over").click()
+
+    def close_stalled_dialog():
+        for widget in app.topLevelWidgets():
+            if isinstance(widget, QtWidgets.QMessageBox) and widget.isVisible():
+                widget.reject()
+
+    QtCore.QTimer.singleShot(0, choose_carry_over)
+    QtCore.QTimer.singleShot(10000, close_stalled_dialog)
+    result = controller._prompt_for_nav_carry_action("JCPDS", "keep_existing")
+    window.close()
+    app.processEvents()
+    return 0 if result == "overwrite_existing" and selected == [True] else 1
+
+
 def _verify_navigation_boundary(data_dir):
     """Exercise the real controller and Prev button on the first CHI file."""
     from qtpy import QtCore, QtWidgets
@@ -89,6 +130,8 @@ def _verify_navigation_boundary(data_dir):
     window.show()
     window.radioButton_SortbyNme.setChecked(True)
     window.checkBox_NavDPP.setChecked(False)
+    window.checkBox_ShowCake.setChecked(False)
+    window.checkBox_IgnoreRawDataExistence.setChecked(False)
 
     controller.base_ptn_ctrl._load_a_new_pattern(files[0])
     app.processEvents()
@@ -107,6 +150,17 @@ def _verify_navigation_boundary(data_dir):
         app.processEvents()
         passed = passed and os.path.samefile(
             controller.model.base_ptn.fname, expected)
+
+    before = controller.model.base_ptn.fname
+    window.pushButton_NextBasePtn.click()
+    app.processEvents()
+    popup = getattr(window, "_peakpo_warning_popup", None)
+    passed = bool(
+        passed
+        and controller.model.base_ptn.fname == before
+        and popup is not None
+        and popup.parent() is window.centralWidget()
+    )
     for expected in reversed(files[:-1]):
         window.pushButton_PrevBasePtn.click()
         app.processEvents()
@@ -143,6 +197,10 @@ def main():
         # A short-lived Qt GUI probe can fault during PyQt interpreter
         # teardown after every test object has already been destroyed. Exit
         # directly once the dialog path itself has completed successfully.
+        os._exit(status)
+
+    if "--verify-carry-dialog" in sys.argv[1:]:
+        status = _verify_carry_dialog()
         os._exit(status)
 
     if "--verify-navigation-boundary" in sys.argv[1:]:
