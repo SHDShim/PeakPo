@@ -11,6 +11,7 @@ from dioptas.model.Configuration import Configuration
 import datetime
 import collections
 import re
+import tempfile
 
 from ..utils import make_filename, extract_extension
 
@@ -123,7 +124,18 @@ class DiffImg(object):
         self.poni = pyFAI.load(poni_filename)
         if self._dioptas_config is None:
             self._dioptas_config = Configuration()
-        self._dioptas_config.calibration_model.load(poni_filename)
+        try:
+            self._dioptas_config.calibration_model.load(poni_filename)
+        except KeyError as exc:
+            if exc.args != ("detector_config",):
+                raise
+            # pyFAI accepts some older PONI files whose detector settings
+            # Dioptas cannot read directly. Normalize a private copy without
+            # changing the calibration stored in the user's PARAM folder.
+            with tempfile.TemporaryDirectory(prefix="peakpo-poni-") as temp_dir:
+                normalized = os.path.join(temp_dir, "calibration.poni")
+                self.poni.save(normalized)
+                self._dioptas_config.calibration_model.load(normalized)
         print(str(datetime.datetime.now())[:-7], 
             ": Load ", poni_filename)
 

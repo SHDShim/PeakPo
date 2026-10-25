@@ -48,7 +48,7 @@ parse_dioptas_map_filename = xrdiohelpers.parse_dioptas_map_filename
 
 REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
 REFERENCE_METADATA = os.path.join(
-    REPO_ROOT, "cell32_initialmap_S1_map_1_001_0001.metadata.v1.json")
+    REPO_ROOT, "tests", "fixtures", "dioptas-map.metadata.v1.json")
 
 
 try:

@@ -8,6 +8,7 @@ import pytest
 from qtpy import QtCore, QtWidgets
 
 from peakpo.control.mapcontroller import MapController
+from peakpo.control.sequencecontroller import SequenceController
 from peakpo.control.maincontroller import MainController
 
 
@@ -109,6 +110,18 @@ def test_center_preview_uses_normal_chi_opening_path(tmp_path):
     assert opened == [selected[4]]
 
 
+def test_sequence_preview_uses_shared_chi_opening_path(tmp_path):
+    selected = str(tmp_path / "sequence_001.chi")
+    controller = SequenceController.__new__(SequenceController)
+    controller._chi_files = [selected]
+    controller.base_ptn_ctrl = SimpleNamespace(
+        _load_a_new_pattern=lambda path: pytest.fail("bypassed CHI opening rule"))
+    controller.open_chi_cb = lambda path: path == selected
+    controller._schedule_overlay_refresh = lambda: None
+
+    controller._load_file_to_main_plot(0)
+
+
 def test_center_preview_uses_middle_file_when_grid_is_incomplete(tmp_path):
     controller = MapController.__new__(MapController)
     controller._chi_files = [
@@ -135,6 +148,7 @@ def test_map_file_open_respects_param_navigation_save(
     active = [str(current)]
     actions = []
     controller = MainController.__new__(MainController)
+    controller._confirm_missing_destination_poni = lambda path: None
     controller.model = SimpleNamespace(
         base_ptn_exist=lambda: True,
         get_base_ptn_filename=lambda: active[0])
@@ -175,6 +189,7 @@ def test_forced_map_switch_honors_param_prompt(
     active = [str(current)]
     actions = []
     controller = MainController.__new__(MainController)
+    controller._confirm_missing_destination_poni = lambda path: None
     controller.model = SimpleNamespace(
         base_ptn_exist=lambda: True,
         get_base_ptn_filename=lambda: active[0])
@@ -200,6 +215,7 @@ def test_failed_param_save_keeps_current_chi(tmp_path):
     current.write_text("", encoding="utf-8")
     selected.write_text("", encoding="utf-8")
     controller = MainController.__new__(MainController)
+    controller._confirm_missing_destination_poni = lambda path: None
     controller.model = SimpleNamespace(
         base_ptn_exist=lambda: True,
         get_base_ptn_filename=lambda: str(current))

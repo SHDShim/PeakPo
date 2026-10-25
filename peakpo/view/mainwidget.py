@@ -631,19 +631,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.gridLayout_NavCarryBehavior.setVerticalSpacing(10)
 
         self.label_NavParamMode = QtWidgets.QLabel(
-            "Prev/Next action", self.groupBox_NavCarryBehavior)
+            "How Prev/Next opens another CHI", self.groupBox_NavCarryBehavior)
         self.comboBox_NavParamModeConfig = QtWidgets.QComboBox(
             self.groupBox_NavCarryBehavior)
         self.comboBox_NavParamModeConfig.setObjectName(
             "comboBox_NavParamModeConfig")
-        self.comboBox_NavParamModeConfig.addItem("Use existing setup", "saved")
         self.comboBox_NavParamModeConfig.addItem(
-            "Carry enabled settings", "carry")
+            "Carry over only if no existing", "saved")
+        self.comboBox_NavParamModeConfig.addItem(
+            "Force carryover", "carry")
+        self.comboBox_NavParamModeConfig.addItem("Use existing", "existing_only")
         self.comboBox_NavParamModeConfig.addItem(
             "Custom category rules", "custom")
+        self.comboBox_NavParamModeConfig.setCurrentIndex(
+            self.comboBox_NavParamModeConfig.findData("saved"))
         self.comboBox_NavParamModeConfig.setToolTip(
-            "Controls how Prev and Next use an existing setup. "
-            "Custom uses the JCPDS and other-setting rules below.")
+            "Use existing opens a CHI without PARAM with fresh defaults. "
+            "Force carryover replaces enabled settings. "
+            "Carry over only if no existing uses PARAM when present. "
+            "Custom uses the category rules below.")
         self.gridLayout_NavCarryBehavior.addWidget(
             self.label_NavParamMode, 0, 0)
         self.gridLayout_NavCarryBehavior.addWidget(
@@ -688,6 +694,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.groupBox_NavSave = QtWidgets.QGroupBox(
             "Save PARAM when leaving a file", self.scrollAreaWidgetContents_2)
         self.groupBox_NavSave.setObjectName("groupBox_NavSave")
+        self.groupBox_NavSave.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         self.gridLayout_NavSave = QtWidgets.QGridLayout(self.groupBox_NavSave)
         self.gridLayout_NavSave.setContentsMargins(12, 12, 12, 12)
         self.label_NavSaveMode = QtWidgets.QLabel(
@@ -698,7 +706,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.comboBox_NavSaveMode.addItem("Every changed session", "all")
         self.comboBox_NavSaveMode.addItem("Never", "never")
         self.comboBox_NavSaveMode.setToolTip(
-            "Save changed settings for the current CHI before opening another file.")
+            "New or incomplete sessions (default): save unsaved setup on a "
+            "CHI without PARAM and newly filled setup categories. "
+            "Every changed session: also save changes to existing setups. "
+            "Never: leave PARAM saving to the Save button.")
         self.gridLayout_NavSave.addWidget(self.label_NavSaveMode, 0, 0)
         self.gridLayout_NavSave.addWidget(self.comboBox_NavSaveMode, 0, 1)
         self.gridLayout_NavSave.setColumnStretch(1, 1)
@@ -709,6 +720,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "Working state recovery", self.scrollAreaWidgetContents_2)
         self.groupBox_WorkingStateRecovery.setObjectName(
             "groupBox_WorkingStateRecovery")
+        self.groupBox_WorkingStateRecovery.setSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         recovery_layout = QtWidgets.QVBoxLayout(
             self.groupBox_WorkingStateRecovery)
         recovery_layout.setContentsMargins(12, 12, 12, 12)
@@ -770,10 +783,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _sync_nav_param_custom_visibility(self, _index=None):
         custom = self.comboBox_NavParamModeConfig.currentData() == "custom"
-        for name in ("comboBox_NavParamMode", "comboBox_NavParamModeConfig"):
-            combo = getattr(self, name, None)
-            if combo is not None:
-                set_nav_setup_mode_style(combo)
+        set_nav_setup_mode_style(self.comboBox_NavParamModeConfig)
         self._fit_nav_setup_dropdown()
         for name in (
                 "label_CarryNavExistingJCPDS",
@@ -1748,18 +1758,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _sync_toolbar_pressure(self, value):
         if float(self.doubleSpinBox_Pressure.value()) == float(value):
             return
-        blocker = QtCore.QSignalBlocker(self.doubleSpinBox_Pressure)
         self.doubleSpinBox_Pressure.setValue(value)
-        del blocker
-        self._update_pt_spinbox_colors()
 
     def _sync_toolbar_temperature(self, value):
         if int(round(self.doubleSpinBox_Temperature.value())) == int(value):
             return
-        blocker = QtCore.QSignalBlocker(self.doubleSpinBox_Temperature)
         self.doubleSpinBox_Temperature.setValue(float(value))
-        del blocker
-        self._update_pt_spinbox_colors()
 
     def _sync_from_main_pressure(self, value):
         if not hasattr(self, "doubleSpinBox_ToolbarPressure"):
@@ -2256,12 +2260,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                         self.frame_TopToolbarRow1)
                     self.comboBox_NavParamMode.setObjectName(
                         "comboBox_NavParamMode")
-                    self.comboBox_NavParamMode.addItem("Setup: Existing", "saved")
-                    self.comboBox_NavParamMode.addItem("Setup: Carry", "carry")
-                    self.comboBox_NavParamMode.addItem("Setup: Custom", "custom")
+                    self.comboBox_NavParamMode.addItem("Carry if none", "saved")
+                    self.comboBox_NavParamMode.addItem("Force carry", "carry")
+                    self.comboBox_NavParamMode.addItem("Existing only", "existing_only")
+                    self.comboBox_NavParamMode.addItem("Custom", "custom")
+                    self.comboBox_NavParamMode.setCurrentIndex(
+                        self.comboBox_NavParamMode.findData("saved"))
                     self.comboBox_NavParamMode.setToolTip(
-                        "Choose how Prev and Next use an existing setup.")
-                    set_nav_setup_mode_style(self.comboBox_NavParamMode)
+                        "Choose how Prev and Next use a saved setup or carry "
+                        "settings to a CHI without one.")
                     self._fit_nav_setup_dropdown()
                     self.layout_TopToolbarRow1.addWidget(
                         self.comboBox_NavParamMode, 0)

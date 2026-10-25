@@ -10,7 +10,7 @@ from ..ds_jcpds import JCPDSplt, Session
 from ..ds_powdiff import PatternPeakPo, get_DataSection
 from ..ds_section import Section
 from ..utils import samefilename, make_filename, change_file_path, \
-    extract_extension
+    extract_extension, usable_poni_file
 from ..utils.excelutils import require_xlwt
 from ..compat_pickle import PeakPoCompatPickleUnpickler
 from .model import _normalize_legacy_ppss_session
@@ -276,10 +276,7 @@ class PeakPoDirModel(object):
             return True
 
     def poni_exist(self):
-        if self.poni is None:
-            return False
-        else:
-            return True
+        return usable_poni_file(self.poni)
 
     def make_filename(self, extension, original=False):
         """

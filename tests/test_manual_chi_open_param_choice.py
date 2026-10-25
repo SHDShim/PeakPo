@@ -55,6 +55,7 @@ def test_manual_open_existing_param_choice(
             opened.append(filename), active.__setitem__(0, filename)))
     controller._confirm_manual_open_param_choice = lambda *args: (
         prompted.append(args) or choice)
+    controller._confirm_missing_destination_poni = lambda path: None
     monkeypatch.setattr(maincontroller, "provenance_for_chi", lambda _: {})
     monkeypatch.setattr(maincontroller, "is_new_param_folder",
                         lambda _: has_param)

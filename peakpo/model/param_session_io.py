@@ -107,6 +107,46 @@ def _atomic_write_json(path, data):
     _atomic_write_bytes(path, payload)
 
 
+def _recover_interrupted_param_save(param_dir):
+    """Roll back a save that stopped after its first file replacement."""
+    journal_dir = os.path.join(param_dir, ".pending-save")
+    if not os.path.isdir(journal_dir):
+        return
+    marker = os.path.join(journal_dir, "ready.json")
+    if not os.path.isfile(marker):
+        shutil.rmtree(journal_dir)
+        return
+    with open(marker, encoding="utf-8") as stream:
+        entries = json.load(stream)
+    for index, entry in enumerate(entries):
+        target = _param_file_path(param_dir, entry["path"])
+        if entry["existed"]:
+            _atomic_write_bytes(
+                target, _file_bytes(os.path.join(journal_dir, f"{index:06d}.bin")))
+        elif os.path.isfile(target):
+            os.unlink(target)
+    os.unlink(marker)
+    shutil.rmtree(journal_dir, ignore_errors=True)
+
+
+def _begin_param_transaction(param_dir, paths):
+    journal_dir = os.path.join(param_dir, ".pending-save")
+    os.makedirs(journal_dir)
+    entries = []
+    for index, path in enumerate(dict.fromkeys(paths)):
+        source = _param_file_path(param_dir, path)
+        existed = os.path.isfile(source)
+        if existed:
+            snapshot = os.path.join(journal_dir, f"{index:06d}.bin")
+            try:
+                os.link(source, snapshot)
+            except OSError:
+                shutil.copy2(source, snapshot)
+        entries.append({"path": path, "existed": existed})
+    _atomic_write_json(os.path.join(journal_dir, "ready.json"), entries)
+    return journal_dir
+
+
 def _file_bytes(path):
     with open(path, "rb") as f:
         return f.read()
@@ -979,6 +1019,7 @@ def save_model_to_param(
     param_dir = param_dir or get_temp_dir(
         model.get_base_ptn_filename(), branch="-param")
     os.makedirs(param_dir, exist_ok=True)
+    _recover_interrupted_param_save(param_dir)
     for ptn in [model.base_ptn] + list(model.waterfall_ptn):
         _ensure_pattern_background_defaults(ptn)
 
@@ -1027,16 +1068,18 @@ def save_model_to_param(
     payload_map.update(section_payloads)
     payload_map.update(waterfall_payloads)
 
+    # Generate companion files away from the live PARAM files until commit.
+    stage_dir = tempfile.mkdtemp(prefix=".stage-", dir=param_dir)
     # Keep background information as chi files in PARAM.
     if model.base_ptn is not None:
         try:
-            model.base_ptn.write_temporary_bgfiles(temp_dir=param_dir)
+            model.base_ptn.write_temporary_bgfiles(temp_dir=stage_dir)
         except Exception:
             pass
     if model.waterfall_ptn:
         for ptn in model.waterfall_ptn:
             try:
-                ptn.write_temporary_bgfiles(temp_dir=param_dir)
+                ptn.write_temporary_bgfiles(temp_dir=stage_dir)
             except Exception:
                 pass
 
@@ -1044,7 +1087,7 @@ def save_model_to_param(
     if model.diff_img is not None:
         if model.diff_img.tth_cake is not None and model.diff_img.chi_cake is not None and model.diff_img.intensity_cake is not None:
             try:
-                model.diff_img.write_temp_cakefiles(temp_dir=param_dir)
+                model.diff_img.write_temp_cakefiles(temp_dir=stage_dir)
             except Exception:
                 pass
         diff_info = session_data.get("diff_img", {})
@@ -1052,7 +1095,9 @@ def save_model_to_param(
             rel = diff_info.get(key)
             if rel is None:
                 continue
-            full = _param_file_path(param_dir, rel)
+            full = os.path.join(stage_dir, basename_any(rel))
+            if not os.path.exists(full):
+                full = _param_file_path(param_dir, rel)
             if os.path.exists(full):
                 payload_map[rel] = _file_bytes(full)
         if model.diff_img.mask is not None:
@@ -1066,7 +1111,9 @@ def save_model_to_param(
             continue
         bgsub_name, bg_name = _bg_temp_names(ptn)
         for rel in (bgsub_name, bg_name):
-            full = _param_file_path(param_dir, rel)
+            full = _param_file_path(stage_dir, rel)
+            if not os.path.exists(full):
+                full = _param_file_path(param_dir, rel)
             if os.path.exists(full):
                 payload_map[rel] = _file_bytes(full)
 
@@ -1074,8 +1121,9 @@ def save_model_to_param(
     # change detection + backups, preserving historical PARAM usage.
     for rel in _collect_companion_files(param_dir):
         full = _param_file_path(param_dir, rel)
-        if os.path.exists(full):
+        if rel not in payload_map and os.path.exists(full):
             payload_map[rel] = _file_bytes(full)
+    shutil.rmtree(stage_dir)
 
     changed_files_all = []
     for rel_path, new_bytes in payload_map.items():
@@ -1116,27 +1164,38 @@ def save_model_to_param(
             dst = _param_file_path(backup_root, rel_path)
             _atomic_write_bytes(dst, backup_payload_map[rel_path])
 
-    for rel_path in changed_files_all:
-        _atomic_write_bytes(
-            _param_file_path(param_dir, rel_path),
-            payload_map[rel_path],
-        )
+    journal_dir = _begin_param_transaction(
+        param_dir, changed_files_all + [BACKUP_INDEX_FILE])
+    try:
+        # Publish the manifest after every file it refers to is in place.
+        for rel_path in changed_files_all:
+            if rel_path != MANIFEST_FILE:
+                _atomic_write_bytes(
+                    _param_file_path(param_dir, rel_path), payload_map[rel_path])
+        if MANIFEST_FILE in changed_files_all:
+            _atomic_write_bytes(
+                os.path.join(param_dir, MANIFEST_FILE), payload_map[MANIFEST_FILE])
 
-    if create_backup_event:
-        highlights = _highlights_from_flags(semantic_flags, force_backup=force_backup)
-        index["events"].append(
-            {
-                "id": backup_id,
-                "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
-                "reason": reason,
-                "changed_files": delta_files,
-                "snapshot_files": snapshot_files,
-                "snapshot_mode": "full",
-                "highlights": highlights,
-                "state_hash": state_hash,
-            }
-        )
-    _atomic_write_json(index_path, index)
+        if create_backup_event:
+            highlights = _highlights_from_flags(semantic_flags, force_backup=force_backup)
+            index["events"].append(
+                {
+                    "id": backup_id,
+                    "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
+                    "reason": reason,
+                    "changed_files": delta_files,
+                    "snapshot_files": snapshot_files,
+                    "snapshot_mode": "full",
+                    "highlights": highlights,
+                    "state_hash": state_hash,
+                }
+            )
+        _atomic_write_json(index_path, index)
+    except Exception:
+        _recover_interrupted_param_save(param_dir)
+        raise
+    os.unlink(os.path.join(journal_dir, "ready.json"))
+    shutil.rmtree(journal_dir, ignore_errors=True)
 
     return SaveResult(
         param_dir=param_dir,
@@ -1152,6 +1211,10 @@ def _load_json(path):
 
 
 def is_new_param_folder(param_dir):
+    try:
+        _recover_interrupted_param_save(param_dir)
+    except (OSError, ValueError, KeyError):
+        return False
     manifest = os.path.join(param_dir, MANIFEST_FILE)
     if not os.path.exists(manifest):
         return False
@@ -1160,6 +1223,25 @@ def is_new_param_folder(param_dir):
     except Exception:
         return False
     return data.get("format_family") == FORMAT_FAMILY
+
+
+def saved_poni_for_chi(base_chi_file):
+    """Return a usable PONI referenced by this CHI's saved PARAM session."""
+    chi_root = os.path.dirname(base_chi_file)
+    param_dir = os.path.splitext(base_chi_file)[0] + "-param"
+    if not is_new_param_folder(param_dir):
+        return None
+    try:
+        manifest = _load_json(os.path.join(param_dir, MANIFEST_FILE))
+        session_file = manifest.get("files", {}).get("session", SESSION_FILE)
+        session_path = _resolve_param_reference(
+            session_file, chi_root, param_dir)
+        session_data = _load_json(session_path)
+        poni_path = _resolve_path(session_data.get("poni"), chi_root)
+    except (OSError, ValueError, TypeError, KeyError):
+        return None
+    from ..utils.fileutils import usable_poni_file
+    return poni_path if usable_poni_file(poni_path) else None
 
 
 def list_backup_events(param_dir):
@@ -1286,6 +1368,27 @@ def load_model_from_param(model, base_chi_file, backup_event_id=None,
     ui_data = _load_json(_resolve_param_reference(
         files.get("ui_state", UI_STATE_FILE), chi_root, param_dir))
 
+    # Check P/T before changing the model: Qt spinboxes cannot accept strings,
+    # NaN, or values outside their supported ranges.
+    saved_pt = {}
+    for key, label, limit, unit in (
+            ("saved_pressure", "pressure", 1000.0, "GPa"),
+            ("saved_temperature", "temperature", 10000.0, "K")):
+        raw = jcpds_data.get(key, session_data.get(key, getattr(model, key)))
+        try:
+            if isinstance(raw, bool):
+                raise ValueError
+            value = float(raw)
+            if not np.isfinite(value) or not 0.0 <= value <= limit:
+                raise ValueError
+        except (TypeError, ValueError, OverflowError):
+            return False, {
+                "reason": (f"Invalid saved {label} in PARAM: expected a "
+                           f"finite number from 0 to {limit:g} {unit}."),
+                "param_dir": param_dir,
+            }
+        saved_pt[key] = value
+
     model.base_ptn = _load_pattern(session_data.get("base_pattern"), chi_root, param_dir)
     base_fname = getattr(model.base_ptn, "fname", None) or base_chi_file
     model.display_ptn = None
@@ -1343,10 +1446,8 @@ def load_model_from_param(model, base_chi_file, backup_event_id=None,
         if isinstance(mapped_idx, int) and (0 <= mapped_idx < len(model.section_lst)):
             model.current_section = model.section_lst[mapped_idx]
 
-    model.saved_pressure = jcpds_data.get(
-        "saved_pressure", session_data.get("saved_pressure", model.saved_pressure))
-    model.saved_temperature = jcpds_data.get(
-        "saved_temperature", session_data.get("saved_temperature", model.saved_temperature))
+    model.saved_pressure = saved_pt["saved_pressure"]
+    model.saved_temperature = saved_pt["saved_temperature"]
     model.chi_path = chi_root
     model.jcpds_path = _resolve_path(session_data.get("jcpds_path"), chi_root) or ""
     model.poni = _resolve_path(session_data.get("poni"), chi_root)

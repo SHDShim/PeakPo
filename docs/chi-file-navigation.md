@@ -19,24 +19,59 @@ selected, PeakPo does not ask about name sets.
 ## Setup choice for Prev and Next
 
 The toolbar control between **Prev** and **Next** selects how the destination
-CHI is opened. It is synchronized with **Prev/Next action** under **When next
-file already has information** in **JCPDS > Data**. The selection stays in
-effect for subsequent navigation.
+CHI is opened. It is synchronized with **How Prev/Next opens another CHI**
+under **When next file already has information** in **JCPDS > Data**. The
+selection stays in effect for subsequent navigation.
+The toolbar uses short labels: **Carry if none**, **Force carry**, **Existing only**, and
+**Custom**, in the order of the full Config choices below.
 
-- **Existing** (default for new installations): use the destination's saved PARAM
-  without carry-over. When no saved PARAM exists, carry the enabled categories.
-- **Carry**: replace the enabled categories with current settings. Any other
-  categories in the destination's saved PARAM remain intact.
-- **Custom**: use the older separate JCPDS and other-setting rules. Existing
-  installations with those saved rules start in Custom so their behavior is
-  preserved. The separate controls appear only in this mode.
+- **Carry over only if no existing** (default): use a saved PARAM when present; otherwise
+  carry enabled categories from the current CHI. This preserves the behavior
+  of the former **Existing** option in saved preferences.
+- **Force carryover**: replace enabled categories with current settings.
+  Other categories in a saved PARAM remain intact.
+- **Use existing**: load the destination's saved PARAM without carry-over.
+  If no saved PARAM exists, open the CHI with fresh setup defaults.
+- **Custom**: use the separate JCPDS and other-setting rules. The separate
+  controls appear only in this mode. By default, both rules keep the
+  destination's existing JCPDS and other information.
+
+An explicitly saved setup choice is retained. Older category preferences
+remain available under **Custom**, but do not change the default choice.
+
+When an existing setup loads, the top toolbar and JCPDS tab show the same
+saved pressure and temperature values. Editing either control updates the
+other control and the JCPDS reference plot.
+If a PARAM file contains an invalid saved pressure or temperature, PeakPo
+shows an error and skips that setup instead of stopping the application.
+If PONI is missing, PeakPo warns before opening the CHI and offers
+**Choose PONI**, **Use current PONI** (when available), **Open without PONI**,
+or **Stay on current file**. Choosing a PONI copies it into the destination's
+PARAM folder. **Choose PONI** is the default action. If the file opens without
+a PONI, existing saved Cake data can still be displayed as a reference, but
+Cake controls are disabled. Use the PONI picker in **Cake > Config** to enable
+processing, display controls, and integration. With neither PONI nor cached
+Cake, the CHI opens without Cake. A PONI that pyFAI can read but
+Dioptas cannot parse directly is normalized in a temporary copy for Cake
+processing; the PARAM copy is unchanged.
+When the destination has no unique readable PONI in its PARAM folder and no
+usable PONI reference in its saved setup, navigation warns about the missing
+calibration. An unreadable PONI file does not enable Cake controls. A selected
+or carried PONI is copied into the destination PARAM folder before the CHI
+opens. With no usable PONI, azimuthal integration and 2D Map/Sequence analysis
+are unavailable; 1D Map/Sequence analysis remains available.
+If the destination fails to open and the current CHI remains open, PeakPo
+removes a new PONI copy. This one-file choice takes precedence over the
+navigation mode's PONI rule; closing the prompt leaves the current CHI open.
 
 The red dot on Prev or Next means its destination has a valid saved PARAM;
-the hollow gray dot means it does not. **Setup: Existing** appears in the
-same red when selected. The tooltip gives the destination
-filename and action. A button is disabled when no file exists in that
-direction at the selected step. The dot describes the destination and does
-not indicate whether the current file has unsaved changes.
+the hollow gray dot means it does not. The toolbar navigation dropdown uses the
+normal font color. **How Prev/Next opens another CHI** in Config uses the normal
+font color for Custom, Force carryover, and Carry over only if no existing,
+and red when **Use existing** is selected. The tooltip gives the destination
+filename and action. A button is disabled when no file exists in that direction at the
+selected step. The dot describes the destination and does not indicate whether
+the current file has unsaved changes.
 
 The **Save** button has its normal toolbar appearance when the current PARAM
 matches the state loaded or last saved for that CHI. It turns yellow when
@@ -73,8 +108,9 @@ In **JCPDS > Data**, the **Save PARAM when leaving a file** control has three
 choices:
 
 - **New or incomplete sessions** (default) saves a CHI session when carried
-  information fills a missing category or an automatically created session has
-  changed. A manual Save remains authoritative for the current file.
+  information fills a missing category, a new CHI without PARAM has unsaved
+  setup changes, or an automatically created session has changed. A manual
+  Save remains authoritative for the current file.
 - **Every changed session** also updates existing sessions during navigation.
 - **Never** leaves PARAM saving entirely to the manual Save action.
 
@@ -87,8 +123,19 @@ file.
 of the open CHI analysis every three minutes, on navigation, and on a normal
 quit. It restores the latest available copy at the next launch, including the
 active file and tab selection, then rescales the plot to the recovered data.
+When a file has unsaved setup changes, PeakPo also keeps its private copy while
+you visit other CHI files. **Existing only** always opens that file's saved
+PARAM when one exists, so Save is gray until you change the setup. For a CHI
+without saved PARAM, PeakPo can restore its private working copy on return;
+the Save button is yellow until you save it. The latest private snapshot is
+also used for startup recovery. Clean copies from previous files are removed
+during navigation.
 These copies are stored in the operating system's application data folder,
 separately from CHI PARAM folders. Uncheck
 **Restore last working state when PeakPo starts** to disable both saving and
 restoring the private copy. Recovery requires the original CHI file to remain
 available at its saved path.
+If recovery is off and a navigation choice would leave unsaved setup changes,
+PeakPo asks whether to save PARAM, leave without saving, or stay on the file.
+If an enabled recovery snapshot fails while there are unsaved changes,
+navigation stops on the current file.

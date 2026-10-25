@@ -4,8 +4,11 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.12.4.dev2"
+__version__ = "7.12.4.dev3"
 """
+7.12.4.dev3: align CHI navigation and PARAM save defaults; strengthen setup
+             recovery and PONI validation, with Cake controls gated on a
+             usable calibration.
 7.12.4.dev2: retain per-CHI Cake histogram color limits across navigation and
              store exact adjusted limits in PARAM and recovery snapshots.
 7.12.4.dev1: clarify existing CHI setups, correct unsaved-change status after

@@ -634,6 +634,12 @@ class SessionController(object):
             if self.cake_ctrl is not None:
                 self.cake_ctrl.refresh_config_metadata_panel()
             self.update_inputs()
+        # Loading blocks the JCPDS spinboxes' valueChanged signals, so mirror
+        # the restored values to the toolbar explicitly after unblocking them.
+        self.widget._sync_from_main_pressure(
+            self.widget.doubleSpinBox_Pressure.value())
+        self.widget._sync_from_main_temperature(
+            self.widget.doubleSpinBox_Temperature.value())
         self._sync_peakfit_selection_to_current_section()
         self.plot_ctrl.zoom_out_graph()
 
@@ -792,7 +798,8 @@ class SessionController(object):
             )
         return True
 
-    def autoload_param_for_chi(self, base_chi_file):
+    def autoload_param_for_chi(self, base_chi_file,
+                               allow_private_recovery=True):
         """
         Automatically load PARAM session data for an opened CHI file, if found.
         Returns True when PARAM session is loaded, False otherwise.
@@ -803,6 +810,24 @@ class SessionController(object):
             os.path.dirname(base_chi_file),
             os.path.splitext(os.path.basename(base_chi_file))[0] + "-param",
         )
+        visible_param_dir = param_dir
+        # A saved PARAM is authoritative for normal CHI opening. Private
+        # recovery is used only when no visible setup exists; startup recovery
+        # has its own explicit restore path below.
+        if (allow_private_recovery and
+                not is_new_param_folder(visible_param_dir) and
+                self.widget.checkBox_RestoreWorkingState.isChecked()):
+            recovery_dir = self._recovery_dir(base_chi_file)
+            working_path = os.path.join(recovery_dir, "working-state.json")
+            visible_manifest = os.path.join(visible_param_dir, MANIFEST_FILE)
+            recovery_is_latest = (
+                not os.path.isfile(visible_manifest) or
+                (os.path.isfile(working_path) and
+                 os.path.getmtime(working_path) >= os.path.getmtime(visible_manifest)))
+            if (self._recovery_has_unsaved_changes(base_chi_file) and
+                    recovery_is_latest and is_new_param_folder(recovery_dir)):
+                param_dir = recovery_dir
+                self._recovered_current_chi = base_chi_file
         if not is_new_param_folder(param_dir):
             self._last_param_category_presence = {
                 "backup_information": False,
@@ -816,10 +841,28 @@ class SessionController(object):
                 "fits_information": False,
             }
             return False
-        success, meta = load_model_from_param(self.model, base_chi_file)
+        try:
+            success, meta = load_model_from_param(
+                self.model, base_chi_file, param_dir=param_dir)
+        except Exception as exc:
+            success, meta = False, {"reason": str(exc)}
+        if not success and param_dir != visible_param_dir and \
+                is_new_param_folder(visible_param_dir):
+            # A damaged private snapshot must not prevent loading saved PARAM.
+            param_dir = visible_param_dir
+            self._recovered_current_chi = None
+            try:
+                success, meta = load_model_from_param(
+                    self.model, base_chi_file, param_dir=param_dir)
+            except Exception as exc:
+                success, meta = False, {"reason": str(exc)}
         if not success:
+            self._recovered_current_chi = None
             print(str(datetime.datetime.now())[:-7],
                   ": PARAM autoload failed:", str(meta.get("reason")))
+            reason = str(meta.get("reason", ""))
+            if reason.startswith("Invalid saved "):
+                show_warning(self.widget, "Invalid PARAM setup", reason)
             self._last_param_category_presence = {
                 "backup_information": False,
                 "jcpds": False,
@@ -843,10 +886,12 @@ class SessionController(object):
             "poni": False,
             "fits_information": False,
         }
+        display_manifest = str(meta.get("manifest", ""))
+        if param_dir != visible_param_dir:
+            display_manifest = (os.path.join(visible_param_dir, MANIFEST_FILE)
+                                if is_new_param_folder(visible_param_dir) else "")
         self._sync_ui_from_model(
-            manifest_path=str(meta.get("manifest", "")),
-            ui_state=meta.get("ui_state", {}),
-        )
+            manifest_path=display_manifest, ui_state=meta.get("ui_state", {}))
         missing_csv = meta.get("missing_section_csv_files", []) or []
         if missing_csv:
             show_warning(
@@ -870,15 +915,45 @@ class SessionController(object):
     def get_last_param_category_presence(self):
         return dict(self._last_param_category_presence)
 
+    def _confirm_unprotected_navigation(self):
+        widget = getattr(self, "widget", None)
+        recovery_toggle = getattr(widget, "checkBox_RestoreWorkingState", None)
+        dirty_callback = getattr(self, "param_dirty_callback", None)
+        if recovery_toggle is None or recovery_toggle.isChecked() or \
+                not callable(dirty_callback) or not dirty_callback():
+            return True
+        box = QtWidgets.QMessageBox(self.widget)
+        box.setIcon(QtWidgets.QMessageBox.Warning)
+        box.setWindowTitle("Unsaved setup changes")
+        box.setText("The current CHI setup has unsaved changes and working state recovery is off.")
+        save_button = box.addButton("Save PARAM", QtWidgets.QMessageBox.AcceptRole)
+        leave_button = box.addButton("Leave without saving", QtWidgets.QMessageBox.DestructiveRole)
+        stay_button = box.addButton("Stay on current file", QtWidgets.QMessageBox.RejectRole)
+        box.setDefaultButton(stay_button)
+        box.setEscapeButton(stay_button)
+        box.exec()
+        if box.clickedButton() == save_button:
+            return self.save_dpp()
+        return box.clickedButton() == leave_button
+
     def save_for_navigation(self, mode="incomplete", filled_missing=False):
         """Save the departing CHI according to the user's navigation policy."""
-        if mode == "never" or not self.model.base_ptn_exist():
+        if not self.model.base_ptn_exist():
             return True
+        if mode == "never":
+            return self._confirm_unprotected_navigation()
         chi_file = self.model.get_base_ptn_filename()
         if (mode == "incomplete" and self._manual_saved_chi is not None and
                 os.path.normcase(os.path.abspath(self._manual_saved_chi)) ==
                 os.path.normcase(os.path.abspath(chi_file))):
-            return True
+            return self._confirm_unprotected_navigation()
+        try:
+            self._commit_inputs_before_save()
+        except Exception as exc:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "PARAM save failed",
+                "The current CHI file remains open.\n\n" + str(exc))
+            return False
         param_dir = os.path.join(
             os.path.dirname(chi_file),
             os.path.splitext(os.path.basename(chi_file))[0] + "-param")
@@ -896,15 +971,17 @@ class SessionController(object):
             bool(self.model.jcpds_lst) and not presence.get("jcpds", False)) or (
             bool(self.model.section_lst) and
              not presence.get("fits_information", False))
+        dirty_callback = getattr(self, "param_dirty_callback", None)
+        unsaved_changes = (bool(dirty_callback())
+                           if callable(dirty_callback) else False)
         meaningful = newly_filled or bool(self.get_carryover_source_chi()) or \
             bool(self.model.waterfall_ptn) or bool(self.model.poni) or \
-            self._recovered_current_chi == chi_file
+            self._recovered_current_chi == chi_file or unsaved_changes
         if mode == "incomplete" and not (
                 (not valid and meaningful) or newly_filled or
                 origin == "navigation"):
-            return True
+            return self._confirm_unprotected_navigation()
         try:
-            self._commit_inputs_before_save()
             result = save_model_to_param(
                 self.model, ui_state=self._collect_ui_state(),
                 reason="Automatic save on navigation",
@@ -934,6 +1011,22 @@ class SessionController(object):
         ).hexdigest()[:20]
         return os.path.join(self._recovery_root(), digest)
 
+    def _recovery_has_unsaved_changes(self, chi_file):
+        try:
+            with open(os.path.join(self._recovery_dir(chi_file),
+                                   "working-state.json"), encoding="utf-8") as stream:
+                return bool(json.load(stream).get("dirty"))
+        except (OSError, ValueError):
+            return False
+
+    def _clear_recovery_dirty(self, chi_file):
+        try:
+            os.unlink(os.path.join(self._recovery_dir(chi_file),
+                                   "working-state.json"))
+        except OSError:
+            pass
+        self._recovered_current_chi = None
+
     def save_recovery_state(self):
         if any(arg.startswith("--verify-") for arg in sys.argv[1:]) or \
                 not self.widget.checkBox_RestoreWorkingState.isChecked() or \
@@ -945,19 +1038,31 @@ class SessionController(object):
         try:
             self._commit_inputs_before_save()
             root = self._recovery_root()
-            previous_dir = None
+            previous_chi = None
             try:
                 with open(os.path.join(root, "last-state.json"),
                           encoding="utf-8") as stream:
                     previous_chi = json.load(stream).get("chi_file")
-                if previous_chi:
-                    previous_dir = self._recovery_dir(previous_chi)
             except (OSError, ValueError):
                 pass
+            dirty_callback = getattr(self, "param_dirty_callback", None)
+            dirty = bool(dirty_callback()) if callable(dirty_callback) else False
+            current_dir = self._recovery_dir(chi_file)
             save_model_to_param(
                 self.model, ui_state=self._collect_ui_state(),
-                create_backup=False, param_dir=self._recovery_dir(chi_file),
+                create_backup=False, param_dir=current_dir,
                 save_origin="recovery")
+            working_path = os.path.join(current_dir, "working-state.json")
+            fd, temp_working = tempfile.mkstemp(dir=current_dir, prefix="working-")
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as stream:
+                    json.dump({"dirty": dirty}, stream)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.replace(temp_working, working_path)
+            finally:
+                if os.path.exists(temp_working):
+                    os.unlink(temp_working)
             os.makedirs(root, exist_ok=True)
             state = {
                 "chi_file": chi_file,
@@ -979,9 +1084,9 @@ class SessionController(object):
             finally:
                 if os.path.exists(temp_path):
                     os.unlink(temp_path)
-            current_dir = self._recovery_dir(chi_file)
-            if previous_dir and previous_dir != current_dir:
-                shutil.rmtree(previous_dir, ignore_errors=True)
+            if previous_chi and os.path.abspath(previous_chi) != chi_file and \
+                    not self._recovery_has_unsaved_changes(previous_chi):
+                shutil.rmtree(self._recovery_dir(previous_chi), ignore_errors=True)
             return True
         except Exception as exc:
             print("Recovery snapshot failed:", exc)
@@ -1598,6 +1703,7 @@ class SessionController(object):
                   ": No backup snapshot created (no file changes detected).")
         self.refresh_backup_table()
         self._manual_saved_chi = self.model.get_base_ptn_filename()
+        self._clear_recovery_dirty(self._manual_saved_chi)
         if self.widget.checkBox_ShowCake.isChecked():
             self._save_cake_format_file()
             print(str(datetime.datetime.now())[:-7],
@@ -1628,6 +1734,8 @@ class SessionController(object):
         callback = getattr(self, "param_saved_callback", None)
         if callable(callback):
             callback()
+        if hasattr(self.widget, "checkBox_RestoreWorkingState"):
+            self.save_recovery_state()
         return True
 
     def save_ppss(self, quiet=False):

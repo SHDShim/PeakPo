@@ -716,7 +716,8 @@ class MapController(object):
             interactive=False,
             drag_from_anywhere=False,
         )
-        if self.widget.checkBox_ShowCake.isChecked():
+        if (self.widget.checkBox_ShowCake.isChecked() and
+                self.widget.checkBox_ShowCake.isEnabled()):
             self._selector_2d = RectangleSelector(
                 self.widget.mpl.canvas.ax_cake,
                 self._on_roi_2d_selected,
@@ -944,6 +945,10 @@ class MapController(object):
     def _compute_map(self):
         if not self._chi_files:
             self._set_status("Load CHI files first.")
+            return
+        if (self._roi_2d is not None and
+                not self.widget.checkBox_ShowCake.isEnabled()):
+            self._set_status("Choose a PONI in Cake > Config for 2D map analysis.")
             return
         nx, ny = self._grid
         n = len(self._chi_files)

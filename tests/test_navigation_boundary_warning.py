@@ -97,6 +97,36 @@ def test_manual_save_takes_precedence_over_default_navigation_save(
     assert controller.save_for_navigation("incomplete", filled_missing=True)
 
 
+def test_default_navigation_saves_new_chi_with_only_setup_edits(
+        monkeypatch, tmp_path):
+    chi_file = tmp_path / "file_001.chi"
+    chi_file.write_text("", encoding="utf-8")
+    controller = SessionController.__new__(SessionController)
+    controller.model = SimpleNamespace(
+        base_ptn_exist=lambda: True,
+        get_base_ptn_filename=lambda: str(chi_file),
+        jcpds_lst=[], section_lst=[], waterfall_ptn=[], poni=None)
+    controller._manual_saved_chi = None
+    controller._recovered_current_chi = None
+    controller._carryover_source_chi = None
+    controller._last_param_category_presence = {}
+    controller.param_dirty_callback = lambda: True
+    controller._commit_inputs_before_save = lambda: None
+    controller._collect_ui_state = lambda: {}
+    controller.refresh_backup_table = lambda: None
+    monkeypatch.setattr(sessioncontroller, "is_new_param_folder",
+                        lambda path: False)
+    saves = []
+    monkeypatch.setattr(sessioncontroller, "save_model_to_param",
+                        lambda *args, **kwargs: (
+                            saves.append(kwargs) or
+                            SimpleNamespace(manifest_path="saved")))
+
+    assert controller.save_for_navigation("incomplete")
+    assert len(saves) == 1
+    assert saves[0]["save_origin"] == "navigation"
+
+
 def test_recovery_state_restores_last_chi_and_model(tmp_path):
     chi_file = tmp_path / "file_001.chi"
     writechi(str(chi_file), np.asarray([1.0, 2.0]),
@@ -351,7 +381,9 @@ def test_name_set_confirmation_only_applies_to_name_navigation(
     confirmations = []
     controller._confirm_chi_name_set_transition = lambda filename: (
         confirmations.append(filename) or True)
+    controller._confirm_missing_destination_poni = lambda filename: None
     controller._capture_nav_carry_state = lambda: {}
+    controller._reset_setup_for_unsaved_navigation = lambda: None
     controller._defer_plot_updates = nullcontext
     controller.base_ptn_ctrl = SimpleNamespace(
         _load_a_new_pattern=lambda filename: setattr(

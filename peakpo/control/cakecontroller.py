@@ -4,9 +4,9 @@ import glob
 from qtpy import QtWidgets
 import numpy as np
 from ..utils import dialog_savefile, writechi, get_directory, make_filename, \
-    get_temp_dir, extract_filename, extract_extension, InformationBox, \
+    get_temp_dir, cached_cake_exists_for_chi, extract_filename, extract_extension, InformationBox, \
         make_poni2_from_poni21, samefilename, \
-        read_any_poni_file, dialog_openfile_hide_param_dirs
+        read_any_poni_file, usable_poni_file, dialog_openfile_hide_param_dirs
 from .mplcontroller import MplController
 from .cakemakecontroller import CakemakeController
 from ..model.azimuthal_integration import provenance_for_chi
@@ -368,6 +368,10 @@ class CakeController(object):
         intensity, tth, chi = self.model.diff_img.get_cake()
         return intensity is not None and tth is not None and chi is not None
 
+    def _usable_poni(self):
+        poni = getattr(self.model, "poni", None)
+        return usable_poni_file(poni)
+
     def _diff_img_related_to_chi(self, chi_path):
         if self.model.diff_img is None:
             return False
@@ -484,6 +488,17 @@ class CakeController(object):
             self._warn_cannot_process_cake()
             self.widget.checkBox_ShowCake.setChecked(False)
             return False
+        poni_all = self.get_all_temp_poni()
+        if len(poni_all) == 1:
+            self._set_current_poni(poni_all[0])
+        if not self._usable_poni():
+            if cached_cake_exists_for_chi(self.model.get_base_ptn_filename()):
+                return self.process_temp_cake()
+            QtWidgets.QMessageBox.warning(
+                self.widget, "PONI missing",
+                "Choose a PONI in Cake > Config to enable Cake functions.")
+            self.widget.checkBox_ShowCake.setChecked(False)
+            return False
         if not self.model.associated_image_exists():
             if not self._ignore_raw_data_missing():
                 self._set_image_file_box_missing()
@@ -503,15 +518,7 @@ class CakeController(object):
             return True
 
         # if base pattern and image exist
-        poni_all = self.get_all_temp_poni()
-        if len(poni_all) == 1:
-            self._set_current_poni(poni_all[0])
-            if self.model.diff_img_exist():
-                #self.produce_cake()
-                self.process_temp_cake()
-            #self._apply_changes_to_graph()
-            #return True
-        else:
+        if len(poni_all) != 1:
             if not self.model.poni_exist():
                 if len(poni_all) == 0:
                         QtWidgets.QMessageBox.warning(
@@ -572,10 +579,16 @@ class CakeController(object):
         Reprocess to get cake.  Slower re - processing
         does not signal to update_graph
         """
+        if not self.model.poni or not os.path.isfile(self.model.poni):
+            return False
         success = self._load_new_image()
         if not success:
             return False
-        self.cakemake_ctrl.cook()
+        try:
+            self.cakemake_ctrl.cook()
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            print("Cannot process Cake calibration:", exc)
+            return False
         self._set_image_file_box()
         self.refresh_config_metadata_panel()
         return True
@@ -597,6 +610,12 @@ class CakeController(object):
                     ": Load source Cake image from temporary file.")
                 self.refresh_config_metadata_panel()
                 return True
+            return False
+
+        if not self._usable_poni():
+            chi_filename = self.model.get_base_ptn_filename()
+            if cached_cake_exists_for_chi(chi_filename):
+                return self._load_cake_from_temp_for_chi(chi_filename)
             return False
 
         temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
@@ -624,21 +643,20 @@ class CakeController(object):
             else:
                 print(str(datetime.datetime.now())[:-7], 
                     ": Create new temporary file for cake image.")
-                self._update_temp_cake_files(temp_dir)
-                return True
+                return self._update_temp_cake_files(temp_dir)
             #else:
                 #os.makedirs(temp_dir)
                 #self._update_temp_cake_files(temp_dir)
             return True
         else:
-            self._update_temp_cake_files(temp_dir)
-            return True
+            return self._update_temp_cake_files(temp_dir)
 
     def _update_temp_cake_files(self, temp_dir):
         success = self.produce_cake()
         if not success:
-            return
+            return False
         self.model.diff_img.write_temp_cakefiles(temp_dir=temp_dir)
+        return True
 
     def get_all_temp_poni(self):
         """
@@ -689,11 +707,11 @@ class CakeController(object):
             self._set_poni_line_edit_text(None)
             return
         current_poni = getattr(self.model, "poni", None)
-        if current_poni and os.path.exists(current_poni):
+        if usable_poni_file(current_poni):
             self._set_poni_line_edit_text(current_poni)
             return
         poni_all = self.get_all_temp_poni()
-        if len(poni_all) == 1 and os.path.exists(poni_all[0]):
+        if len(poni_all) == 1 and usable_poni_file(poni_all[0]):
             self.model.poni = poni_all[0]
             self._set_poni_line_edit_text(poni_all[0])
             return
@@ -712,10 +730,11 @@ class CakeController(object):
         if poni_path in ("", "No PONI file is assigned or found."):
             self._adopt_current_or_found_poni()
             return self.model.poni_exist()
-        if not os.path.exists(poni_path):
+        if not usable_poni_file(poni_path):
             if warn_if_missing:
                 QtWidgets.QMessageBox.warning(
-                    self.widget, 'Warning', 'The PONI file does not exist.')
+                    self.widget, 'Invalid PONI',
+                    'The PONI file is missing or cannot be read.')
             self._adopt_current_or_found_poni()
             return False
         if poni_path != self.model.poni:
@@ -755,7 +774,10 @@ class CakeController(object):
                 pass
 
     def _store_selected_poni(self, filename, temp_dir, current_poni=None):
-        if not os.path.exists(filename):
+        if not usable_poni_file(filename):
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Invalid PONI",
+                "The selected PONI cannot be read. Choose a valid calibration file.")
             return False
         if self._is_same_poni_file(filename, current_poni):
             self._set_current_poni(current_poni)
@@ -813,6 +835,9 @@ class CakeController(object):
             self.model.get_base_ptn_filename())
         if num_poni == 1:
             existing_poni = poni_all[0]
+            if not usable_poni_file(existing_poni):
+                self._choose_and_store_poni(temp_dir)
+                return
             self._set_current_poni(existing_poni)
             reply = QtWidgets.QMessageBox.question(
                 self.widget, 'Question',
@@ -827,10 +852,10 @@ class CakeController(object):
         elif num_poni == 0:
             self._choose_and_store_poni(temp_dir)
         else:
-            QtWidgets.QMessageBox.warning(
-                self.widget, 'Warning',  
-                    'More than 2 PONI files exist in TEMP folder. ' + \
-                    'Delete except for a correct one.')
+            # A saved setup may contain several old calibrations. Let the
+            # user choose one; the established store path keeps the selected
+            # calibration and removes the others from this PARAM folder.
+            self._choose_and_store_poni(temp_dir)
 
     def get_h5(self):
         if not self.model.base_ptn_exist():
@@ -894,12 +919,11 @@ class CakeController(object):
 
     def _build_poni_table_entries(self):
         poni_path = getattr(self.model, "poni", None)
-        if not poni_path:
-            return [("Status", "No PONI file selected.")]
-        if not os.path.exists(poni_path):
-            return [
-                ("Status", "Selected PONI file is missing."),
-            ]
+        if not usable_poni_file(poni_path):
+            return [(
+                "Status", "PONI missing or unreadable. Saved Cake may be displayed, but "
+                "choose a PONI to enable Cake functions.",
+            )]
 
         entries = []
         try:
@@ -972,6 +996,7 @@ class CakeController(object):
     def refresh_config_metadata_panel(self):
         self._adopt_current_or_found_poni()
         self._adopt_default_or_selected_raw_image()
+        self._update_poni_availability()
         if not hasattr(self.widget, "set_key_value_table_rows"):
             return
         if hasattr(self.widget, "tableWidget_CakePoniInfo"):
@@ -982,3 +1007,26 @@ class CakeController(object):
             self.widget.set_key_value_table_rows(
                 self.widget.tableWidget_CakeSummary,
                 self._build_cake_summary_entries())
+
+    def _update_poni_availability(self):
+        """Keep Cake actions unavailable until the current CHI has calibration."""
+        available = self._usable_poni()
+        names = (
+            "checkBox_ShowCake", "pushButton_ApplyCakeView",
+            "pushButton_ToolbarCakeZAdj", "groupBox_CakeColormap",
+            "groupBox_29", "groupBox_5", "groupBox_23",
+            "cake_hist_widget", "tabWidget_2Page2",
+        )
+        for name in names:
+            control = getattr(self.widget, name, None)
+            if control is not None:
+                control.setEnabled(available)
+        cake_toggle = getattr(self.widget, "checkBox_ShowCake", None)
+        if not available and cake_toggle is not None:
+            chi_path = (self.model.get_base_ptn_filename()
+                        if self.model.base_ptn_exist() else None)
+            if not chi_path or not cached_cake_exists_for_chi(chi_path):
+                cake_toggle.setChecked(False)
+            cake_toggle.setToolTip("Choose a PONI in Cake > Config to enable Cake.")
+        elif cake_toggle is not None:
+            cake_toggle.setToolTip("Show Cake image")

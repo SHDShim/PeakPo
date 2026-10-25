@@ -26,6 +26,7 @@ from ..utils import (
     dialog_openfile_hide_param_dirs,
     get_temp_dir,
     make_filename,
+    usable_poni_file,
     writechi,
 )
 from ..view.ui_policy import apply_raised_toggle_style
@@ -1113,6 +1114,11 @@ class CakeAziController(object):
         return self._interpolate_profile_to_source_grid(tth_cake, merged)
 
     def integrate_to_1d(self, show_message=False):
+        if not usable_poni_file(getattr(self.model, "poni", None)):
+            QtWidgets.QMessageBox.warning(
+                self.widget, "PONI missing",
+                "Choose a PONI in Cake > Config before integrating Cake data.")
+            return None
         ranges = self._read_azilist(checked_only=True)
         if ranges is None:
             return None

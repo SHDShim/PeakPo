@@ -16,7 +16,7 @@ from ..ds_powdiff import PatternPeakPo, get_DataSection
 from ..ds_section import Section
 from .diff_state import DiffState
 from ..utils import samefilename, make_filename, change_file_path, \
-    cal_dspacing, extract_extension
+    cal_dspacing, extract_extension, usable_poni_file
 from ..utils.excelutils import require_xlwt
 from ..compat_pickle import PeakPoCompatPickleUnpickler
 
@@ -320,10 +320,7 @@ class PeakPoModel(object):
             return True
 
     def poni_exist(self):
-        if self.poni is None:
-            return False
-        else:
-            return True
+        return usable_poni_file(self.poni)
 
     def make_filename(self, extension, original=False):
         """

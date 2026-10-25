@@ -3,7 +3,7 @@ import json
 from qtpy import QtCore, QtWidgets
 from ..utils import get_sorted_filelist, find_from_filelist, readchi, \
     make_filename, writechi, get_directory, dialog_openfile_hide_param_dirs
-from ..utils import undo_button_press, get_temp_dir
+from ..utils import undo_button_press, get_temp_dir, cached_cake_exists_for_chi
 import datetime
 from .mplcontroller import MplController
 from .cakecontroller import CakeController
@@ -139,7 +139,8 @@ class BasePatternController(object):
             # self.widget.lineEdit_DiffractionPatternFileName.setText(
             #    self.model.get_base_ptn_filename())
 
-    def _load_a_new_pattern(self, new_filename, display_derived=False):
+    def _load_a_new_pattern(self, new_filename, display_derived=False,
+                            allow_private_recovery=True):
         """
         load and process base pattern.  does not signal to update_graph
         """
@@ -180,6 +181,9 @@ class BasePatternController(object):
         self.model.set_chi_path(os.path.split(new_filename)[0])
         self.model.set_base_ptn(
             new_filename, self.widget.doubleSpinBox_SetWavelength.value())
+        # A calibration belongs to the CHI being opened. Do not let a PONI
+        # from the previous file make an uncalibrated destination look usable.
+        self.model.reset_poni()
         if hasattr(self.model, "reset_raw_image_path"):
             self.model.reset_raw_image_path()
         self.model.set_base_pattern_provenance(provenance)
@@ -188,16 +192,17 @@ class BasePatternController(object):
         #    '1D Pattern: ' + self.model.get_base_ptn_filename())
         self.widget.lineEdit_DiffractionPatternFileName.setText(
             str(self.model.get_base_ptn_filename()))
-        self.cake_ctrl.refresh_config_metadata_panel()
         self._update_metadata_tab_for_chi(new_filename)
         self._notify_pattern_loaded(new_filename)
         # Prefer loading full PARAM session state when available for this CHI.
         if self.session_ctrl is not None:
-            loaded_param = self.session_ctrl.autoload_param_for_chi(new_filename)
+            loaded_param = self.session_ctrl.autoload_param_for_chi(
+                new_filename, allow_private_recovery=allow_private_recovery)
             if loaded_param:
                 # Ensure File > Data backup table reflects the newly loaded CHI
                 # immediately, without requiring tab changes.
                 self.session_ctrl.refresh_backup_table()
+                self.cake_ctrl.refresh_config_metadata_panel()
                 print(str(datetime.datetime.now())[:-7],
                     ': Loaded PARAM session for this CHI.')
                 self._notify_pattern_ready(new_filename)
@@ -232,8 +237,10 @@ class BasePatternController(object):
             bool(provenance.get("source_chi")))
         if (not self.model.associated_image_exists()) and \
                 (not self.widget.checkBox_IgnoreRawDataExistence.isChecked()) and \
+                (not cached_cake_exists_for_chi(new_filename)) and \
                 (not is_azimuthal_chi):
             self.widget.checkBox_ShowCake.setChecked(False)
+            self.cake_ctrl.refresh_config_metadata_panel()
             self._notify_pattern_ready(new_filename)
             return
         # self._update_bg_params_in_widget()
@@ -241,9 +248,12 @@ class BasePatternController(object):
         poni_all = self.cake_ctrl.get_all_temp_poni()
         if len(poni_all) == 1:
             self.cake_ctrl._set_current_poni(poni_all[0])
+        else:
+            self.cake_ctrl.refresh_config_metadata_panel()
 
         if self.widget.checkBox_ShowCake.isChecked() and \
                 ((self.model.poni is not None) or
+                 cached_cake_exists_for_chi(new_filename) or
                  self.widget.checkBox_IgnoreRawDataExistence.isChecked() or
                  is_azimuthal_chi):
             success = self.cake_ctrl.process_temp_cake()

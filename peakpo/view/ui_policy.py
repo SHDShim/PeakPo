@@ -65,14 +65,9 @@ def set_nav_destination_indicator(button, has_param=None):
 
 
 def set_nav_setup_mode_style(combo):
-    """Use the destination indicator color when Existing is selected."""
-    existing_index = combo.findData("saved")
-    if existing_index >= 0:
-        combo.setItemData(existing_index,
-                          QtGui.QColor(COLORS["existing_setup"]),
-                          QtCore.Qt.ForegroundRole)
+    """Color the Config dropdown when its existing-setup mode is selected."""
     color = (COLORS["existing_setup"]
-             if combo.currentData() == "saved" else "")
+             if combo.currentData() == "existing_only" else "")
     combo.setStyleSheet(f"QComboBox {{ color: {color}; }}" if color else "")
 
 

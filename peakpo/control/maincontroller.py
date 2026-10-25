@@ -1,6 +1,8 @@
 import os
 import glob
+import shutil
 import sys
+import tempfile
 import numpy as np
 import copy
 #from matplotlib.backend_bases import key_press_handler
@@ -32,12 +34,13 @@ from .mapcontroller import MapController
 from .sequencecontroller import SequenceController
 from .plotinteractioncontroller import PlotInteractionController
 from ..model.param_session_io import (
-    is_new_param_folder, model_param_signature)
+    is_new_param_folder, model_param_signature, saved_poni_for_chi)
 from ..model.azimuthal_integration import provenance_for_chi
 from ..view.ui_policy import set_nav_destination_indicator
 from ..utils import dialog_savefile, writechi, convert_wl_to_energy, \
     get_sorted_filelist, find_from_filelist, same_chi_name_set, make_filename, \
-    get_directory, get_temp_dir, show_warning
+    get_directory, get_temp_dir, cached_cake_exists_for_chi, show_warning, \
+    dialog_openfile_hide_param_dirs, usable_poni_file
 # do not change the module structure for ds_jcpds and ds_powdiff for
 # retro compatibility
 from ..ds_jcpds import UnitCell
@@ -61,8 +64,10 @@ class MainController(object):
 
         self.session_ctrl = SessionController(self.model, self.widget)
         self.session_ctrl.param_saved_callback = self._on_param_saved
+        self.session_ctrl.param_dirty_callback = self._has_unsaved_param_changes
         self._param_saved_signature = None
         self._param_baseline_chi = None
+        self._recovered_dirty_chi = None
         print("  ✓ SessionController created")
 
         self.base_ptn_ctrl = BasePatternController(
@@ -146,7 +151,8 @@ class MainController(object):
             base_ptn_ctrl=self.base_ptn_ctrl,
             plot_ctrl=self.plot_ctrl,
             mouse_mode_done_cb=self._finish_temporary_mouse_mode,
-            export_current_view_cb=self.export_py_ctrl.export_current_view)
+            export_current_view_cb=self.export_py_ctrl.export_current_view,
+            open_chi_cb=self._open_chi_from_map)
         self._propagate_diff_controller()
         self.plot_interaction_ctrl = PlotInteractionController(self)
         self.peakfit_ctrl.plot_interaction_ctrl = self.plot_interaction_ctrl
@@ -229,17 +235,51 @@ class MainController(object):
 
     def _on_pattern_ready(self, filename):
         self._param_baseline_chi = os.path.normcase(os.path.abspath(filename))
+        session_ctrl = getattr(self, "session_ctrl", None)
+        recovery_check = getattr(session_ctrl, "_recovery_has_unsaved_changes", None)
+        self._recovered_dirty_chi = (
+            self._param_baseline_chi
+            if (getattr(session_ctrl, "_recovered_current_chi", None) == filename
+                and callable(recovery_check) and recovery_check(filename)) else None)
         try:
             self._param_saved_signature = self._current_param_signature()
         except Exception as exc:
             print("PARAM status baseline failed:", exc)
             self._param_saved_signature = None
-        self.widget.set_param_dirty_status(False)
+        self.widget.set_param_dirty_status(
+            self._recovered_dirty_chi is not None)
 
     def _on_param_saved(self):
         if self.model.base_ptn_exist():
+            self.session_ctrl._clear_recovery_dirty(
+                self.model.get_base_ptn_filename())
             self._on_pattern_ready(self.model.get_base_ptn_filename())
             self._refresh_nav_destination_indicators()
+
+    def _has_unsaved_param_changes(self):
+        if not self.model.base_ptn_exist():
+            return False
+        current = os.path.normcase(os.path.abspath(
+            self.model.get_base_ptn_filename()))
+        if current != self._param_baseline_chi:
+            return False
+        if self._recovered_dirty_chi == current:
+            return True
+        if self._param_saved_signature is None:
+            return False
+        return self._current_param_signature() != self._param_saved_signature
+
+    def _snapshot_departing_chi(self):
+        saved = self.session_ctrl.save_recovery_state()
+        recovery_toggle = getattr(
+            getattr(self, "widget", None), "checkBox_RestoreWorkingState", None)
+        if saved is False and recovery_toggle is not None and \
+                recovery_toggle.isChecked() and self._has_unsaved_param_changes():
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Working state save failed",
+                "The current setup has unsaved changes. The CHI file remains open.")
+            return False
+        return True
 
     def _refresh_param_dirty_status(self):
         if not self.model.base_ptn_exist() or \
@@ -250,13 +290,11 @@ class MainController(object):
         if current != self._param_baseline_chi:
             return
         try:
-            signature = self._current_param_signature()
+            dirty = self._has_unsaved_param_changes()
         except Exception as exc:
             print("PARAM status check failed:", exc)
             return
-        if self._param_saved_signature is not None:
-            self.widget.set_param_dirty_status(
-                signature != self._param_saved_signature)
+        self.widget.set_param_dirty_status(dirty)
 
     def _refresh_nav_destination_indicators(self):
         buttons = (
@@ -290,12 +328,14 @@ class MainController(object):
             if target is None:
                 message = "No " + label.lower() + " CHI file at this step."
             else:
-                if has_param and mode == "saved":
+                if has_param and mode in ("existing_only", "saved"):
                     action = "Use existing setup."
                 elif has_param and mode == "carry":
-                    action = "Carry enabled settings; keep other saved values."
+                    action = "Force carryover of enabled settings; keep other saved values."
                 elif has_param:
                     action = "Apply custom category rules."
+                elif mode == "existing_only":
+                    action = "No saved setup; open with fresh defaults."
                 else:
                     action = "No existing setup; carry enabled settings."
                 message = label + ": " + os.path.basename(target) + ". " + action
@@ -346,27 +386,59 @@ class MainController(object):
                    if self.model.base_ptn_exist() else None)
         different = current is not None and not self.base_ptn_ctrl._same_path(
             current, target)
+        if current is not None and not different:
+            self.base_ptn_ctrl._setshow_new_base_ptn(filename)
+            return
         choice = "existing"
         if different and is_new_param_folder(get_temp_dir(target)):
             choice = self._confirm_manual_open_param_choice(current, target)
             if choice == "cancel":
                 return
+        poni_choice = self._confirm_missing_destination_poni(target)
+        if poni_choice == "cancel":
+            return
         if different:
             if not self.session_ctrl.save_for_navigation(
                     self.widget.comboBox_NavSaveMode.currentData(),
                     self._nav_filled_missing):
                 return
-            self.session_ctrl.save_recovery_state()
+            if not self._snapshot_departing_chi():
+                return
         carry_state = (self._capture_nav_carry_state()
                        if different and choice == "carry" else None)
-        self.base_ptn_ctrl._setshow_new_base_ptn(filename)
+        copied_poni = None
+        if poni_choice is True or isinstance(poni_choice, str):
+            source = (self.model.poni if poni_choice is True else poni_choice)
+            try:
+                copied_poni = self._copy_poni_for_navigation(source, target)
+            except OSError as exc:
+                show_warning(self.widget, "Cannot set PONI", str(exc))
+                return
+            if carry_state is not None:
+                carry_state["poni"] = copied_poni
+        try:
+            self.base_ptn_ctrl._setshow_new_base_ptn(filename)
+        except Exception:
+            if copied_poni:
+                os.remove(copied_poni)
+            raise
+        if (copied_poni and self.model.base_ptn_exist() and
+                self.base_ptn_ctrl._same_path(
+                    self.model.get_base_ptn_filename(), target)):
+            self.base_ptn_ctrl.cake_ctrl._set_current_poni(copied_poni)
         if (carry_state is not None and self.model.base_ptn_exist() and
                 self.base_ptn_ctrl._same_path(
                     self.model.get_base_ptn_filename(), target)):
             with self._defer_plot_updates():
-                self._apply_nav_carry_state(
-                    carry_state, force_overwrite_existing=True)
+                carry_options = {"force_overwrite_existing": True}
+                if poni_choice is False:
+                    carry_options["poni_choice"] = False
+                self._apply_nav_carry_state(carry_state, **carry_options)
             self.plot_ctrl.update()
+        if copied_poni and (not self.model.base_ptn_exist() or
+                not self.base_ptn_ctrl._same_path(
+                    self.model.get_base_ptn_filename(), target)):
+            os.remove(copied_poni)
         if different and self.model.base_ptn_exist() and \
                 self.base_ptn_ctrl._same_path(
                     self.model.get_base_ptn_filename(), target):
@@ -406,6 +478,9 @@ class MainController(object):
         if current is not None and os.path.normcase(os.path.abspath(current)) == \
                 os.path.normcase(os.path.abspath(filename)):
             return True
+        poni_choice = self._confirm_missing_destination_poni(filename)
+        if poni_choice == "cancel":
+            return False
         if current is not None:
             if prompt_save:
                 choice = self._confirm_map_param_save(current, filename)
@@ -417,10 +492,32 @@ class MainController(object):
                     self.widget.comboBox_NavSaveMode.currentData(),
                     self._nav_filled_missing):
                 return False
-            self.session_ctrl.save_recovery_state()
-        self.base_ptn_ctrl._load_a_new_pattern(filename)
-        if not self.model.base_ptn_exist():
+            if not self._snapshot_departing_chi():
+                return False
+        copied_poni = None
+        if poni_choice is True or isinstance(poni_choice, str):
+            source = self.model.poni if poni_choice is True else poni_choice
+            try:
+                copied_poni = self._copy_poni_for_navigation(source, filename)
+            except OSError as exc:
+                show_warning(self.widget, "Cannot set PONI", str(exc))
+                return False
+        try:
+            self.base_ptn_ctrl._load_a_new_pattern(filename)
+        except Exception:
+            if copied_poni:
+                os.remove(copied_poni)
+            raise
+        opened = (self.model.base_ptn_exist() and
+                  os.path.normcase(os.path.abspath(
+                      self.model.get_base_ptn_filename())) ==
+                  os.path.normcase(os.path.abspath(filename)))
+        if not opened:
+            if copied_poni:
+                os.remove(copied_poni)
             return False
+        if copied_poni:
+            self.base_ptn_ctrl.cake_ctrl._set_current_poni(copied_poni)
         self.plot_ctrl.update()
         self.session_ctrl.save_recovery_state()
         return True
@@ -446,6 +543,26 @@ class MainController(object):
             self.base_ptn_ctrl, self.plot_ctrl)
         if restored:
             self._refresh_param_dirty_status()
+            if (self.model.base_ptn_exist() and
+                    not self.base_ptn_ctrl.cake_ctrl._usable_poni()):
+                box = QtWidgets.QMessageBox(self.widget)
+                box.setIcon(QtWidgets.QMessageBox.Warning)
+                box.setWindowTitle("PONI missing from restored CHI")
+                box.setText("Cake functions are unavailable without a PONI file.")
+                box.setInformativeText(
+                    "Choose a PONI for " + os.path.basename(
+                        self.model.get_base_ptn_filename()) +
+                    " to enable Cake functions. Saved Cake data can still be "
+                    "displayed as a reference.")
+                choose_button = box.addButton(
+                    "Choose PONI", QtWidgets.QMessageBox.AcceptRole)
+                later_button = box.addButton(
+                    "Later", QtWidgets.QMessageBox.RejectRole)
+                box.setDefaultButton(choose_button)
+                box.setEscapeButton(later_button)
+                box.exec()
+                if box.clickedButton() == choose_button:
+                    self.base_ptn_ctrl.cake_ctrl.get_poni()
 
     def _save_periodic_recovery(self):
         if (self._navigation_in_progress or
@@ -1898,6 +2015,41 @@ class MainController(object):
             },
         }
 
+    def _reset_setup_for_unsaved_navigation(self):
+        """Remove the previous CHI's setup before opening one without PARAM."""
+        self.model.reset_jcpds_lst()
+        self.model.reset_ucfit_lst()
+        self.model.reset_waterfall_ptn()
+        self.model.section_lst = []
+        self.model.current_section = None
+        self.model.poni = None
+        self.model.diff_img = None
+        self.model.save_pressure(10.0)
+        self.model.save_temperature(300.0)
+        self.widget.doubleSpinBox_Pressure.setValue(10.0)
+        self.widget.doubleSpinBox_Temperature.setValue(300.0)
+        self.widget.doubleSpinBox_Background_ROI_min.setValue(6.0)
+        self.widget.doubleSpinBox_Background_ROI_max.setValue(21.0)
+        for box, value in zip(
+                (self.widget.spinBox_BGParam0, self.widget.spinBox_BGParam1,
+                 self.widget.spinBox_BGParam2), DEFAULT_BG_PARAMS):
+            box.setValue(value)
+        self.jcpdstable_ctrl.update()
+        self.waterfalltable_ctrl.update()
+
+    def _reset_cake_scale_for_fresh_navigation(self, filename):
+        """Discard previous Cake display limits for a strict fresh setup."""
+        key = os.path.normcase(os.path.abspath(filename))
+        self.plot_ctrl._cake_scale_by_chi.pop(key, None)
+        self.widget.spinBox_MaxCakeScale.setValue(100000)
+        self.widget.horizontalSlider_VMin.setValue(1)
+        self.widget.horizontalSlider_VMax.setValue(150)
+        hist = self.widget.cake_hist_widget
+        hist.check_log.setChecked(True)
+        hist.check_focus.setChecked(True)
+        hist.spin_low_pct.setValue(0.0)
+        hist.spin_high_pct.setValue(20.0)
+
     def _is_nav_carry_enabled(self, checkbox_attr):
         if not hasattr(self.widget, checkbox_attr):
             return True
@@ -1905,16 +2057,12 @@ class MainController(object):
 
     def _nav_param_mode(self):
         combo = getattr(self.widget, "comboBox_NavParamMode", None)
-        return combo.currentData() if combo is not None else "custom"
+        return combo.currentData() if combo is not None else "saved"
 
     def _read_nav_param_mode_setting(self):
         if self.settings.contains("nav_param_mode"):
             mode = str(self.settings.value("nav_param_mode", "saved"))
-            return mode if mode in ("saved", "carry", "custom") else "saved"
-        if (self.settings.contains("carry_nav_existing_jcpds") or
-                self.settings.contains("carry_nav_existing_other")):
-            # Earlier installations used category-specific rules. Retain them.
-            return "custom"
+            return mode if mode in ("existing_only", "saved", "carry", "custom") else "saved"
         return "saved"
 
     def _on_nav_param_mode_changed(self, source):
@@ -1950,7 +2098,7 @@ class MainController(object):
             return ("overwrite_existing" if presence.get(key, False)
                     else "carry_blank")
         mode = self._nav_param_mode()
-        if mode == "saved" and destination_has_param:
+        if mode == "existing_only" or (mode == "saved" and destination_has_param):
             return "skip"
         if not bool(presence.get(key, False)):
             return "carry_blank"
@@ -2075,7 +2223,8 @@ class MainController(object):
                 level = "red"
         return (". ".join(messages) + ".", level)
 
-    def _apply_nav_carry_state(self, snap, force_overwrite_existing=False):
+    def _apply_nav_carry_state(self, snap, force_overwrite_existing=False,
+                               poni_choice=None):
         carried_any = False
         results = []
         presence = self.session_ctrl.get_last_param_category_presence()
@@ -2159,8 +2308,9 @@ class MainController(object):
             carried_any = True
         self._record_nav_carry_result(results, "waterfall_list", waterfall_action)
 
-        poni_action = choose_action(
-            "poni", "checkBox_CarryNavPONI", "PONI")
+        poni_action = ("carry_blank" if poni_choice is True else
+                       "skip" if poni_choice is False else
+                       choose_action("poni", "checkBox_CarryNavPONI", "PONI"))
         if poni_action in ("carry_blank", "overwrite_existing"):
             self.model.poni = snap["poni"]
             if snap["poni"] is None:
@@ -2191,9 +2341,11 @@ class MainController(object):
         status_text, status_level = self._format_nav_carry_status(results)
         if carried_any and snap.get("source_chi"):
             status_text = "From " + snap["source_chi"] + ": " + status_text
-        elif destination_has_param and self._nav_param_mode() == "saved":
+        elif destination_has_param and self._nav_param_mode() in ("existing_only", "saved"):
             status_text = "Using existing setup for " + os.path.basename(destination) + "."
             status_level = "red"
+        elif self._nav_param_mode() == "existing_only":
+            status_text = "No saved setup; opened with fresh defaults."
         if hasattr(self.widget, "set_nav_carry_status"):
             self.widget.set_nav_carry_status(status_text, status_level)
 
@@ -2490,7 +2642,12 @@ class MainController(object):
         if (bg_roi[1] >= x_raw_base.max()):
             bg_roi[1] = x_raw_base.max()
             self.widget.doubleSpinBox_Background_ROI_max.setValue(bg_roi[1])
-        self.model.base_ptn.subtract_bg(bg_roi, bg_params, yshift=0)
+        try:
+            self.model.base_ptn.subtract_bg(bg_roi, bg_params, yshift=0)
+        except ValueError as exc:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "Invalid background ROI", str(exc))
+            return
         temp_dir = get_temp_dir(self.model.get_base_ptn_filename())
         self.model.base_ptn.write_temporary_bgfiles(temp_dir=temp_dir)
         if getattr(self.model, "display_ptn_exist", lambda: False)():
@@ -2499,7 +2656,10 @@ class MainController(object):
             y_raw = getattr(display_ptn, "y_raw", None)
             if (x_raw is not None) and (y_raw is not None) and \
                     len(x_raw) > 0 and len(y_raw) > 0:
-                display_ptn.subtract_bg(bg_roi, bg_params, yshift=0)
+                try:
+                    display_ptn.subtract_bg(bg_roi, bg_params, yshift=0)
+                except ValueError as exc:
+                    print("Skipped display-pattern background fit:", exc)
         if self.model.waterfall_exist():
             print(str(datetime.datetime.now())[:-7], 
                 ": BGfit and BGsub for waterfall patterns even if they are displayed.\n",
@@ -2512,7 +2672,11 @@ class MainController(object):
                         (len(x_raw) == 0) or (len(y_raw) == 0):
                     n_skipped += 1
                     continue
-                pattern.subtract_bg(bg_roi, bg_params, yshift=0)
+                try:
+                    pattern.subtract_bg(bg_roi, bg_params, yshift=0)
+                except ValueError as exc:
+                    n_skipped += 1
+                    print("Skipped waterfall background fit:", exc)
             if n_skipped > 0:
                 print(str(datetime.datetime.now())[:-7],
                     ": Skipped BG subtraction for {0:d} waterfall item(s) "
@@ -2701,6 +2865,73 @@ class MainController(object):
         box.exec()
         return box.clickedButton() == open_button
 
+    def _confirm_missing_destination_poni(self, new_filename):
+        """Require an explicit calibration choice before opening a CHI without PONI."""
+        source_poni = getattr(self.model, "poni", None)
+        source_available = usable_poni_file(source_poni)
+        param_dir = os.path.splitext(new_filename)[0] + "-param"
+        local_poni = glob.glob(os.path.join(param_dir, "*.poni"))
+        if ((len(local_poni) == 1 and usable_poni_file(local_poni[0])) or
+                saved_poni_for_chi(new_filename)):
+            return None
+        box = QtWidgets.QMessageBox(self.widget)
+        box.setOption(QtWidgets.QMessageBox.DontUseNativeDialog, True)
+        box.setTextFormat(QtCore.Qt.PlainText)
+        box.setIcon(QtWidgets.QMessageBox.Warning)
+        box.setWindowTitle("PONI missing for selected CHI")
+        box.setText(
+            "No unique usable PONI was found for " +
+            os.path.basename(new_filename) + ".")
+        detail = ("Saved Cake data can still be displayed. "
+                  if cached_cake_exists_for_chi(new_filename) else "")
+        box.setInformativeText(
+            detail + "Choose a PONI file to enable Cake functions. "
+            "You can open the CHI without one, but Cake controls will be "
+            "unavailable until you provide a PONI in Cake > Config.")
+        choose_button = box.addButton(
+            "Choose PONI", QtWidgets.QMessageBox.AcceptRole)
+        carry_button = (box.addButton(
+            "Use current PONI", QtWidgets.QMessageBox.ActionRole)
+            if source_available else None)
+        open_button = box.addButton(
+            "Open without PONI", QtWidgets.QMessageBox.ActionRole)
+        stay_button = box.addButton(
+            "Stay on current file", QtWidgets.QMessageBox.RejectRole)
+        box.setDefaultButton(choose_button)
+        box.setEscapeButton(stay_button)
+        box.exec()
+        if box.clickedButton() == choose_button:
+            selected = dialog_openfile_hide_param_dirs(
+                self.widget, "Choose a PONI for " + os.path.basename(new_filename),
+                self.model.chi_path, "PONI files (*.poni)")[0]
+            if not selected:
+                return "cancel"
+            if not usable_poni_file(selected):
+                show_warning(
+                    self.widget, "Invalid PONI",
+                    "The selected PONI cannot be read. The current CHI remains open.")
+                return "cancel"
+            return str(selected)
+        if carry_button is not None and box.clickedButton() == carry_button:
+            return True
+        if box.clickedButton() == open_button:
+            return False
+        return "cancel"
+
+    @staticmethod
+    def _copy_poni_for_navigation(source_poni, new_filename):
+        param_dir = get_temp_dir(new_filename)
+        target = os.path.join(param_dir, os.path.basename(source_poni))
+        fd, staged = tempfile.mkstemp(prefix=".peakpo-poni-", dir=param_dir)
+        os.close(fd)
+        try:
+            shutil.copy2(source_poni, staged)
+            os.replace(staged, target)
+        finally:
+            if os.path.exists(staged):
+                os.remove(staged)
+        return target
+
     def _goto_chi_next_file(self, move):
         sort_by_name = self.widget.radioButton_SortbyNme.isChecked()
         filelist_chi = get_sorted_filelist(
@@ -2757,27 +2988,74 @@ class MainController(object):
             if sort_by_name and not self._confirm_chi_name_set_transition(
                     new_filename_chi):
                 return
+            poni_choice = self._confirm_missing_destination_poni(
+                new_filename_chi)
+            if poni_choice == "cancel":
+                return
+            selected_poni = (poni_choice if isinstance(poni_choice, str)
+                             else None)
+            current_filename = self.model.base_ptn.fname
+            copied_poni = None
             self._navigation_in_progress = True
             try:
                 if not self.session_ctrl.save_for_navigation(
                         self.widget.comboBox_NavSaveMode.currentData(),
                         self._nav_filled_missing):
                     return
-                self.session_ctrl.save_recovery_state()
+                if not self._snapshot_departing_chi():
+                    return
                 nav_state = self._capture_nav_carry_state()
+                if poni_choice is True or selected_poni:
+                    try:
+                        copied_poni = self._copy_poni_for_navigation(
+                            selected_poni or nav_state["poni"], new_filename_chi)
+                        nav_state["poni"] = copied_poni
+                        poni_choice = True
+                    except OSError as exc:
+                        show_warning(
+                            self.widget, "Cannot carry PONI",
+                            "The current CHI remains open.\n\n" + str(exc))
+                        return
+                destination_has_param = is_new_param_folder(
+                    get_temp_dir(new_filename_chi))
+                fresh_without_param = (
+                    self._nav_param_mode() == "existing_only" and
+                    not destination_has_param)
                 with self._defer_plot_updates():
-                    self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
-                    self._apply_nav_carry_state(nav_state)
+                    if not destination_has_param:
+                        self._reset_setup_for_unsaved_navigation()
+                    if fresh_without_param:
+                        self.base_ptn_ctrl._load_a_new_pattern(
+                            new_filename_chi, allow_private_recovery=False)
+                        self._reset_cake_scale_for_fresh_navigation(
+                            new_filename_chi)
+                    else:
+                        self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
+                    if poni_choice is None:
+                        self._apply_nav_carry_state(nav_state)
+                    else:
+                        self._apply_nav_carry_state(
+                            nav_state, poni_choice=poni_choice)
                 self.plot_ctrl.update()
                 self._schedule_roi_overlays_after_plot_update(
                     flush_pending=True)
                 self.session_ctrl.save_recovery_state()
-                if (self._nav_param_mode() == "saved" and
-                        is_new_param_folder(get_temp_dir(new_filename_chi))):
+                loaded_existing = (self._nav_param_mode() in ("existing_only", "saved") and
+                                   destination_has_param)
+                if loaded_existing or fresh_without_param:
                     # Plot setup can normalize saved display controls after
-                    # autoload recorded the baseline. That is not a user edit.
+                    # autoload and recovery snapshot. That is not a user edit.
                     self._on_pattern_ready(new_filename_chi)
             finally:
+                if copied_poni and (
+                        not self.model.base_ptn_exist() or
+                        os.path.normcase(os.path.abspath(
+                            self.model.base_ptn.fname)) ==
+                        os.path.normcase(os.path.abspath(current_filename))):
+                    try:
+                        os.remove(copied_poni)
+                    except OSError as exc:
+                        print("Cannot remove unused carried PONI:", exc)
                 self._navigation_in_progress = False
         else:
             show_warning(

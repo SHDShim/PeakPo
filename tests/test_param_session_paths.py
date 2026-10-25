@@ -21,12 +21,40 @@ from peakpo.model.param_session_io import (
     UI_STATE_FILE,
     load_model_from_param,
     restore_to_backup_event,
+    saved_poni_for_chi,
     save_model_to_param,
 )
 from peakpo.utils import get_temp_dir, writechi
 
 
 class ParamSessionPathTests(unittest.TestCase):
+    def test_saved_poni_reference_can_resolve_outside_its_param_folder(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            chi = root / "next.chi"
+            chi.write_text("", encoding="utf-8")
+            param_dir = root / "next-param"
+            param_dir.mkdir()
+            referenced = root / "calibration-param" / "detector.poni"
+            referenced.parent.mkdir()
+            referenced.write_text(
+                "poni_version: 2\nDetector: Detector\n"
+                'Detector_config: {"pixel1": 7.5e-05, "pixel2": 7.5e-05}\n'
+                "Distance: 0.2\nPoni1: 0.1\nPoni2: 0.1\n"
+                "Rot1: 0\nRot2: 0\nRot3: 0\nWavelength: 3.34e-11\n",
+                encoding="utf-8")
+            (param_dir / MANIFEST_FILE).write_text(json.dumps({
+                "format_family": FORMAT_FAMILY,
+                "files": {"session": SESSION_FILE},
+            }), encoding="utf-8")
+            (param_dir / SESSION_FILE).write_text(json.dumps({
+                "poni": "calibration-param/detector.poni",
+            }), encoding="utf-8")
+
+            self.assertEqual(saved_poni_for_chi(str(chi)), str(referenced))
+            referenced.unlink()
+            self.assertIsNone(saved_poni_for_chi(str(chi)))
+
     def _write_chi(self, path, offset=0.0):
         x = np.asarray([1.0, 2.0, 3.0], dtype=float)
         y = np.asarray([10.0, 12.0, 14.0], dtype=float) + float(offset)

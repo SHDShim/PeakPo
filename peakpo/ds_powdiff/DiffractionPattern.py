@@ -44,8 +44,8 @@ class Pattern(object):
         if roi[0] >= x.min() and roi[1] <= x.max():
             i_roimin = np.abs(x - roi[0]).argmin()
             i_roimax = np.abs(x - roi[1]).argmin()
-            x_roi = x[i_roimin:i_roimax]
-            y_roi = y[i_roimin:i_roimax]
+            x_roi = x[i_roimin:i_roimax + 1]
+            y_roi = y[i_roimin:i_roimax + 1]
             return x_roi, y_roi
         else:
             print(str(datetime.datetime.now())[:-7], 
@@ -64,10 +64,16 @@ class Pattern(object):
     def _get_bg(self, roi, params=None, yshift=0.):
         if params is not None:
             self.params_chbg = params
+        if roi[0] >= roi[1]:
+            raise ValueError("Background ROI minimum must be less than its maximum.")
         x, y = self._get_section(self.x_raw, self.y_raw, roi)
+        order = self.params_chbg[1]
+        if len(x) < 2 or x[0] == x[-1]:
+            raise ValueError("Background ROI needs at least two distinct data points.")
         t_start = time.time()
-        y_bg = fit_bg_cheb_auto(x, y, self.params_chbg[0],
-                                self.params_chbg[1], self.params_chbg[2])
+        y_bg = fit_bg_cheb_auto(
+            x, y, n_points=self.params_chbg[0],
+            n_iteration=self.params_chbg[2], n_cheborder=order)
         print(str(datetime.datetime.now())[:-7], 
             ": Bgsub takes {0:.2f}s".format(time.time() - t_start))
         self.x_bg = x

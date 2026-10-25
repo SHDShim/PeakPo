@@ -6,6 +6,7 @@ import os
 import ntpath
 import shutil
 import collections
+from functools import lru_cache
 
 def get_unique_filename(filename):
     """Generate a unique filename by appending a number 
@@ -340,7 +341,47 @@ def get_temp_dir(base_ptn_filename, branch='-param'):
         os.makedirs(temp_dir)
     return temp_dir
 
+
+def cached_cake_exists_for_chi(chi_filename):
+    """Check for the complete cached Cake triplet without loading image data."""
+    param_dir = get_directory(chi_filename, '-param')
+    stem = os.path.splitext(os.path.basename(chi_filename))[0]
+    return all(os.path.isfile(os.path.join(param_dir, stem + suffix))
+               for suffix in ('.tth.cake.npy', '.azi.cake.npy',
+                              '.int.cake.npy'))
+
 #########################################
+def usable_poni_file(filename):
+    """Return whether pyFAI can read a calibration file for Cake processing."""
+    if not filename or not os.path.isfile(filename):
+        return False
+    try:
+        stat = os.stat(filename)
+    except OSError:
+        return False
+    return _usable_poni_file_cached(
+        os.fspath(filename), stat.st_mtime_ns, stat.st_ctime_ns, stat.st_size)
+
+
+@lru_cache(maxsize=512)
+def _usable_poni_file_cached(filename, _mtime_ns, _ctime_ns, _size):
+    try:
+        from pyFAI.io.ponifile import PoniFile
+        calibration = PoniFile(filename)
+        detector = calibration.detector
+        geometry = np.asarray([
+            calibration.dist, calibration.poni1, calibration.poni2,
+            getattr(detector, "pixel1", None),
+            getattr(detector, "pixel2", None),
+        ], dtype=float)
+    except Exception:
+        # Calibration files are external input; parsing failures must leave
+        # Cake disabled instead of interrupting CHI navigation.
+        return False
+    return bool(np.all(np.isfinite(geometry)) and
+                geometry[0] > 0 and geometry[3] > 0 and geometry[4] > 0)
+
+
 def read_any_poni_file(filename):
     """
     Read any version of poni file and return the content 

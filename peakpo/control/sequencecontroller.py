@@ -51,11 +51,13 @@ class SequenceController(object):
         self._connect_channel()
 
     def set_helpers(self, base_ptn_ctrl=None, plot_ctrl=None,
-                    mouse_mode_done_cb=None, export_current_view_cb=None):
+                    mouse_mode_done_cb=None, export_current_view_cb=None,
+                    open_chi_cb=None):
         self.base_ptn_ctrl = base_ptn_ctrl
         self.plot_ctrl = plot_ctrl
         self.mouse_mode_done_cb = mouse_mode_done_cb
         self.export_current_view_cb = export_current_view_cb
+        self.open_chi_cb = open_chi_cb
 
     def _build_canvas(self):
         if not hasattr(self.widget, "verticalLayout_SeqCanvas"):
@@ -262,9 +264,14 @@ class SequenceController(object):
         if (idx < 0) or (idx >= len(self._chi_files)):
             return
         try:
-            self.base_ptn_ctrl._load_a_new_pattern(self._chi_files[idx])
-            if self.plot_ctrl is not None:
-                self.plot_ctrl.update()
+            open_chi = getattr(self, "open_chi_cb", None)
+            if open_chi is not None:
+                if not open_chi(self._chi_files[idx]):
+                    return
+            else:
+                self.base_ptn_ctrl._load_a_new_pattern(self._chi_files[idx])
+                if self.plot_ctrl is not None:
+                    self.plot_ctrl.update()
             self._schedule_overlay_refresh()
         except Exception as exc:
             self._set_status(f"Failed to preview file: {exc}")
@@ -323,7 +330,8 @@ class SequenceController(object):
             interactive=False,
             drag_from_anywhere=False,
         )
-        if self.widget.checkBox_ShowCake.isChecked():
+        if (self.widget.checkBox_ShowCake.isChecked() and
+                self.widget.checkBox_ShowCake.isEnabled()):
             self._selector_2d = RectangleSelector(
                 self.widget.mpl.canvas.ax_cake,
                 self._on_roi_2d_selected,
@@ -536,6 +544,10 @@ class SequenceController(object):
     def _compute_sequence(self):
         if not self._chi_files:
             self._set_status("Load CHI files first.")
+            return
+        if (self._roi_2d is not None and
+                not self.widget.checkBox_ShowCake.isEnabled()):
+            self._set_status("Choose a PONI in Cake > Config for 2D sequence analysis.")
             return
         if (self._roi_1d is None) and (self._roi_2d is None):
             self._set_status("Select ROI first.")
