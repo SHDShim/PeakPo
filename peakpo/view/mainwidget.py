@@ -655,6 +655,46 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.gridLayout_NavCarryBehavior.setColumnStretch(1, 1)
         self.verticalLayout_31.insertWidget(insert_idx + 1, self.groupBox_NavCarryBehavior)
 
+        self.groupBox_NavSave = QtWidgets.QGroupBox(
+            "Save PARAM when leaving a file", self.scrollAreaWidgetContents_2)
+        self.groupBox_NavSave.setObjectName("groupBox_NavSave")
+        self.gridLayout_NavSave = QtWidgets.QGridLayout(self.groupBox_NavSave)
+        self.gridLayout_NavSave.setContentsMargins(12, 12, 12, 12)
+        self.label_NavSaveMode = QtWidgets.QLabel(
+            "Save PARAM on navigation", self.groupBox_NavSave)
+        self.comboBox_NavSaveMode = QtWidgets.QComboBox(self.groupBox_NavSave)
+        self.comboBox_NavSaveMode.setObjectName("comboBox_NavSaveMode")
+        self.comboBox_NavSaveMode.addItem("New or incomplete sessions", "incomplete")
+        self.comboBox_NavSaveMode.addItem("Every changed session", "all")
+        self.comboBox_NavSaveMode.addItem("Never", "never")
+        self.comboBox_NavSaveMode.setToolTip(
+            "Save changed settings for the current CHI before opening another file.")
+        self.gridLayout_NavSave.addWidget(self.label_NavSaveMode, 0, 0)
+        self.gridLayout_NavSave.addWidget(self.comboBox_NavSaveMode, 0, 1)
+        self.gridLayout_NavSave.setColumnStretch(1, 1)
+        self.verticalLayout_31.insertWidget(
+            insert_idx + 2, self.groupBox_NavSave)
+
+        self.groupBox_WorkingStateRecovery = QtWidgets.QGroupBox(
+            "Working state recovery", self.scrollAreaWidgetContents_2)
+        self.groupBox_WorkingStateRecovery.setObjectName(
+            "groupBox_WorkingStateRecovery")
+        recovery_layout = QtWidgets.QVBoxLayout(
+            self.groupBox_WorkingStateRecovery)
+        recovery_layout.setContentsMargins(12, 12, 12, 12)
+        self.checkBox_RestoreWorkingState = QtWidgets.QCheckBox(
+            "Restore last working state when PeakPo starts",
+            self.groupBox_WorkingStateRecovery)
+        self.checkBox_RestoreWorkingState.setObjectName(
+            "checkBox_RestoreWorkingState")
+        self.checkBox_RestoreWorkingState.setChecked(True)
+        self.checkBox_RestoreWorkingState.setToolTip(
+            "Periodically save a private recovery snapshot and restore it "
+            "after a crash or normal quit.")
+        recovery_layout.addWidget(self.checkBox_RestoreWorkingState)
+        self.verticalLayout_31.insertWidget(
+            insert_idx + 3, self.groupBox_WorkingStateRecovery)
+
         self.groupBox_NavCarryNotifications = QtWidgets.QGroupBox(
             "Notifications", self.scrollAreaWidgetContents_2)
         self.groupBox_NavCarryNotifications.setObjectName(
@@ -690,7 +730,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.verticalLayout_NavCarryNotifications.addWidget(
             self.checkBox_CarryNavPopupOverwrite)
         self.verticalLayout_31.insertWidget(
-            insert_idx + 2, self.groupBox_NavCarryNotifications)
+            insert_idx + 4, self.groupBox_NavCarryNotifications)
 
         self._nav_carry_status_text = ""
         self._nav_carry_status_level = "white"

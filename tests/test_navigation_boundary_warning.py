@@ -3,6 +3,7 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import gc
+import numpy as np
 from contextlib import nullcontext
 from types import SimpleNamespace
 
@@ -11,9 +12,13 @@ from qtpy import QtCore, QtWidgets
 
 from peakpo.control import maincontroller
 from peakpo.control.maincontroller import MainController
+from peakpo.control.sessioncontroller import SessionController
+from peakpo.control import sessioncontroller
 from peakpo.utils import dialogs
 from peakpo.utils import apply_spinbox_fix_style
 from peakpo.utils.fileutils import chi_name_set, find_from_filelist
+from peakpo.utils import writechi
+from peakpo.model.model import PeakPoModel
 
 
 _APP = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -33,6 +38,94 @@ class _Checked:
 
     def isChecked(self):
         return self._checked
+
+
+@pytest.mark.parametrize(
+    ("mode", "valid", "filled_missing", "expected_saves"),
+    [
+        ("never", False, True, 0),
+        ("incomplete", False, True, 1),
+        ("incomplete", True, False, 0),
+        ("incomplete", True, True, 1),
+        ("all", True, False, 1),
+    ],
+)
+def test_param_navigation_save_policy(
+        monkeypatch, tmp_path, mode, valid, filled_missing, expected_saves):
+    chi_file = tmp_path / "file_001.chi"
+    chi_file.write_text("", encoding="utf-8")
+    controller = SessionController.__new__(SessionController)
+    controller.model = SimpleNamespace(
+        base_ptn_exist=lambda: True,
+        get_base_ptn_filename=lambda: str(chi_file),
+        jcpds_lst=[], section_lst=[], waterfall_ptn=[], poni=None)
+    controller._manual_saved_chi = None
+    controller._recovered_current_chi = None
+    controller._carryover_source_chi = None
+    controller._last_param_category_presence = {}
+    controller._commit_inputs_before_save = lambda: None
+    controller._collect_ui_state = lambda: {}
+    controller.refresh_backup_table = lambda: None
+    saves = []
+    monkeypatch.setattr(sessioncontroller, "is_new_param_folder",
+                        lambda path: valid)
+    monkeypatch.setattr(sessioncontroller, "save_model_to_param",
+                        lambda *args, **kwargs: (
+                            saves.append(kwargs) or
+                            SimpleNamespace(manifest_path="saved")))
+
+    assert controller.save_for_navigation(mode, filled_missing)
+    assert len(saves) == expected_saves
+    if saves:
+        assert saves[0]["force_backup"] is False
+        assert saves[0]["create_backup"] is True
+
+
+def test_manual_save_takes_precedence_over_default_navigation_save(
+        monkeypatch, tmp_path):
+    chi_file = tmp_path / "file_001.chi"
+    chi_file.write_text("", encoding="utf-8")
+    controller = SessionController.__new__(SessionController)
+    controller.model = SimpleNamespace(
+        base_ptn_exist=lambda: True,
+        get_base_ptn_filename=lambda: str(chi_file))
+    controller._manual_saved_chi = str(chi_file)
+    monkeypatch.setattr(sessioncontroller, "save_model_to_param",
+                        lambda *args, **kwargs: pytest.fail("unexpected auto save"))
+
+    assert controller.save_for_navigation("incomplete", filled_missing=True)
+
+
+def test_recovery_state_restores_last_chi_and_model(tmp_path):
+    chi_file = tmp_path / "file_001.chi"
+    writechi(str(chi_file), np.asarray([1.0, 2.0]),
+             np.asarray([10.0, 12.0]))
+    model = PeakPoModel()
+    model.set_base_ptn(str(chi_file), 0.3344)
+    model.save_pressure(15.0)
+    widget = SimpleNamespace(
+        checkBox_RestoreWorkingState=_Checked(True),
+        textEdit_SessionFileName=SimpleNamespace(setText=lambda value: None),
+        textEdit_Jlist=SimpleNamespace(setText=lambda value: None))
+    controller = SessionController.__new__(SessionController)
+    controller.model = model
+    controller.widget = widget
+    controller._recovery_root = lambda: str(tmp_path / "app-data")
+    controller._commit_inputs_before_save = lambda: None
+    controller._collect_ui_state = lambda: {}
+    controller._sync_ui_from_model = lambda **kwargs: None
+    controller.refresh_backup_table = lambda: None
+
+    assert controller.save_recovery_state()
+    assert not (tmp_path / "file_001-param").exists()
+    controller.model = PeakPoModel()
+    loader = SimpleNamespace(_load_a_new_pattern=lambda path: None)
+    updates = []
+    plot = SimpleNamespace(update=lambda: updates.append(True))
+    assert controller.restore_recovery_state(loader, plot)
+    assert controller.model.get_base_ptn_filename() == str(chi_file)
+    assert controller.model.get_saved_pressure() == 15.0
+    assert updates == [True]
 
 
 @pytest.mark.parametrize(
@@ -232,6 +325,7 @@ def test_name_set_confirmation_only_applies_to_name_navigation(
     controller.widget = SimpleNamespace(
         radioButton_SortbyNme=_Checked(sort_by_name),
         spinBox_FileStep=_Value(1),
+        comboBox_NavSaveMode=SimpleNamespace(currentData=lambda: "incomplete"),
     )
     controller.model = SimpleNamespace(
         chi_path=str(tmp_path),
@@ -248,6 +342,10 @@ def test_name_set_confirmation_only_applies_to_name_navigation(
     controller._apply_nav_carry_state = lambda state: None
     controller.plot_ctrl = SimpleNamespace(update=lambda: None)
     controller._schedule_roi_overlays_after_plot_update = lambda **kwargs: None
+    controller._nav_filled_missing = False
+    controller.session_ctrl = SimpleNamespace(
+        save_for_navigation=lambda *args: True,
+        save_recovery_state=lambda: None)
 
     controller._goto_chi_next_file("next")
 

@@ -81,6 +81,8 @@ _previous_qt_message_handler = QtCore.qInstallMessageHandler(
 # STEP 5: CREATE QApplication FIRST!
 # ========================================
 app = QtWidgets.QApplication(sys.argv)
+app.setOrganizationName("DS")
+app.setApplicationName("PeakPo")
 app.setStyle('Fusion')
 
 

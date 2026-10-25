@@ -933,10 +933,12 @@ def _exclude_from_backup(rel_path):
 
 def save_model_to_param(
         model, ui_state=None, reason="manual-save",
-        force_backup=False, create_backup=True):
+        force_backup=False, create_backup=True, param_dir=None,
+        save_origin=None):
     if model is None or (not model.base_ptn_exist()):
         raise ValueError("Base pattern must exist before saving PARAM session.")
-    param_dir = get_temp_dir(model.get_base_ptn_filename(), branch="-param")
+    param_dir = param_dir or get_temp_dir(
+        model.get_base_ptn_filename(), branch="-param")
     os.makedirs(param_dir, exist_ok=True)
     for ptn in [model.base_ptn] + list(model.waterfall_ptn):
         _ensure_pattern_background_defaults(ptn)
@@ -944,11 +946,13 @@ def save_model_to_param(
     session_data, sections_data, jcpds_data, ui_data, section_payloads, waterfall_payloads = _prepare_payloads(
         model, param_dir=param_dir, ui_state=ui_state)
     existing_created_at = None
+    existing_save_origin = None
     existing_manifest_path = os.path.join(param_dir, MANIFEST_FILE)
     if os.path.exists(existing_manifest_path):
         try:
             existing_manifest = _load_json(existing_manifest_path)
             existing_created_at = existing_manifest.get("created_at")
+            existing_save_origin = existing_manifest.get("save_origin")
         except Exception:
             existing_created_at = None
 
@@ -957,6 +961,7 @@ def save_model_to_param(
         "format_version": FORMAT_VERSION,
         # Keep created_at stable across saves so no-op saves do not look changed.
         "created_at": existing_created_at or datetime.datetime.now().isoformat(timespec="seconds"),
+        "save_origin": save_origin or existing_save_origin or "manual",
         "files": {
             "session": _serialize_param_reference(
                 os.path.join(param_dir, SESSION_FILE), model.chi_path),
@@ -1210,9 +1215,10 @@ def restore_to_backup_event(param_dir, event_id=None, event_index=None):
     return True
 
 
-def load_model_from_param(model, base_chi_file, backup_event_id=None, backup_event_index=None):
+def load_model_from_param(model, base_chi_file, backup_event_id=None,
+                          backup_event_index=None, param_dir=None):
     chi_root = os.path.dirname(base_chi_file)
-    param_dir = get_temp_dir(base_chi_file, branch="-param")
+    param_dir = param_dir or get_temp_dir(base_chi_file, branch="-param")
     if not is_new_param_folder(param_dir):
         return False, {"reason": "missing-or-invalid-manifest", "param_dir": param_dir}
 

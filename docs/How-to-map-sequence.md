@@ -4,6 +4,13 @@
 
 1. Open the `Map` tab.
 2. Click `Load CHI files` and select all map `.chi` files.
+   If the currently plotted CHI is outside the selected set, PeakPo opens the
+   file at the map grid's center. Before this automatic switch, PeakPo asks
+   whether to save the current CHI's PARAM session, open without saving PARAM,
+   or stay on the current file. If the plotted CHI is already in the set, it
+   stays open without a prompt. The normal CHI opening process loads the
+   selected file's PARAM session when available. Clicking a map pixel follows
+   the configured **Save PARAM on navigation** setting.
 3. Check `Nx`, `Ny`:
 - They are auto-guessed.
 - `Nx * Ny` must equal number of loaded files.

@@ -79,7 +79,8 @@ class MainController(object):
         self.map_ctrl.set_helpers(
             base_ptn_ctrl=self.base_ptn_ctrl,
             plot_ctrl=self.plot_ctrl,
-            mouse_mode_done_cb=self._finish_temporary_mouse_mode)
+            mouse_mode_done_cb=self._finish_temporary_mouse_mode,
+            open_chi_cb=self._open_chi_from_map)
         print("  ✓ MapController created")
 
         self.seq_ctrl = SequenceController(self.model, self.widget)
@@ -129,7 +130,8 @@ class MainController(object):
             base_ptn_ctrl=self.base_ptn_ctrl,
             plot_ctrl=self.plot_ctrl,
             mouse_mode_done_cb=self._finish_temporary_mouse_mode,
-            export_current_view_cb=self.export_py_ctrl.export_current_view)
+            export_current_view_cb=self.export_py_ctrl.export_current_view,
+            open_chi_cb=self._open_chi_from_map)
         self.seq_ctrl.set_helpers(
             base_ptn_ctrl=self.base_ptn_ctrl,
             plot_ctrl=self.plot_ctrl,
@@ -142,6 +144,13 @@ class MainController(object):
         
         self.read_setting()
         print("  ✓ read_setting() done")
+        self.widget.comboBox_NavSaveMode.currentIndexChanged.connect(
+            lambda _index: self.settings.setValue(
+                "nav_save_mode",
+                self.widget.comboBox_NavSaveMode.currentData()))
+        self.widget.checkBox_RestoreWorkingState.toggled.connect(
+            lambda enabled: self.settings.setValue(
+                "restore_working_state", bool(enabled)))
         
         self.connect_channel()
         print("  ✓ connect_channel() done")
@@ -151,6 +160,12 @@ class MainController(object):
         print("  ✓ clipboard set")
         self._shutdown_done = False
         self._defer_plot_update_count = 0
+        self._nav_filled_missing = False
+        self._navigation_in_progress = False
+        self._recovery_timer = QtCore.QTimer(self.widget)
+        self._recovery_timer.setInterval(180000)
+        self._recovery_timer.timeout.connect(
+            self._save_periodic_recovery)
         
         print("MainController.__init__ - DONE\n")
 
@@ -181,8 +196,62 @@ class MainController(object):
                 cake_plot_ctrl.set_diff_controller(self.diff_ctrl)
 
     def _on_base_pattern_loaded(self, filename):
+        self._nav_filled_missing = False
         if hasattr(self, "cakeazi_ctrl") and (self.cakeazi_ctrl is not None):
             self.cakeazi_ctrl.refresh_derived_chi_ui(select_path=filename)
+
+    def _confirm_map_param_save(self, current, filename):
+        box = QtWidgets.QMessageBox(self.widget)
+        box.setOption(QtWidgets.QMessageBox.DontUseNativeDialog, True)
+        box.setTextFormat(QtCore.Qt.PlainText)
+        box.setIcon(QtWidgets.QMessageBox.Question)
+        box.setWindowTitle("Open Map CHI file")
+        box.setText("The current CHI file is outside the selected Map file set.")
+        box.setInformativeText(
+            "Current: " + os.path.basename(current) + "\n"
+            "Selected: " + os.path.basename(filename) + "\n\n"
+            "Save the current file's PARAM session before opening the selected file?")
+        save_button = box.addButton(
+            "Save PARAM and open", QtWidgets.QMessageBox.AcceptRole)
+        open_button = box.addButton(
+            "Open without saving PARAM", QtWidgets.QMessageBox.ActionRole)
+        stay_button = box.addButton(
+            "Stay on current file", QtWidgets.QMessageBox.RejectRole)
+        box.setDefaultButton(save_button)
+        box.setEscapeButton(stay_button)
+        box.exec()
+        if box.clickedButton() == save_button:
+            return "save"
+        if box.clickedButton() == open_button:
+            return "skip"
+        return "cancel"
+
+    def _open_chi_from_map(self, filename, prompt_save=False):
+        if not os.path.isfile(filename):
+            return False
+        current = (self.model.get_base_ptn_filename()
+                   if self.model.base_ptn_exist() else None)
+        if current is not None and os.path.normcase(os.path.abspath(current)) == \
+                os.path.normcase(os.path.abspath(filename)):
+            return True
+        if current is not None:
+            if prompt_save:
+                choice = self._confirm_map_param_save(current, filename)
+                if choice == "cancel":
+                    return False
+                if choice == "save" and not self.session_ctrl.save_dpp():
+                    return False
+            elif not self.session_ctrl.save_for_navigation(
+                    self.widget.comboBox_NavSaveMode.currentData(),
+                    self._nav_filled_missing):
+                return False
+            self.session_ctrl.save_recovery_state()
+        self.base_ptn_ctrl._load_a_new_pattern(filename)
+        if not self.model.base_ptn_exist():
+            return False
+        self.plot_ctrl.update()
+        self.session_ctrl.save_recovery_state()
+        return True
 
     def show_window(self):
         """Show the main window and ensure it renders"""
@@ -195,11 +264,31 @@ class MainController(object):
         canvas = getattr(getattr(self.widget, "mpl", None), "canvas", None)
         if canvas is not None:
             QtCore.QTimer.singleShot(0, canvas.setFocus)
+        if any(arg.startswith("--verify-") for arg in sys.argv[1:]):
+            return
+        QtCore.QTimer.singleShot(0, self._restore_last_working_state)
+        self._recovery_timer.start()
+
+    def _restore_last_working_state(self):
+        self.session_ctrl.restore_recovery_state(
+            self.base_ptn_ctrl, self.plot_ctrl)
+
+    def _save_periodic_recovery(self):
+        if (self._navigation_in_progress or
+                not self.widget.checkBox_RestoreWorkingState.isChecked()):
+            return
+        self.write_setting()
+        self.session_ctrl.save_recovery_state()
 
     def shutdown(self):
         if self._shutdown_done:
             return
         self._shutdown_done = True
+        try:
+            self._recovery_timer.stop()
+            self.session_ctrl.save_recovery_state()
+        except Exception:
+            pass
         try:
             self.write_setting()
         except Exception:
@@ -1308,6 +1397,11 @@ class MainController(object):
         for key, attr in self._carry_nav_setting_bindings():
             if hasattr(self.widget, attr):
                 self._save_widget_to_settings(key, getattr(self.widget, attr))
+        self.settings.setValue(
+            "nav_save_mode", self.widget.comboBox_NavSaveMode.currentData())
+        self.settings.setValue(
+            "restore_working_state",
+            self.widget.checkBox_RestoreWorkingState.isChecked())
 
         for key, attr in self._plot_config_setting_bindings():
             if hasattr(self.widget, attr):
@@ -1387,6 +1481,13 @@ class MainController(object):
                 self._load_widget_from_settings(
                     key, getattr(self.widget, attr),
                     self._carry_nav_setting_defaults().get(attr))
+        mode = str(self.settings.value("nav_save_mode", "incomplete"))
+        index = self.widget.comboBox_NavSaveMode.findData(mode)
+        self.widget.comboBox_NavSaveMode.setCurrentIndex(max(index, 0))
+        raw_restore = self.settings.value("restore_working_state", True)
+        restore = (str(raw_restore).lower() in ("1", "true", "yes")
+                   if isinstance(raw_restore, str) else bool(raw_restore))
+        self.widget.checkBox_RestoreWorkingState.setChecked(restore)
 
         for key, attr in self._plot_config_setting_bindings():
             if hasattr(self.widget, attr):
@@ -1858,6 +1959,8 @@ class MainController(object):
         # Never carry over backup information across CHI navigation.
         # Always show backup info for the newly loaded file.
         self.session_ctrl.refresh_backup_table()
+        self._nav_filled_missing = any(
+            item["action"] == "carry_blank" for item in results)
 
     def _get_cake_scale_bar_value(self):
         return 0
@@ -2412,13 +2515,23 @@ class MainController(object):
             if sort_by_name and not self._confirm_chi_name_set_transition(
                     new_filename_chi):
                 return
-            nav_state = self._capture_nav_carry_state()
-            with self._defer_plot_updates():
-                self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
-                self._apply_nav_carry_state(nav_state)
-            # self.model.set_base_ptn_color(self.obj_color)
-            self.plot_ctrl.update()
-            self._schedule_roi_overlays_after_plot_update(flush_pending=True)
+            self._navigation_in_progress = True
+            try:
+                if not self.session_ctrl.save_for_navigation(
+                        self.widget.comboBox_NavSaveMode.currentData(),
+                        self._nav_filled_missing):
+                    return
+                self.session_ctrl.save_recovery_state()
+                nav_state = self._capture_nav_carry_state()
+                with self._defer_plot_updates():
+                    self.base_ptn_ctrl._load_a_new_pattern(new_filename_chi)
+                    self._apply_nav_carry_state(nav_state)
+                self.plot_ctrl.update()
+                self._schedule_roi_overlays_after_plot_update(
+                    flush_pending=True)
+                self.session_ctrl.save_recovery_state()
+            finally:
+                self._navigation_in_progress = False
         else:
             show_warning(
                 self.widget, "Warning", new_filename_chi + " does not exist.")

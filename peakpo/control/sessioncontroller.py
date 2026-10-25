@@ -11,6 +11,7 @@ import pyFAI
 import zipfile
 import copy
 import shutil
+import hashlib
 from contextlib import contextmanager
 import dill._dill as _dill_impl
 from qtpy import QtWidgets, QtCore
@@ -29,6 +30,7 @@ from ..model.param_session_io import (
     list_backup_events,
     is_new_param_folder,
     BACKUP_INDEX_FILE,
+    MANIFEST_FILE,
 )
 
 class SessionController(object):
@@ -38,6 +40,8 @@ class SessionController(object):
         self.widget = widget
         self.cake_ctrl = None
         self._carryover_source_chi = None
+        self._manual_saved_chi = None
+        self._recovered_current_chi = None
         self._backup_table_refreshing = False
         self._last_param_category_presence = {
             "backup_information": False,
@@ -788,6 +792,8 @@ class SessionController(object):
         Automatically load PARAM session data for an opened CHI file, if found.
         Returns True when PARAM session is loaded, False otherwise.
         """
+        self._manual_saved_chi = None
+        self._recovered_current_chi = None
         param_dir = os.path.join(
             os.path.dirname(base_chi_file),
             os.path.splitext(os.path.basename(base_chi_file))[0] + "-param",
@@ -858,6 +864,162 @@ class SessionController(object):
 
     def get_last_param_category_presence(self):
         return dict(self._last_param_category_presence)
+
+    def save_for_navigation(self, mode="incomplete", filled_missing=False):
+        """Save the departing CHI according to the user's navigation policy."""
+        if mode == "never" or not self.model.base_ptn_exist():
+            return True
+        chi_file = self.model.get_base_ptn_filename()
+        if (mode == "incomplete" and self._manual_saved_chi is not None and
+                os.path.normcase(os.path.abspath(self._manual_saved_chi)) ==
+                os.path.normcase(os.path.abspath(chi_file))):
+            return True
+        param_dir = os.path.join(
+            os.path.dirname(chi_file),
+            os.path.splitext(os.path.basename(chi_file))[0] + "-param")
+        valid = is_new_param_folder(param_dir)
+        origin = None
+        if valid:
+            try:
+                with open(os.path.join(param_dir, MANIFEST_FILE),
+                          encoding="utf-8") as stream:
+                    origin = json.load(stream).get("save_origin")
+            except (OSError, ValueError):
+                pass
+        presence = self.get_last_param_category_presence()
+        newly_filled = filled_missing or (
+            bool(self.model.jcpds_lst) and not presence.get("jcpds", False)) or (
+            bool(self.model.section_lst) and
+             not presence.get("fits_information", False))
+        meaningful = newly_filled or bool(self.get_carryover_source_chi()) or \
+            bool(self.model.waterfall_ptn) or bool(self.model.poni) or \
+            self._recovered_current_chi == chi_file
+        if mode == "incomplete" and not (
+                (not valid and meaningful) or newly_filled or
+                origin == "navigation"):
+            return True
+        try:
+            self._commit_inputs_before_save()
+            result = save_model_to_param(
+                self.model, ui_state=self._collect_ui_state(),
+                reason="Automatic save on navigation",
+                create_backup=True, force_backup=False,
+                save_origin=("manual" if mode == "all" and
+                             origin == "manual" else "navigation"))
+            self.refresh_backup_table()
+            print("Navigation PARAM save:", result.manifest_path)
+            return True
+        except Exception as exc:
+            QtWidgets.QMessageBox.warning(
+                self.widget, "PARAM save failed",
+                "The current CHI file remains open.\n\n" + str(exc))
+            return False
+
+    def _recovery_root(self):
+        app_data = QtCore.QStandardPaths.writableLocation(
+            QtCore.QStandardPaths.AppLocalDataLocation)
+        return os.path.join(app_data, "recovery")
+
+    def _recovery_dir(self, chi_file):
+        digest = hashlib.sha256(
+            os.path.normcase(os.path.abspath(chi_file)).encode("utf-8")
+        ).hexdigest()[:20]
+        return os.path.join(self._recovery_root(), digest)
+
+    def save_recovery_state(self):
+        if any(arg.startswith("--verify-") for arg in sys.argv[1:]) or \
+                not self.widget.checkBox_RestoreWorkingState.isChecked() or \
+                not self.model.base_ptn_exist():
+            return False
+        chi_file = os.path.abspath(self.model.get_base_ptn_filename())
+        if not os.path.isfile(chi_file):
+            return False
+        try:
+            self._commit_inputs_before_save()
+            root = self._recovery_root()
+            previous_dir = None
+            try:
+                with open(os.path.join(root, "last-state.json"),
+                          encoding="utf-8") as stream:
+                    previous_chi = json.load(stream).get("chi_file")
+                if previous_chi:
+                    previous_dir = self._recovery_dir(previous_chi)
+            except (OSError, ValueError):
+                pass
+            save_model_to_param(
+                self.model, ui_state=self._collect_ui_state(),
+                create_backup=False, param_dir=self._recovery_dir(chi_file),
+                save_origin="recovery")
+            os.makedirs(root, exist_ok=True)
+            state = {
+                "chi_file": chi_file,
+                "tabs": {
+                    name: getattr(self.widget, name).currentIndex()
+                    for name in ("tabWidget", "tabWidget_3", "tabWidget1",
+                                 "tabWidget_5", "tabWidget_2", "tabWidget_4",
+                                 "tabWidget_PeakFit")
+                    if hasattr(self.widget, name)
+                },
+            }
+            fd, temp_path = tempfile.mkstemp(dir=root, prefix="state-")
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as stream:
+                    json.dump(state, stream)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.replace(temp_path, os.path.join(root, "last-state.json"))
+            finally:
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
+            current_dir = self._recovery_dir(chi_file)
+            if previous_dir and previous_dir != current_dir:
+                shutil.rmtree(previous_dir, ignore_errors=True)
+            return True
+        except Exception as exc:
+            print("Recovery snapshot failed:", exc)
+            return False
+
+    def restore_recovery_state(self, base_ptn_ctrl, plot_ctrl):
+        if any(arg.startswith("--verify-") for arg in sys.argv[1:]) or \
+                not self.widget.checkBox_RestoreWorkingState.isChecked():
+            return False
+        try:
+            with open(os.path.join(self._recovery_root(), "last-state.json"),
+                      encoding="utf-8") as stream:
+                state = json.load(stream)
+            chi_file = state.get("chi_file")
+            if not chi_file or not os.path.isfile(chi_file):
+                return False
+            param_dir = self._recovery_dir(chi_file)
+            if not is_new_param_folder(param_dir):
+                return False
+            base_ptn_ctrl._load_a_new_pattern(chi_file)
+            success, meta = load_model_from_param(
+                self.model, chi_file, param_dir=param_dir)
+            if not success:
+                return False
+            self._sync_ui_from_model(
+                manifest_path=str(meta.get("manifest", "")),
+                ui_state=meta.get("ui_state", {}))
+            self._recovered_current_chi = chi_file
+            visible_param = os.path.join(
+                os.path.dirname(chi_file),
+                os.path.splitext(os.path.basename(chi_file))[0] + "-param")
+            manifest_path = (os.path.join(visible_param, MANIFEST_FILE)
+                             if is_new_param_folder(visible_param) else "")
+            self.widget.textEdit_SessionFileName.setText(manifest_path)
+            self.widget.textEdit_Jlist.setText(manifest_path)
+            self.refresh_backup_table()
+            for name, index in state.get("tabs", {}).items():
+                tab = getattr(self.widget, name, None)
+                if tab is not None and 0 <= index < tab.count():
+                    tab.setCurrentIndex(index)
+            plot_ctrl.update()
+            print("Restored last working state:", chi_file)
+            return True
+        except Exception as exc:
+            print("Recovery restore failed:", exc)
+            return False
 
     def set_carryover_source_chi(self, chi_filename):
         if chi_filename in (None, ""):
@@ -1384,12 +1546,12 @@ class SessionController(object):
     def save_dpp(self, quiet=False):
         if quiet:
             # Do not auto-save. Only explicit user-triggered saves are allowed.
-            return
+            return False
         if not self.model.base_ptn_exist():
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning",
                 "Open a base chi file before saving a session.")
-            return
+            return False
         self._commit_inputs_before_save()
         reason = "snapshot"
         carry_src = self.get_carryover_source_chi()
@@ -1402,12 +1564,13 @@ class SessionController(object):
                 reason=reason,
                 create_backup=True,
                 force_backup=True,
+                save_origin="manual",
             )
         except Exception as inst:
             QtWidgets.QMessageBox.warning(
                 self.widget, "Warning",
                 "Saving PARAM session failed:\n" + str(inst))
-            return
+            return False
         print(str(datetime.datetime.now())[:-7],
               ": Save PARAM session:", result.manifest_path)
         if result.backup_id is not None:
@@ -1424,6 +1587,7 @@ class SessionController(object):
             print(str(datetime.datetime.now())[:-7],
                   ": No backup snapshot created (no file changes detected).")
         self.refresh_backup_table()
+        self._manual_saved_chi = self.model.get_base_ptn_filename()
         if self.widget.checkBox_ShowCake.isChecked():
             self._save_cake_format_file()
             print(str(datetime.datetime.now())[:-7],
@@ -1451,6 +1615,7 @@ class SessionController(object):
             self.widget.lineEdit_PkFtSectionsStatus.setStyleSheet("")
             self.widget.lineEdit_PkFtSectionsStatus.setText(
                 "Sections table status: no unsaved section-list changes.")
+        return True
 
     def save_ppss(self, quiet=False):
         """

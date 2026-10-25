@@ -33,6 +33,7 @@ class MapController(object):
         self.plot_ctrl = None
         self.mouse_mode_done_cb = None
         self.export_current_view_cb = None
+        self.open_chi_cb = None
 
         self._map_canvas = None
         self._map_ax = None
@@ -69,11 +70,13 @@ class MapController(object):
         self._connect_channel()
 
     def set_helpers(self, base_ptn_ctrl=None, plot_ctrl=None,
-                    mouse_mode_done_cb=None, export_current_view_cb=None):
+                    mouse_mode_done_cb=None, export_current_view_cb=None,
+                    open_chi_cb=None):
         self.base_ptn_ctrl = base_ptn_ctrl
         self.plot_ctrl = plot_ctrl
         self.mouse_mode_done_cb = mouse_mode_done_cb
         self.export_current_view_cb = export_current_view_cb
+        self.open_chi_cb = open_chi_cb
 
     def _build_canvas(self):
         if not hasattr(self.widget, "verticalLayout_MapCanvas"):
@@ -166,6 +169,10 @@ class MapController(object):
             self.deactivate_interactions()
             self._clear_roi_overlays()
         else:
+            if (self._chi_files and
+                    not self._chi_file_in_selected_set(
+                        self._current_displayed_chi())):
+                self._preview_center_file()
             self.refresh_current_marker()
             self.refresh_roi_overlays()
 
@@ -467,10 +474,16 @@ class MapController(object):
         self._set_loaded_count()
         if progress:
             self._update_progress(2, "Previewing map center file...")
-        if preferred_chi and (preferred_chi in self._chi_files):
-            self._load_file_to_main_plot(self._chi_files.index(preferred_chi))
-        else:
-            self._preview_center_file()
+        displayed_chi = preferred_chi or self._current_displayed_chi()
+        if not self._chi_file_in_selected_set(displayed_chi):
+            progress_dialog = self._progress_dialog if progress else None
+            if progress_dialog is not None:
+                progress_dialog.hide()
+            try:
+                self._preview_center_file()
+            finally:
+                if progress_dialog is not None:
+                    progress_dialog.show()
         # Only run full coordinate detection with progress if not already done above
         if not reset_grid:
             self._detect_scan_coordinates(progress=progress)
@@ -540,7 +553,8 @@ class MapController(object):
             self._map_data = None
             self._draw_map()
             return
-        self._preview_center_file()
+        if not self._chi_file_in_selected_set(self._current_displayed_chi()):
+            self._preview_center_file()
         if (self._roi_1d is not None) or (self._roi_2d is not None):
             self._compute_map()
         else:
@@ -569,30 +583,36 @@ class MapController(object):
             return
         nx, ny = self._grid
         n = len(self._chi_files)
+        file_idx = None
         if nx * ny != n:
             self._set_status(
                 f"Grid mismatch: Nx*Ny ({nx}x{ny}={nx * ny}) must equal loaded files ({n})."
             )
-            return
-        cx = nx // 2
-        cy = ny // 2
-        idx = self._grid_to_linear(cx, cy)
-        if idx is None:
-            return
-        file_idx = self._lin_to_file.get(idx, None)
+        else:
+            cx = nx // 2
+            cy = ny // 2
+            idx = self._grid_to_linear(cx, cy)
+            if idx is not None:
+                file_idx = self._lin_to_file.get(idx)
         if file_idx is None:
-            return
-        self._load_file_to_main_plot(file_idx)
+            file_idx = n // 2
+        self._load_file_to_main_plot(file_idx, prompt_save=True)
 
-    def _load_file_to_main_plot(self, idx):
+    def _load_file_to_main_plot(self, idx, prompt_save=False):
         if self.base_ptn_ctrl is None:
             return
         if (idx < 0) or (idx >= len(self._chi_files)):
             return
         try:
-            self.base_ptn_ctrl._load_a_new_pattern(self._chi_files[idx])
-            if self.plot_ctrl is not None:
-                self.plot_ctrl.update()
+            open_chi = getattr(self, "open_chi_cb", None)
+            if open_chi is not None:
+                if not open_chi(
+                        self._chi_files[idx], prompt_save=prompt_save):
+                    return
+            else:
+                self.base_ptn_ctrl._load_a_new_pattern(self._chi_files[idx])
+                if self.plot_ctrl is not None:
+                    self.plot_ctrl.update()
             self._schedule_overlay_refresh()
         except Exception as exc:
             self._set_status(f"Failed to preview file: {exc}")
@@ -843,6 +863,11 @@ class MapController(object):
             return os.path.normcase(os.path.abspath(os.path.realpath(str(filename))))
         except Exception:
             return os.path.normcase(os.path.abspath(str(filename)))
+
+    def _chi_file_in_selected_set(self, filename):
+        current = self._normalized_path(filename)
+        return current is not None and any(
+            self._normalized_path(path) == current for path in self._chi_files)
 
     def _current_file_idx(self):
         shown = self._current_displayed_chi()

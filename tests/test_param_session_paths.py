@@ -32,6 +32,30 @@ class ParamSessionPathTests(unittest.TestCase):
         y = np.asarray([10.0, 12.0, 14.0], dtype=float) + float(offset)
         writechi(str(path), x, y)
 
+    def test_recovery_snapshot_uses_separate_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            base_chi = root / "base.chi"
+            self._write_chi(base_chi)
+            model = PeakPoModel()
+            model.set_base_ptn(str(base_chi), 0.3344)
+            model.save_pressure(12.5)
+            recovery_dir = root / "private" / "recovery"
+
+            result = save_model_to_param(
+                model, param_dir=str(recovery_dir),
+                create_backup=False, save_origin="recovery")
+            self.assertEqual(Path(result.param_dir), recovery_dir)
+            self.assertFalse((root / "base-param").exists())
+            with (recovery_dir / MANIFEST_FILE).open(encoding="utf-8") as stream:
+                self.assertEqual(json.load(stream)["save_origin"], "recovery")
+
+            restored = PeakPoModel()
+            success, _ = load_model_from_param(
+                restored, str(base_chi), param_dir=str(recovery_dir))
+            self.assertTrue(success)
+            self.assertAlmostEqual(restored.get_saved_pressure(), 12.5)
+
     def test_load_param_without_background_files_initializes_bg_arrays(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
