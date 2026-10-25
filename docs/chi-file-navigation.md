@@ -3,6 +3,9 @@
 Use the **Name** or **Time** option beside the CHI navigation buttons to choose
 the file order. The step control determines how many files **Next** or **Prev**
 advances. Navigation stops at the first and last file; it does not wrap around.
+CHI and DPP extension matching is case-insensitive, so folders copied from
+Windows can contain both `.CHI` and `.chi` files. PeakPo ignores macOS `._`
+metadata sidecars when building the navigation list.
 
 With **Name** selected, PeakPo treats files as the same name set when they
 share the text before a changing final number. For example, `file_001.chi`
@@ -117,7 +120,9 @@ choices:
 PeakPo saves the current file only after the next file exists and any name-set
 transition has been accepted. An automatic save adds a backup entry only when
 the PARAM contents change. If the save fails, navigation stops on the current
-file.
+file. On macOS volumes, `._` metadata files beside PARAM data are ignored;
+they are not part of the saved setup. Temporary save cleanup also tolerates
+these metadata files disappearing while their matching data files are removed.
 
 **Working state recovery** is enabled by default. PeakPo saves a private copy
 of the open CHI analysis every three minutes, on navigation, and on a normal

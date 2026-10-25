@@ -4,8 +4,10 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.12.4.dev3"
+__version__ = "7.12.4.dev4"
 """
+7.12.4.dev4: handle macOS metadata sidecars and disappearing staging files
+             when navigating CHI folders copied from Windows.
 7.12.4.dev3: align CHI navigation and PARAM save defaults; strengthen setup
              recovery and PONI validation, with Cake controls gated on a
              usable calibration.

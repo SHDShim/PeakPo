@@ -6,6 +6,7 @@ import os
 import ntpath
 import shutil
 import collections
+import fnmatch
 from functools import lru_cache
 
 def get_unique_filename(filename):
@@ -117,7 +118,26 @@ def same_chi_name_set(first_filename, second_filename):
 
 
 def get_sorted_filelist(path, search_ext='*.chi', sorted_by_name=True):
-    filelist = glob.glob(os.path.join(path, search_ext))
+    # CHI/DPP folders copied between Windows and macOS can contain mixed-case
+    # extensions and AppleDouble ``._`` metadata sidecars. Treat extensions
+    # consistently across platforms and never navigate into a sidecar.
+    if search_ext.casefold() in ('*.chi', '*.dpp'):
+        filelist = []
+        try:
+            with os.scandir(path) as entries:
+                for entry in entries:
+                    if entry.name.startswith('.') or not fnmatch.fnmatchcase(
+                            entry.name.casefold(), search_ext.casefold()):
+                        continue
+                    try:
+                        if entry.is_file():
+                            filelist.append(entry.path)
+                    except OSError:
+                        continue
+        except OSError:
+            return []
+    else:
+        filelist = glob.glob(os.path.join(path, search_ext))
     if sorted_by_name:
         def _filename_sort_key(filename):
             name = os.path.splitext(os.path.basename(filename))[0]
@@ -147,7 +167,13 @@ def get_sorted_filelist(path, search_ext='*.chi', sorted_by_name=True):
 
         return sorted(filelist, key=_filename_sort_key)
     else:  # sorted by time
-        return sorted(filelist, key=os.path.getmtime)
+        timestamps = []
+        for filename in filelist:
+            try:
+                timestamps.append((os.path.getmtime(filename), filename))
+            except OSError:
+                continue
+        return [filename for _, filename in sorted(timestamps)]
 
 
 def samefilename(filen1, filen2):

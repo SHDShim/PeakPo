@@ -16,6 +16,52 @@ def _chi(path):
     writechi(str(path), np.arange(1.0, 51.0), np.arange(1.0, 51.0))
 
 
+def test_param_save_ignores_macos_appledouble_background_sidecars(tmp_path):
+    chi = tmp_path / "base.chi"
+    _chi(chi)
+    model = PeakPoModel()
+    model.set_base_ptn(str(chi), 0.3344)
+    param_dir = tmp_path / "base-param"
+    param_dir.mkdir()
+    sidecar = param_dir / "._base.bgsub.chi"
+    sidecar.write_bytes(b"macOS resource fork")
+
+    assert "._base.bgsub.chi" not in param_session_io._collect_companion_files(
+        str(param_dir))
+    result = param_session_io.save_model_to_param(model, create_backup=False)
+
+    assert os.path.isfile(result.manifest_path)
+    assert sidecar.read_bytes() == b"macOS resource fork"
+
+
+def test_param_save_survives_disappearing_macos_staging_sidecar(
+        monkeypatch, tmp_path):
+    chi = tmp_path / "base.chi"
+    _chi(chi)
+    model = PeakPoModel()
+    model.set_base_ptn(str(chi), 0.3344)
+    original_rmtree = param_session_io.shutil.rmtree
+    saw_staging_cleanup = False
+
+    def simulate_sidecar_race(path, *args, **kwargs):
+        nonlocal saw_staging_cleanup
+        if os.path.basename(path).startswith(".stage-"):
+            saw_staging_cleanup = True
+            missing = FileNotFoundError(2, "No such file or directory",
+                                        "._base.bgsub.chi")
+            kwargs["onerror"](os.unlink, missing.filename,
+                              (FileNotFoundError, missing, None))
+        return original_rmtree(path, *args, **kwargs)
+
+    monkeypatch.setattr(param_session_io.shutil, "rmtree",
+                        simulate_sidecar_race)
+    result = param_session_io.save_model_to_param(model, create_backup=False)
+
+    assert saw_staging_cleanup
+    assert os.path.isfile(result.manifest_path)
+    assert not list((tmp_path / "base-param").glob(".stage-*"))
+
+
 def test_background_controls_use_order_then_iteration(monkeypatch):
     pattern = Pattern()
     pattern.x_raw = np.arange(50.0)

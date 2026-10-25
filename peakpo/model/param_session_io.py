@@ -107,6 +107,17 @@ def _atomic_write_json(path, data):
     _atomic_write_bytes(path, payload)
 
 
+def _remove_temporary_tree(path):
+    """Remove a staging tree even when macOS sidecars vanish mid-scan."""
+    def onerror(_function, _failed_path, exc_info):
+        error = exc_info[1]
+        if isinstance(error, FileNotFoundError):
+            return
+        raise error
+
+    shutil.rmtree(path, onerror=onerror)
+
+
 def _recover_interrupted_param_save(param_dir):
     """Roll back a save that stopped after its first file replacement."""
     journal_dir = os.path.join(param_dir, ".pending-save")
@@ -114,7 +125,7 @@ def _recover_interrupted_param_save(param_dir):
         return
     marker = os.path.join(journal_dir, "ready.json")
     if not os.path.isfile(marker):
-        shutil.rmtree(journal_dir)
+        _remove_temporary_tree(journal_dir)
         return
     with open(marker, encoding="utf-8") as stream:
         entries = json.load(stream)
@@ -778,7 +789,10 @@ def _collect_companion_files(param_dir):
     if not os.path.isdir(param_dir):
         return []
     for entry in os.scandir(param_dir):
-        if (not entry.is_file()) or (not entry.name.endswith(suffixes)):
+        # macOS AppleDouble sidecars can disappear while a volume updates
+        # metadata; they are never part of the scientific PARAM session.
+        if (entry.name.startswith("._") or not entry.is_file() or
+                not entry.name.endswith(suffixes)):
             continue
         rel_files.add(entry.name)
     return sorted(rel_files)
@@ -1123,7 +1137,7 @@ def save_model_to_param(
         full = _param_file_path(param_dir, rel)
         if rel not in payload_map and os.path.exists(full):
             payload_map[rel] = _file_bytes(full)
-    shutil.rmtree(stage_dir)
+    _remove_temporary_tree(stage_dir)
 
     changed_files_all = []
     for rel_path, new_bytes in payload_map.items():

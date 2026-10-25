@@ -8,6 +8,7 @@ from peakpo.utils import (
     breakdown_filename,
     change_file_path,
     dirname_any,
+    get_sorted_filelist,
     make_filename,
     native_relative_path,
     resolve_stored_path,
@@ -17,6 +18,23 @@ from peakpo.control.xrdiohelpers import parse_dioptas_map_filename
 
 
 class CrossPlatformPathTests(unittest.TestCase):
+    def test_copied_windows_chi_folder_ignores_appledouble_and_extension_case(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = root / "sample_0001.CHI"
+            second = root / "sample_0002.chi"
+            sidecar = root / "._sample_0001.bgsub.chi"
+            for path in (first, second, sidecar):
+                path.write_text("data", encoding="utf-8")
+            os.utime(first, (1, 1))
+            os.utime(sidecar, (2, 2))
+            os.utime(second, (3, 3))
+
+            expected = [str(first), str(second)]
+            self.assertEqual(get_sorted_filelist(directory), expected)
+            self.assertEqual(get_sorted_filelist(
+                directory, sorted_by_name=False), expected)
+
     def test_windows_style_path_parts_are_understood_on_posix(self):
         path = r"C:\data\run1\sample_001.chi"
 
