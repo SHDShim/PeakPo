@@ -4,8 +4,10 @@ PeakPo version
 Todo:
 - azimuthal integration improvement
 """
-__version__ = "7.12.4"
+__version__ = "7.12.5"
 """
+7.12.5: refresh Prev/Next navigation when new CHI files appear in the active
+        folder, including a polling fallback for network-mounted folders.
 7.12.4: improve CHI navigation recovery speed; restore named Map sets from
         working folders and cache Map data for faster ROI updates. Includes
         CHI navigation, PARAM, PONI, and Cake fixes from the development series.

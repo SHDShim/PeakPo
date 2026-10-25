@@ -710,6 +710,50 @@ def test_navigation_buttons_preview_actual_step_destination(
     window.close()
 
 
+def test_navigation_boundary_poll_finds_new_chi_and_retargets_watch(tmp_path):
+    first = tmp_path / "file_001.chi"
+    first.write_text("", encoding="utf-8")
+    current = [str(first)]
+    window = MainWindow()
+    controller = MainController.__new__(MainController)
+    controller.widget = window
+    controller.model = SimpleNamespace(
+        chi_path=str(tmp_path),
+        base_ptn_exist=lambda: True,
+        get_base_ptn_filename=lambda: current[0])
+    controller._nav_directory_watcher = QtCore.QFileSystemWatcher(window)
+    controller._nav_change_debounce = QtCore.QTimer(window)
+    controller._nav_change_debounce.setSingleShot(True)
+    controller._nav_change_debounce.setInterval(0)
+    controller._nav_change_debounce.timeout.connect(
+        controller._refresh_nav_destination_indicators)
+
+    controller._refresh_nav_destination_indicators()
+    assert not window.pushButton_S_NextBasePtn.isEnabled()
+    assert controller._nav_directory_watcher.directories() == [str(tmp_path)]
+
+    second = tmp_path / "file_002.chi"
+    second.write_text("", encoding="utf-8")
+    controller._poll_navigation_boundary()
+    assert window.pushButton_S_NextBasePtn.isEnabled()
+    assert "file_002.chi" in window.pushButton_S_NextBasePtn.toolTip()
+
+    other = tmp_path / "other"
+    other.mkdir()
+    current[0] = str(other / "another_001.chi")
+    (other / "another_001.chi").write_text("", encoding="utf-8")
+    controller.model.chi_path = str(other)
+    controller._refresh_nav_destination_indicators()
+    assert controller._nav_directory_watcher.directories() == [str(other)]
+    assert not window.pushButton_S_NextBasePtn.isEnabled()
+
+    (other / "another_002.chi").write_text("", encoding="utf-8")
+    controller._on_navigation_directory_changed(str(other))
+    _APP.processEvents()
+    assert window.pushButton_S_NextBasePtn.isEnabled()
+    window.close()
+
+
 def test_param_signature_tracks_changes_and_reversion(tmp_path):
     chi_file = tmp_path / "file_001.chi"
     writechi(str(chi_file), np.asarray([1.0, 2.0]),

@@ -191,6 +191,19 @@ class MainController(object):
         self._param_dirty_timer.setInterval(3000)
         self._param_dirty_timer.timeout.connect(self._refresh_param_dirty_status)
         self._param_dirty_timer.start()
+        self._nav_directory_watcher = QtCore.QFileSystemWatcher(self.widget)
+        self._nav_directory_watcher.directoryChanged.connect(
+            self._on_navigation_directory_changed)
+        self._nav_change_debounce = QtCore.QTimer(self.widget)
+        self._nav_change_debounce.setSingleShot(True)
+        self._nav_change_debounce.setInterval(150)
+        self._nav_change_debounce.timeout.connect(
+            self._refresh_nav_destination_indicators)
+        # Directory notifications can be missed on network-mounted data.
+        self._nav_boundary_poll_timer = QtCore.QTimer(self.widget)
+        self._nav_boundary_poll_timer.setInterval(2000)
+        self._nav_boundary_poll_timer.timeout.connect(
+            self._poll_navigation_boundary)
         self.widget.set_param_dirty_status(False)
         
         print("MainController.__init__ - DONE\n")
@@ -310,6 +323,7 @@ class MainController(object):
         self.widget.set_param_dirty_status(dirty)
 
     def _refresh_nav_destination_indicators(self):
+        self._sync_navigation_directory_watch()
         buttons = (
             (self.widget.pushButton_S_PrevBasePtn, -1, "Previous"),
             (self.widget.pushButton_S_NextBasePtn, 1, "Next"),
@@ -356,6 +370,41 @@ class MainController(object):
             button.setStatusTip(message)
             if hasattr(self.widget, "_compact_help_widgets"):
                 self.widget._compact_help_widgets[button] = message
+
+    def _sync_navigation_directory_watch(self):
+        watcher = getattr(self, "_nav_directory_watcher", None)
+        if watcher is None:
+            return
+        directory = None
+        if self.model.base_ptn_exist():
+            candidate = os.path.abspath(self.model.chi_path)
+            if os.path.isdir(candidate):
+                directory = candidate
+        watched = watcher.directories()
+        if watched == ([directory] if directory else []):
+            return
+        # Recreate on folder switches. Some macOS Qt backends retain a path
+        # even after removePaths reports that it could not remove it.
+        try:
+            watcher.directoryChanged.disconnect(
+                self._on_navigation_directory_changed)
+        except (TypeError, RuntimeError):
+            pass
+        watcher.deleteLater()
+        watcher = QtCore.QFileSystemWatcher(self.widget)
+        watcher.directoryChanged.connect(
+            self._on_navigation_directory_changed)
+        self._nav_directory_watcher = watcher
+        if directory:
+            watcher.addPath(directory)
+
+    def _on_navigation_directory_changed(self, _directory):
+        self._nav_change_debounce.start()
+
+    def _poll_navigation_boundary(self):
+        if (not self.widget.pushButton_S_PrevBasePtn.isEnabled() or
+                not self.widget.pushButton_S_NextBasePtn.isEnabled()):
+            self._refresh_nav_destination_indicators()
 
     def _confirm_manual_open_param_choice(self, current, selected):
         box = QtWidgets.QMessageBox(self.widget)
@@ -550,6 +599,7 @@ class MainController(object):
             return
         QtCore.QTimer.singleShot(0, self._restore_last_working_state)
         self._recovery_timer.start()
+        self._nav_boundary_poll_timer.start()
 
     def _restore_last_working_state(self):
         restored = self.session_ctrl.restore_recovery_state(
@@ -590,6 +640,8 @@ class MainController(object):
         self._shutdown_done = True
         try:
             self._recovery_timer.stop()
+            self._nav_boundary_poll_timer.stop()
+            self._nav_change_debounce.stop()
             self.session_ctrl.save_recovery_state()
         except Exception:
             pass

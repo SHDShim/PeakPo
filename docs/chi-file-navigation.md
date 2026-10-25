@@ -73,8 +73,11 @@ normal font color. **How Prev/Next opens another CHI** in Config uses the normal
 font color for Custom, Force carryover, and Carry over only if no existing,
 and red when **Use existing** is selected. The tooltip gives the destination
 filename and action. A button is disabled when no file exists in that direction at the
-selected step. The dot describes the destination and does not indicate whether
-the current file has unsaved changes.
+selected step. PeakPo watches the active CHI folder and updates the buttons
+when new CHI files appear. While either button is disabled, it also checks the
+folder every two seconds in case a network-mounted folder does not report file
+changes. The dot describes the destination and does not indicate whether the
+current file has unsaved changes.
 
 The **Save** button has its normal toolbar appearance when the current PARAM
 matches the state loaded or last saved for that CHI. It turns yellow when
